@@ -5,7 +5,7 @@
 - I need a multi-tenancy agent executing service calls in a unified way supporting at least one message protocol (e.g. HTTP).
 - I need a user interface allowing me to trigger immediate and defined scheduled calls including execution status.
 - I want to be able to filter already created service calls and tag the important ones to find them more easily.
-![User Story](./user-story.jpg)
+![User Story](./user-story.jpeg)
 
 
 
@@ -16,4 +16,4 @@
 
 
 ## User Interface Mockup
-![User Interface Mockup](./user-interface-mockup.jpg)
+![User Interface Mockup](./user-interface-mockup.jpeg)
