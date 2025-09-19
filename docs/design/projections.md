@@ -1,4 +1,4 @@
-# Projections (Essentials)
+# Projections
 
 Purpose
 

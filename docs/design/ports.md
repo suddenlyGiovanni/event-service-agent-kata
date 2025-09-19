@@ -1,4 +1,4 @@
-# Ports (Essentials)
+# Ports
 
 Minimal domain-facing ports to keep the system simple and broker/storage agnostic. Adapters implement these interfaces.
 

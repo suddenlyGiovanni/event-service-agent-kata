@@ -1,4 +1,4 @@
-# Orchestration Context (Contracted)
+# Orchestration Context
 
 Responsibility
 
