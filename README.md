@@ -1,1 +1,1 @@
-# event-service-agent
+# event-service-agent-kata
