@@ -183,7 +183,7 @@ Notes
 [ExecutionFailed]: #executionfailed
 [DueTimeReached]: #duetimereached
 
-<!-- Bounded Contex -->
+<!-- Bounded Context -->
 
 [Execution]: ./contexts/execution.md
 [Orchestration]: ./contexts/orchestration.md
