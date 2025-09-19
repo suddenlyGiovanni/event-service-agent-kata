@@ -39,3 +39,14 @@
 - [Projections](./docs/design/projections.md)
 
 ---
+
+## Architectural Decision Records (ADRs) 
+
+- [README](./docs/decisions/README.md)
+
+---
+
+## Plan
+
+- [Plan](./docs/plan/plan.md)
+- [Kanban](./docs/plan/kanban.md)
