@@ -1,4 +1,4 @@
-# Timer Context (Contracted)
+# Timer Context
 
 Responsibility
 

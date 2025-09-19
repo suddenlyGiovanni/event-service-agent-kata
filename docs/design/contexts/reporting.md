@@ -1,4 +1,4 @@
-# Reporting Context (Contracted)
+# Reporting Context
 
 Responsibility
 

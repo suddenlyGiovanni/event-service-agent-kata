@@ -1,4 +1,4 @@
-# Execution Context (Contracted)
+# Execution Context
 
 Responsibility
 
