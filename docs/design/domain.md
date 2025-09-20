@@ -11,7 +11,8 @@ Constraints (MVP)
 - Due time semantics: execute at/after `dueAt`; if `dueAt <= now`, eligible immediately.
 - Multi-tenancy: every action is tenant-scoped; all queries filter by `tenantId`.
 - Minimal persistence of bodies/headers (size-limited snippets; redaction allowed).
-- Event-driven, at-least-once delivery tolerance (design-time constraint).
+- Event-driven messaging with at-least-once delivery tolerance.
+- DB is the source of truth; Orchestration is the only writer of domain state.
 
 Core Concepts (Ubiquitous Language)
 
@@ -44,6 +45,7 @@ Glossary (Problem-Space)
 > - **Storage/indexing**:
 >   All primary indexes include `tenantId` first;
 >   common secondary indexes: `(tenantId, status)`, `(tenantId, dueAt)`, `(tenantId, tags)`.
+>   API queries the domain tables directly; no projections are maintained for MVP.
 > - **Messaging**:
 >   Topics/queues are either shared with `tenantId` in message envelopes or logically partitioned per tenant.
 >   Consumers must filter by `tenantId`.
@@ -60,15 +62,15 @@ High-Level Workflows
 
 - **Submission**
   - A tenant submits a Service Call with `name`, `requestSpec`, `dueAt`, and optional `tags`.
-  - The system records the intent and marks it Scheduled.
+  - Orchestration validates, persists `Scheduled` state in the domain DB, and emits domain events after commit.
 - **Scheduling**
-  - The system ensures a timer exists for `dueAt` (or treats it as due now).
+  - Orchestration ensures a timer exists for `dueAt` (or starts immediately when `dueAt <= now`).
 - **Becoming Due**
-  - At/after `dueAt`, the Service Call becomes eligible to start.
+  - At/after `dueAt`, the Service Call becomes eligible to start; Timer emits a due signal; Orchestration decides to start.
 - **Execution**
-  - Exactly one attempt is performed, producing either success (response metadata) or failure (error metadata).
+  - Exactly one attempt is performed, producing either success (response metadata) or failure (error metadata). Orchestration is the single writer for `Running` and terminal states.
 - **Observation**
-  - The tenant can list and filter calls by status, tags, and date; a detail view shows request/response summaries and timings.
+  - The tenant can list and filter calls by status, tags, and date; API serves queries directly from the domain DB with proper indexes.
 
 Business State Diagram (Problem-Space)
 
@@ -84,10 +86,16 @@ stateDiagram-v2
 
 Quality Attributes
 
-- Correctness: one attempt; legal transitions only.
-- Observability: state transitions represented as facts (events); projections for UI.
-- Evolvability: protocol-agnostic value objects, timers and IO behind ports (not elaborated here).
+- Correctness: one attempt; legal transitions only; Orchestration is the only writer.
+- Observability: state transitions produce domain events published after DB commit (via outbox); correlation IDs propagate across messages.
+- Evolvability: protocol-agnostic value objects; IO behind ports; broker-first without ES/CQRS.
 
 Out-of-Scope (MVP)
 
 - Retries/backoff, cancellation, editing requests, CRON-like schedules, authentication/egress policy.
+
+Implementation Notes (Non-normative)
+
+- Idempotency: API computes `serviceCallId` deterministically from `(tenantId, idempotencyKey)`; Orchestration enforces uniqueness on `(tenantId, serviceCallId)`.
+- Due-time guard: Orchestration checks `dueAt <= now` when starting; Timer may deliver duplicates; transitions are conditional (e.g., only `Scheduled → Running`).
+- Privacy: bodies/headers are redacted/truncated before persistence and when included in events.
