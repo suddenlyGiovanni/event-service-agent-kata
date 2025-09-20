@@ -2,7 +2,7 @@
 
 Responsibility
 
-- Accept external requests, validate, map to commands/queries.
+- Accept external requests, validate, publish commands, and query DB for UI.
 
 Interfaces
 
@@ -25,8 +25,7 @@ sequenceDiagram
 
   CLIENT->>API: POST /service-calls
   API->>ORCHESTRATION: [SubmitServiceCall] [command]
-  ORCHESTRATION-->>API: [ServiceCallSubmitted] [event]
-  API-->>CLIENT: 202 Accepted (idempotency key)
+  API-->>CLIENT: 202 Accepted (Location: /service-calls/:id)
 ```
 
 Sequence (Query List)
@@ -36,15 +35,14 @@ sequenceDiagram
   autonumber
   participant CLIENT as Client
   participant API as API
-  participant REPORTING as Reporting
+  participant DB as Domain DB
 
-  Note over CLIENT,REPORTING: solid = command/port, dashed = event
   link API: Doc @ ./api.md
-  link REPORTING: Doc @ ./reporting.md
+  Note over API,DB: API reads directly from domain DB
 
   CLIENT->>API: GET /service-calls
-  API->>REPORTING: listExecutions(query)
-  REPORTING-->>API: list
+  API->>DB: listServiceCalls(query)
+  DB-->>API: list
   API-->>CLIENT: 200 OK list
 ```
 
@@ -52,17 +50,17 @@ Inputs/Outputs Recap
 
 - Inputs: HTTP requests (submit, list, detail)
 - Outputs: HTTP responses
-- Ports: `Reporting` (queries via ReadStore)
+- Ports: EventBus (publish commands), Persistence (read-only for queries)
 
 Messages
 
 - [SubmitServiceCall]
-- [ServiceCallSubmitted]
 
 ## Ports Used
 
-- [ReadStore] (via Reporting): see `../ports.md#readstore`
+- [EventBusPort]: see `../ports.md#eventbusport`
+- [PersistencePort]: see `../ports.md#persistence`
 
 [SubmitServiceCall]: ../messages.md#submitservicecall
-[ServiceCallSubmitted]: ../messages.md#servicecallsubmitted
-[ReadStore]: ../ports.md#readstore
+[EventBusPort]: ../ports.md#eventbusport
+[PersistencePort]: ../ports.md#persistenceport-domain-db
