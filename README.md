@@ -32,15 +32,13 @@
   - [Orchestration Context](./docs/design/contexts/orchestration.md)
   - [Execution Context](./docs/design/contexts/execution.md)
   - [Timer Context](./docs/design/contexts/timer.md)
-  - [Reporting Context](./docs/design/contexts/reporting.md)
 
 - [Ports](./docs/design/ports.md)
 - [Messages Catalog](./docs/design/messages.md)
-- [Projections](./docs/design/projections.md)
 
 ---
 
-## Architectural Decision Records (ADRs) 
+## Architectural Decision Records (ADRs)
 
 - [README](./docs/decisions/README.md)
 
