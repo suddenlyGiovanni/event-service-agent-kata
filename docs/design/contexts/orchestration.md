@@ -3,6 +3,7 @@
 Responsibility
 
 - Own the `ServiceCall` lifecycle and invariants.
+- Single writer: validate commands/process events, write domain DB, publish domain events after commit via outbox.
 - Decide scheduling, guard start conditions, and finalize outcomes.
 
 Core Model
@@ -15,37 +16,35 @@ Core Model
 Commands (intent)
 
 - [SubmitServiceCall] `{ tenantId, name, dueAt, requestSpec, tags? }`
-- [StartExecution] `{ tenantId, serviceCallId }` (issued to Execution as a command)
+- [StartExecution] `{ tenantId, serviceCallId, requestSpec }` (issued to Execution)
+- [ScheduleTimer] `{ tenantId, serviceCallId, dueAt }` (issued to Timer)
 
 Events (facts)
 
 - [ServiceCallSubmitted] `{ name, requestSpec\*, submittedAt, tags? }`
 - [ServiceCallScheduled] `{ dueAt }`
-- [ExecutionStarted] `{ startedAt }`
-- [ExecutionSucceeded] `{ finishedAt, responseMeta }`
-- [ExecutionFailed] `{ finishedAt, errorMeta }`
+- [ServiceCallRunning] `{ startedAt }`
+- [ServiceCallSucceeded] `{ finishedAt, responseMeta }`
+- [ServiceCallFailed] `{ finishedAt, errorMeta }`
+- Process events consumed: [DueTimeReached], [ExecutionStarted], [ExecutionSucceeded], [ExecutionFailed]
 
 Policies
 
-- On [ServiceCallScheduled]:
-  IF `dueAt <= now`
-  THEN publish [DueTimeReached];
-  ELSE [RegisterTimer].
+- On [ServiceCallSubmitted] / [ServiceCallScheduled]:
+  IF `dueAt <= now` THEN issue [StartExecution]; ELSE issue [ScheduleTimer].
 - On [DueTimeReached]:
   IF `status == Scheduled` AND `dueAt <= now`
   THEN issue [StartExecution].
 - On outcomes: apply to drive terminal state.
+- Watchdog: if `status == Running` past timeout, mark Failed:Timeout.
 
 Ports
 
-- EventStore.append(event)
+- Persistence (domain DB read/write)
+- OutboxPublisher (append domain events within tx)
+- EventBus (publish commands, consume process events)
 - TimerPort.schedule({ id, tenantId, dueTimeMs })
 - Clock.now() for guards
-- Repository (optional): load/save snapshots if needed
-
-Read Side (collaboration)
-
-- Reporting consumes events to build Executions List and Execution Detail models.
 
 Out-of-Scope (here)
 
@@ -60,28 +59,29 @@ Sequence (Scheduled → StartExecution → Outcome)
 ```mermaid
 sequenceDiagram
   autonumber
-  participant ORCHESTRATION as Orchestration
-  participant SERVICE_CALL as ServiceCall
-  participant EXECUTION as Execution
-  link ORCHESTRATION: Doc @ ./orchestration.md
-  link SERVICE_CALL: Core Model @ ./orchestration.md#core-model
-  link EXECUTION: Doc @ ./execution.md
+  participant ORCH as Orchestration
+  participant DB as DomainDB
+  participant EXEC as Execution
+  link ORCH: Doc @ ./orchestration.md
+  link EXEC: Doc @ ./execution.md
 
   Note over ORCHESTRATION,EXECUTION: solid = command/port, dashed = event
 
-  ORCHESTRATION->>SERVICE_CALL: load(serviceCallId)
-  alt status == Scheduled and dueAt <= now
-    ORCHESTRATION->>EXECUTION: StartExecution [command]
-  else not eligible / not scheduled
-    ORCHESTRATION-->>ORCHESTRATION: ignore
+  ORCH->>DB: create Scheduled (tx) + outbox ServiceCallSubmitted/Scheduled
+  alt dueAt <= now
+    ORCH->>EXEC: StartExecution [command]
+  else
+    ORCH->>TIMER: ScheduleTimer [command]
   end
-  EXECUTION-->>ORCHESTRATION: ExecutionStarted [event]
+  EXEC-->>ORCH: ExecutionStarted [event]
+  ORCH->>DB: set Running (tx) + outbox ServiceCallRunning
   alt success
-  EXECUTION-->>ORCHESTRATION: ExecutionSucceeded [event]
+    EXEC-->>ORCH: ExecutionSucceeded [event]
+    ORCH->>DB: set Succeeded (tx) + outbox ServiceCallSucceeded
   else failure
-  EXECUTION-->>ORCHESTRATION: ExecutionFailed [event]
+    EXEC-->>ORCH: ExecutionFailed [event]
+    ORCH->>DB: set Failed (tx) + outbox ServiceCallFailed
   end
-  ORCHESTRATION->>SERVICE_CALL: apply outcome -> terminal
 ```
 
 Inputs/Outputs Recap
@@ -91,36 +91,49 @@ Inputs/Outputs Recap
   - [DueTimeReached] (event),
   - [ExecutionStarted] OR [ExecutionSucceeded] OR [ExecutionFailed] (events)
 - Outputs:
-  - [ServiceCallSubmitted] (event),
-  - [ServiceCallScheduled] (event),
-  - [StartExecution] (command),
-  - [RegisterTimer] (port effect)
-- Ports: [EventStore], [TimerPort], [Clock], [Repository] (optional)
-- Read Side: none directly (Reporting consumes events)
+  - [ServiceCallSubmitted], [ServiceCallScheduled], [ServiceCallRunning], [ServiceCallSucceeded], [ServiceCallFailed] (events via outbox)
+  - [StartExecution], [ScheduleTimer] (commands)
+- Ports: [PersistencePort], [OutboxPublisherPort], [EventBus], [TimerPort], [ClockPort]
+- Read Side: API reads domain DB; no projections
 
 Messages
 
-- [SubmitServiceCall]
-- [ServiceCallSubmitted]
-- [ServiceCallScheduled]
-- [StartExecution]
-- [RegisterTimer]
 - [DueTimeReached]
+- [ScheduleTimer]
+- [ServiceCallFailed]
+- [ServiceCallRunning]
+- [ServiceCallScheduled]
+- [ServiceCallSubmitted]
+- [ServiceCallSucceeded]
+- [StartExecution]
+- [SubmitServiceCall]
 
-Load from stream
+State access
 
-- On handling commands or due events, Orchestration reconstructs the `ServiceCall` by loading its stream from `EventStorePort` and folding events in order to current state. If available, a recent snapshot (via optional `Repository`) may be read first, then remaining events applied. This keeps writes append-only and ensures invariants derive solely from the event history.
+- On handling commands or due/process events, Orchestration reads/writes the domain DB using conditional updates to enforce legal transitions. Domain events are appended to the outbox within the same transaction and published after commit.
 
-[SubmitServiceCall]: ../messages.md#submitservicecall
-[ServiceCallSubmitted]: ../messages.md#servicecallsubmitted
-[ServiceCallScheduled]: ../messages.md#servicecallscheduled
-[StartExecution]: ../messages.md#startexecution
-[RegisterTimer]: ../messages.md#registertimer
+<!-- Ports -->
+
+[ClockPort]: ../ports.md#clockport
+[EventBus]: ../ports.md#eventbusport
+[OutboxPublisherPort]: ../ports.md#outboxpublisher
+[PersistencePort]: ../ports.md#persistenceport-domain-db
+[TimerPort]: ../ports.md#timerport
+
+<!-- Events -->
+
 [DueTimeReached]: ../messages.md#duetimereached
+[ExecutionFailed]: ../messages.md#executionfailed
 [ExecutionStarted]: ../messages.md#executionstarted
 [ExecutionSucceeded]: ../messages.md#executionsucceeded
-[ExecutionFailed]: ../messages.md#executionfailed
-[EventStore]: ../ports.md#eventstoreport
-[TimerPort]: ../ports.md#timerport
-[Clock]: ../ports.md#clockport
-[Repository]: ../ports.md#repository
+[ServiceCallFailed]: ../messages.md#servicecallfailed
+[ServiceCallRunning]: ../messages.md#servicecallrunning
+[ServiceCallScheduled]: ../messages.md#servicecallscheduled
+[ServiceCallSubmitted]: ../messages.md#servicecallsubmitted
+[ServiceCallSucceeded]: ../messages.md#servicecallsucceeded
+
+<!-- Commands -->
+
+[ScheduleTimer]: ../messages.md#scheduletimer
+[StartExecution]: ../messages.md#startexecution
+[SubmitServiceCall]: ../messages.md#submitservicecall
