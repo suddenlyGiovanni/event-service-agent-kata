@@ -10,29 +10,28 @@ Model
 
 Policies
 
-- On [RegisterTimer]: store or update TimerEntry keyed by `(tenantId, serviceCallId)` with `dueAt`.
+- On [ScheduleTimer]: store or update TimerEntry keyed by `(tenantId, serviceCallId)` with `dueAt`.
 - Scheduler loop: at tick, for entries with `dueAt <= now` and `status == armed`, publish [DueTimeReached] and mark as fired.
 
 Ports
 
 - Clock.now() to evaluate eligibility
-- EventStore.append([DueTimeReached]) on fire
-- EventStore.subscribe(fromPosition) to drive the scheduler or to ingest [RegisterTimer] if modeled as an event
+- EventBus.publish([DueTimeReached]) on fire
 
-Sequence (Register → Due → Publish)
+Sequence (Schedule → Due → Publish)
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant TIMER as Timer
   participant CLOCK as Clock
-  participant STORE as EventStore
+  participant BUS as EventBus
   link TIMER: Doc @ ./timer.md
-  link STORE: Port @ ../ports.md#eventstoreport
+  link BUS: Port @ ../ports.md#eventbusport
 
   TIMER->>CLOCK: now()
   alt now >= dueAt
-    TIMER->>STORE: append DueTimeReached
+  TIMER->>BUS: publish DueTimeReached
   else wait
     TIMER-->>TIMER: no-op
   end
@@ -40,13 +39,15 @@ sequenceDiagram
 
 Inputs/Outputs
 
-- Inputs: [RegisterTimer]
+- Inputs: [ScheduleTimer]
 - Outputs: [DueTimeReached]
-- Ports:
-  - [Clock]
-  - [EventStore]
 
-[RegisterTimer]: ../messages.md#registertimer
+# Ports:
+
+- [ClockPort]
+- [EventBusPort]
+
+[ScheduleTimer]: ../messages.md#scheduletimer
 [DueTimeReached]: ../messages.md#duetimereached
-[Clock]: ../ports.md#clockport
-[EventStore]: ../ports.md#eventstoreport
+[ClockPort]: ../ports.md#clockport
+[EventBusPort]: ../ports.md#eventbusport
