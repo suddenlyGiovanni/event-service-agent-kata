@@ -1,4 +1,4 @@
-# Timer Context
+# Timer Module
 
 Responsibility
 
@@ -18,7 +18,7 @@ Ports
 - Clock.now() to evaluate eligibility
 - EventBus.publish([DueTimeReached]) on fire
 
-Sequence (Schedule → Due → Publish)
+Sequence (Schedule Due Publish)
 
 ```mermaid
 sequenceDiagram

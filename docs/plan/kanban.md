@@ -2,8 +2,8 @@
 
 <!--
 Purpose:
-    A tiny, self-managed Kanban: 
-    edit by moving items between sections. 
+    A tiny, self-managed Kanban:
+    edit by moving items between sections.
     Keep it short.
 -->
 
@@ -34,7 +34,7 @@ Prioritized queue.
 - [ ] PL-4 Outbox (append→publish ordering) [adr: ADR-0004] [infra]
 - [ ] PL-5 API contracts (submit, list, detail) [adr: ADR-0005] [Api]
 - [ ] PL-6 Timer persistence & boot scan [adr: ADR-0006] [Timer]
-- [ ] PL-7 Read store & projection cursoring [adr: ADR-0007] [Reporting]
+- [ ] PL-7 Read store & projection cursoring [adr: ADR-0007]
 - [ ] PL-8 Privacy/redaction/snippet policy [adr: ADR-0008] [contracts]
 
 ## Doing (WIP ≤ 2)
@@ -68,16 +68,15 @@ Prioritized queue.
 <!--
 Minimal legend.
 - ID: `PL-#` (plan item)
-- Tags: [Api], [Orchestration], [Execution], [Timer], [Reporting], `infra`, `contracts`
+- Tags: [Api], [Orchestration], [Execution], [Timer], `infra`, `contracts`
 - ADR link: `[adr: ADR-000x]` refers to docs/decisions/ADR-000x-\*.md
 - WIP: Doing ≤ 2; Ready ≤ 7
 -->
 
-[Api]: ../design/contexts/api.md
-[Orchestration]: ../design/contexts/orchestration.md
-[Execution]: ../design/contexts/execution.md
-[Timer]: ../design/contexts/timer.md
-[Reporting]: ../design/contexts/reporting.md
+[Api]: ../design/modules/api.md
+[Orchestration]: ../design/modules/orchestration.md
+[Execution]: ../design/modules/execution.md
+[Timer]: ../design/modules/timer.md
 
 <!-- ADRs -->
 

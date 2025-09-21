@@ -1,4 +1,4 @@
-# API (Edge) Context
+# API (Edge) Module
 
 Responsibility
 

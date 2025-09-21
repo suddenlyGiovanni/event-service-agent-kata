@@ -1,4 +1,4 @@
-# Orchestration Context
+# Orchestration Module
 
 Responsibility
 
@@ -54,7 +54,7 @@ Acceptance (MVP)
 
 - For any submitted ServiceCall, the context ensures exactly one of Succeeded/Failed is eventually reached and observable.
 
-Scheduling Path (Due → StartExecution → Running)
+Scheduling Path (Due  StartExecution  Running)
 
 ```mermaid
 flowchart TB
@@ -86,7 +86,7 @@ flowchart TB
   class A,F dom
 ```
 
-Event Mapping (Process → Domain)
+Event Mapping (Process  Domain)
 
 ```mermaid
 flowchart TB
@@ -113,7 +113,7 @@ flowchart TB
   class DR,DS,DF dom
 ```
 
-Sequence (Scheduled → StartExecution → Outcome)
+Sequence (Scheduled  StartExecution  Outcome)
 
 ```mermaid
 sequenceDiagram

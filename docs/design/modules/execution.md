@@ -1,4 +1,4 @@
-# Execution Context
+# Execution Module
 
 Responsibility
 
@@ -56,7 +56,7 @@ Inputs/Outputs Recap
   - [ClockPort]
 - Storage: none (stateless)
 
-Sequence (StartExecution → HTTP → Outcome)
+Sequence (StartExecution HTTP Outcome)
 
 ```mermaid
 sequenceDiagram
@@ -118,7 +118,6 @@ Messages
 [ExecutionFailed]: ../messages.md#executionfailed
 [ExecutionStarted]: ../messages.md#executionstarted
 [ExecutionSucceeded]: ../messages.md#executionsucceeded
-[ServiceCallSubmitted]: ../messages.md#servicecallsubmitted
 
 <!-- Ports -->
 

@@ -174,9 +174,9 @@ Notes
 - Message types should align with `design/messages.md`.
 - Add retries/observability later only if needed by concrete adapters.
 
-[Orchestration]: ./contexts/orchestration.md
-[Timer]: ./contexts/timer.md
-[Execution]: ./contexts/execution.md
-[API]: ./contexts/api.md
+[Orchestration]: ./modules/orchestration.md
+[Timer]: ./modules/timer.md
+[Execution]: ./modules/execution.md
+[API]: ./modules/api.md
 [ExecutionSucceeded]: ./messages.md#executionsucceeded
 [ExecutionFailed]: ./messages.md#executionfailed

@@ -224,7 +224,7 @@ Notes
 
 <!-- Bounded Context -->
 
-[API]: ./contexts/api.md
-[Execution]: ./contexts/execution.md
-[Orchestration]: ./contexts/orchestration.md
-[Timer]: ./contexts/timer.md
+[API]: ./modules/api.md
+[Execution]: ./modules/execution.md
+[Orchestration]: ./modules/orchestration.md
+[Timer]: ./modules/timer.md

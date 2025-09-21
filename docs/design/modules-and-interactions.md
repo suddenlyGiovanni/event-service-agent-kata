@@ -1,4 +1,8 @@
-# Bounded Contexts
+# Modules & Interactions (within the Service Agent BC)
+
+Scope
+
+- This document describes modules inside a single bounded context: the Service Agent (Service Call Management). These are technical/organizational modules around one domain model and ubiquitous language.
 
 Overview
 
@@ -7,70 +11,70 @@ Overview
 - [Execution] (Supporting): Performs HTTP call, emits outcome process events.
 - [Timer] (Infrastructure): Schedules and emits [DueTimeReached] as process events.
 
-Context Map
+Module Interaction Map
 
 ```mermaid
 flowchart LR
-  API-->|commands|ORCHESTRATION
-  ORCHESTRATION-->|commands|EXECUTION
-  ORCHESTRATION-->|commands|TIMER
-  TIMER-->|events|ORCHESTRATION
-  EXECUTION-->|events|ORCHESTRATION
-  API-->|queries DB|DB[(Domain DB)]
-  ORCHESTRATION-->|writes DB|DB
-  click API "./contexts/api.md" "API Context"
-  click ORCHESTRATION "./contexts/orchestration.md" "Orchestration Context"
-  click EXECUTION "./contexts/execution.md" "Execution Context"
-  click TIMER "./contexts/timer.md" "Timer Context"
+	API-->|commands|ORCHESTRATION
+	ORCHESTRATION-->|commands|EXECUTION
+	ORCHESTRATION-->|commands|TIMER
+	TIMER-->|events|ORCHESTRATION
+	EXECUTION-->|events|ORCHESTRATION
+	API-->|queries DB|DB[(Domain DB)]
+	ORCHESTRATION-->|writes DB|DB
+		click API "./modules/api.md" "API Module"
+		click ORCHESTRATION "./modules/orchestration.md" "Orchestration Module"
+		click EXECUTION "./modules/execution.md" "Execution Module"
+		click TIMER "./modules/timer.md" "Timer Module"
 ```
 
-Swimlane (Roles & Flows)
+Swimlane (Module Roles & Flows)
 
 ```mermaid
 sequenceDiagram
-  autonumber
-  participant API as API
-  participant ORCH as Orchestration
-  participant EXEC as Execution
-  participant TIMER as Timer
+	autonumber
+	participant API as API
+	participant ORCH as Orchestration
+	participant EXEC as Execution
+	participant TIMER as Timer
 
-  Note over API,ORCH: solid = command/port, dashed = event
+	Note over API,ORCH: solid = command/port, dashed = event
 
-  link API: Doc @ ./contexts/api.md
-  link ORCH: Doc @ ./contexts/orchestration.md
-  link EXEC: Doc @ ./contexts/execution.md
-  link TIMER: Doc @ ./contexts/timer.md
+		link API: Doc @ ./modules/api.md
+		link ORCH: Doc @ ./modules/orchestration.md
+		link EXEC: Doc @ ./modules/execution.md
+		link TIMER: Doc @ ./modules/timer.md
 
-  API->>ORCH: SubmitServiceCall (command)
-  ORCH->>ORCH: validate + write DB (Scheduled)
-  ORCH-->>API: domain events published (post-commit)
-  ORCH->>TIMER: ScheduleTimer (command)
-  TIMER-->>ORCH: DueTimeReached (event)
-  ORCH->>EXEC: StartExecution (command)
-  EXEC-->>ORCH: ExecutionStarted (event)
-  EXEC-->>ORCH: ExecutionSucceeded|ExecutionFailed (event)
-  ORCH->>ORCH: update DB to Running/terminal + publish domain events
+	API->>ORCH: SubmitServiceCall (command)
+	ORCH->>ORCH: validate + write DB (Scheduled)
+	ORCH-->>API: domain events published (post-commit)
+	ORCH->>TIMER: ScheduleTimer (command)
+	TIMER-->>ORCH: DueTimeReached (event)
+	ORCH->>EXEC: StartExecution (command)
+	EXEC-->>ORCH: ExecutionStarted (event)
+	EXEC-->>ORCH: ExecutionSucceeded|ExecutionFailed (event)
+	ORCH->>ORCH: update DB to Running/terminal + publish domain events
 ```
 
 Responsibility Matrix (lightweight)
 
 ```mermaid
 flowchart TB
-  subgraph Submit
-    A[API]:::Do --> B[Orchestration]:::Own
-  end
-  subgraph Schedule
-    B --> D[Timer]:::Supplier
-    D --> B
-  end
-  subgraph Execute
-    B --> E[Execution]:::Supplier
-    E --> B
-  end
+	subgraph Submit
+		A[API]:::Do --> B[Orchestration]:::Own
+	end
+	subgraph Schedule
+		B --> D[Timer]:::Supplier
+		D --> B
+	end
+	subgraph Execute
+		B --> E[Execution]:::Supplier
+		E --> B
+	end
 
-  classDef Own fill:#e3f2fd,stroke:#1e88e5,color:#0d47a1
-  classDef Supplier fill:#e8f5e9,stroke:#43a047,color:#1b5e20
-  classDef Do fill:#fff3e0,stroke:#fb8c00,color:#e65100
+	classDef Own fill:#e3f2fd,stroke:#1e88e5,color:#0d47a1
+	classDef Supplier fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+	classDef Do fill:#fff3e0,stroke:#fb8c00,color:#e65100
 ```
 
 - API: validation, idempotency surface, HTTP mapping, read DB for UI
@@ -126,10 +130,10 @@ Ports Used (overview)
 
 <!-- Context -->
 
-[Edge/API]: ./contexts/api.md
-[Execution]: ./contexts/execution.md
-[Orchestration]: ./contexts/orchestration.md
-[Timer]: ./contexts/timer.md
+[Edge/API]: ./modules/api.md
+[Execution]: ./modules/execution.md
+[Orchestration]: ./modules/orchestration.md
+[Timer]: ./modules/timer.md
 
 <!-- Ports -->
 
