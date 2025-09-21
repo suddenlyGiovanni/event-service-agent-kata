@@ -15,31 +15,27 @@ export interface RequestContext {
 }
 ```
 
-## EventEnvelope (essentials)
+## MessageEnvelope
 
-Minimal event envelope shared by publishers/consumers. See message semantics: `./messages.md#semantics-essentials`.
+Minimal envelope shared by publishers/consumers. See [Semantics](./messages.md#semantics-essentials).
 
 ```ts
-export interface EventEnvelope<T = unknown> {
+export interface MessageEnvelope<T = unknown> {
   id: EnvelopeId; // unique id
-  type: string; // event type
+  type: string; // message type
   tenantId: TenantId;
-  aggregateId?: string; // optional ordering key
+  aggregateId?: string; // ordering key (e.g., serviceCallId)
   timestampMs: number; // producer timestamp
+  correlationId?: CorrelationId;
+  causationId?: string;
   payload: T;
 }
 ```
 
 ## Storage Roles
 
-- EventStorePort (command-side events): append/load events per aggregate. ES-first MVP default.
-- ReadStore (read-side projections): query store built from events; used by Reporting/API.
-- Repository<T> (optional): aggregate snapshots with optimistic concurrency; add later if needed for performance.
-
-Choosing a mode:
-
-- ES-first MVP: EventStorePort + ReadStore. `EventBusPort` may be a thin façade over the same log; `Repository` optional.
-- Non-ES: Repository + EventBus + ReadStore. EventStorePort not used.
+- PersistencePort (domain DB): CRUD and conditional updates for domain state; only Orchestration writes.
+- OutboxPublisher: append messages in the same transaction as DB writes; background dispatcher publishes to broker.
 
 ## ClockPort
 
@@ -54,12 +50,16 @@ export interface ClockPort {
 
 ## EventBusPort
 
-Adapter responsibilities: Publish to broker; preserve per-aggregate order when `aggregateId` is set. In ES-first MVP, this can be implemented on top of `EventStorePort` subscriptions/writes.  
-Used in: [Orchestration], [Execution], [Timer].
+Adapter responsibilities: Publish to broker; consume from topics/partitions; preserve per-aggregate order via partition key.  
+Used in: [Orchestration], [Execution], [Timer], [API] (publish only).
 
 ```ts
 export interface EventBusPort {
-  publish(envelopes: EventEnvelope[], ctx: RequestContext): Promise<void>;
+  publish(envelopes: MessageEnvelope[], ctx: RequestContext): Promise<void>;
+  subscribe(
+    topics: string[],
+    handler: (env: MessageEnvelope) => Promise<void>
+  ): Promise<void>;
 }
 ```
 
@@ -110,87 +110,73 @@ export interface HttpClientPort {
 }
 ```
 
-## Repository<T>
+## PersistencePort (Domain DB)
 
-Role: optional aggregate snapshots (command-side); in ES-first, use only if rebuild cost is high.
-Used in: [Orchestration], [Execution] (optional).
+Role: domain CRUD with conditional transitions; Orchestration is the only writer.  
+Used in: [Orchestration] (write), [API] (read-only).
+
+Note: `responseMeta` and `errorMeta` follow the payload shapes defined in the messages catalog — see [ExecutionSucceeded] (responseMeta) and [ExecutionFailed] (errorMeta) in `design/messages.md`.
 
 ```ts
-export interface Versioned<T> {
-  state: T;
-  version: number;
-}
-
-export interface Repository<TAggregate, TId = string> {
-  load(id: TId, ctx: RequestContext): Promise<Versioned<TAggregate> | null>;
-  save(
-    id: TId,
-    snapshot: TAggregate,
-    expectedVersion: number,
+export interface PersistencePort {
+  // Read models for API
+  getServiceCall(
+    tenantId: string,
+    serviceCallId: string,
     ctx: RequestContext
-  ): Promise<number>; // returns newVersion
+  ): Promise<unknown | null>;
+  listServiceCalls(
+    tenantId: string,
+    filters: Record<string, unknown>,
+    paging: { limit: number; offset: number },
+    ctx: RequestContext
+  ): Promise<unknown[]>;
+
+  // Single-writer transitions (guarded updates)
+  createServiceCall(dto: unknown, ctx: RequestContext): Promise<void>;
+  setRunning(
+    tenantId: string,
+    serviceCallId: string,
+    startedAtMs: number,
+    ctx: RequestContext
+  ): Promise<boolean>; // returns true if updated from Scheduled
+  setSucceeded(
+    tenantId: string,
+    serviceCallId: string,
+    finishedAtMs: number,
+    responseMeta: unknown,
+    ctx: RequestContext
+  ): Promise<boolean>;
+  setFailed(
+    tenantId: string,
+    serviceCallId: string,
+    finishedAtMs: number,
+    errorMeta: unknown,
+    ctx: RequestContext
+  ): Promise<boolean>;
 }
 ```
 
-## ReadStore
+## OutboxPublisher
 
-Role: read-side projection store for queries; independent of Repository choice.  
-Used in: [Reporting], [API].
-
-```ts
-export interface ReadStore {
-  upsert(
-    docType: string,
-    id: string,
-    document: unknown,
-    ctx: RequestContext
-  ): Promise<void>;
-  getById<T = unknown>(
-    docType: string,
-    id: string,
-    ctx: RequestContext
-  ): Promise<T | null>;
-}
-```
-
-## EventStorePort
-
-Minimal event store interface for ES/CQRS posture. Uses the shared `EventEnvelope` shape.
-
-Role: command-side event log; default source of truth in ES-first MVP.
-
-Adapter responsibilities: atomically append with optimistic concurrency; `load` returns ordered events.
+Role: ensure messages are published after DB commit. Orchestration appends messages to an outbox table within the same transaction; a dispatcher publishes them to the broker in order.  
+Used in: [Orchestration].
 
 ```ts
-export interface EventStream {
-  events: EventEnvelope[];
-  version: number; // last aggregate version
-}
-
-export interface EventStorePort {
-  append(
-    aggregateType: string,
-    aggregateId: string,
-    events: EventEnvelope[],
-    expectedVersion: number,
-    ctx: RequestContext
-  ): Promise<number>; // returns newVersion
-
-  load(
-    aggregateType: string,
-    aggregateId: string,
-    ctx: RequestContext
-  ): Promise<EventStream>; // empty if not found
+export interface OutboxPublisher {
+  append(envelopes: MessageEnvelope[], ctx: RequestContext): Promise<void>; // called within DB tx
+  dispatch(batchSize?: number): Promise<void>; // background loop
 }
 ```
 
 Notes
 
-- Message types should align with `design/ddd/messages.md`.
-- Add options/retries/observability later only if needed by concrete adapters.
+- Message types should align with `design/messages.md`.
+- Add retries/observability later only if needed by concrete adapters.
 
-[Orchestration]: ./contexts/orchestration.md
-[Timer]: ./contexts/timer.md
-[Execution]: ./contexts/execution.md
-[Reporting]: ./contexts/reporting.md
-[API]: ./contexts/api.md
+[Orchestration]: ./modules/orchestration.md
+[Timer]: ./modules/timer.md
+[Execution]: ./modules/execution.md
+[API]: ./modules/api.md
+[ExecutionSucceeded]: ./messages.md#executionsucceeded
+[ExecutionFailed]: ./messages.md#executionfailed

@@ -1,4 +1,4 @@
-# Execution Context
+# Execution Module
 
 Responsibility
 
@@ -7,26 +7,27 @@ Responsibility
 
 Interfaces
 
-- Command in: [StartExecution] { tenantId, serviceCallId }
-- Ports: HttpClientPort, EventStore, Clock
+- Command in: [StartExecution] { tenantId, serviceCallId, requestSpec }
+- Ports: HttpClientPort, EventBus (publish), Clock
 
 Behavior
 
 -- On [StartExecution]:
 
 - Emit [ExecutionStarted] { startedAt }.
-- Call HttpClientPort with requestSpec (fetched via correlation, or provided by contract in a future iteration).
+- Call HttpClientPort with requestSpec (provided in command).
 - Map adapter result to either [ExecutionSucceeded] { finishedAt, responseMeta } or [ExecutionFailed] { finishedAt, errorMeta }.
 - Exactly one terminal outcome emission per StartExecution.
 
 Notes
 
 - Non-2xx are failures in MVP.
-- Stateless; idempotent on duplicate StartExecution (ignore if already started for same id).
+- Stateless; idempotent on duplicate StartExecution (publisher partitioning keeps order; duplicates harmless to Orchestration).
+- Reliability (MVP): producer acks + retry; Orchestration watchdog times out long-running executions to a Failed state.
 
-Load from stream
+Resolve RequestSpec
 
-- Before calling the external service, Execution resolves the `requestSpec` by loading the `ServiceCall` stream from [EventStorePort] and folding events in order (in MVP, the [ServiceCallSubmitted] event carries `requestSpec`). No local state is persisted; optionally, future iterations may pass a minimal request spec in the command to avoid the read.
+- Provided in [StartExecution]; no DB or event-store read required.
 
 Resolve RequestSpec
 
@@ -34,16 +35,12 @@ Resolve RequestSpec
 sequenceDiagram
   autonumber
   participant EXECUTION as Execution
-  participant EVENT_STORE as EventStorePort
   participant HTTP_CLIENT as HttpClientPort
 
   Note over EXECUTION,HTTP_CLIENT: solid = command/port, dashed = event
   link EXECUTION: Doc @ ./execution.md
-  link EVENT_STORE: Port @ ../ports.md#eventstoreport
   link HTTP_CLIENT: Port @ ../ports.md#httpclientport
 
-  EXECUTION->>EVENT_STORE: load(ServiceCall stream)
-  EVENT_STORE-->>EXECUTION: events (incl. ServiceCallSubmitted)
   EXECUTION->>HTTP_CLIENT: execute(requestSpec)
 ```
 
@@ -55,11 +52,11 @@ Inputs/Outputs Recap
   - [ExecutionSucceeded] OR [ExecutionFailed] (events)
 - Ports:
   - [HttpClientPort],
-  - [EventStorePort],
+  - [EventBusPort],
   - [ClockPort]
 - Storage: none (stateless)
 
-Sequence (StartExecution → HTTP → Outcome)
+Sequence (StartExecution HTTP Outcome)
 
 ```mermaid
 sequenceDiagram
@@ -101,22 +98,29 @@ stateDiagram-v2
 
 Messages
 
-- [StartExecution]
+- [ExecutionFailed]
 - [ExecutionStarted]
 - [ExecutionSucceeded]
-- [ExecutionFailed]
+- [StartExecution]
 
 ## Ports Used
 
-- HttpClientPort: see `../ports.md#httpclientport`
-- EventStore: see `../ports.md#eventstoreport`
-- Clock: see `../ports.md#clockport`
+- [ClockPort]
+- [EventBusPort]
+- [HttpClientPort]
+
+<!-- Commands -->
 
 [StartExecution]: ../messages.md#startexecution
+
+<!-- Messages -->
+
+[ExecutionFailed]: ../messages.md#executionfailed
 [ExecutionStarted]: ../messages.md#executionstarted
 [ExecutionSucceeded]: ../messages.md#executionsucceeded
-[ExecutionFailed]: ../messages.md#executionfailed
-[ServiceCallSubmitted]: ../messages.md#servicecallsubmitted
-[EventStorePort]: ../ports.md#eventstoreport
-[HttpClientPort]: ../ports.md#httpclientport
+
+<!-- Ports -->
+
 [ClockPort]: ../ports.md#clockport
+[EventBusPort]: ../ports.md#eventbusport
+[HttpClientPort]: ../ports.md#httpclientport

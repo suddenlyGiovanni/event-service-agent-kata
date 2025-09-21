@@ -1,103 +1,127 @@
-# Early Plan (MVP)
+# Implementation Plan
 
-<!-- *** Purpose: single-page guide for what to decide and do first. Keep it short. *** -->
+Purpose
 
-## Scope Now
+- Translate the domain and design into a phased, low-risk delivery plan.
+- Favor small, verifiable milestones with tests and runnable demos.
 
-- Broker-first comms between all bounded contexts; API is a separate process; Core is a modular monolith behind a broker.
-- ES-first: Event Store is source of truth; projections build read models; at-least-once semantics; per-aggregate ordering.
+Principles
 
-## Decisions To Lock (before coding)
+- Functional TypeScript, DMMF modeling, Effect runtime and layers.
+- Single-writer Orchestration; DB is source of truth; outbox after-commit events.
+- Multi-tenancy everywhere; key by `(tenantId, serviceCallId)`; preserve per-aggregate order.
 
-<!-- *** Check each item off as you accept it and/or link an ADR. *** -->
+Milestones (aligned to Gates)
 
-- [ ] **Broker choice & topics/partitions** [adr: ADR-0001]  
-       Recommendation: Kafka/Redpanda; partition key `aggregateId` (serviceCallId); DLQ per consumer group.
-- [ ] **Event store tech & concurrency** [adr: ADR-0002]  
-       Recommendation: Postgres append-only streams; optimistic `expectedVersion` on append; stream key `(tenantId, serviceCallId)`.
-- [ ] **Outbox strategy** (append→publish) [adr: ADR-0004]  
-       Recommendation: single-table outbox in same DB; background publisher publishes in stream order.
-- [ ] **Message envelope schema** [adr: ADR-0003]  
-       Fields: `messageId, tenantId, aggregateType, aggregateId, type, timestamp, correlationId, causationId, schemaVersion`; events carry `version`.
-- [ ] **Idempotency scope & API behavior** [adr: ADR-0005]  
-       Scope `(tenantId, idempotencyKey) → serviceCallId`; first call 202; replay 200/208 with same id.
-- [ ] **Timer persistence & delivery** [adr: ADR-0006]  
-       Persist `(tenantId, serviceCallId, dueAt)`; at-least-once `DueTimeReached`; boot scan to re-enqueue overdue.
-- [ ] **Read store & projection cursoring** [adr: ADR-0007]  
-       Recommendation: Postgres tables; per-projection checkpoint; idempotent upserts keyed by `(tenantId, id)`.
-- [ ] **Privacy/redaction policy** [adr: ADR-0008]  
-       Snippet ≤ 8KB; header allowlist; redact sensitive values consistently.
-- [ ] **HTTP execution policy** [adr: ADR-0009]  
-       2xx = success; others = failure; timeout 10s; capture latency and snippet.
-- [ ] **Observability baseline** [adr: ADR-0010]  
-       Correlation/causation propagation; logs at command receive, append, publish, consume, upsert; consumer lag metric.
+1. Contracts & Scaffolding
 
-## First Vertical Slices (end-to-end)
+- Define message ADTs and port interfaces in TypeScript, aligned to `docs/design/messages.md` and `docs/design/ports.md`.
+- Set up pnpm workspaces (packages: `contracts`, later adapters/services).
+- Acceptance: type-check passes; unit tests cover message constructors and basic validation.
 
-<!-- *** Each slice is independently demoable. *** -->
+2. Orchestration Core (Pure)
 
-1. Submit-now → Execute → Projected  
-   Acceptance: exactly one attempt; list/detail show `Succeeded|Failed` within N seconds.
-2. Submit-future (dueAt>now) → Timer → Execute  
-   Acceptance: at-least-once `DueTimeReached`; no duplicate execution.
-3. Idempotent submit (replay)  
-   Acceptance: same `serviceCallId` returned; no duplicate events; stable state.
-4. List filtering (status, tags, date)  
-   Acceptance: filters work per tenant; paginated results.
+- Model `ServiceCall` aggregate as discriminated union; legal transitions only.
+- Implement handlers for intents/events: `SubmitServiceCall`, `DueTimeReached`, `Execution*` mapping to domain updates.
+- Ports as dependencies (Clock, Persistence, Outbox, EventBus, Timer) via Effect layers; keep core pure where possible.
+- Acceptance: property-based/unit tests verify transitions; idempotency/guards for `dueAt`.
 
-## Minimal Task List (ordered)
+3. Messaging Adapter (Broker from Day One) [Gate 02 — [ADR-0002][ADR-0002]]
 
-<!-- *** Keep ≤ 8 items. Reference ADRs. *** -->
+- Implement `EventBusPort` adapter for the chosen broker (see [ADR-0002][ADR-0002]) with partition/subject routing by `tenantId.serviceCallId`.
+- Provide a lightweight docker-compose or devcontainer for local broker.
+- Acceptance: adapter integration tests verify ordering and at-least-once semantics in dev.
 
-- [ ] Draft [adr: ADR-0001]: Broker choice, topics, partitions          
-- [ ] Draft [adr: ADR-0002]: Event store model & optimistic concurrency
-- [ ] Draft [adr: ADR-0003]: Envelope schema (headers, versioning)
-- [ ] Draft [adr: ADR-0004]: Outbox (append→publish ordering)
-- [ ] Draft [adr: ADR-0005]: API contracts (submit, list, detail)
-- [ ] Draft [adr: ADR-0006]: Timer persistence & boot scan
-- [ ] Draft [adr: ADR-0007]: Read store + projection cursoring
-- [ ] Draft [adr: ADR-0008]: Privacy/redaction/snippet policy
+4. Timer Strategy Implementation [Gate 03 — [ADR-0003][ADR-0003]]
 
-## Definition of Ready (to start coding)
+- If broker supports delayed messages, implement broker-based delay for `DueTimeReached`.
+- Else, implement a minimal durable timer service that publishes `DueTimeReached` via the broker.
+- Acceptance: scheduled calls fire at/after `dueAt` with at-least-once; Orchestration guards start.
 
-- Decisions above Accepted (or defaults explicitly noted).
-- API request/response DTOs fixed for the three endpoints.
-- Topics/partitions created; DB migrations drafted for streams/outbox/read models.
+5. Execution Worker (HTTP)
 
-## Definition of Done (MVP slice)
+- Implement Execution module with `HttpClientPort` adapter:
+  - Mock client for offline tests.
+  - Real client (e.g., undici/fetch) optional.
+- Acceptance: emits `ExecutionStarted` then exactly one of `ExecutionSucceeded`/`ExecutionFailed`.
 
-- E2E demo for selected slice is repeatable; handlers idempotent under duplicates.
-- Projections resume from checkpoint after restart; outbox drains reliably.
-- Basic logs with correlation/causation present; tenant scoping enforced.
+6. Persistence Adapter (MVP) [Gate 04 → 05 — [ADR-0004][ADR-0004], [ADR-0005][ADR-0005]]
 
-## Risks (now) & Mitigations
+- Choose DB for MVP (Proposed: SQLite for local dev) with a simple schema reflecting the domain state and an outbox table.
+- Implement `PersistencePort` guarded updates and basic list/detail queries (with filters: status, tags, date).
+- Acceptance: migrations applied; API can read; Orchestration writes transactional with outbox append.
 
-- Skipping outbox → lost events on publish failure  
-   Mitigation: implement outbox first.
-- Projection lag → API reads stale data  
-   Mitigation: accept eventual consistency; for submit, return 202 with Location.
-- Local broker friction  
-   Mitigation: provide a one-liner dev compose; keep topics minimal.
+7. API Edge [Gate 06 → 07 — [ADR-0006][ADR-0006], [ADR-0007][ADR-0007]]
+
+- Minimal HTTP server with routes from `modules/api.md`; validate input; publish `SubmitServiceCall`.
+- Read models served directly from domain DB; add pagination and filters.
+- Acceptance: curl/HTTPie scripts demonstrate submission, listing, and details; Location header returns canonical URL.
+
+8. Redaction & Idempotency [Gate 06]
+
+- Implement `bodySnippet` truncation/redaction and response snippet policy.
+- Compute `serviceCallId` from `(tenantId, idempotencyKey)` when provided; otherwise generate UUID and treat as best-effort uniqueness.
+- Acceptance: tests for redaction; idempotent submission within tenant.
+
+9. Outbox Dispatcher [Gate 08 — [ADR-0008][ADR-0008]]
+
+- Implement outbox table usage and background dispatcher publishing to the broker (batching, marking dispatched).
+- Acceptance: domain events are published after commit with preserved per-aggregate ordering.
+
+10. Observability Baseline [Gate 09 — [ADR-0009][ADR-0009]]
+
+- Structured logs with correlation IDs; minimal metrics (counts/latency) per module.
+- Tracing optional once message bus is chosen.
+- Acceptance: logs include `tenantId`, `serviceCallId`, `correlationId`.
+
+10. Hardening & Demos
+
+- Negative path tests, timeouts, and watchdog behavior for long-running `Running` state.
+- Demo scripts and a minimal UI page (optional) to visualize states.
+
+Sequencing & Dependencies (Gates) — see also [Gates Index][GATES]
+
+- Gate 01 (Topology) precedes Gate 02 (Broker) and Gate 03 (Timer).
+- Gate 02 precedes messaging adapter work; Gate 03 defines timer implementation path.
+- Gate 04 (DB) precedes Gate 05 (Schema), which precedes Persistence adapter.
+- Gate 06 (Idempotency) and Gate 07 (API mapping) precede API implementation.
+- Gate 08 (Outbox) is required before E2E publication; Gate 09 (Observability) wires cross-cutting concerns.
+
+Testing Strategy
+
+- Unit tests first (orchestration transitions, redaction, idempotency); allow in-process fakes only for pure unit scope.
+- Integration tests against the real broker (containerized) and DB adapter; timer path tested per Gate 03 choice.
+- Adapter-specific tests (DB, HTTP client) and end-to-end flows.
+
+Acceptance Criteria Summary
+
+- Milestone 3: Broker adapter integration verifies ordered, at-least-once delivery using the chosen broker.
+- Timer emits at/after `dueAt` via broker delay or durable timer; Orchestration guards duplicates and illegal transitions.
+- Outbox dispatcher publishes committed domain events reliably in order.
+- API lists and filters by status/tags/date directly from DB.
+
+Risks & Mitigations
+
+- Messaging choice impacts ops and scheduling → contain via `EventBusPort`; decide broker family early (Gate 02).
+- DB schema evolution → start with MVP tables, migrations, and indexes; isolate via `PersistencePort`.
+- Clock/timer accuracy → use monotonic scheduling where possible; guard at Orchestration.
+
+Deliverables
+
+- Packages: `contracts`, `orchestration`, `execution`, `timer`, `api`, `infra-adapters`.
+- Broker adapter package aligned to [ADR-0002][ADR-0002]; docker-compose for local broker.
 
 ---
 
-### Pointers
+[ADR-0002]: ../decisions/ADR-0002-broker.md
+[ADR-0003]: ../decisions/ADR-0003-timer.md
+[ADR-0004]: ../decisions/ADR-0004-database.md
+[ADR-0005]: ../decisions/ADR-0005-schema.md
+[ADR-0006]: ../decisions/ADR-0006-idempotency.md
+[ADR-0007]: ../decisions/ADR-0007-api.md
+[ADR-0008]: ../decisions/ADR-0008-outbox.md
+[ADR-0009]: ../decisions/ADR-0009-observability.md
+[GATES]: ../decisions/README.md
 
-- [Design](../design)
-- [Decisions](../decisions/README.md) (ADRs)
-- [Kanban](./kanban.md)
-
-
-<!-- ADRs -->
-
-
-[adr: ADR-0001]: ../decisions/ADR-0001-broker-topics-partitions.md
-[adr: ADR-0002]: ../decisions/ADR-0002-event-store-and-concurrency.md
-[adr: ADR-0003]: ../decisions/ADR-0003-message-envelopes-and-versioning.md
-[adr: ADR-0004]: ../decisions/ADR-0004-outbox-append-then-publish.md
-[adr: ADR-0005]: ../decisions/ADR-0005-api-contracts-and-idempotency.md
-[adr: ADR-0006]: ../decisions/ADR-0006-timer-persistence-and-due-delivery.md
-[adr: ADR-0007]: ../decisions/ADR-0007-read-store-and-projection-cursoring.md
-[adr: ADR-0008]: ../decisions/ADR-0008-privacy-redaction-snippets.md
-[adr: ADR-0009]: ../decisions/ADR-0009-http-execution-policy-and-errors.md
-[adr: ADR-0010]: ../decisions/ADR-0010-observability-baseline.md
+- Demo scripts: curl/HTTPie commands to submit, list, and fetch details.
+- ADRs documenting key choices and open questions.

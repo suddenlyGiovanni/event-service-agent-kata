@@ -1,53 +1,51 @@
-# Messages Catalog (Contracted)
+# Messages Catalog
 
-Purpose
+## Purpose
 
 - Canonical catalog of commands and events across contexts.
 - Each entry lists type, producer(s), consumer(s), and payload schema.
 - Conventions unify naming, metadata, and versioning.
 
-Conventions
+## Conventions
 
 - Type: `command` | `event`.
 - Identity: all messages include `tenantId` and `serviceCallId` when applicable.
 - Metadata: may include `correlationId`, `causationId`, `idempotencyKey` (for public commands), and `occurredAt`/`scheduledAt` timestamps as relevant.
 - ~~Versioning: start at `v1`; breaking changes create `v2` alongside `v1` until migration.~~
 
-Semantics (essentials)
+## Semantics
 
-- Identity: each event has a unique `eventId`; aggregate identity is `(tenantId, serviceCallId)`.
-- Ordering: per-aggregate ordering is guaranteed by keying streams by `aggregateId = serviceCallId` (tenant included in stream partitioning or metadata), consumers must be idempotent.
-- Transport: [EventStorePort] is the source of truth and event transport; consumers subscribe with cursors/positions.
+- Identity: each message has a unique `messageId`; aggregate identity is `(tenantId, serviceCallId)`.
+- Ordering: per-aggregate ordering is preserved by broker partition key `tenantId.serviceCallId`; consumers must be idempotent.
+- Transport: broker-first; domain events are published after Orchestration commits DB changes (via outbox dispatcher).
 
-Index by Context
+## Index by Context
 
 - Orchestration:
-  - [SubmitServiceCall],
-  - [ServiceCallSubmitted],
-  - [ServiceCallScheduled],
-  - [StartExecution],
-  - [RegisterTimer]
+  - Commands in: [SubmitServiceCall]
+  - Commands out: [StartExecution], [ScheduleTimer]
+  - Events out: [ServiceCallSubmitted], [ServiceCallScheduled], [ServiceCallRunning], [ServiceCallSucceeded], [ServiceCallFailed]
 - Execution:
-  - [StartExecution],
-  - [ExecutionStarted],
-  - [ExecutionSucceeded],
-  - [ExecutionFailed]
+  - Commands in: [StartExecution]
+  - Events out: [ExecutionStarted], [ExecutionSucceeded], [ExecutionFailed]
 - Timer:
-  - [RegisterTimer],
-  - [DueTimeReached]
+  - Commands in: [ScheduleTimer]
+  - Events out: [DueTimeReached]
 - API (Edge):
-  - [SubmitServiceCall]
-- Reporting: consumes [Events]
+  - Commands out: [SubmitServiceCall]
 
-Index by Type
+## Index by Type
 
 - Commands:
   - [SubmitServiceCall] — create and schedule a service call;
   - [StartExecution] — trigger a single execution attempt;
-  - [RegisterTimer] — request a due signal at/after `dueAt`.
+  - [ScheduleTimer] — request a due signal at/after `dueAt`.
 - Events:
   - [ServiceCallSubmitted] — submission accepted;
   - [ServiceCallScheduled] — dueAt recorded/eligible;
+  - [ServiceCallRunning] — attempt started (domain state);
+  - [ServiceCallSucceeded] — domain state finalized as Succeeded;
+  - [ServiceCallFailed] — domain state finalized as Failed;
   - [DueTimeReached] — time to start execution;
   - [ExecutionStarted] — attempt started;
   - [ExecutionSucceeded] — call succeeded;
@@ -78,12 +76,13 @@ Index by Type
 - Payload:
   - tenantId: string
   - serviceCallId: string
+  - requestSpec: { method: string, url: string, headers?: object, bodySnippet?: string }
 
-### RegisterTimer
+### ScheduleTimer
 
-- Type: command/port call (internal)
+- Type: command (internal)
 - Produced by: [Orchestration]
-- Consumed by: [Timer] adapter
+- Consumed by: [Timer]
 - Purpose: request a due signal at/after `dueAt`
 - Payload:
   - tenantId: string
@@ -96,7 +95,7 @@ Index by Type
 
 - Type: event
 - Produced by: [Orchestration]
-- Consumed by: [Reporting] (and interested observers)
+- Consumed by: interested observers
 - Purpose: acknowledge accepted submission
 - Payload:
   - tenantId: string
@@ -110,17 +109,52 @@ Index by Type
 
 - Type: event
 - Produced by: [Orchestration]
-- Consumed by: [Reporting], [Orchestration] policies
+- Consumed by: interested observers, Orchestration policies
 - Purpose: record schedule eligibility
 - Payload:
   - tenantId: string
   - serviceCallId: string
   - dueAt: datetime (ISO8601)
 
+### ServiceCallRunning
+
+- Type: event
+- Produced by: [Orchestration]
+- Consumed by: interested observers
+- Purpose: mark execution as running at domain level
+- Payload:
+  - tenantId: string
+  - serviceCallId: string
+  - startedAt: datetime (ISO8601)
+
+### ServiceCallSucceeded
+
+- Type: event
+- Produced by: [Orchestration]
+- Consumed by: interested observers
+- Purpose: mark successful completion at domain level
+- Payload:
+  - tenantId: string
+  - serviceCallId: string
+  - finishedAt: datetime (ISO8601)
+  - responseMeta: { status: number, headers?: object, bodySnippet?: string, latencyMs?: number }
+
+### ServiceCallFailed
+
+- Type: event
+- Produced by: [Orchestration]
+- Consumed by: interested observers
+- Purpose: mark failed completion at domain level
+- Payload:
+  - tenantId: string
+  - serviceCallId: string
+  - finishedAt: datetime (ISO8601)
+  - errorMeta: { kind: string, message?: string, details?: object, latencyMs?: number }
+
 ### DueTimeReached
 
 - Type: event
-- Produced by: [Timer] adapter (or Orchestration fast-path)
+- Produced by: [Timer] (or Orchestration fast-path)
 - Consumed by: [Orchestration]
 - Purpose: signal that time to start execution has arrived
 - Payload:
@@ -132,7 +166,7 @@ Index by Type
 
 - Type: event
 - Produced by: [Execution]
-- Consumed by: [Orchestration], [Reporting]
+- Consumed by: [Orchestration]
 - Purpose: mark execution as running
 - Payload:
   - tenantId: string
@@ -143,7 +177,7 @@ Index by Type
 
 - Type: event
 - Produced by: [Execution]
-- Consumed by: [Orchestration], [Reporting]
+- Consumed by: [Orchestration]
 - Purpose: record successful outcome
 - Payload:
   - tenantId: string
@@ -155,7 +189,7 @@ Index by Type
 
 - Type: event
 - Produced by: [Execution]
-- Consumed by: [Orchestration], [Reporting]
+- Consumed by: [Orchestration]
 - Purpose: record failed outcome
 - Payload:
   - tenantId: string
@@ -166,31 +200,31 @@ Index by Type
 Notes
 
 - At-least-once delivery: consumers must be idempotent.
-- Privacy: `requestSpec.body` and response bodies may be truncated/sanitized; expose `bodySnippet` in events/read models only.
+- Privacy: `requestSpec.body` and response bodies may be truncated/sanitized; expose `bodySnippet` only.
 - Fast-path: Orchestration may publish `DueTimeReached` immediately if `dueAt <= now` to avoid unnecessary timer registration.
+- Timestamps: domain event times (submittedAt/startedAt/finishedAt/dueAt) derive from Orchestration’s `ClockPort.nowMs()` at write time; do not rely on consumer clocks.
 
-[Events]: #events
+<!-- Commands -->
 
-<!-- Events / Commands -->
-
-[SubmitServiceCall]: #submitservicecall
-[ServiceCallSubmitted]: #servicecallsubmitted
-[ServiceCallScheduled]: #servicecallscheduled
+[DueTimeReached]: #duetimereached
+[ScheduleTimer]: #scheduletimer
 [StartExecution]: #startexecution
-[RegisterTimer]: #registertimer
+[SubmitServiceCall]: #submitservicecall
+
+<!-- Events -->
+
+[ExecutionFailed]: #executionfailed
 [ExecutionStarted]: #executionstarted
 [ExecutionSucceeded]: #executionsucceeded
-[ExecutionFailed]: #executionfailed
-[DueTimeReached]: #duetimereached
+[ServiceCallFailed]: #servicecallfailed
+[ServiceCallRunning]: #servicecallrunning
+[ServiceCallScheduled]: #servicecallscheduled
+[ServiceCallSubmitted]: #servicecallsubmitted
+[ServiceCallSucceeded]: #servicecallsucceeded
 
 <!-- Bounded Context -->
 
-[Execution]: ./contexts/execution.md
-[Orchestration]: ./contexts/orchestration.md
-[Reporting]: ./contexts/reporting.md
-[Timer]: ./contexts/timer.md
-[API]: ./contexts/api.md
-
-<!-- Ports -->
-
-[EventStorePort]: ./ports.md#eventstoreport
+[API]: ./modules/api.md
+[Execution]: ./modules/execution.md
+[Orchestration]: ./modules/orchestration.md
+[Timer]: ./modules/timer.md

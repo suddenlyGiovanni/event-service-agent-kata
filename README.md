@@ -26,21 +26,19 @@
 ## Design
 
 - [Domain](./docs/design/domain.md) (Problem Space)
-- [Bounded Contexts](./docs/design/bounded-contexts.md) (Solution Space)
+- [Modules & Interactions](./docs/design/modules-and-interactions.md) (Solution Space)
 
-  - [API Context](./docs/design/contexts/api.md)
-  - [Orchestration Context](./docs/design/contexts/orchestration.md)
-  - [Execution Context](./docs/design/contexts/execution.md)
-  - [Timer Context](./docs/design/contexts/timer.md)
-  - [Reporting Context](./docs/design/contexts/reporting.md)
+  - [API Module](./docs/design/modules/api.md)
+  - [Orchestration Module](./docs/design/modules/orchestration.md)
+  - [Execution Module](./docs/design/modules/execution.md)
+  - [Timer Module](./docs/design/modules/timer.md)
 
 - [Ports](./docs/design/ports.md)
 - [Messages Catalog](./docs/design/messages.md)
-- [Projections](./docs/design/projections.md)
 
 ---
 
-## Architectural Decision Records (ADRs) 
+## Architectural Decision Records (ADRs)
 
 - [README](./docs/decisions/README.md)
 
