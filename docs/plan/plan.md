@@ -5,6 +5,10 @@ Purpose
 - Translate the domain and design into a phased, low-risk delivery plan.
 - Favor small, verifiable milestones with tests and runnable demos.
 
+Current Focus
+
+- Gate 01 — Topology: finalize system shape (modular monolith vs minimal services) per [ADR-0001]. Outcome informs Broker (Gate 02) and Timer (Gate 03) decisions.
+
 Principles
 
 - Functional TypeScript, DMMF modeling, Effect runtime and layers.
@@ -26,13 +30,13 @@ Milestones (aligned to Gates)
 - Ports as dependencies (Clock, Persistence, Outbox, EventBus, Timer) via Effect layers; keep core pure where possible.
 - Acceptance: property-based/unit tests verify transitions; idempotency/guards for `dueAt`.
 
-3. Messaging Adapter (Broker from Day One) [Gate 02 — [ADR-0002][ADR-0002]]
+3. Messaging Adapter (Broker from Day One) [Gate 02 — [ADR-0002]]
 
-- Implement `EventBusPort` adapter for the chosen broker (see [ADR-0002][ADR-0002]) with partition/subject routing by `tenantId.serviceCallId`.
+- Implement `EventBusPort` adapter for the chosen broker (see [ADR-0002]) with partition/subject routing by `tenantId.serviceCallId`.
 - Provide a lightweight docker-compose or devcontainer for local broker.
 - Acceptance: adapter integration tests verify ordering and at-least-once semantics in dev.
 
-4. Timer Strategy Implementation [Gate 03 — [ADR-0003][ADR-0003]]
+4. Timer Strategy Implementation [Gate 03 — [ADR-0003]]
 
 - If broker supports delayed messages, implement broker-based delay for `DueTimeReached`.
 - Else, implement a minimal durable timer service that publishes `DueTimeReached` via the broker.
@@ -45,13 +49,13 @@ Milestones (aligned to Gates)
   - Real client (e.g., undici/fetch) optional.
 - Acceptance: emits `ExecutionStarted` then exactly one of `ExecutionSucceeded`/`ExecutionFailed`.
 
-6. Persistence Adapter (MVP) [Gate 04 → 05 — [ADR-0004][ADR-0004], [ADR-0005][ADR-0005]]
+6. Persistence Adapter (MVP) [Gate 04 → 05 — [ADR-0004], [ADR-0005]]
 
 - Choose DB for MVP (Proposed: SQLite for local dev) with a simple schema reflecting the domain state and an outbox table.
 - Implement `PersistencePort` guarded updates and basic list/detail queries (with filters: status, tags, date).
 - Acceptance: migrations applied; API can read; Orchestration writes transactional with outbox append.
 
-7. API Edge [Gate 06 → 07 — [ADR-0006][ADR-0006], [ADR-0007][ADR-0007]]
+7. API Edge [Gate 06 → 07 — [ADR-0006], [ADR-0007]]
 
 - Minimal HTTP server with routes from `modules/api.md`; validate input; publish `SubmitServiceCall`.
 - Read models served directly from domain DB; add pagination and filters.
@@ -63,7 +67,7 @@ Milestones (aligned to Gates)
 - Compute `serviceCallId` from `(tenantId, idempotencyKey)` when provided; otherwise generate UUID and treat as best-effort uniqueness.
 - Acceptance: tests for redaction; idempotent submission within tenant.
 
-9. Outbox Dispatcher [Gate 08 — [ADR-0008][ADR-0008]]
+9. Outbox Dispatcher [Gate 08 — [ADR-0008]]
 
 - Implement outbox table usage and background dispatcher publishing to the broker (batching, marking dispatched).
 - Acceptance: domain events are published after commit with preserved per-aggregate ordering.
@@ -109,10 +113,11 @@ Risks & Mitigations
 Deliverables
 
 - Packages: `contracts`, `orchestration`, `execution`, `timer`, `api`, `infra-adapters`.
-- Broker adapter package aligned to [ADR-0002][ADR-0002]; docker-compose for local broker.
+- Broker adapter package aligned to [ADR-0002]; docker-compose for local broker.
 
 ---
 
+[ADR-0001]: ../decisions/ADR-0001-topology.md
 [ADR-0002]: ../decisions/ADR-0002-broker.md
 [ADR-0003]: ../decisions/ADR-0003-timer.md
 [ADR-0004]: ../decisions/ADR-0004-database.md
