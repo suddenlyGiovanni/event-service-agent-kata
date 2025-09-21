@@ -202,8 +202,7 @@ Notes
 - At-least-once delivery: consumers must be idempotent.
 - Privacy: `requestSpec.body` and response bodies may be truncated/sanitized; expose `bodySnippet` only.
 - Fast-path: Orchestration may publish `DueTimeReached` immediately if `dueAt <= now` to avoid unnecessary timer registration.
-
-
+- Timestamps: domain event times (submittedAt/startedAt/finishedAt/dueAt) derive from Orchestration’s `ClockPort.nowMs()` at write time; do not rely on consumer clocks.
 
 <!-- Commands -->
 

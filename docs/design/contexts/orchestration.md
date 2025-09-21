@@ -54,6 +54,65 @@ Acceptance (MVP)
 
 - For any submitted ServiceCall, the context ensures exactly one of Succeeded/Failed is eventually reached and observable.
 
+Scheduling Path (Due → StartExecution → Running)
+
+```mermaid
+flowchart TB
+  subgraph "Orchestration"
+    A["ServiceCallSubmitted / ServiceCallScheduled"]
+    B{"dueAt <= now"}
+    C["StartExecution (command)"]
+    F["ServiceCallRunning (domain event)"]
+  end
+
+  subgraph "Timer"
+    D["ScheduleTimer (command)"]
+    E["DueTimeReached (event)"]
+  end
+
+  A --> B
+  B -->|yes| C
+  B -->|no| D
+  D --> E
+  E --> C
+  C --> F
+
+  classDef cmd fill:#e3f2fd,stroke:#1e88e5,color:#0d47a1
+  classDef proc fill:#fff3e0,stroke:#fb8c00,color:#e65100
+  classDef dom fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+
+  class C,D cmd
+  class E proc
+  class A,F dom
+```
+
+Event Mapping (Process → Domain)
+
+```mermaid
+flowchart TB
+  subgraph "Execution (process events)"
+    ES[ExecutionStarted]
+    EOK[ExecutionSucceeded]
+    EKO[ExecutionFailed]
+  end
+
+  subgraph "Orchestration (domain events)"
+    DR[ServiceCallRunning]
+    DS[ServiceCallSucceeded]
+    DF[ServiceCallFailed]
+  end
+
+  ES -->|set Running| DR
+  EOK -->|set Succeeded| DS
+  EKO -->|set Failed| DF
+
+  classDef proc fill:#fff3e0,stroke:#fb8c00,color:#e65100
+  classDef dom fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+
+  class ES,EOK,EKO proc
+  class DR,DS,DF dom
+```
+
 Sequence (Scheduled → StartExecution → Outcome)
 
 ```mermaid
@@ -65,7 +124,7 @@ sequenceDiagram
   link ORCH: Doc @ ./orchestration.md
   link EXEC: Doc @ ./execution.md
 
-  Note over ORCHESTRATION,EXECUTION: solid = command/port, dashed = event
+  Note over ORCH,EXEC: solid = command/port, dashed = event
 
   ORCH->>DB: create Scheduled (tx) + outbox ServiceCallSubmitted/Scheduled
   alt dueAt <= now
@@ -93,7 +152,7 @@ Inputs/Outputs Recap
 - Outputs:
   - [ServiceCallSubmitted], [ServiceCallScheduled], [ServiceCallRunning], [ServiceCallSucceeded], [ServiceCallFailed] (events via outbox)
   - [StartExecution], [ScheduleTimer] (commands)
-- Ports: [PersistencePort], [OutboxPublisherPort], [EventBus], [TimerPort], [ClockPort]
+- Ports: [PersistencePort], [OutboxPublisherPort], [EventBusPort], [TimerPort], [ClockPort]
 - Read Side: API reads domain DB; no projections
 
 Messages
@@ -115,7 +174,7 @@ State access
 <!-- Ports -->
 
 [ClockPort]: ../ports.md#clockport
-[EventBus]: ../ports.md#eventbusport
+[EventBusPort]: ../ports.md#eventbusport
 [OutboxPublisherPort]: ../ports.md#outboxpublisher
 [PersistencePort]: ../ports.md#persistenceport-domain-db
 [TimerPort]: ../ports.md#timerport

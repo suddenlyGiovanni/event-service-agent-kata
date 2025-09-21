@@ -59,7 +59,7 @@ Messages
 ## Ports Used
 
 - [EventBusPort]: see `../ports.md#eventbusport`
-- [PersistencePort]: see `../ports.md#persistence`
+- [PersistencePort]: see `../ports.md#persistenceport-domain-db`
 
 [SubmitServiceCall]: ../messages.md#submitservicecall
 [EventBusPort]: ../ports.md#eventbusport

@@ -17,7 +17,7 @@ export interface RequestContext {
 
 ## MessageEnvelope
 
-Minimal envelope shared by publishers/consumers. See [message semantics](./messages.md#semantics).
+Minimal envelope shared by publishers/consumers. See [Semantics](./messages.md#semantics-essentials).
 
 ```ts
 export interface MessageEnvelope<T = unknown> {
@@ -115,6 +115,8 @@ export interface HttpClientPort {
 Role: domain CRUD with conditional transitions; Orchestration is the only writer.  
 Used in: [Orchestration] (write), [API] (read-only).
 
+Note: `responseMeta` and `errorMeta` follow the payload shapes defined in the messages catalog — see [ExecutionSucceeded] (responseMeta) and [ExecutionFailed] (errorMeta) in `design/messages.md`.
+
 ```ts
 export interface PersistencePort {
   // Read models for API
@@ -176,3 +178,5 @@ Notes
 [Timer]: ./contexts/timer.md
 [Execution]: ./contexts/execution.md
 [API]: ./contexts/api.md
+[ExecutionSucceeded]: ./messages.md#executionsucceeded
+[ExecutionFailed]: ./messages.md#executionfailed
