@@ -18,7 +18,13 @@ Raw ideas/tasks.
     Keep this short.
 -->
 
-- [ ] PL-? …
+[ ] PL-12 Decide persistence engine (SQLite vs Postgres) [adr: [ADR-0004][ADR-0004]]
+[ ] PL-13 Choose broker adapter details for dev/prod parity [adr: [ADR-0002][ADR-0002]]
+[ ] PL-17 Decide topology: modular monolith vs minimal services [adr: [ADR-0001][ADR-0001]]
+[ ] PL-18 Choose broker family for production [adr: [ADR-0002][ADR-0002]]
+[ ] PL-19 Timer delegation strategy (custom vs broker delay) [adr: [ADR-0003][ADR-0003]]
+[ ] PL-20 Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001][ADR-0001]]
+[ ] PL-9 Observability baseline [adr: [ADR-0009][ADR-0009]] [infra] — blocked by [adr: [ADR-0002][ADR-0002]]
 
 ## Ready
 
@@ -27,6 +33,16 @@ Prioritized queue.
     Pull the top item into Doing. Avoid more than 7 items.
     Link ADRs like [adr: ADR-0001]; add tags like [infra] or [Api].
 -->
+
+- [ ] PL-1 Scaffold `contracts` package with message and port types [contracts]
+- [ ] PL-2 Orchestration core domain model and transitions [Orchestration]
+- [ ] PL-3 Broker adapter implementation + local broker setup [infra]
+- [ ] PL-4 Timer module with in-memory scheduler [Timer]
+- [ ] PL-5 Execution module with mock HttpClientPort [Execution]
+- [ ] PL-6 Persistence adapter (SQLite) and migrations [infra]
+- [ ] PL-7 API server with submit/list/detail routes [Api]
+- [ ] PL-8 Redaction & idempotency utilities + tests [contracts]
+- [ ] PL-20 Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001][ADR-0001]]
 
 ## Doing (WIP ≤ 2)
 
@@ -38,13 +54,17 @@ Prioritized queue.
 
 <!-- Item is waiting on something (decision, dependency). Note the blocker briefly. -->
 
-- [ ] PL-9 Observability baseline [adr: ADR-0010] [infra] — blocked by [adr: ADR-0003]
+- [ ] PL-9 Observability baseline [adr: [ADR-0009][ADR-0009]] [infra] — blocked by [adr: [ADR-0002][ADR-0002]]
 
 ## Done (recent)
 
 <!-- Keep last few wins visible. Archive older items by copying them to an Archive section/file if desired. -->
 
 ## Notes (today)
+
+- Focus: capture decisions in gate order (Topology → Broker → Timer → DB → Schema → Idempotency → API → Outbox → Observability).
+- Risk: broker family impacts timer path; document branches and prerequisites.
+- Next: finalize Gates 01–03, then start PL-1 and PL-2.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
@@ -56,7 +76,7 @@ Prioritized queue.
 Minimal legend.
 - ID: `PL-#` (plan item)
 - Tags: [Api], [Orchestration], [Execution], [Timer], `infra`, `contracts`
-- ADR link: `[adr: ADR-000x]` refers to docs/decisions/ADR-000x-\*.md
+ - ADR link: `[adr: ADR-000x]` may be written using reference-style links.
 - WIP: Doing ≤ 2; Ready ≤ 7
 -->
 
@@ -66,3 +86,15 @@ Minimal legend.
 [Timer]: ../design/modules/timer.md
 
 <!-- ADRs -->
+
+---
+
+[ADR-0001]: ../decisions/ADR-0001-topology.md
+[ADR-0002]: ../decisions/ADR-0002-broker.md
+[ADR-0003]: ../decisions/ADR-0003-timer.md
+[ADR-0004]: ../decisions/ADR-0004-database.md
+[ADR-0005]: ../decisions/ADR-0005-schema.md
+[ADR-0006]: ../decisions/ADR-0006-idempotency.md
+[ADR-0007]: ../decisions/ADR-0007-api.md
+[ADR-0008]: ../decisions/ADR-0008-outbox.md
+[ADR-0009]: ../decisions/ADR-0009-observability.md
