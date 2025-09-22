@@ -1,6 +1,6 @@
 # ADR-0001: Topology — Modular Monolith vs Minimal Services
 
-Status: Proposed
+Status: Accepted
 
 ## Problem
 
@@ -203,23 +203,72 @@ flowchart LR
 - Any immediate need for API perimeter separation (auth/gateway), or distinct release cadence?
 - Broker family preference (e.g., NATS JetStream vs RabbitMQ) given timer delegation and ops?
 
-## Decision (TBD)
+## Decision
 
-- To be finalized after discussion and (optional) short spikes to validate broker adapter and message flows.
+Modular Monolith for the MVP, with a real message broker from day one and SQLite as the domain database choose [Option 1](#1-inside-api-orchestration-timer-execution--outside-ui)
 
-## Consequences (TBD)
+Inside: API, Orchestration, Timer, Execution.
 
-- To be documented once a specific topology is accepted.
+Outside: UI.
+
+All module communications (commands/events) go through the broker to preserve semantics and ease future extraction.
+
+Keep Orchestration co-located with the DB to maintain the single-writer constraint and simplify the transactional outbox. Use ports and Effect layers to enforce boundaries and enable evolvability.
+
+### Rationale
+
+- Optimizes for operability and developer speed while exercising real broker semantics early (ordering, at-least-once, backpressure).
+- Preserves outbox locality and per-aggregate ordering by `(tenantId, serviceCallId)` without cross-process transaction complexity.
+- SQLite matches the MVP’s single-writer pattern and allows straightforward migration via `PersistencePort` later.
+- Clean boundaries (ports, ADTs, Effect layers) ensure extracting Execution first, then API, is mostly wiring, not redesign.
+
+### Evolution Path (summary)
+
+- See Migration/Extraction Paths below for details. In short:
+  - Extract Execution workers when IO concurrency or isolation signals appear; preserve ordering with partition key `tenantId.serviceCallId`; Orchestration unchanged.
+  - Extract API when edge traffic or release cadence diverges; API continues to publish `SubmitServiceCall` and read via DB or a read service if introduced.
+  - Timer becomes its own service only if the broker cannot meet delayed-delivery needs (ADR-0003).
+  - Promote DB (SQLite → Postgres) when write concurrency, size, or ops requirements demand; `PersistencePort` keeps core stable; outbox pattern remains.
+  - Expand observability (tracing across services) after extractions; keep `tenantId`, `serviceCallId`, `correlationId` throughout.
+
+## Consequences
+
+**Positive**
+
+- Simpler local/CI workflow: single deployable app plus broker container; quicker feedback loops.
+- Realistic EDA behavior from day one: ordering, retries, and delivery semantics validated continuously.
+- Transactional outbox remains simple and reliable due to DB/Orchestration co-location.
+- Clear path to scale: vertical scaling initially; horizontal scaling by extracting Execution workers when needed.
+
+**Negative / Risks**
+
+- Shared failure domain: a crash affects API/Orchestration/Timer/Execution together.
+- Limited independent scaling until extraction (Execution, API).
+- Potential for boundary erosion without discipline.
+
+**Mitigations**
+
+- Guardrails: strict ports and Effect layers; publish/subscribe only via `EventBusPort`; no in-process shortcuts.
+- Health and isolation: module-level watchdogs, timeouts, and circuit breakers; add process split when signals trigger it.
+- Extraction triggers: extract Execution when IO concurrency or isolation requirements rise; extract API when edge traffic or release cadence diverges.
+
+**Follow-ups**
+
+- [ADR-0002] (Broker): select broker family (favoring delayed messages for Timer) and provide dev Compose.
+- [ADR-0003] (Timer): adopt broker-delayed scheduling where available; otherwise plan a minimal Timer service.
+- [ADR-0004] (Database): confirm SQLite schema and migration path; assess Postgres promotion criteria.
+- [ADR-0008] (Outbox): implement dispatcher loop and batching; ensure preserved per-aggregate order.
+- [ADR-0009] (Observability): structured logs with `tenantId`, `serviceCallId`, `correlationId`; minimal metrics.
 
 ## References
 
-- Design: [Modules & Interactions][modules], [Domain][domain], [Ports][ports], [Messages][messages]
+- Design: [Modules & Interactions][modules], [Domain], [Ports], [Messages]
 - Related ADRs: [ADR-0002] (Broker), [ADR-0003] (Timer), [ADR-0004] (Database), [ADR-0008] (Outbox), [ADR-0009] (Observability)
 
 [modules]: ../design/modules-and-interactions.md
-[domain]: ../design/domain.md
-[ports]: ../design/ports.md
-[messages]: ../design/messages.md
+[Domain]: ../design/domain.md
+[Ports]: ../design/ports.md
+[Messages]: ../design/messages.md
 [ADR-0002]: ./ADR-0002-broker.md
 [ADR-0003]: ./ADR-0003-timer.md
 [ADR-0004]: ./ADR-0004-database.md
