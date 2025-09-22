@@ -54,7 +54,7 @@ Ordered Gates (Decision Flow)
 
 Checklist
 
-- [ ] Gate 01 — Topology (Status: Proposed)
+- [x] Gate 01 — Topology (Status: Accepted)
 - [ ] Gate 02 — Broker (Status: Proposed)
 - [ ] Gate 03 — Timer (Status: Proposed)
 - [ ] Gate 04 — Database (Status: Proposed)

@@ -7,7 +7,8 @@ Purpose
 
 Current Focus
 
-- Gate 01 — Topology: finalize system shape (modular monolith vs minimal services) per [ADR-0001]. Outcome informs Broker (Gate 02) and Timer (Gate 03) decisions.
+- Gate 02 — Broker: select broker family and adapter approach per [ADR-0002];
+- Gate 03 — Timer: decide timer delegation to broker vs minimal service per [ADR-0003].
 
 Principles
 

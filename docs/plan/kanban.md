@@ -20,7 +20,7 @@ Raw ideas/tasks.
 
 - (PL-12) Decide persistence engine (SQLite vs Postgres) [adr: [ADR-0004]]
 - (PL-13) Choose broker adapter details for dev/prod parity [adr: [ADR-0002]]
-- (PL-18) Choose broker family for production [adr: [ADR-0002] [ADR-0001]: Topology]
+- (PL-18) Choose broker family for production [adr: [ADR-0002] [ADR-0001]]
 - (PL-19) Timer delegation strategy (custom vs broker delay) [adr: [ADR-0003]]
 - (PL-20) Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001]]
 - (PL-9) Observability baseline [adr: [ADR-0009]] [infra] — blocked by [adr: [ADR-0002]]
@@ -49,7 +49,7 @@ Prioritized queue.
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
-- (PL-17) Decide topology: modular monolith vs minimal services [adr: [ADR-0001]]
+<!-- empty Doing; keep WIP ≤ 2 -->
 
 ## Blocked
 
@@ -59,11 +59,13 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-17) Decide topology: modular monolith vs minimal services — Accepted [adr: [ADR-0001]]
+
 <!-- Keep last few wins visible. Archive older items by copying them to an Archive section/file if desired. -->
 
 ## Notes (today)
 
-- Focus: capture decisions in gate order (Topology → Broker → Timer → DB → Schema → Idempotency → API → Outbox → Observability).
+- Focus: advance Gate 02 → 03 (Broker → Timer), then kick off PL-1 and PL-2.
 - Risk: broker family impacts timer path; document branches and prerequisites.
 - Next: finalize Gates 01–03, then start PL-1 and PL-2.
 
