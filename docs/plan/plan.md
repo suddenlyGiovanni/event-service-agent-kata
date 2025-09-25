@@ -7,8 +7,8 @@ Purpose
 
 Current Focus
 
-- Gate 02 — Broker: select broker family and adapter approach per [ADR-0002];
-- Gate 03 — Timer: decide timer delegation to broker vs minimal service per [ADR-0003].
+- Gate 03 — Timer: finalize delegation boundaries (native delay vs fallback) per [ADR-0003].
+- Kickoff Milestone 1 (Contracts) & Milestone 2 (Orchestration core) now that broker family is chosen (Gate 02 complete).
 
 Principles
 

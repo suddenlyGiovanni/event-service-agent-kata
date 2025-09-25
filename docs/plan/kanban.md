@@ -48,7 +48,7 @@ Prioritized queue.
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
-- (PL-18) Choose broker family [adr: [ADR-0002]]
+<!-- (empty — pull next item from Ready) -->
 
 ## Blocked
 
@@ -58,15 +58,16 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-18) Choose broker family — Accepted [adr: [ADR-0002]]
 - (PL-17) Decide topology: modular monolith vs minimal services — Accepted [adr: [ADR-0001]]
 
 <!-- Keep last few wins visible. Archive older items by copying them to an Archive section/file if desired. -->
 
 ## Notes (today)
 
-- Focus: advance Gate 02 → 03 (Broker → Timer), then kick off PL-1 and PL-2.
-- Risk: broker family impacts timer path; document branches and prerequisites.
-- Next: finalize Gates 01–03, then start PL-1 and PL-2.
+- Focus: Gate 03 — Timer strategy (broker-native delay boundaries) + start PL-1 (contracts) & PL-2 (orchestration core).
+- Risk: unclear max reliable broker delay window; measure early to scope fallback Timer (PL-19).
+- Next: draft Timer decision (ADR-0003) and begin message/port ADTs.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
