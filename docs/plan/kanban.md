@@ -20,8 +20,6 @@ Raw ideas/tasks.
 
 - (PL-12) Decide persistence engine (SQLite vs Postgres) [adr: [ADR-0004]]
 - (PL-13) Choose broker adapter details for dev/prod parity [adr: [ADR-0002]]
-- (PL-19) Timer delegation strategy (custom vs broker delay) [adr: [ADR-0003]]
-- (PL-20) Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001]]
 - (PL-9) Observability baseline [adr: [ADR-0009]] [infra] — blocked by [adr: [ADR-0002]]
 
 ## Ready
@@ -40,7 +38,6 @@ Prioritized queue.
 - (PL-6) Persistence adapter (SQLite) and migrations [infra]
 - (PL-7) API server with submit/list/detail routes [Api]
 - (PL-8) Redaction & idempotency utilities + tests [contracts]
-- (PL-20) Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001]]
 
 ## Doing (WIP ≤ 2)
 
@@ -48,7 +45,7 @@ Prioritized queue.
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
-<!-- (empty — pull next item from Ready) -->
+- (PL-19) Timer delegation strategy (custom vs broker delay) [adr: [ADR-0003]]
 
 ## Blocked
 
@@ -60,14 +57,15 @@ Prioritized queue.
 
 - (PL-18) Choose broker family — Accepted [adr: [ADR-0002]]
 - (PL-17) Decide topology: modular monolith vs minimal services — Accepted [adr: [ADR-0001]]
+- (PL-20) Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001]]
 
 <!-- Keep last few wins visible. Archive older items by copying them to an Archive section/file if desired. -->
 
 ## Notes (today)
 
-- Focus: Gate 03 — Timer strategy (broker-native delay boundaries) + start PL-1 (contracts) & PL-2 (orchestration core).
-- Risk: unclear max reliable broker delay window; measure early to scope fallback Timer (PL-19).
-- Next: draft Timer decision (ADR-0003) and begin message/port ADTs.
+- Focus: (PL-19) Gate 03 — draft/refine ADR-0003: define broker delay SLA window, fallback Timer scope, replay semantics.
+- Risk: unknown max accurate delay horizon (JetStream) & volume impact; need empirical bounds before locking Timer design.
+- Next: capture assumptions in ADR-0003, then pull PL-1 (contracts) once draft is Proposed.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
