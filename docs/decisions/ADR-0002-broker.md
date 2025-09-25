@@ -1,13 +1,14 @@
 # ADR-0002: Message Broker
 
-Status: Proposed
+Status: Accepted
 
 ## Executive Summary
 
 - Goal: choose a broker that preserves per-aggregate ordering, supports at-least-once delivery with clear redelivery/DLQ, enables multi-tenant isolation, and (ideally) offers native delayed delivery to minimize Timer scope.
+- Decision: Adopt NATS JetStream as the message broker for MVP and near-term evolution.
 - Constraints: Modular Monolith; DB is source of truth; transactional outbox; identity keyed by `tenantId.serviceCallId`.
 - Key criteria (weighted): tenancy isolation (0.25), delayed delivery (0.25), ordering under load (0.20), dev ergonomics (0.15), ops footprint (0.10), retention/replay (0.05).
-- Alternatives: Kafka/Redpanda — excellent ordering/retention; lacks native delay (Timer complexity). RabbitMQ — workable delay via plugin; ordering best with single-consumer queues.
+- Alternatives considered: Kafka/Redpanda — excellent ordering/retention; lacks native delay (Timer complexity). RabbitMQ — workable delay via plugin; ordering best with single-consumer queues. NATS JetStream chosen for native delay, simple subject-based tenancy, lightweight ops, and strong developer ergonomics while still meeting ordering and at-least-once requirements.
 - What must be validated: ordering at load, delay accuracy, tenant isolation/noisy neighbor behavior, redelivery/DLQ flows, and local dev parity.
 
 ## Non-goals
@@ -392,13 +393,39 @@ Why not for MVP
 
 ---
 
-## Decision Framing (for later)
+## Decision Framing
 
 ### Scoring recap
 
 - Kafka/Redpanda: 3.40
 - NATS JetStream: 4.45
 - RabbitMQ (+ delayed-exchange): 3.70
+
+### Acceptance checklist
+
+Original criteria retained here for audit; superseded by post-decision validation summary above.
+
+- Ordering validated under load across N tenants with key `tenantId.serviceCallId`.
+- Delayed delivery accuracy within target bound for 1s–5m windows.
+- Redelivery and DLQ behavior verified and tenant-scoped.
+- Noisy neighbor isolation confirmed via quotas/limits.
+- Local development parity (Compose) for the chosen broker.
+
+### Decision
+
+Adopt NATS JetStream for MVP and near-term evolution. Rationale:
+
+- Highest weighted score (4.45) driven by native delay, ergonomics, low ops footprint while still meeting ordering and tenancy needs.
+- Eliminates the need to build a full Timer service early; we rely on broker scheduling for `dueAt` messages, constraining ADR-0003 scope.
+- Subject schema (`svc.<tenantId>.<aggregate>`, `svc.<tenantId>.dlq`) gives clean multi-tenant routing without early stream proliferation.
+- Pull consumers plus in-worker single-flight preserve per-aggregate ordering with controlled concurrency.
+- Future escape hatch preserved: adapter boundary allows migration to Kafka/Redpanda if long retention or very high throughput becomes central.
+
+Decision constraints & guardrails:
+
+- Avoid per-tenant streams until concrete retention/ACL divergence appears.
+- Enforce a bounded subject taxonomy to prevent cardinality explosion.
+- Periodically (quarterly) reassess delay accuracy and backlog metrics; if degradation > target SLA, revisit dedicated Timer service.
 
 ### Lifecycle Fit (business uncertainty)
 
@@ -418,17 +445,173 @@ Notes on weights moved to Appendix; criteria weights above apply.
 
 Sensitivity notes moved to Appendix.
 
-### Acceptance checklist (when deciding)
+## Consequences
 
-- Ordering validated under load across N tenants with key `tenantId.serviceCallId`.
-- Delayed delivery accuracy within target bound for 1s–5m windows.
-- Redelivery and DLQ behavior verified and tenant-scoped.
-- Noisy neighbor isolation confirmed via quotas/limits.
-- Local development parity (Compose) for the chosen broker.
+- Timer scope reduced: rely on JetStream native delay for standard windows; build only a fallback or extension if SLA gaps emerge.
+- Implementation focus shifts to an EventBusPort adapter (publish, publishScheduled, pull subscription, ack semantics) and a routing strategy enforcing subject naming.
+- Observability emphasis: per-tenant lag, redeliveries, DLQ counts; need lightweight metrics wrapper early.
+- Risk of subject/consumer sprawl requires naming lint / provisioning automation.
+- Potential future migration path: keep domain envelopes and handler contracts broker-agnostic; avoid leaking JetStream-specific headers beyond adapter.
 
-## Consequences (to be updated after decision)
+#### Why one shared stream first
 
-- Timer strategy depends on this choice; observability and tooling align with the broker ecosystem.
+One shared JetStream stream (`svc`) interleaves all tenants’ subjects but preserves each tenant’s and aggregate’s ordering (ordering is per subject; handlers enforce per-key single-flight). This minimizes early operational overhead (one retention policy, simple provisioning, fast local parity) and defers complexity until real isolation pressures appear. We split to per-tenant streams or accounts only when: (a) divergent retention/ACL needs, (b) a noisy tenant dominates backlog, (c) compliance or deletion isolation is required, or (d) subject/consumer cardinality approaches operational limits.
+
+### Integration Diagrams (NATS JetStream Realization)
+
+The following diagrams make the decision concrete. They do not restate design intent already in earlier ADRs; they show how NATS shapes implementation.
+
+#### A. Runtime Topology (MVP)
+
+```mermaid
+flowchart LR
+
+  subgraph Monolith[Monolith]
+    UI[UI] -->|HTTP| API[API]
+    API -->|SubmitServiceCall| Orchestr[Orchestration]
+
+    subgraph OrchestrationLayer
+      Orchestr -->|tx write+outbox| DB[(SQLite DB)]
+      DB --> OutboxDisp[Outbox Dispatcher]
+      OutboxDisp -->|publish| EventBus[[EventBusPort]]
+    end
+
+    subgraph ExecutionLayer
+      Exec[Execution Worker\npull single-flight] -->|pull| EventBus
+      Exec -->|ack/nack| EventBus
+    end
+
+    TimerFacade[Timer Facade] -->|schedule delay| EventBus
+  end
+
+  EventBus -->|NATS| NATS[(JetStream\nstream: svc)]
+  NATS -->|deliver| EventBus
+  NATS -.->|redelivery| EventBus
+  NATS -->|DLQ svc.<tenant>.dlq| DLQTool[DLQ Tool]
+
+  classDef ext fill:#eef,stroke:#555,color:#111;
+  class NATS,DLQTool ext;
+```
+
+Key implications: single shared stream `svc`; no per-tenant streams; Timer minimized.
+
+#### B. Submit → (Optional Delay) → Execute Sequence
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant UI
+  participant API
+  participant Orchestr as Orchestration
+  participant DB as DB+Outbox
+  participant Outbox as OutboxDisp
+  participant Bus as EventBusPort
+  participant NATS as JetStream
+  participant Exec as ExecWorker
+
+  UI->>API: POST /service-calls
+  API->>Orchestr: SubmitServiceCall(tenantId, serviceCallId, dueAt)
+  Orchestr->>DB: txn: write state (Scheduled + dueAt) + outbox row(s)
+  DB-->>Orchestr: commit ok
+  Outbox->>Bus: publish svc.<tenant>.serviceCall (ServiceCallSubmitted|ServiceCallScheduled)
+  alt dueAt > now
+  Orchestr->>Bus: publishScheduled StartExecution(deliverAt=dueAt) to svc.<tenant>.serviceCall
+  else dueAt <= now
+  Orchestr->>Bus: publish StartExecution(immediate) to svc.<tenant>.serviceCall
+  end
+  Exec->>Bus: pull(1..N)
+  Bus->>NATS: fetch
+  NATS-->>Bus: messages (events + StartExecution interleaved)
+  Bus-->>Exec: envelope (filtered in handler when type=StartExecution)
+  Exec->>Exec: guard state (still Scheduled & due?)
+  alt valid + not already Running/terminal
+    Exec->>Exec: transition→Running & perform call
+  else stale/canceled/rescheduled
+    Exec->>Exec: no-op (idempotent discard)
+  end
+  Exec->>Bus: ack
+  Bus->>NATS: ack
+```
+
+Implications: SubmitServiceCall is never delayed—persistence + domain events are immediate. StartExecution shares the same subject and is (optionally) scheduled; the execution worker inspects envelope.type to act only on StartExecution. Interleaving is acceptable at MVP; if pacing or clarity issues emerge we can split subjects (see evolution notes). Details on scheduling trade-offs deferred to [ADR-0003].
+
+#### C. Redelivery & DLQ
+
+Redelivery policy is handled natively by JetStream via consumer configuration; the application code only acks on success.
+
+Flow (concise):
+
+1. Exec pulls message (attempt=1).
+2. Handler runs under single-flight (per tenantId.serviceCallId).
+3. On success → explicit ack → message complete.
+4. On transient failure → do not ack (or negative ack with backoff) → broker schedules redelivery (attempt incremented) until MaxDeliver.
+5. On exceeding MaxDeliver (or detecting a fatal, non-retriable error) → publish original envelope (plus failure metadata) to `svc.<tenant>.dlq`.
+6. DLQ tooling (out of scope here) supports inspection, replay (republish to original subject), or discard.
+
+Key parameters (defaults to validate):
+
+- MaxDeliver: 3–5
+- Backoff: exponential (e.g., 1s, 5s, 25s) or broker jittered equivalent
+- Ack wait: sized to worst reasonable handler latency (e.g., 30s) to avoid premature redelivery
+- DLQ subject: `svc.<tenant>.dlq` (same stream for simplicity; revisit if volume or retention diverges)
+
+Idempotency & safety:
+
+- Handler must be idempotent; duplicates arise from redelivery after partial processing.
+- Envelope carries `messageId` (dedupe traces) and composite key for ordering.
+- No manual “retry counters” stored in DB unless diagnostics require; broker metadata (delivery count) is sufficient.
+
+Operational notes:
+
+- Emit metrics: redeliveries (per tenant), DLQ rate, age of oldest DLQ message.
+- Alert when DLQ rate or redelivery attempts/volume breaches baseline; triggers investigation or policy review.
+- Replay tool MUST strip prior failure metadata to avoid infinite poison loops unless corrected.
+
+Escalation path (future ADR if needed): introduce a parking subject before DLQ for manual triage if noisy transient failures inflate DLQ noise.
+
+#### D. Subject & Consumer Evolution (minimal pattern)
+
+MVP adopts the most minimal workable taxonomy:
+
+```
+svc.<tenant>.serviceCall   # all domain events + StartExecution (immediate or scheduled)
+svc.<tenant>.dlq           # dead letters (after MaxDeliver or fatal)
+```
+
+Rationale:
+
+- Keeps provisioning trivial: two subjects per active tenant.
+- Execution worker filters on `envelope.type == StartExecution` and ignores pure domain events.
+- Domain event consumers (future) can subscribe to the same subject and branch on type without new infrastructure.
+- Interleaving is acceptable because per-aggregate ordering is enforced by single-flight + DB state, not by separating subjects.
+
+Trade-offs (accepted for MVP):
+
+- Slight extra branching in execution consumer.
+- Harder to apply distinct retry/backoff policies between StartExecution and other events (not needed yet).
+- Observability dashboards must filter by event type dimension instead of subject name.
+
+Evolution triggers to split subjects (defer until one is true):
+
+1. Different retry/backoff policy needed for StartExecution vs lifecycle events.
+2. High volume of lifecycle events causing StartExecution latency (measured queueing delay > SLA).
+3. Need to restrict a consumer to ONLY domain events without payload inspection for performance/security reasons.
+
+First split path (if triggered):
+
+```
+svc.<tenant>.serviceCall.events
+svc.<tenant>.serviceCall.start
+svc.<tenant>.dlq
+```
+
+### Explanation Summary
+
+- Reduced Timer scope: native scheduling covers primary delay use cases; custom Timer only for extended horizons or high-volume SLA issues.
+- Ordering strategy: enforced by single-flight concurrency keyed on `tenantId.serviceCallId` plus subject naming; no partition tuning needed initially.
+- Multitenancy strategy: one stream reduces ops; DLQ per tenant provides isolation signal.
+- Evolution levers: add shard token OR per-tenant streams OR migrate broker — each isolated behind EventBusPort.
+- Operational focus: metrics on lag, redelivery attempts, DLQ rate; automation to provision stream + consumers with policy caps.
 
 ### Design Implications
 
