@@ -20,7 +20,6 @@ Raw ideas/tasks.
 
 - (PL-12) Decide persistence engine (SQLite vs Postgres) [adr: [ADR-0004]]
 - (PL-13) Choose broker adapter details for dev/prod parity [adr: [ADR-0002]]
-- (PL-19) Timer delegation strategy (custom vs broker delay) [adr: [ADR-0003]]
 - (PL-20) Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001]]
 - (PL-9) Observability baseline [adr: [ADR-0009]] [infra] — blocked by [adr: [ADR-0002]]
 
@@ -48,7 +47,7 @@ Prioritized queue.
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
-<!-- (empty — pull next item from Ready) -->
+- (PL-19) Timer delegation strategy (custom vs broker delay) [adr: [ADR-0003]] — drafting ADR-0003
 
 ## Blocked
 
@@ -58,6 +57,7 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-21) Correct NATS delay capability evaluation in ADR-0002 — PR merged
 - (PL-18) Choose broker family — Accepted [adr: [ADR-0002]]
 - (PL-17) Decide topology: modular monolith vs minimal services — Accepted [adr: [ADR-0001]]
 
@@ -65,9 +65,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: Gate 03 — Timer strategy (broker-native delay boundaries) + start PL-1 (contracts) & PL-2 (orchestration core).
-- Risk: unclear max reliable broker delay window; measure early to scope fallback Timer (PL-19).
-- Next: draft Timer decision (ADR-0003) and begin message/port ADTs.
+- Focus: Gate 03 — Drafting ADR-0003 (Timer strategy). Now that ADR-0002 corrections confirm all brokers require external Timer, defining Timer implementation approach (push-based setTimeout + MinHeap + DB persistence).
+- Context: NATS JetStream does NOT have native per-message delayed delivery. Timer service (~300 lines) is mandatory and broker-agnostic.
+- Next: Complete ADR-0003 draft covering Timer architecture, persistence strategy, accuracy guarantees, and failure recovery.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
