@@ -45,17 +45,18 @@ Prioritized queue.
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
-- (PL-19) Timer delegation strategy (custom vs broker delay) [adr: [ADR-0003]]
+- (PL-18) Choose broker family [adr: [ADR-0002]] — re-evaluating after discovering NATS lacks native per-message delay
+- (PL-19) Timer delegation strategy (custom vs broker delay) [adr: [ADR-0003]] — blocked by PL-18
 
 ## Blocked
 
 <!-- Item is waiting on something (decision, dependency). Note the blocker briefly. -->
 
 - (PL-9) Observability baseline [adr: [ADR-0009]] [infra] — blocked by [adr: [ADR-0002]]
+- (PL-19) Timer delegation strategy [adr: [ADR-0003]] — blocked by broker choice (PL-18)
 
 ## Done (recent)
 
-- (PL-18) Choose broker family — Accepted [adr: [ADR-0002]]
 - (PL-17) Decide topology: modular monolith vs minimal services — Accepted [adr: [ADR-0001]]
 - (PL-20) Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001]]
 
@@ -63,9 +64,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: (PL-19) Gate 03 — draft/refine ADR-0003: define broker delay SLA window, fallback Timer scope, replay semantics.
-- Risk: unknown max accurate delay horizon (JetStream) & volume impact; need empirical bounds before locking Timer design.
-- Next: capture assumptions in ADR-0003, then pull PL-1 (contracts) once draft is Proposed.
+- Focus: (PL-18) Gate 02 — re-evaluate broker choice after discovering NATS JetStream lacks native per-message delayed delivery.
+- Risk: incorrect assumption about JetStream native delay invalidates ADR-0002 scoring; need corrected evaluation before Gate 03 (Timer).
+- Next: correct ADR-0002 delayed-delivery scores for all brokers, reassess decision, then finalize Timer strategy in ADR-0003.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 

@@ -7,8 +7,9 @@ Purpose
 
 Current Focus
 
-- Gate 03 — Timer: finalize delegation boundaries (native delay vs fallback) per [ADR-0003].
-- Kickoff Milestone 1 (Contracts) & Milestone 2 (Orchestration core) now that broker family is chosen (Gate 02 complete).
+- Gate 02 — Broker: re-evaluate broker choice after discovering NATS JetStream lacks native per-message delayed delivery (affects ADR-0002 scoring).
+- Gate 03 — Timer: finalize delegation boundaries (native delay vs fallback) per [ADR-0003] once broker is chosen.
+- Milestone 1 (Contracts) & Milestone 2 (Orchestration core) remain on hold until Gate 02 is resolved.
 
 Principles
 
