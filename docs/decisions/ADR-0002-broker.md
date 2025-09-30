@@ -8,8 +8,9 @@ Status: Accepted
 - Decision: Adopt NATS JetStream as the message broker for MVP and near-term evolution.
 - Constraints: Modular Monolith; DB is source of truth; transactional outbox; identity keyed by `tenantId.serviceCallId`.
 - Key criteria (weighted): tenancy isolation (0.25), delayed delivery (0.25), ordering under load (0.20), dev ergonomics (0.15), ops footprint (0.10), retention/replay (0.05).
-- Alternatives considered: Kafka/Redpanda — excellent ordering/retention; lacks native delay (Timer complexity). RabbitMQ — workable delay via plugin; ordering best with single-consumer queues. NATS JetStream chosen for native delay, simple subject-based tenancy, lightweight ops, and strong developer ergonomics while still meeting ordering and at-least-once requirements.
-- What must be validated: ordering at load, delay accuracy, tenant isolation/noisy neighbor behavior, redelivery/DLQ flows, and local dev parity.
+- Corrected understanding: NATS JetStream does NOT support native per-message delayed delivery. All three broker options (Kafka/Redpanda, NATS JetStream, RabbitMQ) require external Timer service for scheduling.
+- Alternatives considered: Kafka/Redpanda — excellent ordering/retention but heavier ops footprint. RabbitMQ — delayed-exchange plugin (closest to native) but ordering constraints with single-consumer queues. NATS JetStream chosen for best developer experience, simplest operations, and clean subject-based multi-tenancy, with decision to build broker-agnostic Timer service (~300 lines) for architectural flexibility.
+- What must be validated: ordering at load, Timer service accuracy, tenant isolation/noisy neighbor behavior, redelivery/DLQ flows, and local dev parity.
 
 ## Non-goals
 
@@ -68,9 +69,9 @@ Additional Attributes: see Appendix for extended comparison dimensions.
 
 **Subject routing** (NATS):
 
-- **Strengths**: flexible routing via subjects/wildcards, simple multitenancy.
+- **Strengths**: flexible routing via subjects/wildcards, simple multitenancy, lightweight operations.
 - **Use cases**: command/event, service-to-service messaging, fine-grained filtering.
-- **Fit here**: easy per-tenant routes; native scheduled messages.
+- **Fit here**: easy per-tenant routes; requires external Timer service for delayed delivery.
 
 **Queues** (RabbitMQ):
 
@@ -219,21 +220,22 @@ For a diagrammed view, see Appendix (Kafka MVP→Scale).
 - **Tenancy**:
   - Shared: one stream with per-tenant subjects; consumers subscribe to `svc.<tenantId>.>`.
   - Namespaced: stream per tenant or account-level isolation; quotas via account limits.
-- **Delays**: native scheduled messages; simplifies Timer delegation.
+- **Delays**: no native per-message delayed delivery; requires external Timer service (same as Kafka).
 - **Dev/Ops**: lightweight; simple local setup; good client ergonomics.
 
 #### Trade-offs
 
 **Pros**:
 
-- Native delayed delivery;
+- Excellent developer ergonomics (SDK quality, documentation, local setup);
+- lightweight operational footprint (single binary, minimal resources);
 - easy multitenant routing via subjects;
-- strong dev UX
-- low ops overhead.
+- strong ordering semantics with subject-based sharding.
 
 **Cons**:
 
-- Stream/consumer management needs care at high tenant counts;
+- No native per-message delayed delivery (requires external Timer service, same as Kafka);
+- stream/consumer management needs care at high tenant counts;
 - different semantics than Kafka for long retention.
 
 #### Integration
@@ -246,7 +248,7 @@ See Appendix for detailed latency notes.
 
 #### Implications for This Project
 
-- Delays: use native scheduled messages to offload most `Timer` responsibilities.
+- **Delays**: NATS JetStream does NOT have native per-message delayed delivery. External Timer service is required to schedule wake-ups and publish messages at `dueAt` (same approach as Kafka).
 - Pacing: prefer pull consumers to propagate backpressure; optionally use push for reactive handlers.
 - Idempotent publish: set `Msg-Id` to envelope `messageId` to leverage JetStream dedupe window.
 - Tenancy: shared stream with per-tenant subjects at MVP; per-tenant DLQ via subject suffix (e.g., `.dlq`).
@@ -263,7 +265,7 @@ See Appendix for variants and alternative patterns.
   - Subject: `svc.<tenantId>.<aggregate>`
   - Consumer: durable, pull-based for pacing (one per worker group)
   - DLQ: subject `svc.<tenantId>.dlq`
-  - Delay: native scheduled publish with `dueAt`
+  - Delay: external Timer service publishes at `dueAt`
 - Scale-up path
   - Per-tenant stream when policies/retention must differ
   - Account-level isolation for stronger multi-tenancy controls and quotas
@@ -279,19 +281,19 @@ For a diagrammed view, see Appendix (NATS MVP→Scale).
 - Subjects: `svc.<tenantId>.<aggregate>`
 - Durable pull consumers, explicit acks; ack wait 5–30s depending on handler SLA
 - MaxDeliver 3–5 with exponential backoff; per-tenant DLQ subject `svc.<tenant>.dlq`
-- Scheduled publish for `dueAt`
+- Delay via external Timer service that publishes at `dueAt`
 
 #### Scoring
 
 | Criterion        | Weight | Score | Weighted |
 | ---------------- | :----: | :---: | -------: |
 | Tenancy          |  0.25  |   4   |     1.00 |
-| Delayed delivery |  0.25  |   5   |     1.25 |
+| Delayed delivery |  0.25  |   2   |     0.50 |
 | Ordering         |  0.20  |   4   |     0.80 |
 | Dev ergonomics   |  0.15  |   5   |     0.75 |
 | Ops footprint    |  0.10  |   5   |     0.50 |
 | Retention/replay |  0.05  |   3   |     0.15 |
-| Total            |        |       |     4.45 |
+| Total            |        |       |     3.70 |
 
 ---
 
@@ -398,8 +400,10 @@ Why not for MVP
 ### Scoring recap
 
 - Kafka/Redpanda: 3.40
-- NATS JetStream: 4.45
 - RabbitMQ (+ delayed-exchange): 3.70
+- NATS JetStream: 3.70
+
+**Corrected understanding:** All three broker options require external Timer service for delayed delivery. NATS JetStream does NOT have native per-message delayed delivery. RabbitMQ's delayed-exchange plugin scores higher (4/5) but introduces plugin dependency and ordering constraints.
 
 ### Acceptance checklist
 
@@ -415,21 +419,34 @@ Original criteria retained here for audit; superseded by post-decision validatio
 
 Adopt NATS JetStream for MVP and near-term evolution. Rationale:
 
-- Highest weighted score (4.45) driven by native delay, ergonomics, low ops footprint while still meeting ordering and tenancy needs.
-- Eliminates the need to build a full Timer service early; we rely on broker scheduling for `dueAt` messages, constraining ADR-0003 scope.
-- Subject schema (`svc.<tenantId>.<aggregate>`, `svc.<tenantId>.dlq`) gives clean multi-tenant routing without early stream proliferation.
-- Pull consumers plus in-worker single-flight preserve per-aggregate ordering with controlled concurrency.
-- Future escape hatch preserved: adapter boundary allows migration to Kafka/Redpanda if long retention or very high throughput becomes central.
+**Corrected evaluation:** Initial analysis incorrectly assumed NATS JetStream had native per-message delayed delivery. Investigation revealed this capability does NOT exist. All three broker options (Kafka, NATS, RabbitMQ) require an external Timer service for scheduling.
 
-Decision constraints & guardrails:
+**Decision with corrected scores (NATS 3.70, tied with RabbitMQ):**
 
+Since all brokers require Timer service (~300 lines), the choice prioritizes:
+
+- **Excellent developer ergonomics (5/5)**: Outstanding SDK quality, clear documentation, fastest local setup, intuitive subject-based routing.
+- **Lightweight operational footprint (5/5)**: Single binary, minimal resource usage, simple management, low cognitive overhead.
+- **Strong ordering semantics (4/5)**: Subject-based sharding with ordered consumers; worker single-flight pattern preserves per-aggregate order while allowing controlled concurrency.
+- **Solid multi-tenancy support (4/5)**: Subject wildcards enable clean per-tenant routing without infrastructure sprawl; account-level isolation path available for scale.
+- **Broker autonomy**: Building custom Timer (~300 lines) decouples from broker-specific delay implementations, enabling future broker migration with zero Timer changes.
+
+**Alternative considerations:**
+
+- RabbitMQ's delayed-exchange plugin (4/5 for delay) would eliminate Timer service code, but couples architecture to RabbitMQ and requires single-consumer-per-queue for strict ordering (limits throughput).
+- Kafka's partition ordering (5/5) is strongest, but operational footprint (2/5) and dev ergonomics (3/5) are heavier; retention/replay advantages (5/5) not critical when DB is source of truth.
+
+**Decision constraints & guardrails:**
+
+- Timer service must be built (~300 lines; broker-agnostic design per ADR-0003).
 - Avoid per-tenant streams until concrete retention/ACL divergence appears.
 - Enforce a bounded subject taxonomy to prevent cardinality explosion.
-- Periodically (quarterly) reassess delay accuracy and backlog metrics; if degradation > target SLA, revisit dedicated Timer service.
+- Preserve adapter boundary (`EventBusPort`) to enable future broker migration if needed.
+- Periodically (quarterly) reassess subject/consumer cardinality and backlog metrics; adjust isolation strategy as tenant count grows.
 
 ### Lifecycle Fit (business uncertainty)
 
-- MVP (unknown adoption): prioritize low ops, fast local loop, native delays, simple tenancy.
+- MVP (unknown adoption): prioritize low ops, fast local loop, external Timer service (~300 lines), simple tenancy.
 - MVP → Evolution: keep adapter-neutral routing strategy; add quotas/DLQs and namespacing as needed.
 - MVP → Scalability: shard by `tenantId.serviceCallId`; scale consumer groups; upgrade isolation (namespaced topics/streams/vhosts) when required.
 
@@ -437,7 +454,7 @@ Decision constraints & guardrails:
 
 - Domain cadence: one attempt, single writer; dueAt scheduling is more critical than ultra-high throughput.
 - Tenancy: strong per-tenant routing and quotas; avoid per-tenant infra sprawl at MVP.
-- Scheduling: native delayed delivery reduces Timer scope and accelerates MVP.
+- Scheduling: external Timer service (~300 lines) required for delayed delivery; broker-agnostic design enables future flexibility.
 - Storage: DB is source of truth; broker retention can remain modest; outbox ensures durability/order.
 - Developer velocity: local bring-up and SDK ergonomics are high leverage now.
 
@@ -447,8 +464,8 @@ Sensitivity notes moved to Appendix.
 
 ## Consequences
 
-- Timer scope reduced: rely on JetStream native delay for standard windows; build only a fallback or extension if SLA gaps emerge.
-- Implementation focus shifts to an EventBusPort adapter (publish, publishScheduled, pull subscription, ack semantics) and a routing strategy enforcing subject naming.
+- **Timer service mandatory:** External Timer service (~300 lines) required for all delayed delivery. Broker-agnostic design ensures future flexibility and decouples from broker-specific delay implementations. See [ADR-0003] for Timer strategy (push-based setTimeout + MinHeap + DB persistence).
+- Implementation focus shifts to an EventBusPort adapter (publish, pull subscription, ack semantics) and a routing strategy enforcing subject naming.
 - Observability emphasis: per-tenant lag, redeliveries, DLQ counts; need lightweight metrics wrapper early.
 - Risk of subject/consumer sprawl requires naming lint / provisioning automation.
 - Potential future migration path: keep domain envelopes and handler contracts broker-agnostic; avoid leaking JetStream-specific headers beyond adapter.
@@ -476,12 +493,15 @@ flowchart LR
       OutboxDisp -->|publish| EventBus[[EventBusPort]]
     end
 
+    subgraph TimerLayer
+      Timer[Timer Service] -->|consume ScheduleTimer| EventBus
+      Timer -->|publish StartExecution @ dueAt| EventBus
+    end
+
     subgraph ExecutionLayer
       Exec[Execution Worker\npull single-flight] -->|pull| EventBus
       Exec -->|ack/nack| EventBus
     end
-
-    TimerFacade[Timer Facade] -->|schedule delay| EventBus
   end
 
   EventBus -->|NATS| NATS[(JetStream\nstream: svc)]
@@ -493,7 +513,7 @@ flowchart LR
   class NATS,DLQTool ext;
 ```
 
-Key implications: single shared stream `svc`; no per-tenant streams; Timer minimized.
+Key implications: single shared stream `svc`; no per-tenant streams; Timer service is mandatory for delayed delivery (broker-agnostic design). Timer implementation details in [ADR-0003].
 
 #### B. Submit → (Optional Delay) → Execute Sequence
 
@@ -506,6 +526,7 @@ sequenceDiagram
   participant DB as DB+Outbox
   participant Outbox as OutboxDisp
   participant Bus as EventBusPort
+  participant Timer as Timer Service
   participant NATS as JetStream
   participant Exec as ExecWorker
 
@@ -515,9 +536,14 @@ sequenceDiagram
   DB-->>Orchestr: commit ok
   Outbox->>Bus: publish svc.<tenant>.serviceCall (ServiceCallSubmitted|ServiceCallScheduled)
   alt dueAt > now
-  Orchestr->>Bus: publishScheduled StartExecution(deliverAt=dueAt) to svc.<tenant>.serviceCall
+    Outbox->>Bus: publish ScheduleTimer(tenantId, serviceCallId, dueAt)
+    Bus->>Timer: deliver ScheduleTimer
+    Timer->>Timer: schedule wake-up
+    Timer->>Bus: ack
+    Note over Timer: At dueAt...
+    Timer->>Bus: publish StartExecution
   else dueAt <= now
-  Orchestr->>Bus: publish StartExecution(immediate) to svc.<tenant>.serviceCall
+    Outbox->>Bus: publish StartExecution(immediate)
   end
   Exec->>Bus: pull(1..N)
   Bus->>NATS: fetch
@@ -533,7 +559,9 @@ sequenceDiagram
   Bus->>NATS: ack
 ```
 
-Implications: SubmitServiceCall is never delayed—persistence + domain events are immediate. StartExecution shares the same subject and is (optionally) scheduled; the execution worker inspects envelope.type to act only on StartExecution. Interleaving is acceptable at MVP; if pacing or clarity issues emerge we can split subjects (see evolution notes). Details on scheduling trade-offs deferred to [ADR-0003].
+Implications: SubmitServiceCall is never delayed—persistence + domain events are immediate. When `dueAt > now`, Orchestration publishes ScheduleTimer command; Timer service schedules wake-up and publishes StartExecution at dueAt. StartExecution shares the same subject and the execution worker inspects envelope.type to act only on StartExecution. Interleaving is acceptable at MVP; if pacing or clarity issues emerge we can split subjects (see evolution notes).
+
+**Timer implementation:** Internal scheduling mechanism, persistence strategy, accuracy guarantees, and failure recovery are detailed in [ADR-0003].
 
 #### C. Redelivery & DLQ
 
@@ -607,7 +635,7 @@ svc.<tenant>.dlq
 
 ### Explanation Summary
 
-- Reduced Timer scope: native scheduling covers primary delay use cases; custom Timer only for extended horizons or high-volume SLA issues.
+- **Timer service mandatory:** External Timer service required for all delayed delivery. Broker-agnostic design ensures future flexibility and decouples from broker-specific delay implementations. Implementation details, persistence strategy, and accuracy guarantees detailed in [ADR-0003].
 - Ordering strategy: enforced by single-flight concurrency keyed on `tenantId.serviceCallId` plus subject naming; no partition tuning needed initially.
 - Multitenancy strategy: one stream reduces ops; DLQ per tenant provides isolation signal.
 - Evolution levers: add shard token OR per-tenant streams OR migrate broker — each isolated behind EventBusPort.
@@ -615,13 +643,13 @@ svc.<tenant>.dlq
 
 ### Design Implications
 
-- EventBusPort shape: expose a neutral API that supports both push and pull consumption semantics with explicit ack/commit, plus schedule/publish for delayed delivery when available.
-- Envelope headers: include `tenantId`, `serviceCallId`, `messageId`, and `correlationId`; optionally `dueAt` for scheduling; standardize header keys per adapter.
+- EventBusPort shape: expose a neutral API that supports both push and pull consumption semantics with explicit ack/commit, plus publish for messages; Timer service handles delayed delivery separately via ScheduleTimer command.
+- Envelope headers: include `tenantId`, `serviceCallId`, `messageId`, and `correlationId`; standardize header keys per adapter.
 - Idempotency: consumers are idempotent keyed by `messageId`; outbox ensures publish-after-commit; use broker-side dedupe where available as a best-effort assist.
 - Ordering enforcement: route by `tenantId.serviceCallId`; avoid patterns that break key→shard mapping; ensure single-writer invariants in Orchestration.
-- Timer interplay: if broker lacks native delay, `Timer` owns scheduling; if present, provide a thin adapter that delegates scheduling to the broker.
+- Timer decoupling: Timer service owns all scheduling; broker only provides pub/sub transport. Timer interface: ScheduleTimer command → StartExecution event. See [ADR-0003] for implementation details.
 
-EventBusPort sketch retained conceptually (publish, publishScheduled, subscribePull/Push). Full interface lives in Appendix.
+EventBusPort sketch retained conceptually (publish, subscribePull/Push). Full interfaces live in Appendix.
 
 ### Operational Considerations
 
