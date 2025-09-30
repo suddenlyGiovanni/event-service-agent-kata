@@ -7,8 +7,9 @@ Purpose
 
 Current Focus
 
-- Gate 03 — Timer: finalize delegation boundaries (native delay vs fallback) per [ADR-0003].
-- Kickoff Milestone 1 (Contracts) & Milestone 2 (Orchestration core) now that broker family is chosen (Gate 02 complete).
+- Gate 03 — Timer: Drafting [ADR-0003] to define Timer service implementation strategy. After correcting ADR-0002, confirmed that NATS JetStream does NOT have native per-message delayed delivery. Timer service (~300 lines) is mandatory and broker-agnostic.
+- Defining Timer architecture: push-based setTimeout + MinHeap for in-memory scheduling, DB persistence for durability, accuracy guarantees, and failure recovery strategy.
+- Next: Complete ADR-0003 and begin Milestone 1 (Contracts) & Milestone 2 (Orchestration core).
 
 Principles
 
