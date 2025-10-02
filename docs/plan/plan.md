@@ -7,9 +7,9 @@ Purpose
 
 Current Focus
 
-- Gate 03 — Timer: Drafting [ADR-0003] to define Timer service implementation strategy. After correcting ADR-0002, confirmed that NATS JetStream does NOT have native per-message delayed delivery. Timer service (~300 lines) is mandatory and broker-agnostic.
-- Defining Timer architecture: push-based setTimeout + MinHeap for in-memory scheduling, DB persistence for durability, accuracy guarantees, and failure recovery strategy.
-- Next: Complete ADR-0003 and begin Milestone 1 (Contracts) & Milestone 2 (Orchestration core).
+- Milestone 1 — Contracts & Scaffolding: [ADR-0003] accepted (periodic polling, 5s interval, shared DB with strong boundaries, publish-then-update pattern). Timer will be broker-agnostic with SQLite persistence.
+- Defining message ADTs and port interfaces in TypeScript, aligned to `docs/design/messages.md` and `docs/design/ports.md`.
+- Next: Create contracts package structure with message types (ScheduleTimer, DueTimeReached, SubmitServiceCall, etc.) and port interfaces (EventBusPort, TimerPort, PersistencePort, etc.).
 
 Principles
 
