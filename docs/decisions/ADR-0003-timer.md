@@ -209,7 +209,7 @@ type TimerSchedule = {
 ```sql
 SELECT tenant_id, service_call_id, due_at, correlation_id
 FROM timer_schedules
-WHERE state = 'Scheduled' AND due_at <= NOW()
+WHERE state = 'Scheduled' AND due_at <= datetime('now')
 ORDER BY due_at ASC
 LIMIT 100;
 ```
