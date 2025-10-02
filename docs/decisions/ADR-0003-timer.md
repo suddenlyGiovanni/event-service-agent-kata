@@ -49,7 +49,7 @@ stateDiagram-v2
 
 ### Broker Landscape
 
-[ADR-0002] evaluated broker options and concluded **all brokers require external Timer service**. NATS JetStream chosen for MVP, but Timer must remain **broker-agnostic** for architectural flexibility.
+[ADR-0002: Broker Selection][ADR-0002] evaluated broker options and concluded **all brokers require external Timer service**. NATS JetStream chosen for MVP, but Timer must remain **broker-agnostic** for architectural flexibility.
 
 ### MVP Constraints
 
@@ -389,23 +389,6 @@ TIMER_BATCH_SIZE=100               # Max per poll
 TIMER_DB_PATH=./event_service.db
 TIMER_BROKER_URL=nats://localhost:4222
 ```
-
----
-
-### Where to Find More
-
-**Implementation Details**: See `ADR-0003-appendix-implementation.md`
-
-- State transition atomicity patterns
-- Transaction boundary decisions
-- Error handling strategies (3-tier)
-- Testing approach
-
-**Evolution Path**: See `ADR-0003-appendix-evolution.md`
-
-- Phases 2-5: Separate processes, leader election, separate service, tiered storage
-- Migration strategies for each phase
-- Detailed capacity planning
 
 ---
 
