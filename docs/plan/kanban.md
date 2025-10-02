@@ -47,8 +47,6 @@ Prioritized queue.
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
-- (PL-19) Timer delegation strategy (custom vs broker delay) [adr: [ADR-0003]] — drafting ADR-0003
-
 ## Blocked
 
 <!-- Item is waiting on something (decision, dependency). Note the blocker briefly. -->
@@ -57,6 +55,7 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-19) Timer delegation strategy (custom vs broker delay) — Accepted [adr: [ADR-0003]]
 - (PL-21) Correct NATS delay capability evaluation in ADR-0002 — PR merged
 - (PL-18) Choose broker family — Accepted [adr: [ADR-0002]]
 - (PL-17) Decide topology: modular monolith vs minimal services — Accepted [adr: [ADR-0001]]
@@ -65,9 +64,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: Gate 03 — Drafting ADR-0003 (Timer strategy). Now that ADR-0002 corrections confirm all brokers require external Timer, defining Timer implementation approach (push-based setTimeout + MinHeap + DB persistence).
-- Context: NATS JetStream does NOT have native per-message delayed delivery. Timer service (~300 lines) is mandatory and broker-agnostic.
-- Next: Complete ADR-0003 draft covering Timer architecture, persistence strategy, accuracy guarantees, and failure recovery.
+- Focus: Milestone 1 — Scaffolding contracts package. ADR-0003 (Timer strategy) accepted: periodic polling (5s), shared DB with strong boundaries, publish-then-update pattern.
+- Context: Timer will be broker-agnostic with SQLite persistence. Now starting implementation: define message ADTs and port interfaces aligned to design docs.
+- Next: Create contracts package structure, define message types (ScheduleTimer, DueTimeReached, etc.) and port interfaces (EventBusPort, TimerPort, etc.).
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
