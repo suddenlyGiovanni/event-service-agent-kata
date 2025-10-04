@@ -7,7 +7,7 @@ Purpose
 
 Current Focus
 
-- Milestone 1 — Contracts & Scaffolding: [ADR-0003] accepted (periodic polling, 5s interval, shared DB with strong boundaries, publish-then-update pattern). Timer will be broker-agnostic with SQLite persistence.
+- Milestone 1 — Contracts & Scaffolding: [ADR-0003] accepted (periodic polling, 5s interval, shared DB with strong boundaries, publish-then-update pattern). [ADR-0004] accepted (single shared database `event_service.db` with module-specific ports/adapters). Timer will be broker-agnostic with SQLite persistence.
 - Defining message ADTs and port interfaces in TypeScript, aligned to `docs/design/messages.md` and `docs/design/ports.md`.
 - Next: Create contracts package structure with message types (ScheduleTimer, DueTimeReached, SubmitServiceCall, etc.) and port interfaces (EventBusPort, TimerPort, PersistencePort, etc.).
 
@@ -53,7 +53,7 @@ Milestones (aligned to Gates)
 
 6. Persistence Adapter (MVP) [Gate 04 → 05 — [ADR-0004], [ADR-0005]]
 
-- Choose DB for MVP (Proposed: SQLite for local dev) with a simple schema reflecting the domain state and an outbox table.
+- Database structure decided ([ADR-0004] Accepted): single shared `event_service.db` with module-specific ports/adapters. Simple schema reflecting domain state and outbox table.
 - Implement `PersistencePort` guarded updates and basic list/detail queries (with filters: status, tags, date).
 - Acceptance: migrations applied; API can read; Orchestration writes transactional with outbox append.
 
