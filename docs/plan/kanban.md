@@ -44,8 +44,6 @@ Prioritized queue.
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
-- (PL-12) Decide persistence engine (SQLite vs Postgres) [adr: [ADR-0004]]
-
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
 ## Blocked
@@ -56,6 +54,7 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-12) Database structure decision (shared vs separate files) — Accepted [adr: [ADR-0004]]
 - (PL-19) Timer delegation strategy (custom vs broker delay) — Accepted [adr: [ADR-0003]]
 - (PL-21) Correct NATS delay capability evaluation in ADR-0002 — PR merged
 - (PL-18) Choose broker family — Accepted [adr: [ADR-0002]]
@@ -65,9 +64,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: PL-12 — Deciding persistence engine (SQLite vs Postgres). Need to evaluate MVP constraints, operational complexity, and migration path.
-- Context: ADR-0003 mentioned SQLite for Timer. Need to decide if this applies system-wide or if Postgres is better for production readiness.
-- Next: Create contracts package structure, define message types (ScheduleTimer, DueTimeReached, etc.) and port interfaces (EventBusPort, TimerPort, etc.).
+- Focus: ADR-0004 completed and accepted. Single shared database (`event_service.db`) with module-specific ports/adapters.
+- Next: Start implementation work — PL-1 (contracts package) or PL-6 (persistence adapter) are top candidates.
+- Context: Hexagonal architecture documented in `hexagonal-architecture-layers.md`. Repository pattern clarified (adapter == repository).
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
