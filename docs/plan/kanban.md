@@ -44,6 +44,8 @@ Prioritized queue.
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
+- (PL-22) Migrate from Node.js + pnpm to Bun runtime [infra]
+
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
 ## Blocked
@@ -64,9 +66,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: ADR-0004 completed and accepted. Single shared database (`event_service.db`) with module-specific ports/adapters.
-- Next: Start implementation work — PL-1 (contracts package) or PL-6 (persistence adapter) are top candidates.
-- Context: Hexagonal architecture documented in `hexagonal-architecture-layers.md`. Repository pattern clarified (adapter == repository).
+- Focus: PL-22 — Migrating to Bun runtime for native SQLite, faster tests, and zero-config TypeScript.
+- Rationale: Native `bun:sqlite` eliminates C++ binding complexity; faster test feedback for TDD workflow.
+- Next after migration: PL-1 (contracts package) to start implementation.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
