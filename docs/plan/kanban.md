@@ -18,7 +18,6 @@ Raw ideas/tasks.
     Keep this short.
 -->
 
-- (PL-12) Decide persistence engine (SQLite vs Postgres) [adr: [ADR-0004]]
 - (PL-13) Choose broker adapter details for dev/prod parity [adr: [ADR-0002]]
 - (PL-20) Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001]]
 - (PL-9) Observability baseline [adr: [ADR-0009]] [infra] — blocked by [adr: [ADR-0002]]
@@ -45,6 +44,8 @@ Prioritized queue.
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
+- (PL-12) Decide persistence engine (SQLite vs Postgres) [adr: [ADR-0004]]
+
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
 ## Blocked
@@ -64,8 +65,8 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: Milestone 1 — Scaffolding contracts package. ADR-0003 (Timer strategy) accepted: periodic polling (5s), shared DB with strong boundaries, publish-then-update pattern.
-- Context: Timer will be broker-agnostic with SQLite persistence. Now starting implementation: define message ADTs and port interfaces aligned to design docs.
+- Focus: PL-12 — Deciding persistence engine (SQLite vs Postgres). Need to evaluate MVP constraints, operational complexity, and migration path.
+- Context: ADR-0003 mentioned SQLite for Timer. Need to decide if this applies system-wide or if Postgres is better for production readiness.
 - Next: Create contracts package structure, define message types (ScheduleTimer, DueTimeReached, etc.) and port interfaces (EventBusPort, TimerPort, etc.).
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
