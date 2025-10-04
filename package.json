@@ -29,12 +29,12 @@
 		"packageManager": {
 			"name": "bun",
 			"onFail": "error",
-			"version": "~1.2.23"
+			"version": "^1.2.23"
 		},
 		"runtime": {
 			"name": "bun",
 			"onFail": "error",
-			"version": "1.2.23"
+			"version": "^1.2.23"
 		}
 	},
 	"license": "MIT",
