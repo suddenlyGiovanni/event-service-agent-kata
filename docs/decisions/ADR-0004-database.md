@@ -1,6 +1,6 @@
 # ADR-0004: Database Structure
 
-Status: Proposed
+Status: Accepted
 
 ## Problem
 
