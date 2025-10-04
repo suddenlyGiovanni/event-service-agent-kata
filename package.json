@@ -4,26 +4,43 @@
 		"name": "Giovanni Ravalico",
 		"url": "https://github.com/suddenlyGiovanni"
 	},
+	"catalogs": {
+		"lint": {
+			"@biomejs/biome": "2.2.5"
+		},
+		"types": {
+			"@total-typescript/ts-reset": "0.6.1",
+			"@types/bun": "1.2.23"
+		},
+		"typescript": {
+			"@tsconfig/bun": "1.0.8",
+			"@tsconfig/strictest": "2.0.6",
+			"typescript": "5.9.3"
+		}
+	},
 	"description": "Event-driven, multi-tenant service-call agent",
 	"devDependencies": {
 		"@biomejs/biome": "catalog:lint",
-		"@tsconfig/node-ts": "catalog:typescript",
-		"@tsconfig/node24": "catalog:typescript",
+		"@tsconfig/bun": "catalog:typescript",
 		"@tsconfig/strictest": "catalog:typescript",
 		"typescript": "catalog:typescript"
 	},
 	"devEngines": {
 		"packageManager": {
-			"name": "pnpm",
+			"name": "bun",
 			"onFail": "error",
-			"version": "~10"
+			"version": "1.2.23"
 		},
 		"runtime": {
-			"name": "node",
+			"name": "bun",
 			"onFail": "error",
-			"version": "~24"
+			"version": "1.2.23"
 		}
 	},
 	"license": "MIT",
-	"name": "event-service-agent"
+	"module": "index.ts",
+	"name": "event-service-agent",
+	"private": true,
+	"type": "module",
+	"workspaces": ["packages/*"]
 }
