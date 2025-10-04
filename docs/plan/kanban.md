@@ -30,7 +30,6 @@ Prioritized queue.
     Link ADRs like [adr: ADR-0001]; add tags like [infra] or [Api].
 -->
 
-- (PL-1) Scaffold `contracts` package with message and port types [contracts]
 - (PL-2) Orchestration core domain model and transitions [Orchestration]
 - (PL-3) Broker adapter implementation + local broker setup [infra]
 - (PL-4) Timer module with in-memory scheduler [Timer]
@@ -44,7 +43,7 @@ Prioritized queue.
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
-- (PL-22) Migrate from Node.js + pnpm to Bun runtime [infra]
+- (PL-1) Scaffold `contracts` package with message and port types [contracts]
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
@@ -56,6 +55,7 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-22) Migrate from Node.js + pnpm to Bun runtime [infra] — Runtime migration complete
 - (PL-12) Database structure decision (shared vs separate files) — Accepted [adr: [ADR-0004]]
 - (PL-19) Timer delegation strategy (custom vs broker delay) — Accepted [adr: [ADR-0003]]
 - (PL-21) Correct NATS delay capability evaluation in ADR-0002 — PR merged
@@ -66,9 +66,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: PL-22 — Migrating to Bun runtime for native SQLite, faster tests, and zero-config TypeScript.
-- Rationale: Native `bun:sqlite` eliminates C++ binding complexity; faster test feedback for TDD workflow.
-- Next after migration: PL-1 (contracts package) to start implementation.
+- Focus: PL-1 — Scaffolding contracts package with message ADTs and port interfaces.
+- Goal: Define typed messages (SubmitServiceCall, DueTimeReached, Execution\*, etc.) and ports (EventBusPort, TimerPort, PersistencePort, HttpClientPort) aligned to design docs.
+- Next: Once contracts are in place, implement Orchestration core (PL-2).
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
