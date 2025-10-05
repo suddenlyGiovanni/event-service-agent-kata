@@ -40,7 +40,13 @@ export class TimerEntry {
 	}
 
 	/** Transition: ScheduledTimer → ReachedTimer */
-	static readonly markReached: (entry: TimerEntry.ScheduledTimer, now: Iso8601DateTime) => TimerEntry.ReachedTimer
+	static markReached(entry: TimerEntry.ScheduledTimer, reachedAt: Iso8601DateTime): TimerEntry.ReachedTimer {
+		return {
+			...entry,
+			reachedAt,
+			state: 'Reached',
+		}
+	}
 
 	/** Query: Is this timer ready to fire? */
 	static readonly isDue: (entry: TimerEntry.ScheduledTimer, now: Iso8601DateTime) => boolean
