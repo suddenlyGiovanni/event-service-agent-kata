@@ -11,7 +11,7 @@ describe('TimerEntry', () => {
 	const nowEpoch = Date.now()
 	const ONE_MINUTE_MS = 60000
 
-	const createCommand = (dueAtMs: number): Message.ScheduleTimer => ({
+	const makeScheduleTimerCommand = (dueAtMs: number): Message.ScheduleTimer => ({
 		dueAt: Iso8601DateTime(new Date(dueAtMs).toISOString()),
 		serviceCallId,
 		tenantId,
@@ -24,38 +24,79 @@ describe('TimerEntry', () => {
 
 		it('creates a new schedule from ScheduleTimer command', () => {
 			// Arrange
-			const command = createCommand(dueAtMs)
+			const scheduleTimerCommand = makeScheduleTimerCommand(dueAtMs)
 
 			// Act
-			const timer = TimerEntry.make(command, now)
+			const scheduledTimer = TimerEntry.make(scheduleTimerCommand, now)
 
 			// Assert
-			expect(timer).toBeDefined()
-			expect(timer.state).toBe('Scheduled')
-			expect(timer.tenantId).toBe(command.tenantId)
-			expect(timer.serviceCallId).toBe(command.serviceCallId)
-			expect(timer.dueAt).toBe(command.dueAt)
-			expect(timer.registeredAt).toBe(now)
-			expect(timer.correlationId).toBeUndefined()
+			expect(scheduledTimer).toBeDefined()
+			expect(scheduledTimer.state).toBe('Scheduled')
+			expect(scheduledTimer.tenantId).toBe(scheduleTimerCommand.tenantId)
+			expect(scheduledTimer.serviceCallId).toBe(scheduleTimerCommand.serviceCallId)
+			expect(scheduledTimer.dueAt).toBe(scheduleTimerCommand.dueAt)
+			expect(scheduledTimer.registeredAt).toBe(now)
+			expect(scheduledTimer.correlationId).toBeUndefined()
 		})
 
 		it('preserves correlationId when provided', () => {
 			const correlationId = CorrelationId('corr-123')
 			// Arrange
-			const command = createCommand(dueAtMs)
+			const scheduleTimerCommand = makeScheduleTimerCommand(dueAtMs)
 
 			// Act
-			const timer = TimerEntry.make(command, now, correlationId)
+			const scheduledTimer = TimerEntry.make(scheduleTimerCommand, now, correlationId)
 
 			// Assert
-			expect(timer.correlationId).toBe(correlationId)
+			expect(scheduledTimer.correlationId).toBe(correlationId)
 		})
 	})
 
-	it.todo('has Scheduled state initially', () => {})
-	it.todo('transitions to Reached when marked', () => {})
-	it.todo('includes tenantId and serviceCallId as identity', () => {})
-	it.todo('stores dueAt timestamp', () => {})
-	it.todo('captures registeredAt on creation', () => {})
-	it.todo('stores correlationId for tracing', () => {})
+	describe('markReached', () => {
+		const dueAtMs = nowEpoch + ONE_MINUTE_MS
+		const scheduledNow = Iso8601DateTime(new Date(nowEpoch).toISOString())
+		const reachedNow = Iso8601DateTime(new Date(nowEpoch + ONE_MINUTE_MS).toISOString())
+		const correlationId = CorrelationId('corr-456')
+
+		it('transitions ScheduledTimer to ReachedTimer', () => {
+			// Arrange
+			const scheduledTimerCommand = makeScheduleTimerCommand(dueAtMs)
+			const scheduledTimer = TimerEntry.make(scheduledTimerCommand, scheduledNow)
+
+			// Act
+			const reachedTimer = TimerEntry.markReached(scheduledTimer, reachedNow)
+
+			// Assert
+			expect(reachedTimer.state).toBe('Reached')
+			expect(reachedTimer.reachedAt).toBe(reachedNow)
+		})
+
+		it('preserves all original timer fields', () => {
+			// Arrange
+			const scheduleTimerCommand = makeScheduleTimerCommand(dueAtMs)
+			const scheduledTimer = TimerEntry.make(scheduleTimerCommand, scheduledNow, correlationId)
+
+			// Act
+			const reachedTimer = TimerEntry.markReached(scheduledTimer, reachedNow)
+
+			// Assert
+			expect(reachedTimer.tenantId).toBe(scheduledTimer.tenantId)
+			expect(reachedTimer.serviceCallId).toBe(scheduledTimer.serviceCallId)
+			expect(reachedTimer.dueAt).toBe(scheduledTimer.dueAt)
+			expect(reachedTimer.registeredAt).toBe(scheduledTimer.registeredAt)
+			expect(reachedTimer.correlationId).toBe(correlationId)
+		})
+
+		it('returns a new immutable object', () => {
+			// Arrange
+			const scheduleTimerCommand = makeScheduleTimerCommand(dueAtMs)
+			const scheduledTimer = TimerEntry.make(scheduleTimerCommand, scheduledNow)
+
+			// Act
+			const reachedTimer = TimerEntry.markReached(scheduledTimer, reachedNow)
+
+			// Assert
+			expect(reachedTimer).not.toBe(scheduledTimer) // Different references (immutability)
+		})
+	})
 })
