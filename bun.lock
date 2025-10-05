@@ -10,8 +10,58 @@
         "typescript": "catalog:typescript",
       },
     },
+    "packages/adapters": {
+      "name": "@event-service-agent/adapters",
+      "version": "0.0.1",
+      "dependencies": {
+        "@event-service-agent/contracts": "workspace:*",
+      },
+    },
+    "packages/api": {
+      "name": "@event-service-agent/api",
+      "version": "0.0.1",
+      "dependencies": {
+        "@event-service-agent/contracts": "workspace:*",
+      },
+    },
+    "packages/contracts": {
+      "name": "@event-service-agent/contracts",
+      "version": "0.0.1",
+      "dependencies": {
+        "effect": "catalog:effect",
+      },
+    },
+    "packages/execution": {
+      "name": "@event-service-agent/execution",
+      "version": "0.0.1",
+      "dependencies": {
+        "@event-service-agent/contracts": "workspace:*",
+      },
+    },
+    "packages/orchestration": {
+      "name": "@event-service-agent/orchestration",
+      "version": "0.0.1",
+      "dependencies": {
+        "@event-service-agent/contracts": "workspace:*",
+      },
+    },
+    "packages/timer": {
+      "name": "@event-service-agent/timer",
+      "version": "0.0.1",
+      "dependencies": {
+        "@event-service-agent/contracts": "workspace:*",
+      },
+    },
+    "packages/ui": {
+      "name": "@event-service-agent/ui",
+      "version": "0.0.1",
+    },
   },
   "catalogs": {
+    "effect": {
+      "@effect/language-service": "0.41.1",
+      "effect": "3.18.2",
+    },
     "lint": {
       "@biomejs/biome": "2.2.5",
     },
@@ -44,9 +94,31 @@
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.2.5", "", { "os": "win32", "cpu": "x64" }, "sha512-F/jhuXCssPFAuciMhHKk00xnCAxJRS/pUzVfXYmOMUp//XW7mO6QeCjsjvnm8L4AO/dG2VOB0O+fJPiJ2uXtIw=="],
 
+    "@event-service-agent/adapters": ["@event-service-agent/adapters@workspace:packages/adapters"],
+
+    "@event-service-agent/api": ["@event-service-agent/api@workspace:packages/api"],
+
+    "@event-service-agent/contracts": ["@event-service-agent/contracts@workspace:packages/contracts"],
+
+    "@event-service-agent/execution": ["@event-service-agent/execution@workspace:packages/execution"],
+
+    "@event-service-agent/orchestration": ["@event-service-agent/orchestration@workspace:packages/orchestration"],
+
+    "@event-service-agent/timer": ["@event-service-agent/timer@workspace:packages/timer"],
+
+    "@event-service-agent/ui": ["@event-service-agent/ui@workspace:packages/ui"],
+
+    "@standard-schema/spec": ["@standard-schema/spec@1.0.0", "", {}, "sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA=="],
+
     "@tsconfig/bun": ["@tsconfig/bun@1.0.8", "", {}, "sha512-JlJaRaS4hBTypxtFe8WhnwV8blf0R+3yehLk8XuyxUYNx6VXsKCjACSCvOYEFUiqlhlBWxtYCn/zRlOb8BzBQg=="],
 
     "@tsconfig/strictest": ["@tsconfig/strictest@2.0.6", "", {}, "sha512-tPOhmDhIUcDjvpDDYyiUdssP84Eqm7n5KxJe5J3/g+s6xoDIPAf+SIn06dhw7VkhxIvLOnhDDrX7tsqMHNEhDg=="],
+
+    "effect": ["effect@3.18.2", "", { "dependencies": { "@standard-schema/spec": "^1.0.0", "fast-check": "^3.23.1" } }, "sha512-WWtrvydMwI4skxwgzISJLGTp3GUSiz9BZ6TzOj7GDsGPNV9sxUq1X31u+OF3JUWXG8ZT3ZuLyM8xSguP/hBFBg=="],
+
+    "fast-check": ["fast-check@3.23.2", "", { "dependencies": { "pure-rand": "^6.1.0" } }, "sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A=="],
+
+    "pure-rand": ["pure-rand@6.1.0", "", {}, "sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA=="],
 
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
   }

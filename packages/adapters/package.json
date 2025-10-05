@@ -1,0 +1,23 @@
+{
+	"dependencies": {
+		"@event-service-agent/contracts": "workspace:*"
+	},
+	"description": "Infrastructure adapters - Broker, persistence, HTTP client implementations",
+	"exports": {
+		".": "./src/index.ts",
+		"./broker": "./src/broker/index.ts",
+		"./clock": "./src/clock/index.ts",
+		"./http-client": "./src/http-client/index.ts",
+		"./persistence": "./src/persistence/index.ts"
+	},
+	"name": "@event-service-agent/adapters",
+	"private": true,
+	"scripts": {
+		"check": "biome check --write .",
+		"format": "biome format --write .",
+		"lint": "biome lint --write .",
+		"type-check": "tsc --noEmit"
+	},
+	"type": "module",
+	"version": "0.0.1"
+}
