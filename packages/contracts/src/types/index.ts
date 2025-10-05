@@ -2,6 +2,7 @@
  * Shared Types Exports
  */
 
+export type { Message, MessageEnvelope, MessageType } from './message-envelope.ts'
 export {
 	CorrelationId,
 	EnvelopeId,
