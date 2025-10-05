@@ -99,4 +99,29 @@ describe('TimerEntry', () => {
 			expect(reachedTimer).not.toBe(scheduledTimer) // Different references (immutability)
 		})
 	})
+
+	describe('isDue', () => {
+		const dueAtMs = nowEpoch + ONE_MINUTE_MS
+		const scheduledNow = Iso8601DateTime(new Date(nowEpoch).toISOString())
+		const scheduleTimerCommand = makeScheduleTimerCommand(dueAtMs)
+		const scheduledTimer = TimerEntry.make(scheduleTimerCommand, scheduledNow)
+
+		it('returns true when current time equals dueAt', () => {
+			const exactlyAtDueAt = Iso8601DateTime(new Date(dueAtMs).toISOString())
+
+			expect(TimerEntry.isDue(scheduledTimer, exactlyAtDueAt)).toBe(true)
+		})
+
+		it('returns true when current time is after dueAt', () => {
+			const afterDueAt = Iso8601DateTime(new Date(dueAtMs + 5_000).toISOString())
+
+			expect(TimerEntry.isDue(scheduledTimer, afterDueAt)).toBe(true)
+		})
+
+		it('returns false when current time is before dueAt', () => {
+			const beforeDueAt = Iso8601DateTime(new Date(dueAtMs - 5_000).toISOString())
+
+			expect(TimerEntry.isDue(scheduledTimer, beforeDueAt)).toBe(false)
+		})
+	})
 })
