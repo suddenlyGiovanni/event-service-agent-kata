@@ -142,7 +142,20 @@
 				"useAsConstAssertion": "error",
 				"useDefaultParameterLast": "error",
 				"useEnumInitializers": "error",
-				"useNamingConvention": "info",
+				"useNamingConvention": {
+					"level": "error",
+					"options": {
+						"conventions": [
+							{
+								"formats": ["camelCase", "PascalCase", "CONSTANT_CASE"],
+								"selector": {
+									"kind": "const",
+									"scope": "any"
+								}
+							}
+						]
+					}
+				},
 				"useNumberNamespace": "error",
 				"useSelfClosingElements": "error",
 				"useSingleVarDeclarator": "error"

@@ -24,7 +24,7 @@ export declare namespace TimerEntry {
 
 export class TimerEntry {
 	/** Factory: Command → ScheduledTimer */
-	static readonly create: (command: Message.ScheduleTimer, now: Iso8601DateTime) => TimerEntry.ScheduledTimer
+	static readonly make: (command: Message.ScheduleTimer, now: Iso8601DateTime) => TimerEntry.ScheduledTimer
 
 	/** Transition: ScheduledTimer → ReachedTimer */
 	static readonly markReached: (entry: TimerEntry.ScheduledTimer, now: Iso8601DateTime) => TimerEntry.ReachedTimer
