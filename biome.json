@@ -116,6 +116,7 @@
 				"recommended": true
 			},
 			"complexity": {
+				"noStaticOnlyClass": "off",
 				"recommended": true
 			},
 			"correctness": {
