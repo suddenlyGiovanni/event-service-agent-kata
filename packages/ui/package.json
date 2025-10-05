@@ -1,0 +1,18 @@
+{
+	"description": "User interface - SSR/SPA app for interacting with the service call API",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"name": "@event-service-agent/ui",
+	"private": true,
+	"scripts": {
+		"build": "bun build src/index.ts --outdir ./dist",
+		"check": "biome check --write .",
+		"dev": "bun --watch src/index.ts",
+		"format": "biome format --write .",
+		"lint": "biome lint --write .",
+		"type-check": "tsc --noEmit"
+	},
+	"type": "module",
+	"version": "0.0.1"
+}

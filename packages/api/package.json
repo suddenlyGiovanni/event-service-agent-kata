@@ -1,0 +1,20 @@
+{
+	"dependencies": {
+		"@event-service-agent/contracts": "workspace:*"
+	},
+	"description": "API edge - HTTP API for submitting and querying service calls",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"name": "@event-service-agent/api",
+	"private": true,
+	"scripts": {
+		"check": "biome check --write .",
+		"dev": "bun --watch src/index.ts",
+		"format": "biome format --write .",
+		"lint": "biome lint --write .",
+		"type-check": "tsc --noEmit"
+	},
+	"type": "module",
+	"version": "0.0.1"
+}

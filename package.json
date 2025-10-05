@@ -5,6 +5,10 @@
 		"url": "https://github.com/suddenlyGiovanni"
 	},
 	"catalogs": {
+		"effect": {
+			"@effect/language-service": "0.41.1",
+			"effect": "3.18.2"
+		},
 		"lint": {
 			"@biomejs/biome": "2.2.5"
 		},
@@ -41,6 +45,13 @@
 	"module": "index.ts",
 	"name": "event-service-agent",
 	"private": true,
+	"scripts": {
+		"check": "bun run --filter '*' check",
+		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
+		"format": "bun run --filter '*' format",
+		"lint": "bun run --filter '*' lint",
+		"type-check": "bun run --filter '*' type-check"
+	},
 	"type": "module",
 	"workspaces": ["packages/*"]
 }

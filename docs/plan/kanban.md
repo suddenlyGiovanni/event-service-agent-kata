@@ -30,9 +30,9 @@ Prioritized queue.
     Link ADRs like [adr: ADR-0001]; add tags like [infra] or [Api].
 -->
 
+- (PL-4) Timer module with in-memory scheduler [Timer]
 - (PL-2) Orchestration core domain model and transitions [Orchestration]
 - (PL-3) Broker adapter implementation + local broker setup [infra]
-- (PL-4) Timer module with in-memory scheduler [Timer]
 - (PL-5) Execution module with mock HttpClientPort [Execution]
 - (PL-6) Persistence adapter (SQLite) and migrations [infra]
 - (PL-7) API server with submit/list/detail routes [Api]
@@ -42,8 +42,6 @@ Prioritized queue.
 ## Doing (WIP ≤ 2)
 
 <!-- Only what you're actively working on. Move one item at a time. -->
-
-- (PL-1) Scaffold `contracts` package with message and port types [contracts]
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
@@ -55,6 +53,7 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-1) Scaffold `contracts` package with message and port types [contracts] — PR #17 merged: 5 branded types, 3 commands, 9 events, MessageEnvelope
 - (PL-22) Migrate from Node.js + pnpm to Bun runtime [infra] — Runtime migration complete
 - (PL-12) Database structure decision (shared vs separate files) — Accepted [adr: [ADR-0004]]
 - (PL-19) Timer delegation strategy (custom vs broker delay) — Accepted [adr: [ADR-0003]]
@@ -66,9 +65,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: PL-1 — Scaffolding contracts package with message ADTs and port interfaces.
-- Goal: Define typed messages (SubmitServiceCall, DueTimeReached, Execution\*, etc.) and ports (EventBusPort, TimerPort, PersistencePort, HttpClientPort) aligned to design docs.
-- Next: Once contracts are in place, implement Orchestration core (PL-2).
+- Focus: PL-1 ✅ COMPLETE — Contracts package scaffolded with branded types, command/event messages, and MessageEnvelope. PR #17 ready to merge (all Copilot feedback addressed).
+- Next: PL-4 — Timer module with in-memory scheduler (reprioritized per user preference). Will implement delay scheduling and DueTimeReached event emission per [ADR-0003].
+- Note: PR #17 review comments are all addressed; waiting for merge before starting PL-4.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
