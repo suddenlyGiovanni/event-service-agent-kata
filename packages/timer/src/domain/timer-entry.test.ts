@@ -11,12 +11,11 @@ describe('TimerEntry', () => {
 	const nowEpoch = Date.now()
 	const ONE_MINUTE_MS = 60000
 
-	const createCommand = (dueAtMs: number, correlationId?: string): Message.ScheduleTimer => ({
+	const createCommand = (dueAtMs: number): Message.ScheduleTimer => ({
 		dueAt: Iso8601DateTime(new Date(dueAtMs).toISOString()),
 		serviceCallId,
 		tenantId,
 		type: 'ScheduleTimer',
-		...(correlationId && { correlationId: CorrelationId(correlationId) }),
 	})
 
 	describe('make', () => {
@@ -41,14 +40,15 @@ describe('TimerEntry', () => {
 		})
 
 		it('preserves correlationId when provided', () => {
+			const correlationId = CorrelationId('corr-123')
 			// Arrange
-			const command = createCommand(dueAtMs, 'corr-123')
+			const command = createCommand(dueAtMs)
 
 			// Act
-			const timer = TimerEntry.make(command, now)
+			const timer = TimerEntry.make(command, now, correlationId)
 
 			// Assert
-			expect(timer.correlationId).toBe(CorrelationId('corr-123'))
+			expect(timer.correlationId).toBe(correlationId)
 		})
 	})
 

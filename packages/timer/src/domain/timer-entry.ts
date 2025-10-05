@@ -10,7 +10,7 @@ export declare namespace TimerEntry {
 		readonly serviceCallId: ServiceCallId
 		readonly dueAt: Iso8601DateTime
 		readonly registeredAt: Iso8601DateTime
-		readonly correlationId?: CorrelationId
+		readonly correlationId: undefined | CorrelationId
 	}
 
 	interface ScheduledTimer extends Timer<'Scheduled'> {}
@@ -24,7 +24,20 @@ export declare namespace TimerEntry {
 
 export class TimerEntry {
 	/** Factory: Command → ScheduledTimer */
-	static readonly make: (command: Message.ScheduleTimer, now: Iso8601DateTime) => TimerEntry.ScheduledTimer
+	static make(
+		command: Message.ScheduleTimer,
+		now: Iso8601DateTime,
+		correlationId?: CorrelationId,
+	): TimerEntry.ScheduledTimer {
+		return {
+			correlationId,
+			dueAt: command.dueAt,
+			registeredAt: now,
+			serviceCallId: command.serviceCallId,
+			state: 'Scheduled',
+			tenantId: command.tenantId,
+		}
+	}
 
 	/** Transition: ScheduledTimer → ReachedTimer */
 	static readonly markReached: (entry: TimerEntry.ScheduledTimer, now: Iso8601DateTime) => TimerEntry.ReachedTimer
