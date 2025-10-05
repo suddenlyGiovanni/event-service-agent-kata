@@ -1,5 +1,6 @@
 import type * as Message from '@event-service-agent/contracts/messages'
 import type { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+import * as DateTime from 'effect/DateTime'
 
 export declare namespace TimerEntry {
 	type State = 'Scheduled' | 'Reached'
@@ -49,5 +50,9 @@ export class TimerEntry {
 	}
 
 	/** Query: Is this timer ready to fire? */
-	static readonly isDue: (entry: TimerEntry.ScheduledTimer, now: Iso8601DateTime) => boolean
+	static isDue(entry: TimerEntry.ScheduledTimer, now: Iso8601DateTime): boolean {
+		const dueAt = DateTime.unsafeMake(entry.dueAt)
+		const nowDt = DateTime.unsafeMake(now)
+		return DateTime.greaterThanOrEqualTo(nowDt, dueAt)
+	}
 }

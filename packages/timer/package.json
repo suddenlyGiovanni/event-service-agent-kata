@@ -1,6 +1,7 @@
 {
 	"dependencies": {
-		"@event-service-agent/contracts": "workspace:*"
+		"@event-service-agent/contracts": "workspace:*",
+		"effect": "catalog:effect"
 	},
 	"description": "Timer module - Durable scheduling and DueTimeReached events",
 	"exports": {

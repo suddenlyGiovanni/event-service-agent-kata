@@ -53,6 +53,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@event-service-agent/contracts": "workspace:*",
+        "effect": "catalog:effect",
       },
     },
     "packages/ui": {
