@@ -30,7 +30,6 @@ Prioritized queue.
     Link ADRs like [adr: ADR-0001]; add tags like [infra] or [Api].
 -->
 
-- (PL-4) Timer module with in-memory scheduler [Timer]
 - (PL-2) Orchestration core domain model and transitions [Orchestration]
 - (PL-3) Broker adapter implementation + local broker setup [infra]
 - (PL-5) Execution module with mock HttpClientPort [Execution]
@@ -42,6 +41,8 @@ Prioritized queue.
 ## Doing (WIP ≤ 2)
 
 <!-- Only what you're actively working on. Move one item at a time. -->
+
+- (PL-4) Timer module with in-memory scheduler [Timer]
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
@@ -65,9 +66,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: PL-1 ✅ COMPLETE — Contracts package scaffolded with branded types, command/event messages, and MessageEnvelope. PR #17 ready to merge (all Copilot feedback addressed).
-- Next: PL-4 — Timer module with in-memory scheduler (reprioritized per user preference). Will implement delay scheduling and DueTimeReached event emission per [ADR-0003].
-- Note: PR #17 review comments are all addressed; waiting for merge before starting PL-4.
+- Focus: PL-4 🚀 IN PROGRESS — Timer module with periodic polling scheduler (5s interval) per [ADR-0003]. Implementing durable timer entries, Clock/EventBus ports, and DueTimeReached emission.
+- Approach: Simple polling loop `WHERE dueAt <= now`, broker-agnostic, SQLite persistence with `(tenantId, serviceCallId)` key.
+- Next steps: Create timer package structure, define TimerEntry model, implement scheduler loop with Effect.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
