@@ -41,6 +41,13 @@
 	"module": "index.ts",
 	"name": "event-service-agent",
 	"private": true,
+	"scripts": {
+		"check": "bun run --filter '*' check",
+		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
+		"format": "bun run --filter '*' format",
+		"lint": "bun run --filter '*' lint",
+		"type-check": "bun run --filter '*' type-check"
+	},
 	"type": "module",
 	"workspaces": ["packages/*"]
 }
