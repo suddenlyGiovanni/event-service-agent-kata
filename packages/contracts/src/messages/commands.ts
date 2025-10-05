@@ -5,29 +5,7 @@
  * Based on docs/design/messages.md
  */
 
-import type { Iso8601DateTime, ServiceCallId, TenantId } from '../types/shared.ts'
-
-/**
- * HTTP methods supported by the system
- */
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
-
-/**
- * RequestSpec - Specification for an HTTP request
- */
-export interface RequestSpec {
-	readonly method: HttpMethod
-	readonly url: string
-	readonly headers?: Record<string, string>
-	readonly body?: string
-}
-
-/**
- * RequestSpecWithoutBody - RequestSpec for logging/tracing without full body
- */
-export type RequestSpecWithoutBody = Omit<RequestSpec, 'body'> & {
-	readonly bodySnippet?: string
-}
+import type { Iso8601DateTime, RequestSpec, RequestSpecWithoutBody, ServiceCallId, TenantId } from '../types/index.ts'
 
 /**
  * SubmitServiceCall - Create and schedule a new ServiceCall

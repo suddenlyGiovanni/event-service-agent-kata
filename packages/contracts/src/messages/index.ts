@@ -4,8 +4,6 @@
 
 export type {
 	Command,
-	HttpMethod,
-	RequestSpec,
 	ScheduleTimer,
 	StartExecution,
 	SubmitServiceCall,
