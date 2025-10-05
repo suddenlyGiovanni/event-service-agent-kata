@@ -28,6 +28,10 @@ export interface SubmitServiceCall {
  *
  * Produced by: Orchestration
  * Consumed by: Execution
+ *
+ * Note: Uses RequestSpecWithoutBody for the command payload. The full request body
+ * is stored separately in the database and retrieved by the Execution module using
+ * the serviceCallId. This avoids transmitting large payloads in commands/events.
  */
 export interface StartExecution {
 	readonly type: 'StartExecution'

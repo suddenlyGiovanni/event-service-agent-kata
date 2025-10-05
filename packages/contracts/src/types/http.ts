@@ -25,7 +25,16 @@ export interface RequestSpec {
  *
  * Used in events and execution commands where the full body should not be
  * logged or transmitted. Instead, a bodySnippet can be included for debugging.
+ *
+ * ⚠️ WARNING: This type is ONLY for logging/tracing/debugging purposes.
+ * It MUST NOT be used for actual HTTP request execution, as the full body
+ * is not available and cannot be reconstructed from bodySnippet.
+ * If you need to execute a request, use RequestSpec instead.
  */
 export type RequestSpecWithoutBody = Omit<RequestSpec, 'body'> & {
+	/**
+	 * Optional snippet of the body for debugging/logging purposes.
+	 * This is NOT the full body and cannot be used for request execution.
+	 */
 	readonly bodySnippet?: string
 }
