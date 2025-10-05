@@ -6,7 +6,7 @@
  */
 
 import type { Iso8601DateTime, ServiceCallId, TenantId } from '../types/shared.ts'
-import type { RequestSpec } from './commands.ts'
+import type { RequestSpecWithoutBody } from './commands.ts'
 
 /**
  * ResponseMeta - Metadata about a successful HTTP response
@@ -38,7 +38,7 @@ export interface ServiceCallSubmitted {
 	readonly tenantId: TenantId
 	readonly serviceCallId: ServiceCallId
 	readonly name: string
-	readonly requestSpec: Omit<RequestSpec, 'body'> & { readonly bodySnippet?: string }
+	readonly requestSpec: RequestSpecWithoutBody
 	readonly submittedAt: Iso8601DateTime
 	readonly tags?: readonly string[]
 }

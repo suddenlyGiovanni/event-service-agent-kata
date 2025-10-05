@@ -23,6 +23,13 @@ export interface RequestSpec {
 }
 
 /**
+ * RequestSpecWithoutBody - RequestSpec for logging/tracing without full body
+ */
+export type RequestSpecWithoutBody = Omit<RequestSpec, 'body'> & {
+	readonly bodySnippet?: string
+}
+
+/**
  * SubmitServiceCall - Create and schedule a new ServiceCall
  *
  * Produced by: API
@@ -48,7 +55,7 @@ export interface StartExecution {
 	readonly type: 'StartExecution'
 	readonly tenantId: TenantId
 	readonly serviceCallId: ServiceCallId
-	readonly requestSpec: Omit<RequestSpec, 'body'> & { readonly bodySnippet?: string }
+	readonly requestSpec: RequestSpecWithoutBody
 }
 
 /**

@@ -6,7 +6,6 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./messages": "./src/messages/index.ts",
-		"./ports": "./src/ports/index.ts",
 		"./types": "./src/types/index.ts"
 	},
 	"name": "@event-service-agent/contracts",
