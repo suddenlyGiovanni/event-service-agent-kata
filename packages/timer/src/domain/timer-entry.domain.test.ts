@@ -5,7 +5,7 @@ import { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-
 import * as DateTime from 'effect/DateTime'
 import * as Option from 'effect/Option'
 
-import { TimerEntry } from './timer-entry.ts'
+import { TimerEntry } from './timer-entry.domain.ts'
 
 describe('TimerEntry', () => {
 	const tenantId = TenantId('tenant-123')
