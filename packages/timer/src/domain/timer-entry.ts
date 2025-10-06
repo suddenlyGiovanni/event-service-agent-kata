@@ -1,58 +1,91 @@
 import type * as Message from '@event-service-agent/contracts/messages'
-import type { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 import * as DateTime from 'effect/DateTime'
+import * as Option from 'effect/Option'
+import * as Schema from 'effect/Schema'
 
-export declare namespace TimerEntry {
-	type State = 'Scheduled' | 'Reached'
+const Timer = Schema.Struct({
+	correlationId: Schema.optionalWith(Schema.String.pipe(Schema.fromBrand(CorrelationId)), {
+		as: 'Option',
+		exact: true,
+	}),
+	dueAt: Schema.DateTimeUtc,
+	registeredAt: Schema.DateTimeUtc,
+	serviceCallId: Schema.String.pipe(Schema.fromBrand(ServiceCallId)),
+	tenantId: Schema.String.pipe(Schema.fromBrand(TenantId)),
+})
 
-	interface Timer<S extends State> {
-		readonly state: S
-		readonly tenantId: TenantId
-		readonly serviceCallId: ServiceCallId
-		readonly dueAt: Iso8601DateTime
-		readonly registeredAt: Iso8601DateTime
-		readonly correlationId: undefined | CorrelationId
-	}
+/**
+ * ScheduledTimer represents a timer that has been registered and is waiting to fire.
+ * State: Waiting for dueAt to be reached.
+ */
+class ScheduledTimer extends Schema.TaggedClass<ScheduledTimer>()('Scheduled', Timer) {}
 
-	interface ScheduledTimer extends Timer<'Scheduled'> {}
+/**
+ * ReachedTimer represents a timer that has fired.
+ * State: Timer reached its dueAt time and transitioned to reached state.
+ */
+class ReachedTimer extends Schema.TaggedClass<ReachedTimer>()('Reached', {
+	...Timer.fields,
+	reachedAt: Schema.DateTimeUtc,
+}) {}
 
-	interface ReachedTimer extends Timer<'Reached'> {
-		readonly reachedAt: Iso8601DateTime
-	}
+/** Schema for encoding/decoding TimerEntry unions (automatically discriminates by _tag) */
+const TimerEntrySchema = Schema.Union(ScheduledTimer, ReachedTimer)
 
-	type Any = ScheduledTimer | ReachedTimer
-}
+/**
+ * TimerEntry - Domain aggregate for timer state management
+ *
+ * Provides operations for creating, querying, and transitioning timer states.
+ * Usage:
+ * ```typescript
+ * import { TimerEntry } from './domain/timer-entry'
+ *
+ * const timer: TimerEntry.Type = TimerEntry.make(command, now)
+ * if (TimerEntry.isDue(timer, now)) {
+ *   const reached = TimerEntry.markReached(timer, now)
+ * }
+ * ```
+ */
+export const TimerEntry = {
+	/** Query: Checks if a timer is due to fire */
+	isDue: (entry: TimerEntry.ScheduledTimer, now: DateTime.Utc): boolean => DateTime.lessThanOrEqualTo(entry.dueAt, now),
 
-export class TimerEntry {
-	/** Factory: Command → ScheduledTimer */
-	static make(
-		command: Message.ScheduleTimer,
-		now: Iso8601DateTime,
-		correlationId?: CorrelationId,
-	): TimerEntry.ScheduledTimer {
-		return {
-			correlationId,
-			dueAt: command.dueAt,
+	/** Type guard: Checks if entry is a ReachedTimer */
+	isReached: (timerEntry: TimerEntry.Type): timerEntry is TimerEntry.ReachedTimer => timerEntry._tag === 'Reached',
+
+	/** Type guard: Checks if entry is a ScheduledTimer */
+	isScheduled: (timerEntry: TimerEntry.Type): timerEntry is TimerEntry.ScheduledTimer =>
+		timerEntry._tag === 'Scheduled',
+
+	/** Factory: Creates a ScheduledTimer from a ScheduleTimer command */
+	make: (command: Message.ScheduleTimer, now: DateTime.Utc, correlationId?: CorrelationId): TimerEntry.ScheduledTimer =>
+		new ScheduledTimer({
+			correlationId: Option.fromNullable(correlationId),
+			dueAt: DateTime.unsafeMake(command.dueAt), // Convert string → DateTime
 			registeredAt: now,
 			serviceCallId: command.serviceCallId,
-			state: 'Scheduled',
 			tenantId: command.tenantId,
-		}
-	}
+		}),
 
-	/** Transition: ScheduledTimer → ReachedTimer */
-	static markReached(entry: TimerEntry.ScheduledTimer, reachedAt: Iso8601DateTime): TimerEntry.ReachedTimer {
-		return {
-			...entry,
+	/** Command: Transitions a ScheduledTimer to ReachedTimer */
+	markReached: (timerEntry: TimerEntry.ScheduledTimer, reachedAt: DateTime.Utc): TimerEntry.ReachedTimer =>
+		new ReachedTimer({
+			correlationId: timerEntry.correlationId,
+			dueAt: timerEntry.dueAt,
 			reachedAt,
-			state: 'Reached',
-		}
-	}
+			registeredAt: timerEntry.registeredAt,
+			serviceCallId: timerEntry.serviceCallId,
+			tenantId: timerEntry.tenantId,
+		}),
+	/** Schema for encoding/decoding TimerEntry unions */
+	schema: TimerEntrySchema,
+} as const
 
-	/** Query: Is this timer ready to fire? */
-	static isDue(entry: TimerEntry.ScheduledTimer, now: Iso8601DateTime): boolean {
-		const dueAt = DateTime.unsafeMake(entry.dueAt)
-		const nowDt = DateTime.unsafeMake(now)
-		return DateTime.greaterThanOrEqualTo(nowDt, dueAt)
-	}
+export namespace TimerEntry {
+	/** Union type derived from schema - for pattern matching and type guards */
+	export type Type = typeof TimerEntrySchema.Type
+
+	export type ScheduledTimer = typeof ScheduledTimer.Type
+	export type ReachedTimer = typeof ReachedTimer.Type
 }
