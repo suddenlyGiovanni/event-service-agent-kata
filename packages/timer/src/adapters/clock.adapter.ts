@@ -10,51 +10,72 @@ import { ClockPort } from '../ports/clock.port.ts'
  * Live Layer providing the ClockPort backed by Effect's Clock service.
  *
  * Exposes a ClockPort implementation whose `now` function retrieves the current
- * time (in millis) from the Effect Clock service and converts it to a DateTime.
+ * time (in millis) from Clock.currentTimeMillis and converts it to DateTime.Utc.
  *
  * Layer signature:
- *   Input: Clock.Clock (required service dependency)
- *   Error: never (construction cannot fail)
- *   Output: ClockPort (domain-facing clock abstraction)
+ *   Layer<ClockPort, never, never>
+ *   - Requirements: none (Clock is a default service provided by Effect runtime)
+ *   - Error: never (construction cannot fail)
+ *   - Output: ClockPort (domain-facing clock abstraction)
  *
- * Notes:
- * - Uses `DateTime.unsafeMake` assuming upstream millisecond epoch is valid.
- * - Keeps effectful time acquisition abstract for testability/determinism.
+ * Implementation:
+ * - Uses Clock.currentTimeMillis directly (Effect<number, never, never>)
+ * - Clock service is automatically provided by Effect runtime
+ * - Converts millisecond epoch to DateTime.Utc via DateTime.unsafeMake
+ *
+ * Usage:
+ * ```typescript
+ * const program = Effect.gen(function* () {
+ *   const clock = yield* ClockPort
+ *   const now = yield* clock.now()
+ *   // now is DateTime.Utc
+ * }).pipe(Effect.provide(ClockPortLive))
+ * ```
  */
-export const ClockPortLive: Layer.Layer<ClockPort, never, Clock.Clock> = Layer.effect(
+export const ClockPortLive: Layer.Layer<ClockPort> = Layer.succeed(
 	ClockPort,
-	Clock.Clock.pipe(
-		Effect.map(clock =>
-			ClockPort.of({
-				now: () => Effect.map(clock.currentTimeMillis, DateTime.unsafeMake),
-			}),
-		),
-	),
+	ClockPort.of({
+		now: () => Effect.map(Clock.currentTimeMillis, DateTime.unsafeMake),
+	}),
 )
 
 /**
  * Test Layer providing the ClockPort backed by Effect's TestClock service.
  *
  * Exposes a ClockPort implementation whose `now` function retrieves the current
- * simulated time (in millis) from the TestClock and converts it to a DateTime.
+ * simulated time (in millis) from TestClock.currentTimeMillis and converts it to DateTime.Utc.
  *
  * Layer signature:
- *   Input: TestClock.TestClock (required test dependency)
- *   Error: never (construction cannot fail)
- *   Output: ClockPort (domain-facing clock abstraction)
+ *   Layer<ClockPort, never, never>
+ *   - Requirements: none (TestClock provided via TestContext.TestContext)
+ *   - Error: never (construction cannot fail)
+ *   - Output: ClockPort (domain-facing clock abstraction)
  *
- * Notes:
- * - Deterministic: advance or set time via TestClock utilities to drive scenarios.
- * - Uses `DateTime.unsafeMake` assuming provided millis are valid.
- * - Mirrors the live layer for parity while enabling controlled time in tests.
+ * Implementation:
+ * - Uses TestClock.currentTimeMillis directly (Effect<number, never, never> when TestContext provided)
+ * - TestClock must be provided via TestContext.TestContext layer in test setup
+ * - Converts millisecond epoch to DateTime.Utc via DateTime.unsafeMake
+ * - Enables deterministic time control via TestClock.adjust() and TestClock.setTime()
+ *
+ * Usage:
+ * ```typescript
+ * // Compose with TestContext to satisfy TestClock dependency
+ * const testLayer = Layer.provide(ClockPortTest, TestContext.TestContext)
+ *
+ * const program = Effect.gen(function* () {
+ *   const clock = yield* ClockPort
+ *   const time1 = yield* clock.now()
+ *
+ *   yield* TestClock.adjust('1 hour')  // Advance time
+ *
+ *   const time2 = yield* clock.now()
+ *   // time2 is exactly 1 hour after time1
+ * }).pipe(Effect.provide(testLayer))
+ * ```
  */
-export const ClockPortTest: Layer.Layer<ClockPort, never, TestClock.TestClock> = Layer.effect(
+export const ClockPortTest: Layer.Layer<ClockPort> = Layer.succeed(
 	ClockPort,
-	TestClock.TestClock.pipe(
-		Effect.map(testClock =>
-			ClockPort.of({
-				now: () => Effect.map(testClock.currentTimeMillis, DateTime.unsafeMake),
-			}),
-		),
-	),
+	ClockPort.of({
+		now: () => Effect.map(TestClock.currentTimeMillis, DateTime.unsafeMake),
+	}),
 )
