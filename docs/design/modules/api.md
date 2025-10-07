@@ -46,6 +46,36 @@ sequenceDiagram
   API-->>CLIENT: 200 OK list
 ```
 
+Identity & Context
+
+**IDs Generated:**
+
+- **CorrelationId** — Generated per request for tracing (UUID v7)
+- **ServiceCallId** — Accept from client (idempotency) OR generate if omitted (UUID v7)
+
+**IDs Validated:**
+
+- **TenantId** — From path parameter `:tenantId` (must be valid UUID v7)
+- **ServiceCallId** — From request body or query param (if provided, must be valid UUID v7)
+
+**Pattern:**
+
+```typescript
+// Entry point: validate and generate IDs
+const correlationId = Schema.make(CorrelationId)(crypto.randomUUID());
+
+const tenantId = yield * Schema.decode(TenantId)(req.params.tenantId); // Validate!
+
+const serviceCallId = req.body.serviceCallId
+  ? yield * Schema.decode(ServiceCallId)(req.body.serviceCallId) // Validate client ID
+  : Schema.make(ServiceCallId)(crypto.randomUUID()); // Generate server ID
+
+// Pass to domain via RequestContext
+const ctx = RequestContext({ tenantId, correlationId });
+```
+
+**Rationale:** API is the validation boundary. All external input must be validated before entering domain. See [ADR-0010][] for identity generation strategy.
+
 Inputs/Outputs Recap
 
 - Inputs: HTTP requests (submit, list, detail)
@@ -64,3 +94,4 @@ Messages
 [SubmitServiceCall]: ../messages.md#submitservicecall
 [EventBusPort]: ../ports.md#eventbusport
 [PersistencePort]: ../ports.md#persistenceport-domain-db
+[ADR-0010]: ../../decisions/ADR-0010-identity.md

@@ -10,6 +10,36 @@ Interfaces
 - Command in: [StartExecution] { tenantId, serviceCallId, requestSpec }
 - Ports: HttpClientPort, EventBus (publish), Clock
 
+Identity & Context
+
+**IDs Generated:**
+
+- **EnvelopeId** — Generated when publishing events (UUID v7)
+
+**IDs Received (from [StartExecution] command):**
+
+- **TenantId** — Multi-tenant partition key (via RequestContext)
+- **ServiceCallId** — Aggregate root identifier (via RequestContext)
+- **CorrelationId** — Request trace ID (via RequestContext)
+
+**Pattern:**
+
+```typescript
+// Receive IDs from command
+const { tenantId, serviceCallId, correlationId, requestSpec } = command;
+
+// Generate EnvelopeId when publishing events
+const envelopeId = Schema.make(EnvelopeId)(crypto.randomUUID());
+const envelope = MessageEnvelope({
+  envelopeId,
+  tenantId,
+  correlationId,
+  payload: ExecutionStarted({ serviceCallId, startedAt }),
+});
+```
+
+**Rationale:** Execution is stateless and doesn't own any aggregates. All IDs flow through from Orchestration via [StartExecution] command. Execution only generates EnvelopeId for broker deduplication. See [ADR-0010][] for identity generation strategy.
+
 Behavior
 
 -- On [StartExecution]:
@@ -124,3 +154,7 @@ Messages
 [ClockPort]: ../ports.md#clockport
 [EventBusPort]: ../ports.md#eventbusport
 [HttpClientPort]: ../ports.md#httpclientport
+
+<!-- ADRs -->
+
+[ADR-0010]: ../../decisions/ADR-0010-identity.md

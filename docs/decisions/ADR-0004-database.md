@@ -285,6 +285,7 @@ Logical boundaries (ports/adapters) make extraction mechanical.
 - [ADR-0003: Timer Strategy][ADR-0003] — Timer already committed to shared SQLite
 - [ADR-0005: Schema & Indexing][ADR-0005] — Multi-tenant schema applies to all modules
 - [ADR-0008: Outbox Pattern][ADR-0008] — Outbox table per module (or shared) for transactional append
+- [ADR-0010: Identity Generation][ADR-0010] — Database stores IDs but does NOT generate them (application-generated)
 
 ---
 
@@ -292,3 +293,4 @@ Logical boundaries (ports/adapters) make extraction mechanical.
 [ADR-0003]: ./ADR-0003-timer.md
 [ADR-0005]: ./ADR-0005-schema.md
 [ADR-0008]: ./ADR-0008-outbox.md
+[ADR-0010]: ./ADR-0010-identity.md
