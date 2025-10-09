@@ -16,9 +16,9 @@ import type { Iso8601DateTime, ServiceCallId, TenantId } from '#/types/shared.ts
  */
 export interface SubmitServiceCall {
 	readonly type: 'SubmitServiceCall'
-	readonly tenantId: TenantId
+	readonly tenantId: TenantId.Type
 	readonly name: string
-	readonly dueAt: Iso8601DateTime
+	readonly dueAt: Iso8601DateTime.Type
 	readonly requestSpec: RequestSpec
 	readonly tags?: readonly string[]
 	readonly idempotencyKey?: string
@@ -36,8 +36,8 @@ export interface SubmitServiceCall {
  */
 export interface StartExecution {
 	readonly type: 'StartExecution'
-	readonly tenantId: TenantId
-	readonly serviceCallId: ServiceCallId
+	readonly tenantId: TenantId.Type
+	readonly serviceCallId: ServiceCallId.Type
 	readonly requestSpec: RequestSpecWithoutBody
 }
 
@@ -49,9 +49,9 @@ export interface StartExecution {
  */
 export interface ScheduleTimer {
 	readonly type: 'ScheduleTimer'
-	readonly tenantId: TenantId
-	readonly serviceCallId: ServiceCallId
-	readonly dueAt: Iso8601DateTime
+	readonly tenantId: TenantId.Type
+	readonly serviceCallId: ServiceCallId.Type
+	readonly dueAt: Iso8601DateTime.Type
 }
 
 /**

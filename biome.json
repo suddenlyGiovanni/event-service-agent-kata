@@ -117,7 +117,8 @@
 			},
 			"complexity": {
 				"noStaticOnlyClass": "off",
-				"recommended": true
+				"recommended": true,
+				"useLiteralKeys": "off"
 			},
 			"correctness": {
 				"recommended": true

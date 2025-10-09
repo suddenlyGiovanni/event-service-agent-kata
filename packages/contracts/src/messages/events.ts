@@ -35,11 +35,11 @@ export interface ErrorMeta {
  */
 export interface ServiceCallSubmitted {
 	readonly type: 'ServiceCallSubmitted'
-	readonly tenantId: TenantId
-	readonly serviceCallId: ServiceCallId
+	readonly tenantId: TenantId.Type
+	readonly serviceCallId: ServiceCallId.Type
 	readonly name: string
 	readonly requestSpec: RequestSpecWithoutBody
-	readonly submittedAt: Iso8601DateTime
+	readonly submittedAt: Iso8601DateTime.Type
 	readonly tags?: readonly string[]
 }
 
@@ -50,9 +50,9 @@ export interface ServiceCallSubmitted {
  */
 export interface ServiceCallScheduled {
 	readonly type: 'ServiceCallScheduled'
-	readonly tenantId: TenantId
-	readonly serviceCallId: ServiceCallId
-	readonly dueAt: Iso8601DateTime
+	readonly tenantId: TenantId.Type
+	readonly serviceCallId: ServiceCallId.Type
+	readonly dueAt: Iso8601DateTime.Type
 }
 
 /**
@@ -62,9 +62,9 @@ export interface ServiceCallScheduled {
  */
 export interface ServiceCallRunning {
 	readonly type: 'ServiceCallRunning'
-	readonly tenantId: TenantId
-	readonly serviceCallId: ServiceCallId
-	readonly startedAt: Iso8601DateTime
+	readonly tenantId: TenantId.Type
+	readonly serviceCallId: ServiceCallId.Type
+	readonly startedAt: Iso8601DateTime.Type
 }
 
 /**
@@ -74,9 +74,9 @@ export interface ServiceCallRunning {
  */
 export interface ServiceCallSucceeded {
 	readonly type: 'ServiceCallSucceeded'
-	readonly tenantId: TenantId
-	readonly serviceCallId: ServiceCallId
-	readonly finishedAt: Iso8601DateTime
+	readonly tenantId: TenantId.Type
+	readonly serviceCallId: ServiceCallId.Type
+	readonly finishedAt: Iso8601DateTime.Type
 	readonly responseMeta: ResponseMeta
 }
 
@@ -87,9 +87,9 @@ export interface ServiceCallSucceeded {
  */
 export interface ServiceCallFailed {
 	readonly type: 'ServiceCallFailed'
-	readonly tenantId: TenantId
-	readonly serviceCallId: ServiceCallId
-	readonly finishedAt: Iso8601DateTime
+	readonly tenantId: TenantId.Type
+	readonly serviceCallId: ServiceCallId.Type
+	readonly finishedAt: Iso8601DateTime.Type
 	readonly errorMeta: ErrorMeta
 }
 
@@ -101,9 +101,9 @@ export interface ServiceCallFailed {
  */
 export interface DueTimeReached {
 	readonly type: 'DueTimeReached'
-	readonly tenantId: TenantId
-	readonly serviceCallId: ServiceCallId
-	readonly reachedAt?: Iso8601DateTime
+	readonly tenantId: TenantId.Type
+	readonly serviceCallId: ServiceCallId.Type
+	readonly reachedAt?: Iso8601DateTime.Type
 }
 
 /**
@@ -114,9 +114,9 @@ export interface DueTimeReached {
  */
 export interface ExecutionStarted {
 	readonly type: 'ExecutionStarted'
-	readonly tenantId: TenantId
-	readonly serviceCallId: ServiceCallId
-	readonly startedAt: Iso8601DateTime
+	readonly tenantId: TenantId.Type
+	readonly serviceCallId: ServiceCallId.Type
+	readonly startedAt: Iso8601DateTime.Type
 }
 
 /**
@@ -127,9 +127,9 @@ export interface ExecutionStarted {
  */
 export interface ExecutionSucceeded {
 	readonly type: 'ExecutionSucceeded'
-	readonly tenantId: TenantId
-	readonly serviceCallId: ServiceCallId
-	readonly finishedAt: Iso8601DateTime
+	readonly tenantId: TenantId.Type
+	readonly serviceCallId: ServiceCallId.Type
+	readonly finishedAt: Iso8601DateTime.Type
 	readonly responseMeta: ResponseMeta
 }
 
@@ -141,9 +141,9 @@ export interface ExecutionSucceeded {
  */
 export interface ExecutionFailed {
 	readonly type: 'ExecutionFailed'
-	readonly tenantId: TenantId
-	readonly serviceCallId: ServiceCallId
-	readonly finishedAt: Iso8601DateTime
+	readonly tenantId: TenantId.Type
+	readonly serviceCallId: ServiceCallId.Type
+	readonly finishedAt: Iso8601DateTime.Type
 	readonly errorMeta: ErrorMeta
 }
 

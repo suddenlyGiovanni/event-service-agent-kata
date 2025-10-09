@@ -5,14 +5,14 @@ import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 
 const Timer = Schema.Struct({
-	correlationId: Schema.optionalWith(Schema.String.pipe(Schema.fromBrand(CorrelationId)), {
+	correlationId: Schema.optionalWith(CorrelationId, {
 		as: 'Option',
 		exact: true,
 	}),
 	dueAt: Schema.DateTimeUtc,
 	registeredAt: Schema.DateTimeUtc,
-	serviceCallId: Schema.String.pipe(Schema.fromBrand(ServiceCallId)),
-	tenantId: Schema.String.pipe(Schema.fromBrand(TenantId)),
+	serviceCallId: ServiceCallId,
+	tenantId: TenantId,
 })
 
 /**
@@ -59,7 +59,11 @@ export const TimerEntry = {
 		timerEntry._tag === 'Scheduled',
 
 	/** Factory: Creates a ScheduledTimer from a ScheduleTimer command */
-	make: (command: Message.ScheduleTimer, now: DateTime.Utc, correlationId?: CorrelationId): TimerEntry.ScheduledTimer =>
+	make: (
+		command: Message.ScheduleTimer,
+		now: DateTime.Utc,
+		correlationId?: CorrelationId.Type,
+	): TimerEntry.ScheduledTimer =>
 		new ScheduledTimer({
 			correlationId: Option.fromNullable(correlationId),
 			dueAt: DateTime.unsafeMake(command.dueAt), // Convert string → DateTime
