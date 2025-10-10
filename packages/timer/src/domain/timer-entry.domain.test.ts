@@ -13,7 +13,7 @@ describe('TimerEntry', () => {
 	const correlationId = CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
 
 	/** Helper to create command with ISO8601 string (simulating external message) */
-	const makeScheduleTimerCommand = (dueAtIso: Iso8601DateTime.Type): Message.ScheduleTimer => ({
+	const makeScheduleTimerCommand = (dueAtIso: Iso8601DateTime.Type): Message.Orchestration.Commands.ScheduleTimer => ({
 		dueAt: dueAtIso,
 		serviceCallId,
 		tenantId,

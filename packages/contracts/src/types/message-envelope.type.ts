@@ -5,15 +5,14 @@
  * Based on docs/design/ports.md
  */
 
-import type { Command } from '../messages/commands.ts'
-import type { Event } from '../messages/events.ts'
+import type { Messages } from '../messages/messages.ts'
 import type { CorrelationId, EnvelopeId, TenantId } from './shared.type.ts'
 
 export declare namespace Message {
 	/**
 	 * Message - Union of all commands and events in the system
 	 */
-	type Message = Command | Event
+	type Message = Messages
 
 	/**
 	 * Type - All possible message type discriminators

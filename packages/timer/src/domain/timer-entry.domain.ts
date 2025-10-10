@@ -60,7 +60,7 @@ export const TimerEntry = {
 
 	/** Factory: Creates a ScheduledTimer from a ScheduleTimer command */
 	make: (
-		command: Message.ScheduleTimer,
+		command: Message.Orchestration.Commands.ScheduleTimer,
 		now: DateTime.Utc,
 		correlationId?: CorrelationId.Type,
 	): TimerEntry.ScheduledTimer =>
