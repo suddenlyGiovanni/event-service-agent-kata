@@ -17,7 +17,7 @@
 			"@types/bun": "1.2.23"
 		},
 		"typescript": {
-			"@tsconfig/bun": "1.0.8",
+			"@tsconfig/bun": "1.0.9",
 			"@tsconfig/strictest": "2.0.6",
 			"typescript": "5.9.3"
 		}
