@@ -19,7 +19,7 @@
 		"typescript": {
 			"@tsconfig/bun": "1.0.9",
 			"@tsconfig/strictest": "2.0.6",
-			"typescript": "5.9.3"
+			"@typescript/native-preview": "^7.0.0-dev.20251011.1"
 		}
 	},
 	"description": "Event-driven, multi-tenant service-call agent",
@@ -27,7 +27,7 @@
 		"@biomejs/biome": "catalog:lint",
 		"@tsconfig/bun": "catalog:typescript",
 		"@tsconfig/strictest": "catalog:typescript",
-		"typescript": "catalog:typescript"
+		"@typescript/native-preview": "catalog:typescript"
 	},
 	"devEngines": {
 		"packageManager": {
