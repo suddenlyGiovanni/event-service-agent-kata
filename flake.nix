@@ -6,9 +6,18 @@
   outputs =
     { nixpkgs, ... }:
     let
+      systems = nixpkgs.lib.systems.flakeExposed;
+      overlays = [
+        (import ./nix/overlays_bun-1_3.nix)
+      ];
       forAllSystems =
         f:
-        nixpkgs.lib.genAttrs nixpkgs.lib.systems.flakeExposed (system: f nixpkgs.legacyPackages.${system});
+        nixpkgs.lib.genAttrs systems (system:
+          let
+            pkgs = import nixpkgs { inherit system overlays; };
+          in
+          f pkgs
+        );
     in
     {
       devShells = forAllSystems (pkgs: {
