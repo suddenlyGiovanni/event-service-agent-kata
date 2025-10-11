@@ -8,7 +8,7 @@
     let
       systems = nixpkgs.lib.systems.flakeExposed;
       overlays = [
-        (import ./overlays_bun-1_3.nix)
+        (import ./nix/overlays_bun-1_3.nix)
       ];
       forAllSystems =
         f:

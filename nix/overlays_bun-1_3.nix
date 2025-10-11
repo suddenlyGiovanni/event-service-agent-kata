@@ -11,8 +11,8 @@ let
 
   # Fill the SRI hash (sha256-...) for your system after the first attempt.
   hashes = {
-    # Example:
     aarch64-darwin = "sha256-hYSOP5ZIHvyr51pQD9O5S5u5VoaretCjiSl2x74VA2o=";
+    # add other systems here as needed
   };
 in {
   bun = prev.bun.overrideAttrs (old: {
