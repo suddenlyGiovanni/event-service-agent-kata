@@ -5,7 +5,8 @@
  * Based on docs/design/messages.md
  */
 
-import type { Iso8601DateTime, RequestSpec, RequestSpecWithoutBody, ServiceCallId, TenantId } from '../types/index.ts'
+import type { RequestSpec, RequestSpecWithoutBody } from '#/types/http.ts'
+import type { Iso8601DateTime, ServiceCallId, TenantId } from '#/types/shared.ts'
 
 /**
  * SubmitServiceCall - Create and schedule a new ServiceCall

@@ -42,7 +42,13 @@ Prioritized queue.
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
-- (PL-4) Timer module with in-memory scheduler [Timer]
+- [ ] (PL-4) Timer module with periodic polling [Timer] — Breakdown:
+  - [x] (PL-4.1) TimerEntry domain model + tests [Timer] — Effect Schema with TaggedClass, DateTime.Utc, all tests passing
+  - [ ] (PL-4.2) Port interfaces (Clock, EventBus, Persistence) [Timer]
+  - [ ] (PL-4.3) ScheduleTimer command handler + tests [Timer]
+  - [ ] (PL-4.4) Polling worker logic + tests [Timer]
+  - [ ] (PL-4.5) In-memory test adapters [Timer]
+  - [ ] (PL-4.6) SQLite persistence adapter [Timer]
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
@@ -66,9 +72,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: PL-4 🚀 IN PROGRESS — Timer module with periodic polling scheduler (5s interval) per [ADR-0003]. Implementing durable timer entries, Clock/EventBus ports, and DueTimeReached emission.
-- Approach: Simple polling loop `WHERE dueAt <= now`, broker-agnostic, SQLite persistence with `(tenantId, serviceCallId)` key.
-- Next steps: Create timer package structure, define TimerEntry model, implement scheduler loop with Effect.
+- Focus: PL-4 🚀 IN PROGRESS — Timer module implementation using TDD, inside-out approach per hexagonal architecture.
+- Strategy: Start with pure domain (TimerEntry), then ports (interfaces), then use cases (handlers), finally adapters (SQLite).
+- Current: PL-4.1 ✅ COMPLETE — TimerEntry domain model with Effect Schema complete, ready for PR. Next: PL-4.2 Port interfaces.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 

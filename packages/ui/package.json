@@ -11,7 +11,7 @@
 		"dev": "bun --watch src/index.ts",
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
-		"type-check": "tsc --noEmit"
+		"type-check": "tsgo --noEmit"
 	},
 	"type": "module",
 	"version": "0.0.1"
