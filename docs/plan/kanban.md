@@ -45,7 +45,7 @@ Prioritized queue.
 - [ ] (PL-4) Timer module with periodic polling [Timer] — Breakdown:
   - [x] (PL-4.1) TimerEntry domain model + tests [Timer] — Effect Schema with TaggedClass, DateTime.Utc, all tests passing
   - [x] (PL-4.2) Port interfaces (Clock, EventBus, Persistence) [Timer]
-  - [ ] (PL-4.3) ScheduleTimer command handler + tests [Timer]
+  - [o] (PL-4.3) ScheduleTimer command handler + tests [Timer]
   - [ ] (PL-4.4) Polling worker logic + tests [Timer]
   - [ ] (PL-4.5) In-memory test adapters [Timer]
   - [ ] (PL-4.6) SQLite persistence adapter [Timer]
