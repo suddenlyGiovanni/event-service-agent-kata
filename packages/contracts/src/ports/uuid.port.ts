@@ -11,7 +11,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/contracts/ports/
 		 * When the same timestamp is used multiple times, a monotonically increasing
 		 * counter is appended to allow sorting. The final 8 bytes are
 		 * cryptographically random. When the timestamp changes, the counter resets to
-		 * a psuedo-random integer.
+		 * a pseudo-random integer.
 		 *
 		 * @param timestamp Unix timestamp in milliseconds, defaults to `Date.now()`
 		 *
