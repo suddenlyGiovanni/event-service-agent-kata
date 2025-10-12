@@ -1,0 +1,34 @@
+/**
+ * Timer Module Ports
+ *
+ * Port interfaces that the Timer module depends on, following hexagonal
+ * architecture principles (dependency inversion).
+ *
+ * Ports defined here:
+ * - ClockPort: Time operations (current time)
+ * - TimerPersistencePort: Timer storage operations
+ *
+ * Ports reused from contracts:
+ * - EventBusPort: Message publishing/subscribing
+ *
+ * Usage in Timer module:
+ * - Command handlers depend on these ports
+ * - Polling worker depends on these ports
+ * - Adapters implement these interfaces (in-memory, SQLite, etc.)
+ */
+
+// Re-export EventBusPort from contracts for convenience
+export {
+	EventBusPort,
+	type EventBusPort as EventBusPortType,
+	PublishError,
+	SubscribeError,
+} from '@event-service-agent/contracts/ports'
+
+export { ClockPort, type ClockPort as ClockPortType } from './clock.port.ts'
+export {
+	PersistenceError,
+	TimerNotFoundError,
+	TimerPersistencePort,
+	type TimerPersistencePort as TimerPersistencePortType,
+} from './timer-persistence.port.ts'

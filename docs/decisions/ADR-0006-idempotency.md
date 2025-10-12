@@ -18,10 +18,18 @@ Options
 
 Decision (TBD)
 
-- Prefer Option 2 for clarity: store both `serviceCallId` (ULID) and `idempotencyKey` (optional) with unique `(tenantId, idempotencyKey)` when provided.
+- Prefer Option 2 for clarity: store both `serviceCallId` (UUID v7, see [ADR-0010][]) and `idempotencyKey` (optional) with unique `(tenantId, idempotencyKey)` when provided.
 - API returns 202 with Location on first submit; subsequent same-key returns 200/202 pointing to existing resource.
 - Orchestration enforces idempotent transitions; Outbox deduplicates via unique `(tenantId, aggregateId, seq)`.
+- **Identity generation:** ServiceCallId is application-generated (not DB-generated) to enable idempotency checks before insert. See [ADR-0010][] for full rationale.
 
 Consequences (TBD)
 
 - Clear external contract for idempotency; internal IDs remain stable; duplicates are cheap to detect.
+- Application-generated IDs enable immediate availability for logging, events, and outbox (no DB roundtrip needed).
+
+## Related Decisions
+
+- [ADR-0010: Identity Generation][ADR-0010] — ServiceCallId generation strategy and UUID v7 rationale
+
+[ADR-0010]: ./ADR-0010-identity.md

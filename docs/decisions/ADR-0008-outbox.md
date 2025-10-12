@@ -18,7 +18,15 @@ Options
 Decision (TBD)
 
 - Use transactional outbox for MVP. Dispatcher batches by `(tenantId, aggregateId)` order, publishes to broker, marks dispatched in the same transaction or with idempotent updates.
+- **Identity prerequisite:** Aggregate IDs (ServiceCallId) must be application-generated BEFORE DB insert to enable outbox pattern. Events in outbox reference ServiceCallId, which must exist at insert time. See [ADR-0010][] for identity generation strategy.
 
 Consequences (TBD)
 
 - Simple, portable, and fits MVP DBs. Later we can evolve to CDC if needed.
+- Application-generated IDs enable natural outbox pattern (no chicken-and-egg problem with DB-generated IDs).
+
+## Related Decisions
+
+- [ADR-0010: Identity Generation][ADR-0010] — Why IDs must be application-generated for outbox pattern
+
+[ADR-0010]: ./ADR-0010-identity.md

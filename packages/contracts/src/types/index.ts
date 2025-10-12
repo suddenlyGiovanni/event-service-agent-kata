@@ -6,8 +6,8 @@ export type {
 	HttpMethod,
 	RequestSpec,
 	RequestSpecWithoutBody,
-} from './http.ts'
-export type { Message, MessageEnvelope, MessageType } from './message-envelope.ts'
+} from './http.type.ts'
+export type { Message } from './message-envelope.type.ts'
 export {
 	CorrelationId,
 	EnvelopeId,
@@ -15,4 +15,4 @@ export {
 	type RequestContext,
 	ServiceCallId,
 	TenantId,
-} from './shared.ts'
+} from './shared.type.ts'

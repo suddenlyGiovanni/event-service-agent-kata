@@ -38,6 +38,40 @@ Policies
 - On outcomes: apply to drive terminal state.
 - Watchdog: if `status == Running` past timeout, mark Failed:Timeout.
 
+Identity & Context
+
+**IDs Generated:**
+
+- **ServiceCallId** — If not provided by API, generates UUID v7 (fallback, typically API provides)
+- **EnvelopeId** — Generated when publishing commands/events (UUID v7)
+
+**IDs Received:**
+
+- **TenantId** — From incoming [SubmitServiceCall] command (via RequestContext)
+- **ServiceCallId** — From incoming commands or self-generated
+- **CorrelationId** — From incoming commands (via RequestContext, pass-through to published events)
+
+**Pattern:**
+
+```typescript
+// Typical: ServiceCallId provided by API in SubmitServiceCall command
+const { tenantId, serviceCallId, correlationId } = command
+
+// Fallback: If command lacks ServiceCallId (shouldn't happen in practice)
+const finalServiceCallId = serviceCallId ?? Schema.make(ServiceCallId)(crypto.randomUUID())
+
+// When publishing events: generate EnvelopeId
+const envelopeId = Schema.make(EnvelopeId)(crypto.randomUUID())
+const envelope = MessageEnvelope({
+  envelopeId,
+  tenantId,
+  correlationId,
+  payload: ServiceCallSubmitted({ serviceCallId: finalServiceCallId, ... })
+})
+```
+
+**Rationale:** Orchestration is the aggregate owner (ServiceCall). It receives ServiceCallId from API (preferred) or generates if missing. All published messages include EnvelopeId for broker deduplication. See [ADR-0010][] for identity generation strategy.
+
 Ports
 
 - Persistence (domain DB read/write)
@@ -196,3 +230,7 @@ State access
 [ScheduleTimer]: ../messages.md#scheduletimer
 [StartExecution]: ../messages.md#startexecution
 [SubmitServiceCall]: ../messages.md#submitservicecall
+
+<!-- ADRs -->
+
+[ADR-0010]: ../../decisions/ADR-0010-identity.md

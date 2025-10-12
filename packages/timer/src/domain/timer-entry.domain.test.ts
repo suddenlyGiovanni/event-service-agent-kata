@@ -5,15 +5,15 @@ import { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-
 import * as DateTime from 'effect/DateTime'
 import * as Option from 'effect/Option'
 
-import { TimerEntry } from './timer-entry.ts'
+import { TimerEntry } from './timer-entry.domain.ts'
 
 describe('TimerEntry', () => {
-	const tenantId = TenantId('tenant-123')
-	const serviceCallId = ServiceCallId('service-456')
-	const correlationId = CorrelationId('corr-123')
+	const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
+	const serviceCallId = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
+	const correlationId = CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
 
 	/** Helper to create command with ISO8601 string (simulating external message) */
-	const makeScheduleTimerCommand = (dueAtIso: Iso8601DateTime): Message.ScheduleTimer => ({
+	const makeScheduleTimerCommand = (dueAtIso: Iso8601DateTime.Type): Message.Orchestration.Commands.ScheduleTimer => ({
 		dueAt: dueAtIso,
 		serviceCallId,
 		tenantId,
@@ -23,7 +23,7 @@ describe('TimerEntry', () => {
 	describe('make', () => {
 		const now = DateTime.unsafeNow()
 		const dueAt = DateTime.add(now, { minutes: 1 })
-		const dueAtIso = Iso8601DateTime(DateTime.formatIso(dueAt))
+		const dueAtIso = Iso8601DateTime.make(DateTime.formatIso(dueAt))
 
 		it('creates a new schedule from ScheduleTimer command', () => {
 			// Arrange
@@ -58,7 +58,7 @@ describe('TimerEntry', () => {
 	describe('markReached', () => {
 		const scheduledNow = DateTime.unsafeNow()
 		const dueAt = DateTime.add(scheduledNow, { minutes: 1 })
-		const dueAtIso = Iso8601DateTime(DateTime.formatIso(dueAt))
+		const dueAtIso = Iso8601DateTime.make(DateTime.formatIso(dueAt))
 		const reachedNow = DateTime.add(scheduledNow, { minutes: 1 })
 
 		it('transitions ScheduledTimer to ReachedTimer', () => {
@@ -107,7 +107,7 @@ describe('TimerEntry', () => {
 	describe('isDue', () => {
 		const scheduledNow = DateTime.unsafeNow()
 		const dueAt = DateTime.add(scheduledNow, { minutes: 1 })
-		const dueAtIso = Iso8601DateTime(DateTime.formatIso(dueAt))
+		const dueAtIso = Iso8601DateTime.make(DateTime.formatIso(dueAt))
 		const scheduleTimerCommand = makeScheduleTimerCommand(dueAtIso)
 		const scheduledTimer = TimerEntry.make(scheduleTimerCommand, scheduledNow)
 
