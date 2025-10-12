@@ -6,16 +6,17 @@ import { describe, expect, it } from 'bun:test'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 
-import { UUID7Regex, type UUID7 as UUID7Schema } from '#/types/uuid7.type.ts'
-
+import { UUID7Regex, type UUID7 as UUID7Schema } from '../types/uuid7.type.ts'
 import { UUID7 } from './uuid7.service.ts'
 
 describe('UUID7', () => {
 	describe('UUID7.Default', () => {
 		it('should generate valid UUID v7', async () =>
-			UUID7.pipe(
-				Effect.andThen(uuid => expect(uuid.randomUUIDv7()).toMatch(UUID7Regex)),
+			await UUID7.pipe(
+				Effect.andThen(uuid => uuid.randomUUIDv7()),
+				Effect.andThen(_uuidResult => expect(_uuidResult).toMatch(UUID7Regex)),
 				Effect.provide(UUID7.Default),
+				Effect.runPromise,
 			))
 
 		it('should generate unique UUIDs on multiple calls', async () => {
