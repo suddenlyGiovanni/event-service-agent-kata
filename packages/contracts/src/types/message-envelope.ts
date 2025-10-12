@@ -5,8 +5,9 @@
  * Based on docs/design/ports.md
  */
 
-import type { Command } from '../messages/commands.ts'
-import type { Event } from '../messages/events.ts'
+import type { Command } from '#/messages/commands.ts'
+import type { Event } from '#/messages/events.ts'
+
 import type { CorrelationId, EnvelopeId, TenantId } from './shared.ts'
 
 /**

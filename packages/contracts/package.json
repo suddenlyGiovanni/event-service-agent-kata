@@ -4,9 +4,14 @@
 	},
 	"description": "Message types and port interfaces for the event service agent",
 	"exports": {
-		".": "./src/index.ts",
+		"./adapters": "./src/adapters/index.ts",
 		"./messages": "./src/messages/index.ts",
+		"./ports": "./src/ports/index.ts",
+		"./services": "./src/services/index.ts",
 		"./types": "./src/types/index.ts"
+	},
+	"imports": {
+		"#/*": "./src/*"
 	},
 	"name": "@event-service-agent/contracts",
 	"private": true,
@@ -15,7 +20,7 @@
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
 		"test": "bun test",
-		"type-check": "tsc --noEmit"
+		"type-check": "tsgo --noEmit"
 	},
 	"type": "module",
 	"version": "0.0.1"

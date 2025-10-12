@@ -5,7 +5,8 @@
  * Based on docs/design/messages.md
  */
 
-import type { Iso8601DateTime, RequestSpecWithoutBody, ServiceCallId, TenantId } from '../types/index.ts'
+import type { RequestSpecWithoutBody } from '#/types/http.ts'
+import type { Iso8601DateTime, ServiceCallId, TenantId } from '#/types/shared.ts'
 
 /**
  * ResponseMeta - Metadata about a successful HTTP response

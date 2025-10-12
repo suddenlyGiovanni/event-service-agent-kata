@@ -1,11 +1,8 @@
 {
 	"compilerOptions": {
 		"exactOptionalPropertyTypes": true,
-		"plugins": [
-			{
-				"name": "@effect/language-service"
-			}
-		]
+		"plugins": [{ "name": "@effect/language-service" }],
+		"types": ["bun", "@total-typescript/ts-reset"]
 	},
 	"extends": ["@tsconfig/bun/tsconfig.json", "@tsconfig/strictest/tsconfig.json"]
 }
