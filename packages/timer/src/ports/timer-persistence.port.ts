@@ -87,7 +87,7 @@ export class TimerNotFoundError extends Data.TaggedError('TimerNotFoundError')<{
  * 	const dueTimers = yield* persistence.findDue(now)
  *
  * 	yield* Effect.forEach(dueTimers, timer =>
- * 		// this should be done in a done as a single transaction
+ * 		// this should be done as a single transaction
  * 		Effect.andThen(
  * 			// Publish DueTimeReached event
  * 			eventBus.publish(),
