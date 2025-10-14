@@ -122,7 +122,15 @@
 				"useLiteralKeys": "off"
 			},
 			"correctness": {
-				"recommended": true
+				"recommended": true,
+				"noUndeclaredDependencies": {
+					"options": {
+						"devDependencies": [
+							"**/*.test.ts",
+							"**/*.spec.ts"
+						]
+					}
+				}
 			},
 			"nursery": {
 				"noUnresolvedImports": "off",

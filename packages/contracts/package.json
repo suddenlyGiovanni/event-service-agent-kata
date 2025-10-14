@@ -2,6 +2,9 @@
 	"dependencies": {
 		"effect": "catalog:effect"
 	},
+	"devDependencies": {
+		"@effect/vitest": "catalog:test"
+	},
 	"description": "Message types and port interfaces for the event service agent",
 	"exports": {
 		"./adapters": "./src/adapters/index.ts",

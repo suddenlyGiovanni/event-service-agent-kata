@@ -41,6 +41,9 @@
       "dependencies": {
         "effect": "catalog:effect",
       },
+      "devDependencies": {
+        "@effect/vitest": "catalog:test",
+      },
     },
     "packages/execution": {
       "name": "@event-service-agent/execution",
