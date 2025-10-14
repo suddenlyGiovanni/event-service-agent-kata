@@ -3,8 +3,14 @@
 		"@event-service-agent/contracts": "workspace:*"
 	},
 	"description": "API edge - HTTP API for submitting and querying service calls",
+	"devDependencies": {
+		"@effect/vitest": "catalog:test"
+	},
 	"exports": {
 		".": "./src/index.ts"
+	},
+	"imports": {
+		"#/*": "./src/*"
 	},
 	"name": "@event-service-agent/api",
 	"private": true,
@@ -13,7 +19,8 @@
 		"dev": "bun --watch src/index.ts",
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
-		"type-check": "tsgo --noEmit"
+		"test": "bun --bun vitest",
+		"type-check": "tsc --noEmit"
 	},
 	"type": "module",
 	"version": "0.0.1"

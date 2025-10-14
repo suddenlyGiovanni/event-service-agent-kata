@@ -1,5 +1,5 @@
 [install]
-linker = "isolated" # Configure the default linker strategy. Default "hoisted".
+linker = "hoisted" # Configure the default linker strategy. Default "hoisted".
 optional = true # Whether to install optional dependencies. Default true.
 dev = true # Whether to install development dependencies. Default true.
 peer = true # Whether to install peer dependencies. Default true.

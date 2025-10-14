@@ -3,6 +3,9 @@
 		"@event-service-agent/contracts": "workspace:*"
 	},
 	"description": "Infrastructure adapters - Broker, persistence, HTTP client implementations",
+	"devDependencies": {
+		"@effect/vitest": "catalog:test"
+	},
 	"exports": {
 		".": "./src/index.ts",
 		"./broker": "./src/broker/index.ts",
@@ -10,13 +13,17 @@
 		"./http-client": "./src/http-client/index.ts",
 		"./persistence": "./src/persistence/index.ts"
 	},
+	"imports": {
+		"#/*": "./src/*"
+	},
 	"name": "@event-service-agent/adapters",
 	"private": true,
 	"scripts": {
 		"check": "biome check --write .",
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
-		"type-check": "tsgo --noEmit"
+		"test": "bun --bun vitest",
+		"type-check": "tsc --noEmit"
 	},
 	"type": "module",
 	"version": "0.0.1"

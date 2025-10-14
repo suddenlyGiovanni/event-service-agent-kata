@@ -15,13 +15,14 @@
  * Based on {@link ../../../../docs/design/modules/timer.md timer} and {@link ../../../../docs/decisions/ADR-0003-timer.md ADR-0003}
  */
 
-import type { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 import type * as Chunk from 'effect/Chunk'
 import * as Context from 'effect/Context'
 import * as Data from 'effect/Data'
 import type * as DateTime from 'effect/DateTime'
 import type * as Effect from 'effect/Effect'
 import type * as Option from 'effect/Option'
+
+import type { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
 import type { TimerEntry } from '#/domain/timer-entry.domain.ts'
 

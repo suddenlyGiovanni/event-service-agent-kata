@@ -4,7 +4,7 @@ import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as TestClock from 'effect/TestClock'
 
-import { ClockPort } from '../ports/clock.port.ts'
+import { ClockPort } from '#/ports/clock.port.ts'
 
 /**
  * Live Layer providing the ClockPort backed by Effect's Clock service.

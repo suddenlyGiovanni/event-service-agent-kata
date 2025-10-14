@@ -15,8 +15,9 @@
 							":BLANK_LINE:",
 							":BLANK_LINE:",
 							":PACKAGE_WITH_PROTOCOL:",
-							":PACKAGE:",
+							{ "source": [":PACKAGE:", "!@event-service-agent/**"] },
 							":BLANK_LINE:",
+							"@event-service-agent/**",
 							":BLANK_LINE:",
 							":ALIAS:",
 							"@repo/**",
@@ -121,7 +122,15 @@
 				"useLiteralKeys": "off"
 			},
 			"correctness": {
-				"recommended": true
+				"recommended": true,
+				"noUndeclaredDependencies": {
+					"options": {
+						"devDependencies": [
+							"**/*.test.ts",
+							"**/*.spec.ts"
+						]
+					}
+				}
 			},
 			"nursery": {
 				"noUnresolvedImports": "off",

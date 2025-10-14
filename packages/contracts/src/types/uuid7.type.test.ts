@@ -1,8 +1,7 @@
 /** biome-ignore-all lint/style/useNamingConvention: UUID7 follows Effect's convention for acronyms (UUID, ULID) */
 
-import { describe, expect, expectTypeOf, it } from 'bun:test'
-
 import * as Schema from 'effect/Schema'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import { UUID7 } from './uuid7.type.ts'
 

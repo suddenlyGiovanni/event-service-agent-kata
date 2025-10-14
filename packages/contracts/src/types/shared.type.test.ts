@@ -4,9 +4,8 @@
  * Validates Schema.brand implementation for entity IDs and shared datetime types.
  */
 
-import { describe, expect, test } from 'bun:test'
-
 import * as Schema from 'effect/Schema'
+import { describe, expect, test } from 'vitest'
 
 import { CorrelationId, EnvelopeId, Iso8601DateTime, ServiceCallId, TenantId } from './shared.type.ts'
 
