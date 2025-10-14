@@ -1,8 +1,9 @@
-import type * as Message from '@event-service-agent/contracts/messages'
-import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 import * as DateTime from 'effect/DateTime'
 import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
+
+import type * as Message from '@event-service-agent/contracts/messages'
+import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
 const Timer = Schema.Struct({
 	correlationId: Schema.optionalWith(CorrelationId, {

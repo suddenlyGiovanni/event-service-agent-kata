@@ -1,12 +1,12 @@
-import { describe, expect, it } from 'bun:test'
-
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as TestClock from 'effect/TestClock'
 import * as TestContext from 'effect/TestContext'
+import { describe, expect, it } from 'vitest'
 
-import { ClockPort } from '../ports/clock.port.ts'
+import { ClockPort } from '#/ports/clock.port.ts'
+
 import { ClockPortLive, ClockPortTest } from './clock.adapter.ts'
 
 describe('ClockPort Adapters', () => {

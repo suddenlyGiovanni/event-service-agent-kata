@@ -1,12 +1,12 @@
 /** biome-ignore-all lint/style/useNamingConvention: UUID7 follows Effect's convention for acronyms (UUID, ULID) */
 /** biome-ignore-all lint/style/noNonNullAssertion: UUID7Regex validates the match before accessing named capture groups */
 
-import { describe, expect, it } from 'bun:test'
-
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
+import { describe, expect, it } from 'vitest'
 
-import { UUID7Regex, type UUID7 as UUID7Schema } from '../types/uuid7.type.ts'
+import { UUID7Regex, type UUID7 as UUID7Schema } from '#/types/uuid7.type.ts'
+
 import { UUID7 } from './uuid7.service.ts'
 
 describe('UUID7', () => {
@@ -181,7 +181,7 @@ describe('UUID7', () => {
 				Effect.provide(UUID7.Test(invalidUuid)), // Inject test adapter with fixed UUID
 			)
 
-			expect(Effect.runPromise(program)).rejects.toThrow(
+			await expect(Effect.runPromise(program)).rejects.toThrow(
 				'Must be a valid UUID version 7 (format: xxxxxxxx-xxxx-7xxx-[89ab]xxx-xxxxxxxxxxxx)',
 			)
 		})

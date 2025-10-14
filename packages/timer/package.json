@@ -5,7 +5,9 @@
 	},
 	"description": "Timer module - Durable scheduling and DueTimeReached events",
 	"devDependencies": {
-		"typescript": "catalog:typescript"
+		"@effect/vitest": "catalog:test",
+		"typescript": "catalog:typescript",
+		"vitest": "catalog:test"
 	},
 	"exports": {
 		".": "./src/index.ts"

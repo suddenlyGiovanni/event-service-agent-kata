@@ -1,7 +1,9 @@
 {
 	"description": "User interface - SSR/SPA app for interacting with the service call API",
 	"devDependencies": {
-		"typescript": "catalog:typescript"
+		"@effect/vitest": "catalog:test",
+		"typescript": "catalog:typescript",
+		"vitest": "catalog:test"
 	},
 	"exports": {
 		".": "./src/index.ts"
@@ -17,6 +19,7 @@
 		"dev": "bun --watch src/index.ts",
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
+		"test": "bun --bun vitest",
 		"type-check": "tsc --noEmit"
 	},
 	"type": "module",

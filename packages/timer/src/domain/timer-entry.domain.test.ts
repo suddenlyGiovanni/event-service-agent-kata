@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'bun:test'
+import * as DateTime from 'effect/DateTime'
+import * as Option from 'effect/Option'
+import { describe, expect, it } from 'vitest'
 
 import type * as Message from '@event-service-agent/contracts/messages'
 import { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
-import * as DateTime from 'effect/DateTime'
-import * as Option from 'effect/Option'
 
 import { TimerEntry } from './timer-entry.domain.ts'
 

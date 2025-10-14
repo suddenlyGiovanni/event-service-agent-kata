@@ -5,7 +5,8 @@
  * Based on docs/design/ports.md
  */
 
-import type { Messages } from '../messages/messages.ts'
+import type { Messages } from '#/messages/messages.ts'
+
 import type { CorrelationId, EnvelopeId, TenantId } from './shared.type.ts'
 
 export declare namespace Message {

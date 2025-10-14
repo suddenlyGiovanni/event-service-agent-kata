@@ -12,6 +12,10 @@
 		"lint": {
 			"@biomejs/biome": "2.2.5"
 		},
+		"test": {
+			"@effect/vitest": "latest",
+			"vitest": "beta"
+		},
 		"types": {
 			"@total-typescript/ts-reset": "0.6.1",
 			"@types/bun": "latest"
@@ -26,11 +30,13 @@
 	"devDependencies": {
 		"@biomejs/biome": "catalog:lint",
 		"@effect/language-service": "catalog:effect",
+		"@effect/vitest": "catalog:test",
 		"@total-typescript/ts-reset": "catalog:types",
 		"@tsconfig/bun": "catalog:typescript",
 		"@tsconfig/strictest": "catalog:typescript",
 		"@types/bun": "catalog:types",
-		"typescript": "catalog:typescript"
+		"typescript": "catalog:typescript",
+		"vitest": "catalog:test"
 	},
 	"devEngines": {
 		"packageManager": {
@@ -53,8 +59,11 @@
 		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
 		"format": "bun run --workspaces format",
 		"lint": "bun run --workspaces lint",
+		"test": "bun --bun vitest",
 		"type-check": "bun run --workspaces type-check"
 	},
 	"type": "module",
-	"workspaces": ["packages/*"]
+	"workspaces": [
+		"packages/*"
+	]
 }
