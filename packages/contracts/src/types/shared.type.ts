@@ -120,7 +120,7 @@ export class Iso8601DateTime extends Schema.String.pipe(
 	}),
 	Schema.brand('Iso8601DateTime'),
 ) {
-	static decode: (value: string) => Effect.Effect<Iso8601DateTime.Type, ParseResult.ParseError, never> = value =>
+    static readonly decode: (value: string) => Effect.Effect<Iso8601DateTime.Type, ParseResult.ParseError, never> = value =>
 		Schema.decode(Iso8601DateTime)(value)
 
 	static readonly decodeEither: (value: string) => Either.Either<Iso8601DateTime.Type, ParseResult.ParseError> =
