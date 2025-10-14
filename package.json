@@ -6,7 +6,7 @@
 	},
 	"catalogs": {
 		"effect": {
-			"@effect/language-service": "0.41.1",
+			"@effect/language-service": "0.44.0",
 			"effect": "3.18.2"
 		},
 		"lint": {
@@ -19,7 +19,7 @@
 		"typescript": {
 			"@tsconfig/bun": "1.0.9",
 			"@tsconfig/strictest": "2.0.6",
-			"@typescript/native-preview": "^7.0.0-dev.20251011.1"
+			"typescript": "5.9.3"
 		}
 	},
 	"description": "Event-driven, multi-tenant service-call agent",
@@ -30,7 +30,7 @@
 		"@tsconfig/bun": "catalog:typescript",
 		"@tsconfig/strictest": "catalog:typescript",
 		"@types/bun": "catalog:types",
-		"@typescript/native-preview": "catalog:typescript"
+		"typescript": "catalog:typescript"
 	},
 	"devEngines": {
 		"packageManager": {
