@@ -23,8 +23,6 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
-        "typescript": "catalog:typescript",
-        "vitest": "catalog:test",
       },
     },
     "packages/api": {
@@ -35,8 +33,6 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
-        "typescript": "catalog:typescript",
-        "vitest": "catalog:test",
       },
     },
     "packages/contracts": {
@@ -44,9 +40,6 @@
       "version": "0.0.1",
       "dependencies": {
         "effect": "catalog:effect",
-      },
-      "devDependencies": {
-        "typescript": "catalog:typescript",
       },
     },
     "packages/execution": {
@@ -57,8 +50,6 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
-        "typescript": "catalog:typescript",
-        "vitest": "catalog:test",
       },
     },
     "packages/orchestration": {
@@ -69,8 +60,6 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
-        "typescript": "catalog:typescript",
-        "vitest": "catalog:test",
       },
     },
     "packages/timer": {
@@ -82,8 +71,6 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
-        "typescript": "catalog:typescript",
-        "vitest": "catalog:test",
       },
     },
     "packages/ui": {
@@ -91,8 +78,6 @@
       "version": "0.0.1",
       "devDependencies": {
         "@effect/vitest": "catalog:test",
-        "typescript": "catalog:typescript",
-        "vitest": "catalog:test",
       },
     },
   },

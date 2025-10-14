@@ -4,9 +4,7 @@
 	},
 	"description": "Infrastructure adapters - Broker, persistence, HTTP client implementations",
 	"devDependencies": {
-		"@effect/vitest": "catalog:test",
-		"typescript": "catalog:typescript",
-		"vitest": "catalog:test"
+		"@effect/vitest": "catalog:test"
 	},
 	"exports": {
 		".": "./src/index.ts",

@@ -3,9 +3,6 @@
 		"effect": "catalog:effect"
 	},
 	"description": "Message types and port interfaces for the event service agent",
-	"devDependencies": {
-		"typescript": "catalog:typescript"
-	},
 	"exports": {
 		"./adapters": "./src/adapters/index.ts",
 		"./messages": "./src/messages/index.ts",

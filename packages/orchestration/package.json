@@ -4,9 +4,7 @@
 	},
 	"description": "Orchestration core - ServiceCall aggregate and state transitions",
 	"devDependencies": {
-		"@effect/vitest": "catalog:test",
-		"typescript": "catalog:typescript",
-		"vitest": "catalog:test"
+		"@effect/vitest": "catalog:test"
 	},
 	"exports": {
 		".": "./src/index.ts"

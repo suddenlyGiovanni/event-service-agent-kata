@@ -1,9 +1,7 @@
 {
 	"description": "User interface - SSR/SPA app for interacting with the service call API",
 	"devDependencies": {
-		"@effect/vitest": "catalog:test",
-		"typescript": "catalog:typescript",
-		"vitest": "catalog:test"
+		"@effect/vitest": "catalog:test"
 	},
 	"exports": {
 		".": "./src/index.ts"

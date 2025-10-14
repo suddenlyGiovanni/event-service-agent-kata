@@ -4,9 +4,7 @@
 	},
 	"description": "API edge - HTTP API for submitting and querying service calls",
 	"devDependencies": {
-		"@effect/vitest": "catalog:test",
-		"typescript": "catalog:typescript",
-		"vitest": "catalog:test"
+		"@effect/vitest": "catalog:test"
 	},
 	"exports": {
 		".": "./src/index.ts"

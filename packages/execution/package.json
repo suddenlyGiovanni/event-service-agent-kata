@@ -4,9 +4,7 @@
 	},
 	"description": "Execution worker - HTTP request execution handler",
 	"devDependencies": {
-		"@effect/vitest": "catalog:test",
-		"typescript": "catalog:typescript",
-		"vitest": "catalog:test"
+		"@effect/vitest": "catalog:test"
 	},
 	"exports": {
 		".": "./src/index.ts"
