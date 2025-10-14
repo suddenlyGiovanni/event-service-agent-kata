@@ -67,7 +67,7 @@ export const TimerEntry = {
 	): TimerEntry.ScheduledTimer =>
 		new ScheduledTimer({
 			correlationId: Option.fromNullable(correlationId),
-			dueAt: DateTime.unsafeMake(command.dueAt), // Convert string → DateTime
+			dueAt: DateTime.unsafeMake<DateTime.Utc>(command.dueAt), // Convert string → DateTime
 			registeredAt: now,
 			serviceCallId: command.serviceCallId,
 			tenantId: command.tenantId,
