@@ -6,24 +6,16 @@
   outputs =
     { nixpkgs, ... }:
     let
-      systems = nixpkgs.lib.systems.flakeExposed;
-      overlays = [
-        (import ./nix/overlays_bun-1_3.nix)
-      ];
       forAllSystems =
         f:
-        nixpkgs.lib.genAttrs systems (system:
-          let
-            pkgs = import nixpkgs { inherit system overlays; };
-          in
-          f pkgs
-        );
+        nixpkgs.lib.genAttrs nixpkgs.lib.systems.flakeExposed (system: f nixpkgs.legacyPackages.${system});
     in
     {
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
           packages = with pkgs; [
             bun
+            biome
           ];
 
           # Show bun version each time direnv enters the shell
