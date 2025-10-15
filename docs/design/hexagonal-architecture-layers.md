@@ -7,11 +7,11 @@ This document explains how database, repositories, ports, adapters, and dependen
 ```mermaid
 graph TB
     subgraph "1. Domain Core (Inner Circle - Pure Business Logic)"
-        UC["Use Case:
+        WF["Workflow:
         SubmitServiceCall"]
         DM["Domain Model:
         ServiceCall aggregate"]
-        UC -->|uses| DM
+        WF -->|uses| DM
     end
 
     subgraph "2. Ports (Interfaces - Domain-Defined Contracts)"
@@ -19,7 +19,7 @@ graph TB
         interface defined by domain needs
         getServiceCall
         saveServiceCall"]
-        UC -->|"depends on (Dependency Inversion)"| PORT
+        WF -->|"depends on (Dependency Inversion)"| PORT
     end
 
     subgraph "3. Adapters (Implementations - Infrastructure)"
@@ -50,7 +50,7 @@ graph TB
         Effect.Layer
         new OrchestrationSqliteAdapter"]
         DI -.->|"provides"| ADAPTER
-        DI -.->|"injects into"| UC
+        DI -.->|"injects into"| WF
     end
 
     classDef domain fill:#e3f2fd,stroke:#1e88e5,stroke-width:3px
@@ -59,7 +59,7 @@ graph TB
     classDef infra fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
     classDef di fill:#fce4ec,stroke:#c2185b,stroke-width:2px
 
-    class UC,DM domain
+    class WF,DM domain
     class PORT port
     class ADAPTER adapter
     class SQL,DB infra
@@ -72,30 +72,30 @@ graph TB
 
 ### Layer 1: Domain Core (Business Logic)
 
-**What it is:** Pure business logic with no infrastructure dependencies.
+**What it is:** Pure business logic with no infrastructure dependencies. Includes domain models and workflows (application orchestration using DMMF patterns).
 
 **Example:**
 
 ```typescript
-// packages/orchestration/src/domain/use-cases/submit-service-call.ts
-export const submitServiceCall = (
+// packages/orchestration/src/workflows/submit-service-call.workflow.ts
+export const submitServiceCallWorkflow = (
   request: SubmitServiceCallRequest
 ): Effect<ServiceCall, ValidationError | PersistenceError> =>
   Effect.gen(function* (_) {
     // 1. Create domain entity
     const serviceCall = ServiceCall.create(request);
 
-    // 2. Domain depends on PORT (interface), NOT adapter
+    // 2. Workflow depends on PORT (interface), NOT adapter
     const port = yield* _(OrchestrationPersistencePort);
 
-    // 3. Save via port (domain doesn't know it's SQLite)
+    // 3. Save via port (workflow doesn't know it's SQLite)
     yield* _(port.saveServiceCall(serviceCall));
 
     return serviceCall;
   });
 ```
 
-**Key Point:** Domain knows WHAT it needs (persistence), not HOW it's implemented.
+**Key Point:** Workflows know WHAT they need (persistence), not HOW it's implemented. Workflows compose domain models with ports following Domain Modeling Made Functional (DMMF) principles.
 
 ---
 

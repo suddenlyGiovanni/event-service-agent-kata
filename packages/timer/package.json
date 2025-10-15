@@ -1,10 +1,17 @@
 {
 	"dependencies": {
-		"@event-service-agent/contracts": "workspace:*"
+		"@event-service-agent/contracts": "workspace:*",
+		"effect": "catalog:effect"
 	},
 	"description": "Timer module - Durable scheduling and DueTimeReached events",
+	"devDependencies": {
+		"@effect/vitest": "catalog:test"
+	},
 	"exports": {
 		".": "./src/index.ts"
+	},
+	"imports": {
+		"#/*": "./src/*"
 	},
 	"name": "@event-service-agent/timer",
 	"private": true,

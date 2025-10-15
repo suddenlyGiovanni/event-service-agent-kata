@@ -15,8 +15,9 @@
 							":BLANK_LINE:",
 							":BLANK_LINE:",
 							":PACKAGE_WITH_PROTOCOL:",
-							":PACKAGE:",
+							{ "source": [":PACKAGE:", "!@event-service-agent/**"] },
 							":BLANK_LINE:",
+							"@event-service-agent/**",
 							":BLANK_LINE:",
 							":ALIAS:",
 							"@repo/**",
@@ -116,10 +117,20 @@
 				"recommended": true
 			},
 			"complexity": {
-				"recommended": true
+				"noStaticOnlyClass": "off",
+				"recommended": true,
+				"useLiteralKeys": "off"
 			},
 			"correctness": {
-				"recommended": true
+				"recommended": true,
+				"noUndeclaredDependencies": {
+					"options": {
+						"devDependencies": [
+							"**/*.test.ts",
+							"**/*.spec.ts"
+						]
+					}
+				}
 			},
 			"nursery": {
 				"noUnresolvedImports": "off",
@@ -141,7 +152,20 @@
 				"useAsConstAssertion": "error",
 				"useDefaultParameterLast": "error",
 				"useEnumInitializers": "error",
-				"useNamingConvention": "info",
+				"useNamingConvention": {
+					"level": "error",
+					"options": {
+						"conventions": [
+							{
+								"formats": ["camelCase", "PascalCase", "CONSTANT_CASE"],
+								"selector": {
+									"kind": "const",
+									"scope": "any"
+								}
+							}
+						]
+					}
+				},
 				"useNumberNamespace": "error",
 				"useSelfClosingElements": "error",
 				"useSingleVarDeclarator": "error"

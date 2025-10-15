@@ -1,7 +1,13 @@
 {
 	"description": "User interface - SSR/SPA app for interacting with the service call API",
+	"devDependencies": {
+		"@effect/vitest": "catalog:test"
+	},
 	"exports": {
 		".": "./src/index.ts"
+	},
+	"imports": {
+		"#/*": "./src/*"
 	},
 	"name": "@event-service-agent/ui",
 	"private": true,
@@ -11,6 +17,7 @@
 		"dev": "bun --watch src/index.ts",
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
+		"test": "bun --bun vitest",
 		"type-check": "tsc --noEmit"
 	},
 	"type": "module",

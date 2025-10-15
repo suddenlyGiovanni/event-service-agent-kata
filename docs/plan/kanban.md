@@ -42,7 +42,13 @@ Prioritized queue.
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
-- (PL-4) Timer module with in-memory scheduler [Timer]
+- [ ] (PL-4) Timer module with periodic polling [Timer] — Breakdown:
+  - [x] (PL-4.1) TimerEntry domain model + tests [Timer] — Effect Schema with TaggedClass, DateTime.Utc, all tests passing
+  - [x] (PL-4.2) Port interfaces (Clock, EventBus, Persistence) [Timer]
+  - [x] (PL-4.3) ScheduleTimer workflow + tests [Timer]
+  - [ ] (PL-4.4) Polling worker workflow + tests [Timer]
+  - [ ] (PL-4.5) In-memory test adapters [Timer]
+  - [ ] (PL-4.6) SQLite persistence adapter [Timer]
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
@@ -54,21 +60,22 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-4.3) ScheduleTimer workflow + tests [Timer] — PR #25: scheduleTimerWorkflow with Effect.fn, 8/9 tests passing, TimerPersistence.inMemory adapter (Layer.effect + Ref + HashMap)
+- (PL-4.2) Port interfaces (Clock, EventBus, Persistence) [Timer] — PR #20 merged
+- (PL-4.1) TimerEntry domain model + tests [Timer] — PR #19 merged: Effect Schema with TaggedClass, DateTime.Utc, all tests passing
 - (PL-1) Scaffold `contracts` package with message and port types [contracts] — PR #17 merged: 5 branded types, 3 commands, 9 events, MessageEnvelope
 - (PL-22) Migrate from Node.js + pnpm to Bun runtime [infra] — Runtime migration complete
 - (PL-12) Database structure decision (shared vs separate files) — Accepted [adr: [ADR-0004]]
 - (PL-19) Timer delegation strategy (custom vs broker delay) — Accepted [adr: [ADR-0003]]
 - (PL-21) Correct NATS delay capability evaluation in ADR-0002 — PR merged
-- (PL-18) Choose broker family — Accepted [adr: [ADR-0002]]
-- (PL-17) Decide topology: modular monolith vs minimal services — Accepted [adr: [ADR-0001]]
 
 <!-- Keep last few wins visible. Archive older items by copying them to an Archive section/file if desired. -->
 
 ## Notes (today)
 
-- Focus: PL-4 🚀 IN PROGRESS — Timer module with periodic polling scheduler (5s interval) per [ADR-0003]. Implementing durable timer entries, Clock/EventBus ports, and DueTimeReached emission.
-- Approach: Simple polling loop `WHERE dueAt <= now`, broker-agnostic, SQLite persistence with `(tenantId, serviceCallId)` key.
-- Next steps: Create timer package structure, define TimerEntry model, implement scheduler loop with Effect.
+- Focus: PL-4 🚀 IN PROGRESS — Timer module implementation, TDD + hexagonal architecture patterns established.
+- Current: PL-4.3 ✅ COMPLETE (PR #25 ready) — scheduleTimerWorkflow with 8/9 tests passing, in-memory adapter (save/find), Effect patterns validated.
+- Next: PL-4.4 — Polling worker workflow. First: complete adapter methods (findDue, markFired, delete), then implement polling logic with TDD.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 

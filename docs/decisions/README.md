@@ -37,6 +37,7 @@ Core ADRs (canonical)
 - ADR-0007: [API HTTP Mapping][ADR-0007]
 - ADR-0008: [Outbox Pattern & Dispatcher][ADR-0008]
 - ADR-0009: [Observability Baseline][ADR-0009]
+- ADR-0010: [Identity Generation Strategy][ADR-0010]
 
 Gates Index
 
@@ -79,3 +80,4 @@ Links
 [ADR-0007]: ADR-0007-api.md
 [ADR-0008]: ADR-0008-outbox.md
 [ADR-0009]: ADR-0009-observability.md
+[ADR-0010]: ADR-0010-identity.md
