@@ -1,0 +1,30 @@
+name: Trigger CodeRabbit Full Review
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review'
+        required: true
+        default: '23'
+
+jobs:
+  trigger-review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Add comment to trigger CodeRabbit review
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ github.event.inputs.pr_number }};
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: '@coderabbitai full review'
+            });
+            console.log(`Triggered CodeRabbit full review for PR #${prNumber}`);
