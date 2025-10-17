@@ -47,7 +47,7 @@ Prioritized queue.
   - [x] (PL-4.2) Port interfaces (Clock, EventBus, Persistence) [Timer]
   - [x] (PL-4.3) ScheduleTimer workflow + tests [Timer]
   - [o] (PL-4.4) Polling worker workflow + tests [Timer]
-  - [ ] (PL-4.5) In-memory test adapters [Timer]
+  - [x] (PL-4.5) In-memory test adapters [Timer] — PR ready: Full state machine, 16/16 tests passing
   - [ ] (PL-4.6) SQLite persistence adapter [Timer]
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
@@ -60,6 +60,7 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-4.5) In-memory test adapters [Timer] — PR ready: Full state machine persistence (Scheduled → Reached), 16/16 tests passing, two-operation query model (findScheduledTimer/find), Effect.acquireRelease lifecycle, idempotency guarantees
 - (PL-4.3) ScheduleTimer workflow + tests [Timer] — PR #25: scheduleTimerWorkflow with Effect.fn, 8/9 tests passing, TimerPersistence.inMemory adapter (Layer.effect + Ref + HashMap)
 - (PL-4.2) Port interfaces (Clock, EventBus, Persistence) [Timer] — PR #20 merged
 - (PL-4.1) TimerEntry domain model + tests [Timer] — PR #19 merged: Effect Schema with TaggedClass, DateTime.Utc, all tests passing
@@ -74,8 +75,8 @@ Prioritized queue.
 ## Notes (today)
 
 - Focus: PL-4 🚀 IN PROGRESS — Timer module implementation, TDD + hexagonal architecture patterns established.
-- Current: PL-4.3 ✅ COMPLETE (PR #25 ready) — scheduleTimerWorkflow with 8/9 tests passing, in-memory adapter (save/find), Effect patterns validated.
-- Next: PL-4.4 — Polling worker workflow. First: complete adapter methods (findDue, markFired, delete), then implement polling logic with TDD.
+- Current: PL-4.5 ✅ COMPLETE (PR ready) — Full state machine persistence with idempotency, 16/16 tests passing, two-operation query model, Effect.acquireRelease lifecycle.
+- Next: PL-4.4 — Polling worker workflow. Implement pollDueTimersWorkflow using findDue + markFired with TDD.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
