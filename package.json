@@ -6,24 +6,24 @@
 	},
 	"catalogs": {
 		"effect": {
-			"@effect/language-service": "0.44.0",
-			"effect": "3.18.2"
+			"@effect/language-service": "latest",
+			"effect": "3.18.4"
 		},
 		"lint": {
-			"@biomejs/biome": "2.2.5"
+			"@biomejs/biome": "2.2.6"
 		},
 		"test": {
 			"@effect/vitest": "latest",
 			"vitest": "beta"
 		},
 		"types": {
-			"@total-typescript/ts-reset": "0.6.1",
+			"@total-typescript/ts-reset": "latest",
 			"@types/bun": "latest"
 		},
 		"typescript": {
-			"@tsconfig/bun": "1.0.9",
-			"@tsconfig/strictest": "2.0.6",
-			"typescript": "5.9.3"
+			"@tsconfig/bun": "latest",
+			"@tsconfig/strictest": "latest",
+			"typescript": "^5.9.3"
 		}
 	},
 	"description": "Event-driven, multi-tenant service-call agent",
