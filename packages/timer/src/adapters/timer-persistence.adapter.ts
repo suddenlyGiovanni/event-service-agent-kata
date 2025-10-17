@@ -114,7 +114,12 @@ export class TimerPersistence {
 			)
 
 			/**
-			 * Helper to generate storage key from tenantId + serviceCallId
+			 * Helper to generate storage key from tenantId + serviceCallId.
+			 *
+			 * Uses "/" as delimiter, which is safe because both IDs are UUID7 format
+			 * (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) and cannot contain "/".
+			 *
+			 * @invariant TenantId and ServiceCallId must not contain "/" character
 			 */
 			const makeKey = (tenantId: TenantId.Type, serviceCallId: ServiceCallId.Type): TimerEntryKey =>
 				`${tenantId}/${serviceCallId}`
