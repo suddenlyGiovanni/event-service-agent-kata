@@ -19,14 +19,18 @@ const Timer = Schema.Struct({
 /**
  * ScheduledTimer represents a timer that has been registered and is waiting to fire.
  * State: Waiting for dueAt to be reached.
+ *
+ * @internal - This class is not intended to be used directly.
  */
-class ScheduledTimer extends Schema.TaggedClass<ScheduledTimer>()('Scheduled', Timer) {}
+export class ScheduledTimer extends Schema.TaggedClass<ScheduledTimer>()('Scheduled', Timer) {}
 
 /**
  * ReachedTimer represents a timer that has fired.
  * State: Timer reached its dueAt time and transitioned to reached state.
+ *
+ * @internal - This class is not intended to be used directly.
  */
-class ReachedTimer extends Schema.TaggedClass<ReachedTimer>()('Reached', {
+export class ReachedTimer extends Schema.TaggedClass<ReachedTimer>()('Reached', {
 	...Timer.fields,
 	reachedAt: Schema.DateTimeUtc,
 }) {}
@@ -62,13 +66,13 @@ export const TimerEntry = {
 	/** Factory: Creates a ScheduledTimer from a ScheduleTimer command */
 	make: (
 		command: Message.Orchestration.Commands.ScheduleTimer,
-		now: DateTime.Utc,
+		registeredAt: DateTime.Utc,
 		correlationId?: CorrelationId.Type,
 	): TimerEntry.ScheduledTimer =>
 		new ScheduledTimer({
 			correlationId: Option.fromNullable(correlationId),
 			dueAt: DateTime.unsafeMake<DateTime.Utc>(command.dueAt), // Convert string → DateTime
-			registeredAt: now,
+			registeredAt,
 			serviceCallId: command.serviceCallId,
 			tenantId: command.tenantId,
 		}),
