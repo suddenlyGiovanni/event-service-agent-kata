@@ -1,8 +1,6 @@
 import * as DateTime from 'effect/DateTime'
-import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 
-import type * as Message from '@event-service-agent/contracts/messages'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
 const Timer = Schema.Struct({
@@ -19,14 +17,22 @@ const Timer = Schema.Struct({
 /**
  * ScheduledTimer represents a timer that has been registered and is waiting to fire.
  * State: Waiting for dueAt to be reached.
+ *
+ * @remarks
+ * Exported for adapter implementations and testing. Domain logic should prefer
+ * using {@link TimerEntry} namespace helpers (make, isScheduled, etc.) for type-safe operations.
  */
-class ScheduledTimer extends Schema.TaggedClass<ScheduledTimer>()('Scheduled', Timer) {}
+export class ScheduledTimer extends Schema.TaggedClass<ScheduledTimer>()('Scheduled', Timer) {}
 
 /**
  * ReachedTimer represents a timer that has fired.
  * State: Timer reached its dueAt time and transitioned to reached state.
+ *
+ * @remarks
+ * Exported for adapter implementations and testing. Domain logic should prefer
+ * using {@link TimerEntry} namespace helpers (markReached, isReached, etc.) for type-safe operations.
  */
-class ReachedTimer extends Schema.TaggedClass<ReachedTimer>()('Reached', {
+export class ReachedTimer extends Schema.TaggedClass<ReachedTimer>()('Reached', {
 	...Timer.fields,
 	reachedAt: Schema.DateTimeUtc,
 }) {}
@@ -59,20 +65,6 @@ export const TimerEntry = {
 	isScheduled: (timerEntry: TimerEntry.Type): timerEntry is TimerEntry.ScheduledTimer =>
 		timerEntry._tag === 'Scheduled',
 
-	/** Factory: Creates a ScheduledTimer from a ScheduleTimer command */
-	make: (
-		command: Message.Orchestration.Commands.ScheduleTimer,
-		now: DateTime.Utc,
-		correlationId?: CorrelationId.Type,
-	): TimerEntry.ScheduledTimer =>
-		new ScheduledTimer({
-			correlationId: Option.fromNullable(correlationId),
-			dueAt: DateTime.unsafeMake<DateTime.Utc>(command.dueAt), // Convert string → DateTime
-			registeredAt: now,
-			serviceCallId: command.serviceCallId,
-			tenantId: command.tenantId,
-		}),
-
 	/** Command: Transitions a ScheduledTimer to ReachedTimer */
 	markReached: (timerEntry: TimerEntry.ScheduledTimer, reachedAt: DateTime.Utc): TimerEntry.ReachedTimer =>
 		new ReachedTimer({
@@ -83,6 +75,7 @@ export const TimerEntry = {
 			serviceCallId: timerEntry.serviceCallId,
 			tenantId: timerEntry.tenantId,
 		}),
+
 	/** Schema for encoding/decoding TimerEntry unions */
 	schema: TimerEntrySchema,
 } as const

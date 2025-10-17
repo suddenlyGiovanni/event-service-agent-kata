@@ -125,10 +125,7 @@
 				"recommended": true,
 				"noUndeclaredDependencies": {
 					"options": {
-						"devDependencies": [
-							"**/*.test.ts",
-							"**/*.spec.ts"
-						]
+						"devDependencies": ["**/*.test.ts", "**/*.spec.ts"]
 					}
 				}
 			},

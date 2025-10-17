@@ -64,40 +64,6 @@ export class TimerNotFoundError extends Data.TaggedError('TimerNotFoundError')<{
  * - Encoding/decoding between domain types and storage format
  *
  * Storage key: (tenantId, serviceCallId) - ensures idempotency
- *
- * @example handleScheduleTimer
- * ```typescript
- * const handleScheduleTimer: Effect.Effect<void, PersistenceError, TimerPersistencePort> = pipe(
- *    TimerPersistencePort,
- *    Effect.flatMap(persistence => persistence.save(TimerEntry.make(command, now))),
- * )
- * ```
- *
- * @example  Polling worker: find and process due timers
- * ```typescript
- * // Polling worker: find and process due timers
- * const pollForDueTimers: Effect.Effect<
- * 	void,
- * 	PersistenceError | PublishError,
- * 	TimerPersistencePort | EventBusPort | ClockPort
- * > = Effect.gen(function* () {
- * 	const persistence = yield* TimerPersistencePort
- * 	const eventBus = yield* EventBusPort
- * 	const clock = yield* ClockPort
- * 	const now = yield* clock.now()
- * 	const dueTimers = yield* persistence.findDue(now)
- *
- * 	yield* Effect.forEach(dueTimers, timer =>
- * 		// this should be done as a single transaction
- * 		Effect.andThen(
- * 			// Publish DueTimeReached event
- * 			eventBus.publish(),
- * 			// Mark as fired
- * 			() => persistence.markFired(timer.tenantId, timer.serviceCallId, now),
- * 		),
- * 	)
- * })
- * ```
  */
 export interface TimerPersistencePort {
 	/**
@@ -120,26 +86,85 @@ export interface TimerPersistencePort {
 	readonly save: (entry: TimerEntry.ScheduledTimer) => Effect.Effect<void, PersistenceError>
 
 	/**
-	 * Find a specific timer by key
+	 * Find a specific scheduled timer by key (primary domain operation)
 	 *
-	 * Returns None if timer doesn't exist.
-	 * Only returns ScheduledTimer (Reached timers are filtered out).
+	 * Returns the timer only if it's in Scheduled state (active/waiting to fire).
+	 * Returns None if:
+	 * - Timer doesn't exist
+	 * - Timer exists but is in Reached state (already fired)
+	 *
+	 * Use this for workflow logic and idempotency checks where you only care
+	 * about active timers. This is the operation workflows should use for
+	 * business logic decisions.
 	 *
 	 * @param tenantId - Tenant identifier
 	 * @param serviceCallId - Service call identifier
-	 * @returns Effect with Some(timer) if found, None if not found
+	 * @returns Effect with Some(ScheduledTimer) if active timer found, None otherwise
 	 * @throws PersistenceError - When query fails (connection, etc.)
+	 *
+	 * @example Workflow idempotency check
+	 * ```typescript
+	 * const program = pipe(
+	 * 	persistence.findScheduledTimer(tenantId, serviceCallId),
+	 * 	Effect.flatMap(
+	 * 		Option.match({
+	 * 			onNone: () => persistence.save(newTimer), // Create new (doesn't exist OR already reached)
+	 * 			onSome: existing => {
+	 * 				const updatedTimer = existing // Update existing scheduled timer
+	 * 				return persistence.save(updatedTimer)
+	 * 			}
+	 * 		}),
+	 * 	),
+	 * )
+	 * ```
 	 */
-	readonly find: (
+	readonly findScheduledTimer: (
 		tenantId: TenantId.Type,
 		serviceCallId: ServiceCallId.Type,
 	) => Effect.Effect<Option.Option<TimerEntry.ScheduledTimer>, PersistenceError>
 
 	/**
-	 * Find all timers that are due for firing
+	 * Find a timer by key in any state (observability/debugging operation)
+	 *
+	 * Returns the raw storage state regardless of whether the timer is
+	 * Scheduled or Reached. This is primarily for testing, debugging,
+	 * reconciliation, and observability purposes.
+	 *
+	 * For domain logic, prefer {@link findScheduledTimer} which returns only
+	 * active timers that workflows can act upon.
+	 *
+	 * @param tenantId - Tenant identifier
+	 * @param serviceCallId - Service call identifier
+	 * @returns Effect with Some(timer) in any state if found, None if not found
+	 * @throws PersistenceError - When query fails (connection, etc.)
+	 *
+	 * @example Testing state transitions
+	 * ```typescript
+	 * yield* persistence.markFired(tenantId, serviceCallId, now)
+	 *
+	 * // Verify state transition happened (testing concern)
+	 * const result = yield* persistence.find(tenantId, serviceCallId)
+	 * expect(Option.getOrThrow(result)._tag).toBe('Reached')
+	 *
+	 * // Verify domain behavior (no longer active)
+	 * const scheduled = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
+	 * expect(Option.isNone(scheduled)).toBe(true)
+	 * ```
+	 */
+	readonly find: (
+		tenantId: TenantId.Type,
+		serviceCallId: ServiceCallId.Type,
+	) => Effect.Effect<Option.Option<TimerEntry.Type>, PersistenceError>
+
+	/**
+	 * Find all timers that are due for firing (scheduled timers only)
 	 *
 	 * Query: WHERE dueAt <= now AND status = 'Scheduled'
-	 * Returns empty array if no timers are due.
+	 * Returns empty chunk if no timers are due.
+	 *
+	 * Only returns Scheduled timers (Reached timers are excluded).
+	 * This ensures timers are only processed once even if the system
+	 * crashes after markFired but before event publishing completes.
 	 *
 	 * The adapter should:
 	 * - Use index on (status, dueAt) for performance
@@ -148,31 +173,62 @@ export interface TimerPersistencePort {
 	 * - Decode storage format to TimerEntry domain type
 	 *
 	 * @param now - Current time to compare against dueAt
-	 * @returns Effect with chunk of due timers (may be empty)
+	 * @returns Effect with chunk of due ScheduledTimers (may be empty)
 	 * @throws PersistenceError - When query fails
+	 *
+	 * @example Polling worker pattern
+	 * ```typescript
+	 * const dueTimers = yield* persistence.findDue(now)
+	 * // Only ScheduledTimers returned (Reached excluded)
+	 *
+	 * yield* Effect.forEach(dueTimers, timer => {
+	 *   // Mark as fired FIRST (idempotency marker)
+	 *   yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
+	 *   // Then publish event (safe to retry)
+	 *   yield* eventBus.publish(DueTimeReached.make(timer))
+	 * })
+	 * ```
 	 */
 	readonly findDue: (now: DateTime.Utc) => Effect.Effect<Chunk.Chunk<TimerEntry.ScheduledTimer>, PersistenceError>
 
 	/**
-	 * Mark a timer as fired (reached)
+	 * Mark a timer as fired by transitioning Scheduled → Reached
 	 *
-	 * Updates the timer status and records when it was reached.
-	 * Idempotent: safe to call multiple times (won't error if already fired).
+	 * Transitions the timer's state and records when it was fired.
+	 * The Reached state serves as an idempotency marker to prevent
+	 * duplicate event publishing in case of failures between state
+	 * transition and event publishing.
+	 *
+	 * State transitions:
+	 * - ScheduledTimer → ReachedTimer (normal case, records reachedAt)
+	 * - ReachedTimer → ReachedTimer (idempotent no-op, keeps original reachedAt)
+	 * - NotFound → Success (already cleaned up or never existed)
 	 *
 	 * The adapter handles:
-	 * - Atomic status transition: Scheduled → Reached
-	 * - Recording reachedAt timestamp
-	 * - Transaction management
-	 * - Idempotent update (WHERE status = 'Scheduled' for safety)
+	 * - Atomic state transition using HashMap.modify or SQL UPDATE
+	 * - Recording reachedAt timestamp on first transition
+	 * - Preserving original reachedAt on subsequent calls (idempotency)
+	 * - Transaction management (for SQL adapters)
 	 *
-	 * Note: The adapter may choose to delete the record instead of updating
-	 * (since fired timers are no longer needed). This is an implementation detail.
+	 * After marking as fired, the timer will no longer be returned by
+	 * `findDue()` or `findScheduledTimer()`, but can still be queried via
+	 * `find()` for debugging/reconciliation purposes.
 	 *
 	 * @param tenantId - Tenant identifier
 	 * @param serviceCallId - Service call identifier
-	 * @param reachedAt - Timestamp when timer was fired
-	 * @returns Effect that succeeds when status is updated
+	 * @param reachedAt - Timestamp when timer was fired (ignored if already Reached)
+	 * @returns Effect that succeeds when state transition completes
 	 * @throws PersistenceError - When update fails
+	 *
+	 * @example Idempotent polling worker
+	 * ```typescript
+	 * // Mark as fired FIRST (before publishing event)
+	 * yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
+	 * // Timer is now Reached, won't appear in next findDue()
+	 *
+	 * // Even if this crashes, timer won't be re-processed
+	 * yield* eventBus.publish(DueTimeReached.make(timer))
+	 * ```
 	 */
 	readonly markFired: (
 		tenantId: TenantId.Type,

@@ -1,11 +1,12 @@
 import * as DateTime from 'effect/DateTime'
 import * as Option from 'effect/Option'
+import * as Schema from 'effect/Schema'
 import { describe, expect, it } from 'vitest'
 
 import type * as Message from '@event-service-agent/contracts/messages'
 import { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
-import { TimerEntry } from './timer-entry.domain.ts'
+import { ScheduledTimer, TimerEntry } from './timer-entry.domain.ts'
 
 describe('TimerEntry', () => {
 	const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
@@ -20,17 +21,24 @@ describe('TimerEntry', () => {
 		type: 'ScheduleTimer',
 	})
 
-	describe('make', () => {
+	describe('Schema.decode(ScheduledTimer)', () => {
 		const now = DateTime.unsafeNow()
 		const dueAt = DateTime.add(now, { minutes: 1 })
 		const dueAtIso = Iso8601DateTime.make(DateTime.formatIso(dueAt))
+		const nowIso = DateTime.formatIso(now)
 
 		it('creates a new schedule from ScheduleTimer command', () => {
 			// Arrange
 			const scheduleTimerCommand = makeScheduleTimerCommand(dueAtIso)
 
-			// Act
-			const scheduledTimer = TimerEntry.make(scheduleTimerCommand, now)
+			// Act: Use Schema.decode directly
+			const scheduledTimer = Schema.decodeSync(ScheduledTimer)({
+				_tag: 'Scheduled' as const,
+				dueAt: scheduleTimerCommand.dueAt,
+				registeredAt: nowIso,
+				serviceCallId: scheduleTimerCommand.serviceCallId,
+				tenantId: scheduleTimerCommand.tenantId,
+			})
 
 			// Assert
 			expect(scheduledTimer).toBeDefined()
@@ -46,8 +54,15 @@ describe('TimerEntry', () => {
 			// Arrange
 			const scheduleTimerCommand = makeScheduleTimerCommand(dueAtIso)
 
-			// Act
-			const scheduledTimer = TimerEntry.make(scheduleTimerCommand, now, correlationId)
+			// Act: Use Schema.decode with correlationId
+			const scheduledTimer = Schema.decodeSync(ScheduledTimer)({
+				_tag: 'Scheduled' as const,
+				correlationId,
+				dueAt: scheduleTimerCommand.dueAt,
+				registeredAt: nowIso,
+				serviceCallId: scheduleTimerCommand.serviceCallId,
+				tenantId: scheduleTimerCommand.tenantId,
+			})
 
 			// Assert
 			expect(Option.isSome(scheduledTimer.correlationId)).toBe(true)
@@ -57,6 +72,7 @@ describe('TimerEntry', () => {
 
 	describe('markReached', () => {
 		const scheduledNow = DateTime.unsafeNow()
+		const scheduledNowIso = DateTime.formatIso(scheduledNow)
 		const dueAt = DateTime.add(scheduledNow, { minutes: 1 })
 		const dueAtIso = Iso8601DateTime.make(DateTime.formatIso(dueAt))
 		const reachedNow = DateTime.add(scheduledNow, { minutes: 1 })
@@ -64,7 +80,13 @@ describe('TimerEntry', () => {
 		it('transitions ScheduledTimer to ReachedTimer', () => {
 			// Arrange
 			const scheduledTimerCommand = makeScheduleTimerCommand(dueAtIso)
-			const scheduledTimer = TimerEntry.make(scheduledTimerCommand, scheduledNow)
+			const scheduledTimer = Schema.decodeSync(ScheduledTimer)({
+				_tag: 'Scheduled' as const,
+				dueAt: scheduledTimerCommand.dueAt,
+				registeredAt: scheduledNowIso,
+				serviceCallId: scheduledTimerCommand.serviceCallId,
+				tenantId: scheduledTimerCommand.tenantId,
+			})
 
 			// Act
 			const reachedTimer = TimerEntry.markReached(scheduledTimer, reachedNow)
@@ -77,7 +99,14 @@ describe('TimerEntry', () => {
 		it('preserves all original timer fields', () => {
 			// Arrange
 			const scheduleTimerCommand = makeScheduleTimerCommand(dueAtIso)
-			const scheduledTimer = TimerEntry.make(scheduleTimerCommand, scheduledNow, correlationId)
+			const scheduledTimer = Schema.decodeSync(ScheduledTimer)({
+				_tag: 'Scheduled' as const,
+				correlationId,
+				dueAt: scheduleTimerCommand.dueAt,
+				registeredAt: scheduledNowIso,
+				serviceCallId: scheduleTimerCommand.serviceCallId,
+				tenantId: scheduleTimerCommand.tenantId,
+			})
 
 			// Act
 			const reachedTimer = TimerEntry.markReached(scheduledTimer, reachedNow)
@@ -94,7 +123,13 @@ describe('TimerEntry', () => {
 		it('returns a new immutable object', () => {
 			// Arrange
 			const scheduleTimerCommand = makeScheduleTimerCommand(dueAtIso)
-			const scheduledTimer = TimerEntry.make(scheduleTimerCommand, scheduledNow)
+			const scheduledTimer = Schema.decodeSync(ScheduledTimer)({
+				_tag: 'Scheduled' as const,
+				dueAt: scheduleTimerCommand.dueAt,
+				registeredAt: scheduledNowIso,
+				serviceCallId: scheduleTimerCommand.serviceCallId,
+				tenantId: scheduleTimerCommand.tenantId,
+			})
 
 			// Act
 			const reachedTimer = TimerEntry.markReached(scheduledTimer, reachedNow)
@@ -106,10 +141,17 @@ describe('TimerEntry', () => {
 
 	describe('isDue', () => {
 		const scheduledNow = DateTime.unsafeNow()
+		const scheduledNowIso = DateTime.formatIso(scheduledNow)
 		const dueAt = DateTime.add(scheduledNow, { minutes: 1 })
 		const dueAtIso = Iso8601DateTime.make(DateTime.formatIso(dueAt))
 		const scheduleTimerCommand = makeScheduleTimerCommand(dueAtIso)
-		const scheduledTimer = TimerEntry.make(scheduleTimerCommand, scheduledNow)
+		const scheduledTimer = Schema.decodeSync(ScheduledTimer)({
+			_tag: 'Scheduled' as const,
+			dueAt: scheduleTimerCommand.dueAt,
+			registeredAt: scheduledNowIso,
+			serviceCallId: scheduleTimerCommand.serviceCallId,
+			tenantId: scheduleTimerCommand.tenantId,
+		})
 
 		it('returns true when current time equals dueAt', () => {
 			expect(TimerEntry.isDue(scheduledTimer, dueAt)).toBe(true)
