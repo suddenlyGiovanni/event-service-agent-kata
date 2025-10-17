@@ -20,7 +20,9 @@ const Timer = Schema.Struct({
  * ScheduledTimer represents a timer that has been registered and is waiting to fire.
  * State: Waiting for dueAt to be reached.
  *
- * @internal - This class is not intended to be used directly.
+ * @remarks
+ * Exported for adapter implementations and testing. Domain logic should prefer
+ * using {@link TimerEntry} namespace helpers (make, isScheduled, etc.) for type-safe operations.
  */
 export class ScheduledTimer extends Schema.TaggedClass<ScheduledTimer>()('Scheduled', Timer) {}
 
@@ -28,7 +30,9 @@ export class ScheduledTimer extends Schema.TaggedClass<ScheduledTimer>()('Schedu
  * ReachedTimer represents a timer that has fired.
  * State: Timer reached its dueAt time and transitioned to reached state.
  *
- * @internal - This class is not intended to be used directly.
+ * @remarks
+ * Exported for adapter implementations and testing. Domain logic should prefer
+ * using {@link TimerEntry} namespace helpers (markReached, isReached, etc.) for type-safe operations.
  */
 export class ReachedTimer extends Schema.TaggedClass<ReachedTimer>()('Reached', {
 	...Timer.fields,
