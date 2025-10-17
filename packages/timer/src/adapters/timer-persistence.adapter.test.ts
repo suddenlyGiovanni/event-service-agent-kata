@@ -402,7 +402,7 @@ describe('TimerPersistenceAdapter', () => {
 		})
 
 		describe('delete', () => {
-			it.todo('removes timer from storage', () =>
+			it.effect('removes timer from storage', () =>
 				Effect.gen(function* () {
 					const now = yield* DateTime.now
 					const dueAt = DateTime.addDuration(now, Duration.minutes(5))
@@ -431,7 +431,7 @@ describe('TimerPersistenceAdapter', () => {
 				}).pipe(Effect.provide(TimerPersistence.inMemory)),
 			)
 
-			it.todo('idempotent (succeeds even if timer does not exist)', () =>
+			it.effect('idempotent (succeeds even if timer does not exist)', () =>
 				Effect.gen(function* () {
 					const persistence = yield* TimerPersistencePort
 

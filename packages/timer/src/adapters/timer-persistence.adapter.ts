@@ -1,7 +1,6 @@
 import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
-import { hole } from 'effect/Function'
 import * as HashMap from 'effect/HashMap'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
@@ -126,7 +125,8 @@ export class TimerPersistence {
 				 *
 				 * Idempotent: deleting non-existent entry succeeds.
 				 */
-				delete: (_tenantId: TenantId.Type, _serviceCallId: ServiceCallId.Type) => hole(),
+				delete: (tenantId: TenantId.Type, serviceCallId: ServiceCallId.Type): Effect.Effect<void, PersistenceError> =>
+					Ref.update(storage, HashMap.remove(makeKey(tenantId, serviceCallId))),
 
 				/**
 				 * Find a timer by composite key in any state (observability operation)
