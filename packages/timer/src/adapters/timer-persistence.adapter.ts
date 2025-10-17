@@ -1,13 +1,16 @@
-import type * as DateTime from 'effect/DateTime'
+import * as Chunk from 'effect/Chunk'
+import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
-import { hole, pipe } from 'effect/Function'
+import { hole } from 'effect/Function'
 import * as HashMap from 'effect/HashMap'
 import * as Layer from 'effect/Layer'
+import * as Option from 'effect/Option'
+import * as Predicate from 'effect/Predicate'
 import * as Ref from 'effect/Ref'
 
 import type { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
-import type { TimerEntry } from '#/domain/timer-entry.domain.ts'
+import { TimerEntry } from '#/domain/timer-entry.domain.ts'
 import { PersistenceError, TimerPersistencePort } from '#/ports/timer-persistence.port.ts'
 
 /**
@@ -53,15 +56,25 @@ export class TimerPersistence {
 	 * In-memory implementation of TimerPersistencePort backed by Effect.Ref and HashMap
 	 *
 	 * @remarks
-	 * Storage is keyed by `${tenantId}/${serviceCallId}` and scoped to the Layer's lifetime.
-	 * Each Effect.provide call creates a fresh storage instance, ensuring test isolation.
-	 * Uses immutable HashMap for efficient operations with structural sharing.
+	 * Storage is keyed by `${tenantId}/${serviceCallId}` and uses Effect.acquireRelease
+	 * for proper resource management. Each Effect.provide call creates a fresh storage
+	 * instance, ensuring test isolation. Uses immutable HashMap for efficient operations
+	 * with structural sharing.
+	 *
+	 * **Resource Lifecycle (acquireRelease pattern):**
+	 * - **Acquire**: `Ref.make(HashMap.empty())` - Creates empty storage when layer builds
+	 * - **Use**: Storage available for the duration of the enclosing Scope
+	 * - **Release**: `Ref.set(ref, HashMap.empty())` - Resets storage when Scope closes
+	 *
+	 * This pattern ensures atomic pairing of acquisition and cleanup, guaranteeing that
+	 * storage is always properly disposed even if errors occur during usage.
 	 *
 	 * **Characteristics:**
 	 * - **Isolation**: Each test gets fresh storage (no state pollution between tests)
 	 * - **Speed**: No I/O operations (microseconds vs milliseconds)
 	 * - **Determinism**: No file system or network dependencies
 	 * - **Simplicity**: No migrations, no connection management
+	 * - **Safety**: Automatic cleanup via Effect.acquireRelease
 	 *
 	 * **Use cases:**
 	 * - Unit tests for workflows
@@ -70,42 +83,42 @@ export class TimerPersistence {
 	 * - Integration tests without infrastructure dependencies
 	 *
 	 * @example
+	 * Basic usage in tests with per-test isolation
 	 * ```typescript
-	 * import { TimerPersistence } from '#/adapters/timer-persistence.adapter.ts'
-	 *
-	 * describe('scheduleTimerWorkflow', () => {
-	 *   it.effect('saves timer successfully', () =>
-	 *     Effect.gen(function* () {
-	 *       const persistence = yield* TimerPersistencePort
-	 *       yield* persistence.save(timer)
-	 *
-	 *       const found = yield* persistence.find(tenantId, serviceCallId)
-	 *       expect(Option.isSome(found)).toBe(true)
-	 *     }).pipe(
-	 *       Effect.provide(TimerPersistence.inMemory)
-	 *     )
-	 *   )
-	 * })
+	 * it.effect('saves and retrieves timer', () =>
+	 *   Effect.gen(function* () {
+	 *     const persistence = yield* TimerPersistencePort
+	 *     const timer = ScheduledTimer.make({ tenantId, serviceCallId, dueAt, registeredAt, correlationId })
+	 *     yield* persistence.save(timer)
+	 *     const found = yield* persistence.find(tenantId, serviceCallId)
+	 *     expect(Option.isSome(found)).toBe(true)
+	 *   }).pipe(Effect.provide(TimerPersistence.inMemory))
+	 * )
 	 * ```
-	 *
-	 * @see {@link Layer.effect} for Layer creation pattern
-	 * @see {@link Ref} for managed mutable state
-	 * @see {@link HashMap} for immutable map operations
 	 */
-	static readonly inMemory: Layer.Layer<TimerPersistencePort> = Layer.effect(
+	static readonly inMemory: Layer.Layer<TimerPersistencePort> = Layer.scoped(
 		TimerPersistencePort,
 		Effect.gen(function* () {
-			const storage = yield* Ref.make(
-				HashMap.empty<`${TenantId.Type}/${ServiceCallId.Type}`, TimerEntry.ScheduledTimer>(),
+			type TimerEntryKey = `${TenantId.Type}/${ServiceCallId.Type}`
+
+			/**
+			 * Acquire storage Ref with automatic cleanup on Scope close
+			 *
+			 * acquireRelease ensures that:
+			 * 1. Storage is created (acquire)
+			 * 2. Storage is reset to empty when Scope closes (release)
+			 * 3. Acquisition and release are atomically paired (safer than separate finalizer)
+			 */
+			const storage: Ref.Ref<HashMap.HashMap<TimerEntryKey, TimerEntry.Type>> = yield* Effect.acquireRelease(
+				Ref.make(HashMap.empty<TimerEntryKey, TimerEntry.Type>()),
+				ref => Ref.set(ref, HashMap.empty()),
 			)
 
 			/**
 			 * Helper to generate storage key from tenantId + serviceCallId
 			 */
-			const makeKey = (
-				tenantId: TenantId.Type,
-				serviceCallId: ServiceCallId.Type,
-			): `${TenantId.Type}/${ServiceCallId.Type}` => `${tenantId}/${serviceCallId}`
+			const makeKey = (tenantId: TenantId.Type, serviceCallId: ServiceCallId.Type): TimerEntryKey =>
+				`${tenantId}/${serviceCallId}`
 
 			return TimerPersistencePort.of({
 				/**
@@ -116,14 +129,14 @@ export class TimerPersistence {
 				delete: (_tenantId: TenantId.Type, _serviceCallId: ServiceCallId.Type) => hole(),
 
 				/**
-				 * Find a timer by composite key (tenantId, serviceCallId)
+				 * Find a timer by composite key in any state (observability operation)
 				 *
-				 * Returns None if not found (not an error).
+				 * Returns the raw storage state (Scheduled or Reached).
+				 * For domain logic, use findScheduledTimer instead.
 				 */
 				find: (tenantId: TenantId.Type, serviceCallId: ServiceCallId.Type) =>
-					pipe(
-						Ref.get(storage),
-						Effect.map(map => HashMap.get(map, makeKey(tenantId, serviceCallId))),
+					Ref.get(storage).pipe(
+						Effect.map(HashMap.get(makeKey(tenantId, serviceCallId))),
 						Effect.catchAll(error =>
 							Effect.fail(
 								new PersistenceError({
@@ -137,17 +150,67 @@ export class TimerPersistence {
 				/**
 				 * Find all timers with dueAt <= now and status = 'Scheduled'
 				 *
+				 * Only returns Scheduled timers (Reached excluded).
 				 * Returns empty chunk if none found.
 				 */
-				findDue: (_now: DateTime.Utc) => hole(),
+				findDue: (now: DateTime.Utc) =>
+					Ref.get(storage).pipe(
+						Effect.map(
+							HashMap.filter(
+								Predicate.and(TimerEntry.isScheduled, (entry): entry is TimerEntry.ScheduledTimer =>
+									DateTime.greaterThanOrEqualTo(now, entry.dueAt),
+								),
+							),
+						),
+						Effect.map(HashMap.values),
+						Effect.map(Chunk.fromIterable),
+					),
 
 				/**
-				 * Mark a timer as fired by deleting it from storage
+				 * Find a scheduled timer by composite key (primary domain operation)
 				 *
-				 * In-memory implementation removes fired timers (they're no longer needed).
-				 * Idempotent: succeeds even if entry doesn't exist.
+				 * Returns Some(ScheduledTimer) only if timer exists AND is in Scheduled state.
+				 * Returns None if timer doesn't exist OR is in Reached state.
+				 *
+				 * This is the operation workflows should use for business logic.
 				 */
-				markFired: (_tenantId: TenantId.Type, _serviceCallId: ServiceCallId.Type, _reachedAt: DateTime.Utc) => hole(),
+				findScheduledTimer: (tenantId: TenantId.Type, serviceCallId: ServiceCallId.Type) =>
+					Ref.get(storage).pipe(
+						Effect.map(HashMap.get(makeKey(tenantId, serviceCallId))),
+						Effect.map(Option.filter(TimerEntry.isScheduled)),
+						Effect.catchAll(error =>
+							Effect.fail(
+								new PersistenceError({
+									cause: `Failed to find scheduled timer: ${error}`,
+									operation: 'findScheduledTimer',
+								}),
+							),
+						),
+					),
+
+				/**
+				 * Mark a timer as fired by transitioning Scheduled → Reached
+				 *
+				 * State transitions:
+				 * - ScheduledTimer → ReachedTimer (normal case)
+				 * - ReachedTimer → ReachedTimer (idempotent no-op, preserves original reachedAt)
+				 * - NotFound → Success (idempotent)
+				 */
+				markFired: (
+					tenantId: TenantId.Type,
+					serviceCallId: ServiceCallId.Type,
+					reachedAt: DateTime.Utc,
+				): Effect.Effect<void, PersistenceError> =>
+					Ref.update(
+						storage,
+						HashMap.modify(
+							makeKey(tenantId, serviceCallId),
+							timerEntry =>
+								TimerEntry.isReached(timerEntry)
+									? timerEntry // Idempotent: if already Reached, return as-is (preserve original reachedAt)
+									: TimerEntry.markReached(timerEntry, reachedAt), // Transition: Scheduled → Reached
+						),
+					),
 
 				/**
 				 * Save or update a timer entry (upsert semantics)
@@ -155,9 +218,10 @@ export class TimerPersistence {
 				 * Idempotent: calling multiple times with same key succeeds.
 				 */
 				save: (entry: TimerEntry.ScheduledTimer) =>
-					pipe(
+					Ref.update(
 						storage,
-						Ref.update(HashMap.set(makeKey(entry.tenantId, entry.serviceCallId), entry)),
+						HashMap.set<TimerEntryKey, TimerEntry.Type>(makeKey(entry.tenantId, entry.serviceCallId), entry),
+					).pipe(
 						Effect.catchAll(error =>
 							Effect.fail(
 								new PersistenceError({
