@@ -1,8 +1,6 @@
 import * as DateTime from 'effect/DateTime'
-import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 
-import type * as Message from '@event-service-agent/contracts/messages'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
 const Timer = Schema.Struct({
@@ -67,20 +65,6 @@ export const TimerEntry = {
 	isScheduled: (timerEntry: TimerEntry.Type): timerEntry is TimerEntry.ScheduledTimer =>
 		timerEntry._tag === 'Scheduled',
 
-	/** Factory: Creates a ScheduledTimer from a ScheduleTimer command */
-	make: (
-		command: Message.Orchestration.Commands.ScheduleTimer,
-		registeredAt: DateTime.Utc,
-		correlationId?: CorrelationId.Type,
-	): TimerEntry.ScheduledTimer =>
-		new ScheduledTimer({
-			correlationId: Option.fromNullable(correlationId),
-			dueAt: DateTime.unsafeMake<DateTime.Utc>(command.dueAt), // Convert string → DateTime
-			registeredAt,
-			serviceCallId: command.serviceCallId,
-			tenantId: command.tenantId,
-		}),
-
 	/** Command: Transitions a ScheduledTimer to ReachedTimer */
 	markReached: (timerEntry: TimerEntry.ScheduledTimer, reachedAt: DateTime.Utc): TimerEntry.ReachedTimer =>
 		new ReachedTimer({
@@ -91,6 +75,7 @@ export const TimerEntry = {
 			serviceCallId: timerEntry.serviceCallId,
 			tenantId: timerEntry.tenantId,
 		}),
+
 	/** Schema for encoding/decoding TimerEntry unions */
 	schema: TimerEntrySchema,
 } as const

@@ -331,7 +331,9 @@ describe('scheduleTimerWorkflow', () => {
 				expect(Either.isLeft(result)).toBe(true)
 				if (Either.isLeft(result)) {
 					expect(result.left._tag).toBe('PersistenceError')
-					expect(result.left.operation).toBe('save')
+					if (result.left._tag === 'PersistenceError') {
+						expect(result.left.operation).toBe('save')
+					}
 				}
 			}).pipe(
 				Effect.provide(

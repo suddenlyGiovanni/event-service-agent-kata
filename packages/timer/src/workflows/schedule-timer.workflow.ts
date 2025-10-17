@@ -1,10 +1,13 @@
+import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Option from 'effect/Option'
+import type * as ParseResult from 'effect/ParseResult'
+import * as Schema from 'effect/Schema'
 
 import type * as Messages from '@event-service-agent/contracts/messages'
 import type { CorrelationId } from '@event-service-agent/contracts/types'
 
-import { TimerEntry } from '#/domain/timer-entry.domain.ts'
+import { ScheduledTimer } from '#/domain/timer-entry.domain.ts'
 import { ClockPort } from '#/ports/clock.port.ts'
 import { type PersistenceError, TimerPersistencePort } from '#/ports/timer-persistence.port.ts'
 
@@ -17,10 +20,14 @@ interface WorkflowInput {
 	readonly correlationId?: CorrelationId.Type
 }
 
-export const scheduleTimerWorkflow: (
-	input: WorkflowInput,
-) => Effect.Effect<void, PersistenceError, ClockPort | TimerPersistencePort> = Effect.fn('Timer.ScheduleTimer')(
-	function* ({ command, correlationId }) {
+export const scheduleTimerWorkflow: ({
+	command,
+	correlationId,
+}: WorkflowInput) => Effect.Effect<void, ParseResult.ParseError | PersistenceError, ClockPort | TimerPersistencePort> =
+	Effect.fn('Timer.ScheduleTimer')(function* ({ command, correlationId }) {
+		const clock = yield* ClockPort
+		const persistence = yield* TimerPersistencePort
+
 		yield* Effect.annotateCurrentSpan({
 			correlationId: Option.fromNullable(correlationId),
 			dueAt: command.dueAt,
@@ -28,15 +35,18 @@ export const scheduleTimerWorkflow: (
 			tenantId: command.tenantId,
 		})
 
-		const clock = yield* ClockPort
-		const persistence = yield* TimerPersistencePort
+		// Get current time and format as ISO8601 for Schema decoding
+		const registeredAt = yield* clock.now().pipe(Effect.map(DateTime.formatIso))
 
-		// TODO: the `TimerEntry.make` goes through the `ScheduledTimer.make`, as such it may throw.
-		// 	TimerEntry is a domain entity, where ScheduleTimer is a command.
-		// 	the creation of `ScheduleTimer` should be validated before ending up in the domain.
-		// 	BUT, I should consider refactoring the TimerEntry.make to use a `Schema.decodeUnknown` or `Schema.decodeEither`
-		const scheduledTimer = TimerEntry.make(command, yield* clock.now(), correlationId)
+		// Decode command into validated ScheduledTimer using Schema
+		const scheduledTimer = yield* Schema.decode(ScheduledTimer)({
+			_tag: 'Scheduled' as const,
+			...(correlationId ? { correlationId } : {}),
+			dueAt: command.dueAt, // ISO8601 string → DateTime.Utc
+			registeredAt, // ISO8601 string → DateTime.Utc
+			serviceCallId: command.serviceCallId,
+			tenantId: command.tenantId,
+		})
 
 		yield* persistence.save(scheduledTimer)
-	},
-)
+	})
