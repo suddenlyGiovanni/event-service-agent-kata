@@ -129,23 +129,11 @@ export class TimerPersistence {
 					Ref.update(storage, HashMap.remove(makeKey(tenantId, serviceCallId))),
 
 				/**
-				 * Find a timer by composite key in any state (observability operation)
-				 *
-				 * Returns the raw storage state (Scheduled or Reached).
-				 * For domain logic, use findScheduledTimer instead.
+				 * Find a timer in ANY state (Scheduled or Reached)
+				 * Used for observability/debugging.
 				 */
 				find: (tenantId: TenantId.Type, serviceCallId: ServiceCallId.Type) =>
-					Ref.get(storage).pipe(
-						Effect.map(HashMap.get(makeKey(tenantId, serviceCallId))),
-						Effect.catchAll(error =>
-							Effect.fail(
-								new PersistenceError({
-									cause: `Failed to find timer: ${error}`,
-									operation: 'find',
-								}),
-							),
-						),
-					),
+					Ref.get(storage).pipe(Effect.map(HashMap.get(makeKey(tenantId, serviceCallId)))),
 
 				/**
 				 * Find all timers with dueAt <= now and status = 'Scheduled'
@@ -167,25 +155,14 @@ export class TimerPersistence {
 					),
 
 				/**
-				 * Find a scheduled timer by composite key (primary domain operation)
-				 *
-				 * Returns Some(ScheduledTimer) only if timer exists AND is in Scheduled state.
-				 * Returns None if timer doesn't exist OR is in Reached state.
-				 *
-				 * This is the operation workflows should use for business logic.
+				 * Find a timer only if it's in SCHEDULED state
+				 * Returns Option<ScheduledTimer> - filters out Reached timers.
+				 * This is the primary query for domain operations (workflows that need to check/update scheduled timers).
 				 */
 				findScheduledTimer: (tenantId: TenantId.Type, serviceCallId: ServiceCallId.Type) =>
 					Ref.get(storage).pipe(
 						Effect.map(HashMap.get(makeKey(tenantId, serviceCallId))),
 						Effect.map(Option.filter(TimerEntry.isScheduled)),
-						Effect.catchAll(error =>
-							Effect.fail(
-								new PersistenceError({
-									cause: `Failed to find scheduled timer: ${error}`,
-									operation: 'findScheduledTimer',
-								}),
-							),
-						),
 					),
 
 				/**
