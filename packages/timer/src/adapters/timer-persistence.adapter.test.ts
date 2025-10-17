@@ -7,11 +7,34 @@ import * as Either from 'effect/Either'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
-import { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+import { type CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
 import { TimerPersistence } from '#/adapters/timer-persistence.adapter.ts'
 import { ScheduledTimer } from '#/domain/timer-entry.domain.ts'
 import { TimerPersistencePort } from '#/ports/timer-persistence.port.ts'
+
+/**
+ * Test helper: Creates a ScheduledTimer with default values
+ * @param now - Current time (registeredAt)
+ * @param tenantId - Tenant identifier
+ * @param serviceCallId - Service call identifier
+ * @param dueInMinutes - Minutes until timer is due (default: 5)
+ * @param correlationId - Optional correlation identifier
+ */
+const makeScheduledTimer = (
+	now: DateTime.Utc,
+	tenantId: TenantId.Type,
+	serviceCallId: ServiceCallId.Type,
+	dueInMinutes = 5,
+	correlationId?: CorrelationId.Type,
+): ScheduledTimer =>
+	ScheduledTimer.make({
+		correlationId: Option.fromNullable(correlationId),
+		dueAt: DateTime.addDuration(now, Duration.minutes(dueInMinutes)),
+		registeredAt: now,
+		serviceCallId,
+		tenantId,
+	})
 
 describe('TimerPersistenceAdapter', () => {
 	describe('inMemory', () => {
@@ -23,15 +46,7 @@ describe('TimerPersistenceAdapter', () => {
 				Effect.gen(function* () {
 					// Arrange: Create a timer with a dueAt in the future
 					const now = yield* DateTime.now
-					const dueAt = DateTime.addDuration(now, Duration.minutes(5))
-
-					const scheduledTimer = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt,
-						registeredAt: now,
-						serviceCallId,
-						tenantId,
-					})
+					const scheduledTimer = makeScheduledTimer(now, tenantId, serviceCallId)
 
 					const persistence = yield* TimerPersistencePort
 
@@ -55,15 +70,7 @@ describe('TimerPersistenceAdapter', () => {
 			it.effect('returns None when timer is Reached', () =>
 				Effect.gen(function* () {
 					const now = yield* DateTime.now
-					const dueAt = DateTime.addDuration(now, Duration.minutes(5))
-
-					const scheduledTimer = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt,
-						registeredAt: now,
-						serviceCallId,
-						tenantId,
-					})
+					const scheduledTimer = makeScheduledTimer(now, tenantId, serviceCallId)
 
 					const persistence = yield* TimerPersistencePort
 					yield* persistence.save(scheduledTimer)
@@ -96,15 +103,7 @@ describe('TimerPersistenceAdapter', () => {
 			it.effect('returns Some when timer is Scheduled', () =>
 				Effect.gen(function* () {
 					const now = yield* DateTime.now
-					const dueAt = DateTime.addDuration(now, Duration.minutes(5))
-
-					const scheduledTimer = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt,
-						registeredAt: now,
-						serviceCallId,
-						tenantId,
-					})
+					const scheduledTimer = makeScheduledTimer(now, tenantId, serviceCallId)
 
 					const persistence = yield* TimerPersistencePort
 					yield* persistence.save(scheduledTimer)
@@ -126,15 +125,7 @@ describe('TimerPersistenceAdapter', () => {
 				Effect.gen(function* () {
 					// Arrange: Create a timer with a dueAt in the future
 					const now = yield* DateTime.now
-					const dueAt = DateTime.addDuration(now, Duration.minutes(5))
-
-					const scheduledTimer = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt,
-						registeredAt: now,
-						serviceCallId,
-						tenantId,
-					})
+					const scheduledTimer = makeScheduledTimer(now, tenantId, serviceCallId)
 
 					// Act: Save timer
 					const persistence = yield* TimerPersistencePort
@@ -156,15 +147,11 @@ describe('TimerPersistenceAdapter', () => {
 				Effect.gen(function* () {
 					// Arrange: Create a timer with a different serviceCallId
 					const now = yield* DateTime.now
-					const dueAt = DateTime.addDuration(now, Duration.minutes(5))
-
-					const scheduledTimer = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt,
-						registeredAt: now,
-						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2'),
-						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3'),
-					})
+					const scheduledTimer = makeScheduledTimer(
+						now,
+						TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3'),
+						ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2'),
+					)
 
 					// Act: Save a different timer
 					const persistence = yield* TimerPersistencePort
@@ -184,15 +171,7 @@ describe('TimerPersistenceAdapter', () => {
 				Effect.gen(function* () {
 					// Arrange: Create a timer with a dueAt in the future
 					const now = yield* DateTime.now
-					const dueAt = DateTime.addDuration(now, Duration.minutes(5))
-
-					const scheduledTimer = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt,
-						registeredAt: now,
-						serviceCallId,
-						tenantId,
-					})
+					const scheduledTimer = makeScheduledTimer(now, tenantId, serviceCallId)
 
 					// Act: Save timer & advance time
 					const persistence = yield* TimerPersistencePort
@@ -211,15 +190,7 @@ describe('TimerPersistenceAdapter', () => {
 				Effect.gen(function* () {
 					// Arrange: Create a timer with a dueAt in the future
 					const now = yield* DateTime.now
-					const dueAt = DateTime.addDuration(now, Duration.minutes(5))
-
-					const scheduledTimer = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt: dueAt,
-						registeredAt: now,
-						serviceCallId,
-						tenantId,
-					})
+					const scheduledTimer = makeScheduledTimer(now, tenantId, serviceCallId)
 
 					// Act: Save timer & advance time
 					const persistence = yield* TimerPersistencePort
@@ -238,29 +209,13 @@ describe('TimerPersistenceAdapter', () => {
 
 			it.effect('returns multiple due timers', () =>
 				Effect.gen(function* () {
-					// Arrange: Create a timer with a dueAt in the future
+					// Arrange: Create timers with different due times
 					const now = yield* DateTime.now
-					const dueAt1 = DateTime.addDuration(now, Duration.minutes(5))
-					const dueAt2 = DateTime.addDuration(dueAt1, Duration.minutes(4))
-
-					const serviceCallId2 = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
 					const serviceCallId1 = serviceCallId
+					const serviceCallId2 = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
 
-					const timer1 = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt: dueAt1,
-						registeredAt: now,
-						serviceCallId: serviceCallId1,
-						tenantId,
-					})
-
-					const timer2 = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt: dueAt2,
-						registeredAt: now,
-						serviceCallId: serviceCallId2,
-						tenantId,
-					})
+					const timer1 = makeScheduledTimer(now, tenantId, serviceCallId1, 5)
+					const timer2 = makeScheduledTimer(now, tenantId, serviceCallId2, 9)
 
 					// Act: Save timers & advance time when both are due
 					const persistence = yield* TimerPersistencePort
@@ -278,14 +233,7 @@ describe('TimerPersistenceAdapter', () => {
 			it.effect('returns timer when dueAt equals now', () =>
 				Effect.gen(function* () {
 					const now = yield* DateTime.now
-
-					const scheduledTimer = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt: now,
-						registeredAt: now,
-						serviceCallId,
-						tenantId,
-					})
+					const scheduledTimer = makeScheduledTimer(now, tenantId, serviceCallId, 0)
 
 					const persistence = yield* TimerPersistencePort
 					yield* persistence.save(scheduledTimer)
@@ -301,15 +249,7 @@ describe('TimerPersistenceAdapter', () => {
 			it.effect('transitions timer from Scheduled to Reached', () =>
 				Effect.gen(function* () {
 					const now = yield* DateTime.now
-					const dueAt = DateTime.addDuration(now, Duration.minutes(5))
-
-					const scheduledTimer = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt,
-						registeredAt: now,
-						serviceCallId,
-						tenantId,
-					})
+					const scheduledTimer = makeScheduledTimer(now, tenantId, serviceCallId)
 
 					const persistence = yield* TimerPersistencePort
 					yield* persistence.save(scheduledTimer)
@@ -346,18 +286,10 @@ describe('TimerPersistenceAdapter', () => {
 				}).pipe(Effect.provide(TimerPersistence.inMemory)),
 			)
 
-			it.effect('markFired - idempotent (Reached → Reached preserves original reachedAt)', () =>
+			it.effect('idempotent (preserves original reachedAt on retry)', () =>
 				Effect.gen(function* () {
 					const now = yield* DateTime.now
-					const dueAt = DateTime.addDuration(now, Duration.minutes(5))
-
-					const scheduledTimer = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt,
-						registeredAt: now,
-						serviceCallId,
-						tenantId,
-					})
+					const scheduledTimer = makeScheduledTimer(now, tenantId, serviceCallId)
 
 					const persistence = yield* TimerPersistencePort
 					yield* persistence.save(scheduledTimer)
@@ -405,15 +337,7 @@ describe('TimerPersistenceAdapter', () => {
 			it.effect('removes timer from storage', () =>
 				Effect.gen(function* () {
 					const now = yield* DateTime.now
-					const dueAt = DateTime.addDuration(now, Duration.minutes(5))
-
-					const scheduledTimer = ScheduledTimer.make({
-						correlationId: Option.none(),
-						dueAt,
-						registeredAt: now,
-						serviceCallId,
-						tenantId,
-					})
+					const scheduledTimer = makeScheduledTimer(now, tenantId, serviceCallId)
 
 					const persistence = yield* TimerPersistencePort
 					yield* persistence.save(scheduledTimer)
@@ -457,14 +381,7 @@ describe('TimerPersistenceAdapter', () => {
 				const result = yield* Effect.scoped(
 					Effect.gen(function* () {
 						const persistence = yield* Effect.provide(TimerPersistencePort, TimerPersistence.inMemory)
-
-						const timer = ScheduledTimer.make({
-							correlationId: Option.none(),
-							dueAt: DateTime.addDuration(now, Duration.minutes(5)),
-							registeredAt: now,
-							serviceCallId,
-							tenantId,
-						})
+						const timer = makeScheduledTimer(now, tenantId, serviceCallId)
 
 						yield* persistence.save(timer)
 
