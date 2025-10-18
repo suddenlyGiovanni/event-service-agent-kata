@@ -1,0 +1,46 @@
+name: 🎯 Main Branch Checks
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  checks:
+    name: 🫸 Main Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
+
+      - name: 🔍 Typecheck code
+        run: bun run type-check
+
+      - name: 🚨 Lint code
+        shell: sh
+        run: |
+          bun exec biome ci \
+          --max-diagnostics=none \
+          --formatter-enabled=false \
+          --linter-enabled=true \
+          --assist-enabled=true \
+          --reporter=github
+
+      - name: 💅 Format check
+        shell: sh
+        run: |
+          bun exec biome ci \
+          --max-diagnostics=none \
+          --formatter-enabled=true \
+          --linter-enabled=false \
+          --assist-enabled=true \
+          --reporter=github
+
+      - name: 🧪 Run tests
+        run: bun test

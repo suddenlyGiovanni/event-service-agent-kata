@@ -1,0 +1,38 @@
+name: 💉Setup the project
+description: Perform standard setup and install dependencies using Bun.
+runs:
+  using: composite
+  steps:
+    - name: 📝 Get bun version from package.json
+      id: get_bun_version
+      shell: bash
+      run: |
+        version=$(jq -r '.devEngines.runtime.version // ""' package.json)
+        if [[ -z "$version" ]]; then
+          echo "Error: bun version not found in package.json" >&2
+          exit 1
+        fi
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    - name: 🛠️ Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: ${{ steps.get_bun_version.outputs.version }}
+
+    - name: 📦 Get Bun cache directory
+      id: bun-cache
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(bun pm cache)" >> $GITHUB_ENV
+
+    - name: 🗂️ Setup Bun cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-bun-
+
+    - name: 🧩 Install dependencies
+      shell: bash
+      run: bun install --frozen-lockfile

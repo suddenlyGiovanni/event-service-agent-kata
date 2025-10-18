@@ -1,0 +1,68 @@
+name: 🚀 Push Checks
+on:
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+
+jobs:
+  checks:
+    name: 🫸 Push Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
+
+      - name: 🔍 Typecheck code
+        run: bun run type-check
+
+      - name: 🚨 Lint code
+        shell: sh
+        run: |
+          bun exec biome check \
+          --max-diagnostics=none \
+          --vcs-enabled=true \
+          --vcs-use-ignore-file=true \
+          --vcs-root="." \
+          --formatter-enabled=false \
+          --linter-enabled=true \
+          --assist-enabled=true \
+          --no-errors-on-unmatched \
+          --reporter=github \
+          --changed \
+          --write
+
+      - name: 🚦 Git Auto Commit Lint fixes (with Biome)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: lint code with Biome [skip ci]"
+
+      - name: 💅 Format code
+        shell: sh
+        run: |
+          bun exec biome check \
+          --max-diagnostics=none \
+          --vcs-enabled=true \
+          --vcs-use-ignore-file=true \
+          --vcs-root="." \
+          --formatter-enabled=true \
+          --linter-enabled=false  \
+          --assist-enabled=true \
+          --reporter=github \
+          --changed \
+          --no-errors-on-unmatched \
+          --write
+
+      - name: 🚦 Git Auto Commit Format fixes (with Biome)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: format code with Biome [skip ci]"
+
+      - name: 🧪 Run tests
+        run: bun test
