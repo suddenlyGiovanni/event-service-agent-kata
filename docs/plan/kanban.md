@@ -46,7 +46,7 @@ Prioritized queue.
   - [x] (PL-4.1) TimerEntry domain model + tests [Timer] — Effect Schema with TaggedClass, DateTime.Utc, all tests passing
   - [x] (PL-4.2) Port interfaces (Clock, EventBus, Persistence) [Timer]
   - [x] (PL-4.3) ScheduleTimer workflow + tests [Timer]
-  - [o] (PL-4.4) Polling worker workflow + tests [Timer]
+  - [x] (PL-4.4) Polling worker workflow + tests [Timer] — IN PROGRESS: Implement pollDueTimersWorkflow using findDue + markFired with TDD
   - [x] (PL-4.5) In-memory test adapters [Timer] — PR ready: Full state machine, 16/16 tests passing
   - [ ] (PL-4.6) SQLite persistence adapter [Timer]
 
