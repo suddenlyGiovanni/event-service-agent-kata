@@ -1,10 +1,9 @@
 import * as Chunk from 'effect/Chunk'
-import * as DateTime from 'effect/DateTime'
+import type * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as HashMap from 'effect/HashMap'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
-import * as Predicate from 'effect/Predicate'
 import * as Ref from 'effect/Ref'
 
 import type { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
@@ -148,13 +147,8 @@ export class TimerPersistence {
 				 */
 				findDue: (now: DateTime.Utc) =>
 					Ref.get(storage).pipe(
-						Effect.map(
-							HashMap.filter(
-								Predicate.and(TimerEntry.isScheduled, (entry): entry is TimerEntry.ScheduledTimer =>
-									DateTime.greaterThanOrEqualTo(now, entry.dueAt),
-								),
-							),
-						),
+						Effect.map(HashMap.filter(TimerEntry.isScheduled)),
+						Effect.map(HashMap.filter(entry => TimerEntry.isDue(entry, now))),
 						Effect.map(HashMap.values),
 						Effect.map(Chunk.fromIterable),
 					),
