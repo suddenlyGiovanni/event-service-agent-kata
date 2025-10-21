@@ -125,7 +125,7 @@
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.2.6", "", { "os": "win32", "cpu": "x64" }, "sha512-yx0CqeOhPjYQ5ZXgPfu8QYkgBhVJyvWe36as7jRuPrKPO5ylVDfwVtPQ+K/mooNTADW0IhxOZm3aPu16dP8yNQ=="],
 
-    "@effect/language-service": ["@effect/language-service@0.45.1", "", { "bin": { "effect-language-service": "cli.js" } }, "sha512-SEZ9TaVCpRKYumTQJPApg3os9O94bN2lCYQLgZbyK/xD+NSfYPPJZQ+6T5LkpcNgW8BRk1ACI7S1W2/noxm7Qg=="],
+    "@effect/language-service": ["@effect/language-service@0.46.0", "", { "bin": { "effect-language-service": "cli.js" } }, "sha512-eWMuy/RNvDMdhi8NJ/pfHS1UHd5R7adXlO4ClRYMgF6cUqN6FdXw1HgJHF7gJILVPD0Mdo/XQYNJ5gZbsdaImg=="],
 
     "@effect/vitest": ["@effect/vitest@0.26.0", "", { "peerDependencies": { "effect": "^3.18.0", "vitest": "^3.2.0" } }, "sha512-h7r21XRtHpl8CQmIuplCK54bYJkUij4c6bUxK27y4d9dTXn4s7c/I3Lilb4VZxv3P3S3sChCu5YIGW4pdQFjZg=="],
 
