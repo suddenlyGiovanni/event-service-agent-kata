@@ -25,7 +25,7 @@ jobs:
       - name: 🚨 Lint code
         shell: sh
         run: |
-          bun exec biome check \
+          bun biome check \
           --max-diagnostics=none \
           --vcs-enabled=true \
           --vcs-use-ignore-file=true \
@@ -46,7 +46,7 @@ jobs:
       - name: 💅 Format code
         shell: sh
         run: |
-          bun exec biome check \
+          bun biome check \
           --max-diagnostics=none \
           --vcs-enabled=true \
           --vcs-use-ignore-file=true \

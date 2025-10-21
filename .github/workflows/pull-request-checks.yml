@@ -24,7 +24,7 @@ jobs:
       - name: 🚨 Lint code
         shell: sh
         run: |
-          bun exec biome ci \
+          bun biome ci \
           --max-diagnostics=none \
           --formatter-enabled=false \
           --linter-enabled=true \
@@ -34,7 +34,7 @@ jobs:
       - name: 💅 Format check
         shell: sh
         run: |
-          bun exec biome ci \
+          bun biome ci \
           --max-diagnostics=none \
           --formatter-enabled=true \
           --linter-enabled=false \
