@@ -21,8 +21,8 @@ import * as Context from 'effect/Context'
 import * as Data from 'effect/Data'
 import type * as Effect from 'effect/Effect'
 
-import type { Message } from '#/types/message-envelope.type.ts'
-import type { RequestContext } from '#/types/shared.type.ts'
+import type { Message } from '../types/message-envelope.type.ts'
+import type { RequestContext } from '../types/shared.type.ts'
 
 /**
  * PublishError - Generic error when publishing messages fails

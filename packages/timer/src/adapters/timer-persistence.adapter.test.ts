@@ -9,9 +9,9 @@ import * as TestClock from 'effect/TestClock'
 
 import { type CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
-import { TimerPersistence } from '#/adapters/timer-persistence.adapter.ts'
-import { ScheduledTimer } from '#/domain/timer-entry.domain.ts'
-import { TimerPersistencePort } from '#/ports/timer-persistence.port.ts'
+import { ScheduledTimer } from '../domain/timer-entry.domain.ts'
+import { TimerPersistencePort } from '../ports/timer-persistence.port.ts'
+import { TimerPersistence } from './timer-persistence.adapter.ts'
 
 /**
  * Test helper: Creates a ScheduledTimer with default values

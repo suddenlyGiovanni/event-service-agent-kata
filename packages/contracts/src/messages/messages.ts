@@ -1,8 +1,8 @@
 /** biome-ignore-all lint/suspicious/noConstEnum: const enums provide type-only discriminators with zero runtime overhead, matching declare namespace intent */
 import type * as Types from 'effect/Types'
 
-import type { RequestSpec, RequestSpecWithoutBody } from '#/types/http.type.ts'
-import type { Iso8601DateTime, ServiceCallId, TenantId } from '#/types/shared.type.ts'
+import type { RequestSpec, RequestSpecWithoutBody } from '../types/http.type.ts'
+import type { Iso8601DateTime, ServiceCallId, TenantId } from '../types/shared.type.ts'
 
 /**
  * ResponseMeta - Metadata about a successful HTTP response
