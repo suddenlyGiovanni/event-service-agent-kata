@@ -5,13 +5,14 @@
 	},
 	"description": "Timer module - Durable scheduling and DueTimeReached events",
 	"devDependencies": {
-		"@effect/vitest": "catalog:test"
+		"@effect/vitest": "catalog:test",
+		"@event-service-agent/typescript": "workspace:*",
+		"@total-typescript/ts-reset": "catalog:types",
+		"@types/bun": "catalog:types",
+		"typescript": "catalog:typescript"
 	},
 	"exports": {
 		".": "./src/index.ts"
-	},
-	"imports": {
-		"#/*": "./src/*"
 	},
 	"name": "@event-service-agent/timer",
 	"private": true,
