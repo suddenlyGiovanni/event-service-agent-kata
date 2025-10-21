@@ -16,7 +16,11 @@
 	},
 	"private": true,
 	"scripts": {
-		"test": "bun --bun vitest"
+		"check": "exit 0",
+		"format": "exit 0",
+		"lint": "exit 0",
+		"test": "bun --bun vitest",
+		"type-check": "exit 0"
 	},
 	"type": "module",
 	"version": "0.0.1"
