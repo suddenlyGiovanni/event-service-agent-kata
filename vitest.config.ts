@@ -8,6 +8,6 @@ export default defineConfig({
 				singleFork: true,
 			},
 		},
-		projects: ['packages/*/vitest.config.ts'],
+		projects: ['packages/timer', 'packages/contracts'],
 	},
 })
