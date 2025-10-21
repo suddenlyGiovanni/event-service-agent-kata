@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     name: "contracts",
     environment: "node",
+    passWithNoTests: true,
     include: ["src/**/*.{test,spec}.{ts,tsx}"]
   }
 });

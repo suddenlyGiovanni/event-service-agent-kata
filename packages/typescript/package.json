@@ -15,6 +15,9 @@
 		"typescript": "catalog:typescript"
 	},
 	"private": true,
+	"scripts": {
+		"test": "bun --bun vitest"
+	},
 	"type": "module",
 	"version": "0.0.1"
 }

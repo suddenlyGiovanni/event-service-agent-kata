@@ -57,7 +57,7 @@
 		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
 		"format": "bun --bun --workspaces format",
 		"lint": "bun --bun --workspaces lint",
-		"test": "bun --bun vitest",
+		"test": "bun --bun --workspaces run test",
 		"type-check": "bun --bun --workspaces type-check"
 	},
 	"type": "module",
