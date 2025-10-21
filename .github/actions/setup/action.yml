@@ -3,21 +3,11 @@ description: Perform standard setup and install dependencies using Bun.
 runs:
   using: composite
   steps:
-    - name: 📝 Get bun version from package.json
-      id: get_bun_version
-      shell: bash
-      run: |
-        version=$(jq -r '.devEngines.runtime.version // ""' package.json)
-        if [[ -z "$version" ]]; then
-          echo "Error: bun version not found in package.json" >&2
-          exit 1
-        fi
-        echo "version=$version" >> "$GITHUB_OUTPUT"
-
     - name: 🛠️ Setup Bun
       uses: oven-sh/setup-bun@v2
       with:
-        bun-version: ${{ steps.get_bun_version.outputs.version }}
+        bun-version-file: "package.json"
+
 
     - name: 📦 Get Bun cache directory
       id: bun-cache
@@ -35,4 +25,4 @@ runs:
 
     - name: 🧩 Install dependencies
       shell: bash
-      run: bun install --frozen-lockfile
+      run: bun ci

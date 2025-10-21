@@ -20,7 +20,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: 🔍 Typecheck code
-        run: bun run type-check
+        run: bun --workspaces run type-check
 
       - name: 🚨 Lint code
         shell: sh

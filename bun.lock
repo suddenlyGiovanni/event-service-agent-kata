@@ -5,13 +5,7 @@
       "name": "event-service-agent",
       "devDependencies": {
         "@biomejs/biome": "catalog:lint",
-        "@effect/language-service": "catalog:effect",
         "@effect/vitest": "catalog:test",
-        "@total-typescript/ts-reset": "catalog:types",
-        "@tsconfig/bun": "catalog:typescript",
-        "@tsconfig/strictest": "catalog:typescript",
-        "@types/bun": "catalog:types",
-        "typescript": "catalog:typescript",
         "vitest": "catalog:test",
       },
     },
@@ -23,6 +17,7 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
       },
     },
     "packages/api": {
@@ -33,6 +28,7 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
       },
     },
     "packages/contracts": {
@@ -43,6 +39,7 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
       },
     },
     "packages/execution": {
@@ -53,6 +50,7 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
       },
     },
     "packages/orchestration": {
@@ -63,6 +61,7 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
       },
     },
     "packages/timer": {
@@ -74,6 +73,27 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
+      },
+    },
+    "packages/typescript": {
+      "name": "@event-service-agent/typescript",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@effect/language-service": "catalog:effect",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@tsconfig/bun": "catalog:typescript",
+        "@tsconfig/strictest": "catalog:typescript",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
+      },
+      "peerDependencies": {
+        "@effect/language-service": "catalog:effect",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@tsconfig/bun": "catalog:typescript",
+        "@tsconfig/strictest": "catalog:typescript",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
       },
     },
     "packages/ui": {
@@ -81,12 +101,13 @@
       "version": "0.0.1",
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
       },
     },
   },
   "catalogs": {
     "effect": {
-      "@effect/language-service": "latest",
+      "@effect/language-service": "0.46.0",
       "effect": "3.18.4",
     },
     "lint": {
@@ -192,6 +213,8 @@
     "@event-service-agent/orchestration": ["@event-service-agent/orchestration@workspace:packages/orchestration"],
 
     "@event-service-agent/timer": ["@event-service-agent/timer@workspace:packages/timer"],
+
+    "@event-service-agent/typescript": ["@event-service-agent/typescript@workspace:packages/typescript"],
 
     "@event-service-agent/ui": ["@event-service-agent/ui@workspace:packages/ui"],
 
