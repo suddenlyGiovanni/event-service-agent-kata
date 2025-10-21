@@ -65,4 +65,4 @@ jobs:
           commit_message: "chore: format code with Biome [skip ci]"
 
       - name: 🧪 Run tests
-        run: bun test
+        run: bun run test --run

@@ -42,4 +42,4 @@ jobs:
           --reporter=github
 
       - name: 🧪 Run tests
-        run: bun test
+        run: bun run test --run
