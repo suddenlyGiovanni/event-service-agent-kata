@@ -16,11 +16,11 @@
 	},
 	"private": true,
 	"scripts": {
-		"check": "exit 0",
-		"format": "exit 0",
-		"lint": "exit 0",
-		"test": "exit 0",
-		"type-check": "exit 0"
+		"check": "true",
+		"format": "true",
+		"lint": "true",
+		"test": "true",
+		"type-check": "true"
 	},
 	"type": "module",
 	"version": "0.0.1"
