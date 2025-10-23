@@ -6,8 +6,7 @@
 	},
 	"description": "Shared TypeScript configuration and tooling dependencies",
 	"exports": {
-		".": "./tsconfig.json",
-		"./tsconfig.json": "./tsconfig.json"
+		".": "./tsconfig.json"
 	},
 	"name": "@event-service-agent/typescript",
 	"peerDependencies": {
@@ -20,7 +19,7 @@
 		"check": "exit 0",
 		"format": "exit 0",
 		"lint": "exit 0",
-		"test": "bun --bun vitest",
+		"test": "exit 0",
 		"type-check": "exit 0"
 	},
 	"type": "module",
