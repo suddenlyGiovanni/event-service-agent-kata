@@ -77,25 +77,25 @@ These constraints appear consistently across ADRs and must be enforced in all co
 ```typescript
 // Define service interface
 class MyService extends Context.Tag("MyService")<
-	MyService,
-	{
-		readonly doThing: Effect.Effect<Result, MyError>
-	}
+  MyService,
+  {
+    readonly doThing: Effect.Effect<Result, MyError>;
+  }
 >() {}
 
 // Provide implementation
 const MyServiceLive = Layer.effect(
-	MyService,
-	Effect.gen(function* () {
-		const dep = yield* OtherService
-		return MyService.of({
-			doThing: Effect.succeed(/* ... */),
-		})
-	}),
-)
+  MyService,
+  Effect.gen(function* () {
+    const dep = yield* OtherService;
+    return MyService.of({
+      doThing: Effect.succeed(/* ... */),
+    });
+  }),
+);
 
 // Use in tests
-Effect.provide(program, Layer.merge(MyServiceLive, OtherServiceTest))
+Effect.provide(program, Layer.merge(MyServiceLive, OtherServiceTest));
 ```
 
 **Effect.gen Pattern** (readable imperative-style):
@@ -103,17 +103,15 @@ Effect.provide(program, Layer.merge(MyServiceLive, OtherServiceTest))
 ```typescript
 // ✅ Preferred: gen syntax (like do-notation in Haskell)
 Effect.gen(function* () {
-	const a = yield* getA
-	const b = yield* getB(a)
-	return compute(a, b)
-})
+  const a = yield* getA;
+  const b = yield* getB(a);
+  return compute(a, b);
+});
 
 // ❌ Avoid: deeply nested flatMap
 getA.pipe(
-	Effect.flatMap((a) =>
-		getB(a).pipe(Effect.map((b) => compute(a, b))),
-	),
-)
+  Effect.flatMap((a) => getB(a).pipe(Effect.map((b) => compute(a, b)))),
+);
 ```
 
 **Documentation Sources** (use MCP tools to get up-to-date info):
@@ -171,32 +169,32 @@ bun run --filter @event-service-agent/timer test
 **Test Structure**:
 
 ```typescript
-import { describe, expect, it } from '@effect/vitest'
-import * as Effect from 'effect/Effect'
-import * as Layer from 'effect/Layer'
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 
-describe('FeatureName', () => {
-	// ✅ Use .effect() for Effect-returning tests
-	it.effect('should do something', () =>
-		Effect.gen(function* () {
-			const service = yield* MyService
-			const result = yield* service.doThing()
-			expect(result).toBe(expected)
-		}).pipe(
-			Effect.provide(MyServiceTest), // Inject test dependencies
-		),
-	)
+describe("FeatureName", () => {
+  // ✅ Use .effect() for Effect-returning tests
+  it.effect("should do something", () =>
+    Effect.gen(function* () {
+      const service = yield* MyService;
+      const result = yield* service.doThing();
+      expect(result).toBe(expected);
+    }).pipe(
+      Effect.provide(MyServiceTest), // Inject test dependencies
+    ),
+  );
 
-	// ✅ Use TestClock for time control
-	it.effect('should handle time', () =>
-		Effect.gen(function* () {
-			yield* scheduleTask()
-			yield* TestClock.adjust('5 minutes')
-			const result = yield* checkResult()
-			expect(result).toBeDefined()
-		}).pipe(Effect.provide(testLayer)),
-	)
-})
+  // ✅ Use TestClock for time control
+  it.effect("should handle time", () =>
+    Effect.gen(function* () {
+      yield* scheduleTask();
+      yield* TestClock.adjust("5 minutes");
+      const result = yield* checkResult();
+      expect(result).toBeDefined();
+    }).pipe(Effect.provide(testLayer)),
+  );
+});
 ```
 
 **Running Tests**:
@@ -226,21 +224,21 @@ bun run test --ui
 ```typescript
 // Root: vitest.config.ts (orchestrator)
 export default defineConfig({
-	test: {
-		pool: 'forks',
-		poolOptions: { forks: { singleFork: true } },
-		projects: ['packages/*/vitest.config.ts'],
-	},
-})
+  test: {
+    pool: "forks",
+    poolOptions: { forks: { singleFork: true } },
+    projects: ["packages/*/vitest.config.ts"],
+  },
+});
 
 // Package: packages/timer/vitest.config.ts
 export default defineProjectConfig({
-	test: {
-		name: 'timer',
-		root: '.',
-		include: ['src/**/*.test.ts'],
-	},
-})
+  test: {
+    name: "timer",
+    root: ".",
+    include: ["src/**/*.test.ts"],
+  },
+});
 ```
 
 ---
@@ -342,14 +340,12 @@ When you need up-to-date information about libraries and tools:
 **Every feature follows strict TDD**:
 
 1. **🔴 RED**: Write failing test
-
    - Start with domain model test (pure functions, Schema validation)
    - Use `.effect()` tests with test layers
    - Test should compile but fail with expected error
    - **Commit**: `test(scope): add failing test for <feature>`
 
 2. **🟢 GREEN**: Minimum code to pass
-
    - Implement simplest solution (no premature optimization)
    - Domain → Ports → Workflows → Adapters (inside-out)
    - All tests must pass before commit
@@ -419,9 +415,13 @@ When you discover edge cases during RED/GREEN:
 
 ```typescript
 // ✅ Document and skip (don't block progress)
-it.todo('should handle concurrent schedules for same serviceCallId', () => {/* when missing an implementation */})
+it.todo("should handle concurrent schedules for same serviceCallId", () => {
+  /* when missing an implementation */
+});
 
-it.skip('should handle concurrent schedules for same serviceCallId', () => {/* when the implementation is temporarily broken due to the TDD phase */})
+it.skip("should handle concurrent schedules for same serviceCallId", () => {
+  /* when the implementation is temporarily broken due to the TDD phase */
+});
 
 // ✅ Add TODO comment
 // TODO(PL-4.4): Implement idempotency check in workflow
@@ -449,28 +449,31 @@ Tracked in TODO; non-blocking for current workflow.
 
 ```typescript
 // Start with simplest happy path
-it.effect('should create TimerEntry with valid inputs', () => Effect.gen(() => {
-	/*...*/
-  })
-)
+it.effect("should create TimerEntry with valid inputs", () =>
+  Effect.gen(() => {
+    /*...*/
+  }),
+);
 
 // Add constraint tests
-it.effect('should reject past dueAt', () => Effect.gen(() => {
-	/*...*/
-  })
-)
+it.effect("should reject past dueAt", () =>
+  Effect.gen(() => {
+    /*...*/
+  }),
+);
 
-it.effect('should reject invalid UUID format', () => Effect.gen(() => {
-	/*...*/
-  })
-)
+it.effect("should reject invalid UUID format", () =>
+  Effect.gen(() => {
+    /*...*/
+  }),
+);
 ```
 
 **GREEN phase** (workflow):
 
 ```typescript
 // Use test layers (in-memory ports)
-Effect.provide(workflow, Layer.merge(TimerPersistence.inMemory, ClockPortTest))
+Effect.provide(workflow, Layer.merge(TimerPersistence.inMemory, ClockPortTest));
 ```
 
 **REFACTOR phase**:
@@ -543,26 +546,22 @@ Refs: PL-4.5
 ### Order of Implementation (TDD Inside-Out)
 
 1. **Domain Model** (pure, no ports)
-
    - Effect Schema classes (`Schema.TaggedClass`)
    - Pure constructors/transformations
    - Test: unit tests with no dependencies
 
 2. **Port Interface** (defined by domain needs)
-
    - Create `packages/<module>/src/ports/<name>.port.ts`
    - Define `Context.Tag` service
    - Test: N/A (no logic to test)
 
 3. **Test Adapter** (in-memory, for TDD)
-
    - Implement port with `Ref` + `HashMap`
    - Use `Layer.effect` for lifecycle
    - Export as `<Name>Test` or `<Name>.inMemory`
    - Test: adapter-specific tests (lifecycle, state transitions)
 
 4. **Workflow** (domain orchestration)
-
    - Use `Effect.gen` to compose domain + ports
    - Inject ports via `yield* PortName`
    - Test: use test adapter, validate domain logic
@@ -578,50 +577,50 @@ Refs: PL-4.5
 
 ```typescript
 // 1. Domain (RED)
-test('TimerEntry.schedule validates future dueAt', () => {
-	/*...*/
-})
+test("TimerEntry.schedule validates future dueAt", () => {
+  /*...*/
+});
 
 // 2. Port (GREEN - interface only)
-class TimerPersistencePort extends Context.Tag('TimerPersistence')<
-	TimerPersistencePort,
-	{
-		readonly scheduleTimer: (
-			entry: TimerEntry,
-		) => Effect.Effect<void, PersistenceError>
-	}
+class TimerPersistencePort extends Context.Tag("TimerPersistence")<
+  TimerPersistencePort,
+  {
+    readonly scheduleTimer: (
+      entry: TimerEntry,
+    ) => Effect.Effect<void, PersistenceError>;
+  }
 >() {}
 
 // 3. Test Adapter (GREEN - in-memory)
 const inMemory = Layer.effect(
-	TimerPersistencePort,
-	Effect.gen(function* () {
-		const ref = yield* Ref.make(HashMap.empty<string, TimerEntry>())
-		return TimerPersistencePort.of({
-			scheduleTimer: (entry) => Ref.update(ref, HashMap.set(entry.id, entry)),
-		})
-	}),
-)
+  TimerPersistencePort,
+  Effect.gen(function* () {
+    const ref = yield* Ref.make(HashMap.empty<string, TimerEntry>());
+    return TimerPersistencePort.of({
+      scheduleTimer: (entry) => Ref.update(ref, HashMap.set(entry.id, entry)),
+    });
+  }),
+);
 
 // 4. Workflow (RED → GREEN)
-test('scheduleTimerWorkflow persists entry', () => {
-	Effect.provide(workflow, TimerPersistence.inMemory)
-})
+test("scheduleTimerWorkflow persists entry", () => {
+  Effect.provide(workflow, TimerPersistence.inMemory);
+});
 
 // 5. Production Adapter (later, after SQLite tests)
 const sqlite = Layer.effect(
-	TimerPersistencePort,
-	Effect.gen(function* () {
-		const db = yield* Database
-		return TimerPersistencePort.of({
-			scheduleTimer: (entry) =>
-				Effect.tryPromise({
-					try: () => db.run('INSERT INTO timer_schedules ...'),
-					catch: (error) => new PersistenceError({ cause: error }),
-				}),
-		})
-	}),
-)
+  TimerPersistencePort,
+  Effect.gen(function* () {
+    const db = yield* Database;
+    return TimerPersistencePort.of({
+      scheduleTimer: (entry) =>
+        Effect.tryPromise({
+          try: () => db.run("INSERT INTO timer_schedules ..."),
+          catch: (error) => new PersistenceError({ cause: error }),
+        }),
+    });
+  }),
+);
 ```
 
 ---
@@ -642,26 +641,26 @@ const sqlite = Layer.effect(
 ```typescript
 // Define domain errors
 export class ValidationError extends Schema.TaggedError<ValidationError>()(
-	'ValidationError',
-	{ message: Schema.String, field: Schema.String },
+  "ValidationError",
+  { message: Schema.String, field: Schema.String },
 ) {}
 
 export class PersistenceError extends Schema.TaggedError<PersistenceError>()(
-	'PersistenceError',
-	{ message: Schema.String, cause: Schema.Unknown },
+  "PersistenceError",
+  { message: Schema.String, cause: Schema.Unknown },
 ) {}
 
 // Workflow signatures include all error types
 const workflow: Effect.Effect<
-	Result,
-	ValidationError | PersistenceError, // ← explicit error channel
-	TimerPersistencePort | ClockPort // ← required dependencies
+  Result,
+  ValidationError | PersistenceError, // ← explicit error channel
+  TimerPersistencePort | ClockPort // ← required dependencies
 > = Effect.gen(function* () {
-	// Errors propagate automatically in gen syntax
-	const entry = yield* TimerEntry.schedule(command) // may fail with ValidationError
-	yield* persistence.save(entry) // may fail with PersistenceError
-	return entry
-})
+  // Errors propagate automatically in gen syntax
+  const entry = yield* TimerEntry.schedule(command); // may fail with ValidationError
+  yield* persistence.save(entry); // may fail with PersistenceError
+  return entry;
+});
 ```
 
 ---
@@ -671,18 +670,18 @@ const workflow: Effect.Effect<
 ```typescript
 // ✅ Adapter maps infra errors to domain errors
 const sqliteAdapter = {
-	save: (entry: TimerEntry) =>
-		Effect.tryPromise({
-			try: () => db.run('INSERT ...'),
-			catch: (cause) =>
-				new PersistenceError({ message: 'DB insert failed', cause }),
-		}),
-}
+  save: (entry: TimerEntry) =>
+    Effect.tryPromise({
+      try: () => db.run("INSERT ..."),
+      catch: (cause) =>
+        new PersistenceError({ message: "DB insert failed", cause }),
+    }),
+};
 
 // ❌ Never expose raw infrastructure errors to domain
 const badAdapter = {
-	save: (entry) => Effect.promise(() => db.run('INSERT ...')), // ← throws, not typed!
-}
+  save: (entry) => Effect.promise(() => db.run("INSERT ...")), // ← throws, not typed!
+};
 ```
 
 ---
@@ -691,15 +690,15 @@ const badAdapter = {
 
 ```typescript
 // RED: Test expected errors
-it.effect('should fail on past dueAt', () =>
-	Effect.gen(function* () {
-		const result = yield* TimerEntry.schedule({ dueAt: pastTime }).pipe(
-			Effect.either, // ← catch error in Either
-		)
-		expect(Either.isLeft(result)).toBe(true)
-		expect(result.left).toBeInstanceOf(ValidationError)
-	}),
-)
+it.effect("should fail on past dueAt", () =>
+  Effect.gen(function* () {
+    const result = yield* TimerEntry.schedule({ dueAt: pastTime }).pipe(
+      Effect.either, // ← catch error in Either
+    );
+    expect(Either.isLeft(result)).toBe(true);
+    expect(result.left).toBeInstanceOf(ValidationError);
+  }),
+);
 ```
 
 ---
@@ -758,13 +757,13 @@ it.effect('should not return timers from other tenants', () =>
 
 ```typescript
 // ❌ Missing tenant filter
-const allTimers = db.query('SELECT * FROM timer_schedules WHERE due_at <= ?')
+const allTimers = db.query("SELECT * FROM timer_schedules WHERE due_at <= ?");
 
 // ✅ Tenant-scoped query
 const tenantTimers = db.query(
-	'SELECT * FROM timer_schedules WHERE tenant_id = ? AND due_at <= ?',
-	[tenantId, dueAt],
-)
+  "SELECT * FROM timer_schedules WHERE tenant_id = ? AND due_at <= ?",
+  [tenantId, dueAt],
+);
 ```
 
 ---

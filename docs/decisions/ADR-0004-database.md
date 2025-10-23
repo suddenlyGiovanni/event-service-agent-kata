@@ -230,9 +230,9 @@ export class OrchestrationSqliteAdapter
             entity.name,
             entity.status,
             entity.createdAt,
-          ]
+          ],
         );
-      })
+      }),
     );
   }
 }

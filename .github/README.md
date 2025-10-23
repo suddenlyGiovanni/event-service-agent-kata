@@ -9,6 +9,7 @@ This directory contains CI/CD workflows for the event-service-agent-kata project
 Runs on every pull request targeting the `main` branch.
 
 **Jobs:**
+
 - ✅ **Typecheck**: Validates TypeScript types across all packages
 - ✅ **Lint**: Checks code quality using Biome linter
 - ✅ **Format**: Verifies code formatting using Biome formatter
@@ -19,6 +20,7 @@ Runs on every pull request targeting the `main` branch.
 Runs on pushes to feature branches (excluding `main`).
 
 **Jobs:**
+
 - ✅ **Typecheck**: Validates TypeScript types across all packages
 - ✅ **Lint**: Checks and auto-fixes code quality issues using Biome linter
 - ✅ **Format**: Checks and auto-formats code using Biome formatter
@@ -31,6 +33,7 @@ Runs on pushes to feature branches (excluding `main`).
 Runs on pushes to the `main` branch and can be manually triggered.
 
 **Jobs:**
+
 - ✅ **Typecheck**: Validates TypeScript types across all packages
 - ✅ **Lint**: Checks code quality using Biome linter (no auto-fix)
 - ✅ **Format**: Verifies code formatting using Biome formatter (no auto-fix)
@@ -39,6 +42,7 @@ Runs on pushes to the `main` branch and can be manually triggered.
 ## Setup Action
 
 The `actions/setup` composite action handles:
+
 - 📦 **Bun Installation**: Installs Bun runtime using version from `package.json`
 - 🗂️ **Dependency Caching**: Caches Bun dependencies for faster builds
 - 🧩 **Dependency Installation**: Runs `bun install --frozen-lockfile`

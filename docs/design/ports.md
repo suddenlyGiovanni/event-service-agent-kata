@@ -58,7 +58,7 @@ export interface EventBusPort {
   publish(envelopes: MessageEnvelope[], ctx: RequestContext): Promise<void>;
   subscribe(
     topics: string[],
-    handler: (env: MessageEnvelope) => Promise<void>
+    handler: (env: MessageEnvelope) => Promise<void>,
   ): Promise<void>;
 }
 ```
@@ -105,7 +105,7 @@ export interface HttpResponse<T = unknown> {
 export interface HttpClientPort {
   request<T = unknown>(
     req: HttpRequest,
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<HttpResponse<T>>;
 }
 ```
@@ -123,13 +123,13 @@ export interface PersistencePort {
   getServiceCall(
     tenantId: string,
     serviceCallId: string,
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<unknown | null>;
   listServiceCalls(
     tenantId: string,
     filters: Record<string, unknown>,
     paging: { limit: number; offset: number },
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<unknown[]>;
 
   // Single-writer transitions (guarded updates)
@@ -138,21 +138,21 @@ export interface PersistencePort {
     tenantId: string,
     serviceCallId: string,
     startedAtMs: number,
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<boolean>; // returns true if updated from Scheduled
   setSucceeded(
     tenantId: string,
     serviceCallId: string,
     finishedAtMs: number,
     responseMeta: unknown,
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<boolean>;
   setFailed(
     tenantId: string,
     serviceCallId: string,
     finishedAtMs: number,
     errorMeta: unknown,
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<boolean>;
 }
 ```
