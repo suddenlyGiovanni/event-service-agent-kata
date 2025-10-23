@@ -923,7 +923,7 @@ When encountering a choice:
 
 ### Examples from This Project
 
-```
+```text
 feat(timer): implement polling worker workflow
 
 - Add pollDueTimersWorkflow with Effect.fn
@@ -934,7 +934,7 @@ feat(timer): implement polling worker workflow
 Refs: PL-4.4, [adr: ADR-0003]
 ```
 
-```
+```text
 refactor(orchestration): extract idempotency guard
 
 - Move duplicate detection to pure function
@@ -944,7 +944,7 @@ refactor(orchestration): extract idempotency guard
 Refs: PL-8
 ```
 
-```
+```text
 docs(design): clarify Timer state machine transitions
 
 - Document Scheduled → Reached as only valid path
