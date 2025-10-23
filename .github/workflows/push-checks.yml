@@ -42,7 +42,7 @@ jobs:
           --changed \
           --write
 
-      - name: � Format code
+      - name: 💅 Format code
         id: format
         continue-on-error: true
         shell: sh
