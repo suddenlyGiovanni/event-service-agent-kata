@@ -1,0 +1,27 @@
+{
+	"dependencies": {
+		"@effect/language-service": "catalog:effect",
+		"@tsconfig/bun": "catalog:typescript",
+		"@tsconfig/strictest": "catalog:typescript"
+	},
+	"description": "Shared TypeScript configuration and tooling dependencies",
+	"exports": {
+		".": "./tsconfig.json"
+	},
+	"name": "@event-service-agent/typescript",
+	"peerDependencies": {
+		"@total-typescript/ts-reset": "catalog:types",
+		"@types/bun": "catalog:types",
+		"typescript": "catalog:typescript"
+	},
+	"private": true,
+	"scripts": {
+		"check": "true",
+		"format": "true",
+		"lint": "true",
+		"test": "true",
+		"type-check": "true"
+	},
+	"type": "module",
+	"version": "0.0.1"
+}

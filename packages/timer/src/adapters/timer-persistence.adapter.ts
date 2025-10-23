@@ -9,8 +9,8 @@ import * as Ref from 'effect/Ref'
 
 import type { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
-import { TimerEntry } from '#/domain/timer-entry.domain.ts'
-import { PersistenceError, TimerPersistencePort } from '#/ports/timer-persistence.port.ts'
+import { TimerEntry } from '../domain/timer-entry.domain.ts'
+import { PersistenceError, TimerPersistencePort } from '../ports/timer-persistence.port.ts'
 
 /**
  * TimerPersistence - Adapter implementations for TimerPersistencePort
@@ -29,7 +29,7 @@ import { PersistenceError, TimerPersistencePort } from '#/ports/timer-persistenc
  * @example
  * ```typescript
  * // In tests - use in-memory storage
- * import { TimerPersistence } from '#/adapters/timer-persistence.adapter.ts'
+ * import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
  *
  * Effect.gen(function* () {
  *   const persistence = yield* TimerPersistencePort

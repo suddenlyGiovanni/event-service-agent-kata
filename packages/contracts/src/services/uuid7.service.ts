@@ -21,8 +21,8 @@ import * as Layer from 'effect/Layer'
 import type * as ParseResult from 'effect/ParseResult'
 import * as Schema from 'effect/Schema'
 
-import { UUIDPort } from '#/ports/uuid.port.ts'
-import { UUID7 as UUID7Schema } from '#/types/uuid7.type.ts'
+import { UUIDPort } from '../ports/uuid.port.ts'
+import { UUID7 as UUID7Schema } from '../types/uuid7.type.ts'
 
 /**
  * UUID7 - Domain service for generating validated UUID7 values

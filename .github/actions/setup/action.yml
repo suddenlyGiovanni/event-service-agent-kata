@@ -1,0 +1,28 @@
+name: 💉Setup the project
+description: Perform standard setup and install dependencies using Bun.
+runs:
+  using: composite
+  steps:
+    - name: 🛠️ Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version-file: "package.json"
+
+
+    - name: 📦 Get Bun cache directory
+      id: bun-cache
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(bun pm cache)" >> $GITHUB_ENV
+
+    - name: 🗂️ Setup Bun cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-bun-
+
+    - name: 🧩 Install dependencies
+      shell: bash
+      run: bun ci

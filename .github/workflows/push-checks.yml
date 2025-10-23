@@ -1,0 +1,77 @@
+name: 🚀 Push Checks
+on:
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+
+jobs:
+  checks:
+    name: 🫸 Push Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
+
+      - name: 🔍 Typecheck code
+        id: typecheck
+        continue-on-error: true
+        run: bun run type-check
+
+      - name: 🚨 Lint code
+        id: lint
+        continue-on-error: true
+        shell: sh
+        run: |
+          bun biome check \
+          --max-diagnostics=none \
+          --vcs-enabled=true \
+          --vcs-use-ignore-file=true \
+          --vcs-root="." \
+          --formatter-enabled=false \
+          --linter-enabled=true \
+          --assist-enabled=true \
+          --no-errors-on-unmatched \
+          --reporter=github \
+          --changed \
+          --write
+
+      - name: 💅 Format code
+        id: format
+        continue-on-error: true
+        shell: sh
+        run: |
+          bun biome check \
+          --max-diagnostics=none \
+          --vcs-enabled=true \
+          --vcs-use-ignore-file=true \
+          --vcs-root="." \
+          --formatter-enabled=true \
+          --linter-enabled=false  \
+          --assist-enabled=true \
+          --reporter=github \
+          --changed \
+          --no-errors-on-unmatched \
+          --write
+
+      - name: 🚦 Git Auto Commit fixes (with Biome)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: lint and format code with Biome [skip ci]"
+
+      - name: 🧪 Run tests
+        id: tests
+        continue-on-error: true
+        run: bun run test --run
+
+      - name: ❌ Fail if any check failed
+        if: steps.typecheck.outcome == 'failure' || steps.lint.outcome == 'failure' || steps.format.outcome == 'failure' || steps.tests.outcome == 'failure'
+        run: |
+          echo "::error::One or more checks failed"
+          exit 1

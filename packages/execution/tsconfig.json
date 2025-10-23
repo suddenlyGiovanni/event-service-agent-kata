@@ -1,11 +1,4 @@
 {
-	"extends": "../../tsconfig.base.json",
-	"include": ["src/**/*"],
-	"compilerOptions": {
-		"baseUrl": ".",
-		"paths": {
-			"#/*": ["./src/*"]
-		}
-	}
-
+	"extends": "@event-service-agent/typescript",
+	"include": ["src/**/*"]
 }

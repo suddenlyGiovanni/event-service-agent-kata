@@ -5,13 +5,7 @@
       "name": "event-service-agent",
       "devDependencies": {
         "@biomejs/biome": "catalog:lint",
-        "@effect/language-service": "catalog:effect",
         "@effect/vitest": "catalog:test",
-        "@total-typescript/ts-reset": "catalog:types",
-        "@tsconfig/bun": "catalog:typescript",
-        "@tsconfig/strictest": "catalog:typescript",
-        "@types/bun": "catalog:types",
-        "typescript": "catalog:typescript",
         "vitest": "catalog:test",
       },
     },
@@ -23,6 +17,7 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
       },
     },
     "packages/api": {
@@ -33,6 +28,7 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
       },
     },
     "packages/contracts": {
@@ -43,6 +39,7 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
       },
     },
     "packages/execution": {
@@ -53,6 +50,7 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
       },
     },
     "packages/orchestration": {
@@ -63,6 +61,7 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
       },
     },
     "packages/timer": {
@@ -74,6 +73,27 @@
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
+      },
+    },
+    "packages/typescript": {
+      "name": "@event-service-agent/typescript",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@effect/language-service": "catalog:effect",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@tsconfig/bun": "catalog:typescript",
+        "@tsconfig/strictest": "catalog:typescript",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
+      },
+      "peerDependencies": {
+        "@effect/language-service": "catalog:effect",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@tsconfig/bun": "catalog:typescript",
+        "@tsconfig/strictest": "catalog:typescript",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
       },
     },
     "packages/ui": {
@@ -81,12 +101,13 @@
       "version": "0.0.1",
       "devDependencies": {
         "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
       },
     },
   },
   "catalogs": {
     "effect": {
-      "@effect/language-service": "latest",
+      "@effect/language-service": "0.46.0",
       "effect": "3.18.4",
     },
     "lint": {
@@ -125,7 +146,7 @@
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.2.6", "", { "os": "win32", "cpu": "x64" }, "sha512-yx0CqeOhPjYQ5ZXgPfu8QYkgBhVJyvWe36as7jRuPrKPO5ylVDfwVtPQ+K/mooNTADW0IhxOZm3aPu16dP8yNQ=="],
 
-    "@effect/language-service": ["@effect/language-service@0.45.1", "", { "bin": { "effect-language-service": "cli.js" } }, "sha512-SEZ9TaVCpRKYumTQJPApg3os9O94bN2lCYQLgZbyK/xD+NSfYPPJZQ+6T5LkpcNgW8BRk1ACI7S1W2/noxm7Qg=="],
+    "@effect/language-service": ["@effect/language-service@0.46.0", "", { "bin": { "effect-language-service": "cli.js" } }, "sha512-eWMuy/RNvDMdhi8NJ/pfHS1UHd5R7adXlO4ClRYMgF6cUqN6FdXw1HgJHF7gJILVPD0Mdo/XQYNJ5gZbsdaImg=="],
 
     "@effect/vitest": ["@effect/vitest@0.26.0", "", { "peerDependencies": { "effect": "^3.18.0", "vitest": "^3.2.0" } }, "sha512-h7r21XRtHpl8CQmIuplCK54bYJkUij4c6bUxK27y4d9dTXn4s7c/I3Lilb4VZxv3P3S3sChCu5YIGW4pdQFjZg=="],
 
@@ -192,6 +213,8 @@
     "@event-service-agent/orchestration": ["@event-service-agent/orchestration@workspace:packages/orchestration"],
 
     "@event-service-agent/timer": ["@event-service-agent/timer@workspace:packages/timer"],
+
+    "@event-service-agent/typescript": ["@event-service-agent/typescript@workspace:packages/typescript"],
 
     "@event-service-agent/ui": ["@event-service-agent/ui@workspace:packages/ui"],
 

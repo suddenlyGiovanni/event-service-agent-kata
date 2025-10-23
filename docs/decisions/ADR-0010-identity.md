@@ -69,7 +69,6 @@ await db.transaction(async (tx) => {
 ### UUID v4 vs UUID v7
 
 - **UUID v4** — Random (122 bits entropy), no temporal ordering
-
   - ❌ Poor database index locality (random inserts fragment B-trees)
   - ❌ Poor cache locality (hot keys scattered across index)
   - ❌ Can't sort by creation time
@@ -172,9 +171,9 @@ export class TenantId extends Schema.String.pipe(
     /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
     {
       message: () => "TenantId must be a valid UUID v7",
-    }
+    },
   ),
-  Schema.brand("TenantId")
+  Schema.brand("TenantId"),
 ) {}
 
 // API handler (SAFE):

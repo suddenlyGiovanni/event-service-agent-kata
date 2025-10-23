@@ -7,9 +7,9 @@ import * as Schema from 'effect/Schema'
 import type * as Messages from '@event-service-agent/contracts/messages'
 import type { CorrelationId } from '@event-service-agent/contracts/types'
 
-import { ScheduledTimer } from '#/domain/timer-entry.domain.ts'
-import { ClockPort } from '#/ports/clock.port.ts'
-import { type PersistenceError, TimerPersistencePort } from '#/ports/timer-persistence.port.ts'
+import { ScheduledTimer } from '../domain/timer-entry.domain.ts'
+import { ClockPort } from '../ports/clock.port.ts'
+import { type PersistenceError, TimerPersistencePort } from '../ports/timer-persistence.port.ts'
 
 interface WorkflowInput {
 	/**

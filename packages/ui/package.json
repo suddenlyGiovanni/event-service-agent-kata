@@ -1,13 +1,11 @@
 {
 	"description": "User interface - SSR/SPA app for interacting with the service call API",
 	"devDependencies": {
-		"@effect/vitest": "catalog:test"
-	},
-	"exports": {
-		".": "./src/index.ts"
-	},
-	"imports": {
-		"#/*": "./src/*"
+		"@effect/vitest": "catalog:test",
+		"@event-service-agent/typescript": "workspace:*",
+		"@total-typescript/ts-reset": "catalog:types",
+		"@types/bun": "catalog:types",
+		"typescript": "catalog:typescript"
 	},
 	"name": "@event-service-agent/ui",
 	"private": true,

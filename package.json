@@ -6,7 +6,7 @@
 	},
 	"catalogs": {
 		"effect": {
-			"@effect/language-service": "latest",
+			"@effect/language-service": "0.46.0",
 			"effect": "3.18.4"
 		},
 		"lint": {
@@ -29,13 +29,7 @@
 	"description": "Event-driven, multi-tenant service-call agent",
 	"devDependencies": {
 		"@biomejs/biome": "catalog:lint",
-		"@effect/language-service": "catalog:effect",
 		"@effect/vitest": "catalog:test",
-		"@total-typescript/ts-reset": "catalog:types",
-		"@tsconfig/bun": "catalog:typescript",
-		"@tsconfig/strictest": "catalog:typescript",
-		"@types/bun": "catalog:types",
-		"typescript": "catalog:typescript",
 		"vitest": "catalog:test"
 	},
 	"devEngines": {
@@ -50,17 +44,20 @@
 			"version": "^1.3.0"
 		}
 	},
+	"engines": {
+		"bun": ">=1.3.0"
+	},
 	"license": "MIT",
 	"module": "index.ts",
 	"name": "event-service-agent",
 	"private": true,
 	"scripts": {
-		"check": "bun run --workspaces check",
+		"check": "bun --bun --workspaces check",
 		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
-		"format": "bun run --workspaces format",
-		"lint": "bun run --workspaces lint",
-		"test": "bun --bun vitest",
-		"type-check": "bun run --workspaces type-check"
+		"format": "bun --bun --workspaces format",
+		"lint": "bun --bun --workspaces lint",
+		"test": "bun --bun --workspaces run test",
+		"type-check": "bun --bun --workspaces type-check"
 	},
 	"type": "module",
 	"workspaces": ["packages/*"]

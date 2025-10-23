@@ -5,8 +5,7 @@ import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import { describe, expect, it } from 'vitest'
 
-import { UUID7Regex, type UUID7 as UUID7Schema } from '#/types/uuid7.type.ts'
-
+import { UUID7Regex, type UUID7 as UUID7Schema } from '../types/uuid7.type.ts'
 import { UUID7 } from './uuid7.service.ts'
 
 describe('UUID7', () => {

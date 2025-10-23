@@ -79,7 +79,7 @@ graph TB
 ```typescript
 // packages/orchestration/src/workflows/submit-service-call.workflow.ts
 export const submitServiceCallWorkflow = (
-  request: SubmitServiceCallRequest
+  request: SubmitServiceCallRequest,
 ): Effect<ServiceCall, ValidationError | PersistenceError> =>
   Effect.gen(function* (_) {
     // 1. Create domain entity
@@ -111,21 +111,21 @@ export interface OrchestrationPersistencePort {
   // Interface shaped by DOMAIN needs, not DB capabilities
   getServiceCall(
     tenantId: TenantId,
-    id: ServiceCallId
+    id: ServiceCallId,
   ): Effect<ServiceCall | null, PersistenceError>;
 
   saveServiceCall(serviceCall: ServiceCall): Effect<void, PersistenceError>;
 
   listServiceCalls(
     tenantId: TenantId,
-    filters: ListFilters
+    filters: ListFilters,
   ): Effect<ServiceCall[], PersistenceError>;
 }
 
 // Tag for Effect dependency injection
 export const OrchestrationPersistencePort =
   Context.GenericTag<OrchestrationPersistencePort>(
-    "@orchestration/PersistencePort"
+    "@orchestration/PersistencePort",
   );
 ```
 
@@ -167,7 +167,7 @@ export class OrchestrationSqliteAdapter
                   serviceCall.name,
                   serviceCall.status,
                   serviceCall.createdAt,
-                ]
+                ],
               );
 
               // Save tags in same transaction
@@ -176,19 +176,19 @@ export class OrchestrationSqliteAdapter
                   `INSERT INTO service_call_tags (
                     tenant_id, service_call_id, tag
                   ) VALUES (?, ?, ?)`,
-                  [serviceCall.tenantId, serviceCall.id, tag]
+                  [serviceCall.tenantId, serviceCall.id, tag],
                 );
               }
             }),
           catch: (error) => new PersistenceError({ cause: error }),
-        })
+        }),
       );
     });
   }
 
   getServiceCall(
     tenantId: TenantId,
-    id: ServiceCallId
+    id: ServiceCallId,
   ): Effect<ServiceCall | null, PersistenceError> {
     return Effect.gen(function* (_) {
       const row = yield* _(
@@ -197,10 +197,10 @@ export class OrchestrationSqliteAdapter
             this.db.get(
               `SELECT * FROM service_calls 
                WHERE tenant_id = ? AND service_call_id = ?`,
-              [tenantId, id]
+              [tenantId, id],
             ),
           catch: (error) => new PersistenceError({ cause: error }),
-        })
+        }),
       );
 
       if (!row) return null;
@@ -279,12 +279,12 @@ const sqliteAdapter = new OrchestrationSqliteAdapter(db);
 // 3. Wire adapter to port (Dependency Injection)
 const OrchestrationPersistenceLayer = Layer.succeed(
   OrchestrationPersistencePort,
-  sqliteAdapter
+  sqliteAdapter,
 );
 
 // 4. Provide layer to use cases
 const program = submitServiceCall(request).pipe(
-  Effect.provide(OrchestrationPersistenceLayer)
+  Effect.provide(OrchestrationPersistenceLayer),
 );
 
 // 5. Run the program
@@ -302,7 +302,7 @@ container.bind(OrchestrationPersistencePort).to(OrchestrationSqliteAdapter);
 class UseCase {
   constructor(
     @Inject(OrchestrationPersistencePort)
-    private readonly persistence: OrchestrationPersistencePort
+    private readonly persistence: OrchestrationPersistencePort,
   ) {}
 }
 ```
@@ -398,7 +398,7 @@ function useCase(adapter: SqliteAdapter) { ... }
 // Real adapter talks to SQLite
 const prodLayer = Layer.succeed(
   PersistencePort,
-  new OrchestrationSqliteAdapter(db)
+  new OrchestrationSqliteAdapter(db),
 );
 
 const program = submitServiceCall(request).pipe(Effect.provide(prodLayer));
@@ -425,11 +425,11 @@ class InMemoryPersistenceAdapter implements OrchestrationPersistencePort {
 // Inject mock instead of real DB
 const testLayer = Layer.succeed(
   PersistencePort,
-  new InMemoryPersistenceAdapter()
+  new InMemoryPersistenceAdapter(),
 );
 
 const program = submitServiceCall(request).pipe(
-  Effect.provide(testLayer) // Same use case, different adapter!
+  Effect.provide(testLayer), // Same use case, different adapter!
 );
 ```
 

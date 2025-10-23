@@ -24,7 +24,7 @@ import type * as Option from 'effect/Option'
 
 import type { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
-import type { TimerEntry } from '#/domain/timer-entry.domain.ts'
+import type { TimerEntry } from '../domain/timer-entry.domain.ts'
 
 /**
  * PersistenceError - Generic error when storage operations fail

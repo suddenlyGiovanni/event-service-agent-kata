@@ -27,7 +27,6 @@
 
 - [Domain](./docs/design/domain.md) (Problem Space)
 - [Modules & Interactions](./docs/design/modules-and-interactions.md) (Solution Space)
-
   - [API Module](./docs/design/modules/api.md)
   - [Orchestration Module](./docs/design/modules/orchestration.md)
   - [Execution Module](./docs/design/modules/execution.md)

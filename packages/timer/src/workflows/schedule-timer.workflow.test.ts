@@ -12,12 +12,11 @@ import * as TestClock from 'effect/TestClock'
 import type * as Messages from '@event-service-agent/contracts/messages'
 import { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
-import { ClockPortTest } from '#/adapters/clock.adapter.ts'
-import { TimerPersistence } from '#/adapters/timer-persistence.adapter.ts'
-import { TimerEntry } from '#/domain/timer-entry.domain.ts'
-import { ClockPort } from '#/ports/clock.port.ts'
-import { PersistenceError, TimerPersistencePort } from '#/ports/timer-persistence.port.ts'
-
+import { ClockPortTest } from '../adapters/clock.adapter.ts'
+import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
+import { TimerEntry } from '../domain/timer-entry.domain.ts'
+import { ClockPort } from '../ports/clock.port.ts'
+import { PersistenceError, TimerPersistencePort } from '../ports/timer-persistence.port.ts'
 import { scheduleTimerWorkflow } from './schedule-timer.workflow.ts'
 
 describe('scheduleTimerWorkflow', () => {
