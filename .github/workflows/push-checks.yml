@@ -20,9 +20,13 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: 🔍 Typecheck code
+        id: typecheck
+        continue-on-error: true
         run: bun run type-check
 
       - name: 🚨 Lint code
+        id: lint
+        continue-on-error: true
         shell: sh
         run: |
           bun biome check \
@@ -38,12 +42,9 @@ jobs:
           --changed \
           --write
 
-      - name: 🚦 Git Auto Commit Lint fixes (with Biome)
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: lint code with Biome [skip ci]"
-
-      - name: 💅 Format code
+      - name: � Format code
+        id: format
+        continue-on-error: true
         shell: sh
         run: |
           bun biome check \
@@ -59,10 +60,18 @@ jobs:
           --no-errors-on-unmatched \
           --write
 
-      - name: 🚦 Git Auto Commit Format fixes (with Biome)
+      - name: 🚦 Git Auto Commit fixes (with Biome)
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: format code with Biome [skip ci]"
+          commit_message: "chore: lint and format code with Biome [skip ci]"
 
       - name: 🧪 Run tests
+        id: tests
+        continue-on-error: true
         run: bun run test --run
+
+      - name: ❌ Fail if any check failed
+        if: steps.typecheck.outcome == 'failure' || steps.lint.outcome == 'failure' || steps.format.outcome == 'failure' || steps.tests.outcome == 'failure'
+        run: |
+          echo "::error::One or more checks failed"
+          exit 1
