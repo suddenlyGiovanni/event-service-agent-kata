@@ -1,0 +1,58 @@
+name: 🐶 reviewdog
+permissions:
+  contents: read
+  pull-requests: write
+on: pull_request
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐶 reviewdog with actionlint
+        uses: reviewdog/action-actionlint@v1
+        continue-on-error: true
+        with:
+          fail_on_error: false
+          filter_mode: nofilter
+          github_token: ${{ secrets.github_token }}
+          level: error
+          reporter: github-pr-review
+          tool_name: actionlint
+
+  markdownlint:
+    name: runner / markdownlint
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐶 reviewdog with markdownlint (markdown)
+        continue-on-error: true
+        uses: reviewdog/action-markdownlint@v0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          level: warning
+          filter_mode: nofilter
+          fail_on_error: false
+
+  misspell:
+    name: runner / misspell
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐶 reviewdog with misspell
+        uses: reviewdog/action-misspell@v1
+        with:
+          github_token: ${{ secrets.github_token }}
+          locale: "US"
+          level: "info"
+          reporter: "github-pr-review"
+          path: "."
+          filter_mode: "nofilter"
+          fail_on_error: "false"
