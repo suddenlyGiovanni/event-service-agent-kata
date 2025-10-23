@@ -65,7 +65,7 @@ bun run format
 bun run check
 
 # Test
-bun test
+bun run test
 ```
 
 ## Requirements
