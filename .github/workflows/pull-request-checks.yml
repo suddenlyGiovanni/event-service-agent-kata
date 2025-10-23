@@ -1,4 +1,4 @@
-name: 🔗Pull Request Checks
+name: 🔗 Pull Request Checks
 on:
   pull_request:
     branches:
