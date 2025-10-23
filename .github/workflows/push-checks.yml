@@ -61,7 +61,7 @@ jobs:
           --write
 
       - name: 🚦 Git Auto Commit fixes (with Biome)
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: lint and format code with Biome [skip ci]"
 
