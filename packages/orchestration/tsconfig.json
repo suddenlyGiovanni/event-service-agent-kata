@@ -1,4 +1,4 @@
 {
-	"extends": "@event-service-agent/typescript/tsconfig.json",
+	"extends": "@event-service-agent/typescript",
 	"include": ["src/**/*"]
 }
