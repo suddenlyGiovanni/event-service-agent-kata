@@ -9,11 +9,12 @@ frozenLockfile = true # When true, bun install will not update bun.lock. Default
 linkWorkspacePackages = true
 # Only install package versions published at least 3 days ago
 minimumReleaseAge = 259200
+publicHoistPattern = ["@types*", "@effect/language-service", "@tsconfig/*", "typescript", "vitest"]
 minimumReleaseAgeExcludes = [
-	"@tsconfig/bun",
-	"@types/bun",
-	"@effect/language-service", # TypeScript plugin, needs latest for IDE support
-	"@effect/vitest",            # Test framework, track latest for bug fixes
+    "@tsconfig/bun",
+    "@types/bun",
+    "@effect/language-service", # TypeScript plugin, needs latest for IDE support
+    "@effect/vitest", # Test framework, track latest for bug fixes
 ]
 
 [run]

@@ -18,6 +18,9 @@
       "devDependencies": {
         "@effect/vitest": "catalog:test",
         "@event-service-agent/typescript": "workspace:*",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
       },
     },
     "packages/api": {
@@ -29,6 +32,9 @@
       "devDependencies": {
         "@effect/vitest": "catalog:test",
         "@event-service-agent/typescript": "workspace:*",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
       },
     },
     "packages/contracts": {
@@ -40,6 +46,9 @@
       "devDependencies": {
         "@effect/vitest": "catalog:test",
         "@event-service-agent/typescript": "workspace:*",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
       },
     },
     "packages/execution": {
@@ -51,6 +60,9 @@
       "devDependencies": {
         "@effect/vitest": "catalog:test",
         "@event-service-agent/typescript": "workspace:*",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
       },
     },
     "packages/orchestration": {
@@ -62,6 +74,9 @@
       "devDependencies": {
         "@effect/vitest": "catalog:test",
         "@event-service-agent/typescript": "workspace:*",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
       },
     },
     "packages/timer": {
@@ -74,24 +89,21 @@
       "devDependencies": {
         "@effect/vitest": "catalog:test",
         "@event-service-agent/typescript": "workspace:*",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
       },
     },
     "packages/typescript": {
       "name": "@event-service-agent/typescript",
       "version": "0.0.1",
-      "devDependencies": {
+      "dependencies": {
         "@effect/language-service": "catalog:effect",
-        "@total-typescript/ts-reset": "catalog:types",
         "@tsconfig/bun": "catalog:typescript",
         "@tsconfig/strictest": "catalog:typescript",
-        "@types/bun": "catalog:types",
-        "typescript": "catalog:typescript",
       },
       "peerDependencies": {
-        "@effect/language-service": "catalog:effect",
         "@total-typescript/ts-reset": "catalog:types",
-        "@tsconfig/bun": "catalog:typescript",
-        "@tsconfig/strictest": "catalog:typescript",
         "@types/bun": "catalog:types",
         "typescript": "catalog:typescript",
       },
@@ -102,6 +114,9 @@
       "devDependencies": {
         "@effect/vitest": "catalog:test",
         "@event-service-agent/typescript": "workspace:*",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
       },
     },
   },
@@ -272,7 +287,7 @@
 
     "@tsconfig/strictest": ["@tsconfig/strictest@2.0.6", "", {}, "sha512-tPOhmDhIUcDjvpDDYyiUdssP84Eqm7n5KxJe5J3/g+s6xoDIPAf+SIn06dhw7VkhxIvLOnhDDrX7tsqMHNEhDg=="],
 
-    "@types/bun": ["@types/bun@1.3.0", "", { "dependencies": { "bun-types": "1.3.0" } }, "sha512-+lAGCYjXjip2qY375xX/scJeVRmZ5cY0wyHYyCYxNcdEXrQ4AOe3gACgd4iQ8ksOslJtW4VNxBJ8llUwc3a6AA=="],
+    "@types/bun": ["@types/bun@1.3.1", "", { "dependencies": { "bun-types": "1.3.1" } }, "sha512-4jNMk2/K9YJtfqwoAa28c8wK+T7nvJFOjxI4h/7sORWcypRNxBpr+TPNaCfVWq70tLCJsqoFwcf0oI0JU/fvMQ=="],
 
     "@types/chai": ["@types/chai@5.2.2", "", { "dependencies": { "@types/deep-eql": "*" } }, "sha512-8kB30R7Hwqf40JPiKhVzodJs2Qc1ZJ5zuT3uzw5Hq/dhNCl3G3l83jfpdI1e20BP348+fV7VIL/+FxaXkqBmWg=="],
 
@@ -298,7 +313,7 @@
 
     "@vitest/utils": ["@vitest/utils@4.0.0-beta.18", "", { "dependencies": { "@vitest/pretty-format": "4.0.0-beta.18", "tinyrainbow": "^3.0.3" } }, "sha512-Z7r82xwG8G6J755DqWpoP/XEuKMhxVFlIPVunD609iH8wjLJ6VD+vd9cojalhrW/tqHfdnaBpS+hxDLwSrfw3Q=="],
 
-    "bun-types": ["bun-types@1.3.0", "", { "dependencies": { "@types/node": "*" }, "peerDependencies": { "@types/react": "^19" } }, "sha512-u8X0thhx+yJ0KmkxuEo9HAtdfgCBaM/aI9K90VQcQioAmkVp3SG3FkwWGibUFz3WdXAdcsqOcbU40lK7tbHdkQ=="],
+    "bun-types": ["bun-types@1.3.1", "", { "dependencies": { "@types/node": "*" }, "peerDependencies": { "@types/react": "^19" } }, "sha512-NMrcy7smratanWJ2mMXdpatalovtxVggkj11bScuWuiOoXTiKIu2eVS1/7qbyI/4yHedtsn175n4Sm4JcdHLXw=="],
 
     "chai": ["chai@6.2.0", "", {}, "sha512-aUTnJc/JipRzJrNADXVvpVqi6CO0dn3nx4EVPxijri+fj3LUUDyZQOgVeW54Ob3Y1Xh9Iz8f+CgaCl8v0mn9bA=="],
 
