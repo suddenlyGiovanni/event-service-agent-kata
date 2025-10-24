@@ -18,6 +18,7 @@ Raw ideas/tasks.
     Keep this short.
 -->
 
+- (PL-14) Migrate all events/commands to Effect Schema [contracts] [adr: [ADR-0011]] — Schema.TaggedClass for runtime validation, contracts/schemas.ts unions, type-safe broker routing. Estimated: 2-4 hours. Priority: After Timer complete (PL-4).
 - (PL-13) Choose broker adapter details for dev/prod parity [adr: [ADR-0002]]
 - (PL-20) Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001]]
 - (PL-9) Observability baseline [adr: [ADR-0009]] [infra] — blocked by [adr: [ADR-0002]]
@@ -110,3 +111,5 @@ Minimal legend.
 [ADR-0007]: ../decisions/ADR-0007-api.md
 [ADR-0008]: ../decisions/ADR-0008-outbox.md
 [ADR-0009]: ../decisions/ADR-0009-observability.md
+[ADR-0010]: ../decisions/ADR-0010-identity.md
+[ADR-0011]: ../decisions/ADR-0011-message-schemas.md
