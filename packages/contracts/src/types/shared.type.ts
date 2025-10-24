@@ -5,11 +5,15 @@
  * Based on docs/design/ports.md and ADR-0010 (identity generation strategy).
  */
 
-import type * as Effect from 'effect/Effect'
+/* biome-ignore-all lint/style/useNamingConvention: Effect-TS branded types and unique symbol brands intentionally use PascalCase/mixedCase and numeric segments (e.g., `Iso8601DateTime`, `TenantIdBrand`, `UUID7`) to match domain terminology and `Schema.brand` patterns; renaming would break branded type identities and public API contracts. */
+
+import type * as DateTime from 'effect/DateTime'
+import * as Effect from 'effect/Effect'
 import type * as Either from 'effect/Either'
 import type * as ParseResult from 'effect/ParseResult'
 import * as Schema from 'effect/Schema'
 
+import { UUID7 as Uuid7Service } from '../services/uuid7.service.ts'
 import { UUID7 } from './uuid7.type.ts'
 
 const TenantIdBrand: unique symbol = Symbol.for('@event-service-agent/contracts/types/TenantId')
@@ -20,6 +24,44 @@ const TenantIdBrand: unique symbol = Symbol.for('@event-service-agent/contracts/
  * string & Brand<UUID7Brand> & Brand<TenantIdBrand>
  */
 export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
+	/**
+	 * Generates a new TenantId using UUID version 7
+	 *
+	 * Creates a time-ordered, globally unique tenant identifier. UUID7 provides
+	 * monotonic sorting properties based on timestamp, making it ideal for
+	 * distributed systems and database indexing.
+	 *
+	 * @param time - Optional UTC timestamp for deterministic generation (useful for testing)
+	 * @returns Effect that produces a branded TenantId or ParseError
+	 * @requires Uuid7Service - Must be provided to run the Effect
+	 *
+	 * @example
+	 * ```typescript
+	 * import * as Effect from 'effect/Effect'
+	 * import * as Console from 'effect/Console'
+	 * import { Uuid7ServiceLive } from '../services/uuid7.service.ts'
+	 *
+	 * // Generate with current time
+	 * const program = Effect.gen(function* () {
+	 *   const tenantId = yield* TenantId.makeUUID7()
+	 *
+	 *   yield* Console.log(`Generated TenantId: ${tenantId}`)
+	 *
+	 *   return tenantId
+	 * }).pipe(Effect.provide(Uuid7ServiceLive))
+	 * ```
+	 */
+	static readonly makeUUID7: (
+		time?: DateTime.Utc,
+	) => Effect.Effect<TenantId.Type, ParseResult.ParseError, Uuid7Service> = time =>
+		Uuid7Service.pipe(
+			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
+			Effect.map(
+				// Use make() instead of decode() - the UUID7 is already validated by the service
+				(uuid7: UUID7.Type): TenantId.Type => TenantId.make(uuid7),
+			),
+		)
+
 	static readonly decode: (value: string) => Effect.Effect<TenantId.Type, ParseResult.ParseError> = value =>
 		Schema.decode(TenantId)(value)
 
@@ -42,6 +84,42 @@ const CorrelationIdBrand: unique symbol = Symbol.for('@event-service-agent/contr
  * string & Brand<UUID7Brand> & Brand<CorrelationIdBrand>
  */
 export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) {
+	/**
+	 * Generates a new CorrelationId using UUID version 7
+	 *
+	 * Creates a time-ordered, globally unique correlation identifier for tracing
+	 * requests across module boundaries. UUID7 provides monotonic sorting properties
+	 * based on timestamp, making it ideal for distributed tracing systems.
+	 *
+	 * @param time - Optional UTC timestamp for deterministic generation (useful for testing)
+	 * @returns Effect that produces a branded CorrelationId or ParseError
+	 * @requires Uuid7Service - Must be provided to run the Effect
+	 *
+	 * @example
+	 * ```typescript
+	 * import * as Effect from 'effect/Effect'
+	 * import * as Console from 'effect/Console'
+	 * import { Uuid7ServiceLive } from '../services/uuid7.service.ts'
+	 *
+	 * // Generate with current time
+	 * const program = Effect.gen(function* () {
+	 *   const correlationId = yield* CorrelationId.makeUUID7()
+	 *
+	 *   yield* Console.log(`Generated CorrelationId: ${correlationId}`)
+	 *
+	 *   return correlationId
+	 * }).pipe(Effect.provide(Uuid7ServiceLive))
+	 * ```
+	 */
+	static readonly makeUUID7: (
+		time?: DateTime.Utc,
+	) => Effect.Effect<CorrelationId.Type, ParseResult.ParseError, Uuid7Service> = time =>
+		Uuid7Service.pipe(
+			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
+			// Use make() instead of decode() - the UUID7 is already validated by the service
+			Effect.map((uuid7: UUID7.Type): CorrelationId.Type => CorrelationId.make(uuid7)),
+		)
+
 	static readonly decode: (value: string) => Effect.Effect<CorrelationId.Type, ParseResult.ParseError> = value =>
 		Schema.decode(CorrelationId)(value)
 
@@ -64,6 +142,42 @@ const EnvelopeIdBrand: unique symbol = Symbol.for('@event-service-agent/contract
  * string & Brand<UUID7Brand> & Brand<EnvelopeIdBrand>
  */
 export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
+	/**
+	 * Generates a new EnvelopeId using UUID version 7
+	 *
+	 * Creates a time-ordered, globally unique envelope identifier for message wrapping.
+	 * UUID7 provides monotonic sorting properties based on timestamp, making it ideal
+	 * for message ordering and distributed messaging systems.
+	 *
+	 * @param time - Optional UTC timestamp for deterministic generation (useful for testing)
+	 * @returns Effect that produces a branded EnvelopeId or ParseError
+	 * @requires Uuid7Service - Must be provided to run the Effect
+	 *
+	 * @example
+	 * ```typescript
+	 * import * as Effect from 'effect/Effect'
+	 * import * as Console from 'effect/Console'
+	 * import { Uuid7ServiceLive } from '../services/uuid7.service.ts'
+	 *
+	 * // Generate with current time
+	 * const program = Effect.gen(function* () {
+	 *   const envelopeId = yield* EnvelopeId.makeUUID7()
+	 *
+	 *   yield* Console.log(`Generated EnvelopeId: ${envelopeId}`)
+	 *
+	 *   return envelopeId
+	 * }).pipe(Effect.provide(Uuid7ServiceLive))
+	 * ```
+	 */
+	static readonly makeUUID7: (
+		time?: DateTime.Utc,
+	) => Effect.Effect<EnvelopeId.Type, ParseResult.ParseError, Uuid7Service> = time =>
+		Uuid7Service.pipe(
+			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
+			// Use make() instead of decode() - the UUID7 is already validated by the service
+			Effect.map((uuid7: UUID7.Type): EnvelopeId.Type => EnvelopeId.make(uuid7)),
+		)
+
 	static readonly decode: (value: string) => Effect.Effect<EnvelopeId.Type, ParseResult.ParseError> = value =>
 		Schema.decode(EnvelopeId)(value)
 
@@ -86,6 +200,42 @@ const ServiceCallIdBrand: unique symbol = Symbol.for('@event-service-agent/contr
  * string & Brand<UUID7Brand> & Brand<ServiceCallIdBrand>
  */
 export class ServiceCallId extends UUID7.pipe(Schema.brand(ServiceCallIdBrand)) {
+	/**
+	 * Generates a new ServiceCallId using UUID version 7
+	 *
+	 * Creates a time-ordered, globally unique identifier for service call aggregates.
+	 * UUID7 provides monotonic sorting properties based on timestamp, making it ideal
+	 * for event sourcing, aggregate tracking, and distributed systems.
+	 *
+	 * @param time - Optional UTC timestamp for deterministic generation (useful for testing)
+	 * @returns Effect that produces a branded ServiceCallId or ParseError
+	 * @requires Uuid7Service - Must be provided to run the Effect
+	 *
+	 * @example
+	 * ```typescript
+	 * import * as Effect from 'effect/Effect'
+	 * import * as Console from 'effect/Console'
+	 * import { Uuid7ServiceLive } from '../services/uuid7.service.ts'
+	 *
+	 * // Generate with current time
+	 * const program = Effect.gen(function* () {
+	 *   const serviceCallId = yield* ServiceCallId.makeUUID7()
+	 *
+	 *   yield* Console.log(`Generated ServiceCallId: ${serviceCallId}`)
+	 *
+	 *   return serviceCallId
+	 * }).pipe(Effect.provide(Uuid7ServiceLive))
+	 * ```
+	 */
+	static readonly makeUUID7: (
+		time?: DateTime.Utc,
+	) => Effect.Effect<ServiceCallId.Type, ParseResult.ParseError, Uuid7Service> = time =>
+		Uuid7Service.pipe(
+			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
+			// Use make() instead of decode() - the UUID7 is already validated by the service
+			Effect.map((uuid7: UUID7.Type): ServiceCallId.Type => ServiceCallId.make(uuid7)),
+		)
+
 	static readonly decode: (value: string) => Effect.Effect<ServiceCallId.Type, ParseResult.ParseError> = value =>
 		Schema.decode(ServiceCallId)(value)
 
