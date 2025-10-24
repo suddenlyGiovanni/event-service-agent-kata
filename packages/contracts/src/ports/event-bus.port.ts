@@ -22,7 +22,6 @@ import * as Data from 'effect/Data'
 import type * as Effect from 'effect/Effect'
 
 import type { Message } from '../types/message-envelope.type.ts'
-import type { RequestContext } from '../types/shared.type.ts'
 
 /**
  * PublishError - Generic error when publishing messages fails
@@ -69,7 +68,19 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  * // Publishing events (Orchestration, Execution, Timer)
  * const publishEvents = Effect.gen(function* () {
  *   const bus = yield* EventBusPort
- *   yield* bus.publish([envelope1, envelope2], ctx)
+ *
+ *   // Build self-contained envelope with all routing metadata
+ *   const envelope: Message.Envelope = {
+ *     id: envelopeId,
+ *     type: 'ServiceCallScheduled',
+ *     tenantId,
+ *     correlationId,  // Optional
+ *     aggregateId: serviceCallId,
+ *     timestampMs: now.epochMillis,
+ *     payload: { ... }
+ *   }
+ *
+ *   yield* bus.publish([envelope])  // No separate context needed!
  * })
  *
  * // Subscribing to commands (Timer)
@@ -90,28 +101,36 @@ export interface EventBusPort {
 	 * Publish messages to the event bus
 	 *
 	 * Messages are published to topics derived from the envelope (type, tenantId).
+	 * Routing information (tenantId, aggregateId, correlationId) is extracted from
+	 * each envelope - no separate context needed.
+	 *
 	 * The adapter handles:
-	 * - Routing to appropriate subjects/topics/queues
+	 * - Routing to appropriate subjects/topics/queues (using envelope.tenantId + envelope.aggregateId)
 	 * - Deduplication via envelope.id (within broker's deduplication window)
 	 * - Idempotent publish (safe to retry on transient failures)
-	 * - Per-aggregate ordering (via tenantId + aggregateId routing)
+	 * - Per-aggregate ordering (via tenantId + aggregateId routing key)
+	 * - Tracing propagation (via envelope.correlationId if present)
 	 *
-	 * @param envelopes - Array of message envelopes to publish
-	 * @param ctx - Request context (tenantId, correlationId for tracing)
+	 * @param envelopes - Array of message envelopes to publish (self-contained with all routing metadata)
 	 * @returns Effect that succeeds when all messages are published
 	 * @throws PublishError - When publishing fails (connection, stream errors, etc.)
 	 *
 	 * @example
 	 * ```typescript
-	 * yield* bus.publish([
-	 *   { id, type: 'ServiceCallScheduled', tenantId, payload: {...} }
-	 * ], { tenantId, correlationId })
+	 * const envelope: Message.Envelope = {
+	 *   id: envelopeId,
+	 *   type: 'ServiceCallScheduled',
+	 *   tenantId,
+	 *   correlationId,  // Optional
+	 *   aggregateId: serviceCallId,
+	 *   timestampMs: now.epochMillis,
+	 *   payload: { ... }
+	 * }
+	 *
+	 * yield* bus.publish([envelope])  // All metadata in envelope!
 	 * ```
 	 */
-	readonly publish: (
-		envelopes: NonEmptyReadonlyArray<Message.Envelope>,
-		ctx: RequestContext,
-	) => Effect.Effect<void, PublishError>
+	readonly publish: (envelopes: NonEmptyReadonlyArray<Message.Envelope>) => Effect.Effect<void, PublishError>
 
 	/**
 	 * Subscribe to topics and process messages
@@ -173,7 +192,12 @@ export interface EventBusPort {
  * ```typescript
  * const program = Effect.gen(function* () {
  *   const bus = yield* EventBusPort
- *   yield* bus.publish([envelope], ctx)
+ *
+ *   const envelope: Message.Envelope = {
+ *     id, type, tenantId, payload, timestampMs
+ *   }
+ *
+ *   yield* bus.publish([envelope])  // Envelope is self-contained
  * })
  * ```
  */

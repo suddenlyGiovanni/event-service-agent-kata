@@ -17,8 +17,11 @@ Identity & Context
 **IDs Received (from [ScheduleTimer] command):**
 
 - **TenantId** — Multi-tenant partition key (via RequestContext)
-- **ServiceCallId** — Aggregate root identifier (via RequestContext)
-- **CorrelationId** — Request trace ID (via RequestContext)
+**IDs Received (from [ScheduleTimer] command):**
+
+- **TenantId** — Multi-tenant partition key (embedded in envelope)
+- **ServiceCallId** — Aggregate root identifier (embedded in envelope)
+- **CorrelationId** — Request trace ID (optional, embedded in envelope)
 
 **Pattern:**
 
@@ -29,17 +32,22 @@ const { tenantId, serviceCallId, correlationId, dueAt } = command;
 // Store TimerEntry keyed by (tenantId, serviceCallId)
 await db.upsert({ tenantId, serviceCallId, dueAt, status: "armed" });
 
-// When firing: generate EnvelopeId
+// When firing: generate EnvelopeId and publish self-contained envelope
 const envelopeId = Schema.make(EnvelopeId)(crypto.randomUUID());
 const envelope = MessageEnvelope({
-  envelopeId,
-  tenantId,
-  correlationId,
+  id: envelopeId,
+  type: 'DueTimeReached',
+  tenantId,               // Required: for routing and multi-tenancy
+  correlationId,          // Optional: for tracing (may be undefined for autonomous timers)
+  timestampMs: firedAt,
   payload: DueTimeReached({ serviceCallId, dueAt, firedAt }),
 });
+
+// Publish - envelope contains all metadata, no separate context needed
+await bus.publish([envelope]);
 ```
 
-**Rationale:** Timer is stateless regarding identity (doesn't own ServiceCall aggregate). All IDs flow through from Orchestration via [ScheduleTimer]. Timer only generates EnvelopeId for broker deduplication. See [ADR-0010][] for identity generation strategy.
+**Rationale:** Timer is stateless regarding identity (doesn't own ServiceCall aggregate). All IDs flow through from Orchestration via [ScheduleTimer]. Timer only generates EnvelopeId for broker deduplication. Envelope is self-contained with all routing metadata (tenantId, correlationId) - no separate context parameter needed. See [ADR-0010][] for identity generation strategy.
 
 Policies
 

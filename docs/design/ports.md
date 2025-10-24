@@ -53,15 +53,19 @@ export interface ClockPort {
 Adapter responsibilities: Publish to broker; consume from topics/partitions; preserve per-aggregate order via partition key.  
 Used in: [Orchestration], [Execution], [Timer], [API] (publish only).
 
+**Design Note**: The envelope is self-contained with all routing metadata (tenantId, correlationId, aggregateId). No separate context parameter needed - this eliminates duplication and ensures single source of truth.
+
 ```ts
 export interface EventBusPort {
-  publish(envelopes: MessageEnvelope[], ctx: RequestContext): Promise<void>;
+  publish(envelopes: MessageEnvelope[]): Promise<void>;
   subscribe(
     topics: string[],
     handler: (env: MessageEnvelope) => Promise<void>,
   ): Promise<void>;
 }
 ```
+
+**Routing**: Adapter extracts `tenantId` and optional `aggregateId` from envelope to construct partition/routing key (e.g., `tenantId.serviceCallId`).
 
 ## TimerPort
 
