@@ -21,6 +21,7 @@ import * as Context from 'effect/Context'
 import * as Data from 'effect/Data'
 import type * as Effect from 'effect/Effect'
 
+import type { Topics } from '../routing/topics.ts'
 import type { Message } from '../types/message-envelope.type.ts'
 
 /**
@@ -84,9 +85,11 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  * })
  *
  * // Subscribing to commands (Timer)
+ * import { Topics } from '@event-service-agent/contracts/routing'
+ *
  * const subscribeToCommands = Effect.gen(function* () {
  *   const bus = yield* EventBusPort
- *   yield* bus.subscribe(['timer.commands'], (envelope) =>
+ *   yield* bus.subscribe([Topics.Timer.Commands], (envelope) =>
  *     Effect.gen(function* () {
  *       // Parse and handle command
  *       const cmd = yield* parseScheduleTimer(envelope.payload)
@@ -142,8 +145,10 @@ export interface EventBusPort {
 	 * - NAKs message on handler error (triggers redelivery)
 	 * - Routes to DLQ after max retries (configured in adapter)
 	 *
-	 * Topics are logical names (e.g., 'timer.commands', 'orchestration.events').
-	 * Adapter maps these to broker-specific routing:
+	 * Topics are type-safe references from the centralized Topics configuration.
+	 * Use Topics.Timer.Commands, Topics.Orchestration.Events, etc. for type safety.
+	 *
+	 * Adapter maps these logical topics to broker-specific routing:
 	 * - NATS: subjects (e.g., 'svc.timer.commands')
 	 * - Kafka: topics (e.g., 'timer-commands')
 	 * - RabbitMQ: routing keys + exchanges
@@ -158,14 +163,16 @@ export interface EventBusPort {
 	 * - Adapter creates/attaches to durable consumer for load balancing
 	 * - Each message delivered to only one instance
 	 *
-	 * @param topics - Array of topic names to subscribe to (supports wildcards in NATS)
+	 * @param topics - Array of type-safe topic references (from Topics namespace)
 	 * @param handler - Effect to process each message (ack on success, nak on error)
 	 * @returns Effect that runs indefinitely, processing messages
 	 * @throws SubscribeError - When subscription fails (consumer creation, connection, etc.)
 	 *
 	 * @example
 	 * ```typescript
-	 * yield* bus.subscribe(['timer.commands'], (envelope) =>
+	 * import { Topics } from '@event-service-agent/contracts/routing'
+	 *
+	 * yield* bus.subscribe([Topics.Timer.Commands], (envelope) =>
 	 *   Effect.gen(function* () {
 	 *     // Handler must be idempotent
 	 *     const cmd = yield* parseScheduleTimer(envelope.payload)
@@ -178,7 +185,7 @@ export interface EventBusPort {
 	 * ```
 	 */
 	readonly subscribe: <E>(
-		topics: NonEmptyReadonlyArray<string>,
+		topics: NonEmptyReadonlyArray<Topics.Type>,
 		handler: (envelope: Message.Envelope) => Effect.Effect<void, E>,
 	) => Effect.Effect<void, SubscribeError | E>
 }
