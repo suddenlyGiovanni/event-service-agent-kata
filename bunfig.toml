@@ -8,7 +8,7 @@ saveTextLockfile = true # Whether to save a text lockfile (bunfig.lock.toml). De
 frozenLockfile = true # When true, bun install will not update bun.lock. Default false.
 linkWorkspacePackages = true
 # Only install package versions published at least 3 days ago
-minimumReleaseAge = 259200
+# minimumReleaseAge = 259200
 publicHoistPattern = ["@types*", "@effect/language-service", "@tsconfig/*", "typescript", "vitest"]
 minimumReleaseAgeExcludes = [
     "@tsconfig/bun",
