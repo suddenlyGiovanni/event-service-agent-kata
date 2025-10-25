@@ -2,6 +2,7 @@ import { describe, expect, it } from '@effect/vitest'
 import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
+import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
@@ -10,7 +11,7 @@ import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/con
 
 import { ClockPortTest } from '../adapters/clock.adapter.ts'
 import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
-import { ScheduledTimer } from '../domain/timer-entry.domain.ts'
+import { ScheduledTimer, TimerEntry } from '../domain/timer-entry.domain.ts'
 import { ClockPort, TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
 import { pollDueTimersWorkflow } from './poll-due-timers.workflow.ts'
 
@@ -95,7 +96,7 @@ describe('pollDueTimersWorkflow', () => {
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus)))
 		})
 
-		it.todo('processes multiple due timers sequentially', () => {
+		it.effect('processes multiple due timers sequentially', () => {
 			/**
 			 * GIVEN three timers that are due
 			 * WHEN pollDueTimersWorkflow executes
@@ -103,6 +104,76 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND all three timers should be marked as Reached
 			 *   AND workflow should complete successfully
 			 */
+
+			// Track the order of operations to verify sequential processing
+			const operations: string[] = []
+			const publishedEvents: unknown[] = []
+
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: (timer, firedAt) =>
+					Effect.sync(() => {
+						operations.push(`publish:${timer.serviceCallId}`)
+						publishedEvents.push({ firedAt, timer })
+					}),
+			})
+
+			const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
+			const serviceCallIds = [
+				ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
+				ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2'),
+				ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3'),
+			]
+			const correlationId = CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a4')
+
+			return Effect.gen(function* () {
+				// Arrange: Create three timers that will be due
+				const clock = yield* ClockPort
+				const persistence = yield* TimerPersistencePort
+				const registeredAt = yield* clock.now()
+				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
+
+				// Create and save timers using iteration
+				const timers = serviceCallIds.map(serviceCallId =>
+					ScheduledTimer.make({
+						correlationId: Option.some(correlationId),
+						dueAt,
+						registeredAt,
+						serviceCallId,
+						tenantId,
+					}),
+				)
+
+				yield* Effect.forEach(timers, persistence.save, { concurrency: 1, discard: true })
+
+				// Act: Advance time to make all timers due
+				yield* TestClock.adjust('6 minutes')
+
+				// Execute workflow
+				yield* pollDueTimersWorkflow()
+
+				// Assert: All three events should be published
+				expect(publishedEvents).toHaveLength(serviceCallIds.length)
+
+				// Assert: All three timers should be marked as Reached using iteration
+				yield* pipe(
+					serviceCallIds,
+					// biome-ignore lint/suspicious/useIterableCallbackReturn: Ensure proper iteration
+					Effect.forEach(serviceCallId => persistence.find(tenantId, serviceCallId), { concurrency: 1 }),
+					Effect.andThen(foundTimers => {
+						foundTimers.forEach(found => {
+							expect(Option.isSome(found)).toBe(true)
+							expect(found.pipe(Option.exists(TimerEntry.isReached))).toBe(true)
+						})
+					}),
+				)
+
+				// Assert: No timers should remain in findDue
+				const afterFired = yield* persistence.findDue(yield* clock.now())
+				expect(Chunk.isEmpty(afterFired)).toBe(true)
+
+				// Assert: All operations should have occurred (3 publishes)
+				expect(operations.filter(op => op.startsWith('publish:'))).toHaveLength(serviceCallIds.length)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus)))
 		})
 
 		it.todo('publishes event before marking timer as fired', () => {
