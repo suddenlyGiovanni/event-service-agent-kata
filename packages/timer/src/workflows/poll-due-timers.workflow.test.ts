@@ -362,13 +362,60 @@ describe('pollDueTimersWorkflow', () => {
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
-		it.todo('does not process timer scheduled in the future', () => {
+		it.effect('does not process timer scheduled in the future', () => {
 			/**
 			 * GIVEN a timer with dueAt > now (future timer)
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN the timer should NOT be included in due timers
 			 *   AND should NOT be processed
 			 */
+
+			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: (timer, firedAt) =>
+					Effect.sync(() => {
+						publishedEvents.push({ firedAt, timer })
+					}),
+			})
+
+			return Effect.gen(function* () {
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const correlationId = yield* CorrelationId.makeUUID7()
+
+				// Arrange: Create a timer due in the future
+				const clock = yield* ClockPort
+				const persistence = yield* TimerPersistencePort
+				const now = yield* clock.now()
+
+				// Timer due 1 second in the future
+				const dueAt = DateTime.add(now, { seconds: 1 })
+
+				const scheduledTimer = ScheduledTimer.make({
+					correlationId: Option.some(correlationId),
+					dueAt,
+					registeredAt: now,
+					serviceCallId,
+					tenantId,
+				})
+
+				yield* persistence.save(scheduledTimer)
+
+				// Act: Execute workflow (timer should NOT be due yet)
+				yield* pollDueTimersWorkflow()
+
+				// Assert: No events should be published
+				expect(publishedEvents).toHaveLength(0)
+
+				// Assert: Timer should still be in Scheduled state
+				yield* pipe(
+					persistence.find(tenantId, serviceCallId),
+					Effect.andThen(found => {
+						expect(Option.isSome(found)).toBe(true)
+						expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
+					}),
+				)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
 		it.todo('processes timer that is overdue', () => {
