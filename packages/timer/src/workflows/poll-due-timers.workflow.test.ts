@@ -4,14 +4,14 @@ import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
-import * as Schema from 'effect/Schema'
+import * as TestClock from 'effect/TestClock'
 
 import { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
 import { ClockPortTest } from '../adapters/clock.adapter.ts'
 import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
-import { ScheduledTimer, TimerEntry } from '../domain/timer-entry.domain.ts'
-import { ClockPort, TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
+import { ScheduledTimer } from '../domain/timer-entry.domain.ts'
+import { TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
 import { pollDueTimersWorkflow } from './poll-due-timers.workflow.ts'
 
 /**
@@ -27,8 +27,17 @@ import { pollDueTimersWorkflow } from './poll-due-timers.workflow.ts'
  */
 describe('pollDueTimersWorkflow', () => {
 	describe('Happy Path', () => {
-		it.effect('processes due timers successfully', () =>
-			Effect.gen(function* () {
+		it.effect('processes due timers successfully', () => {
+			// Mock EventBus to track published events
+			const publishedEvents: unknown[] = []
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: (timer, firedAt) =>
+					Effect.sync(() => {
+						publishedEvents.push({ firedAt, timer })
+					}),
+			})
+
+			return Effect.gen(function* () {
 				/**
 				 * GIVEN a single timer that is due
 				 * WHEN pollDueTimersWorkflow executes
@@ -37,52 +46,53 @@ describe('pollDueTimersWorkflow', () => {
 				 *   AND workflow should complete successfully
 				 */
 
-				// Arrange: Create a timer that is due
+				// Arrange: Create a timer that will be due
 				const now = yield* DateTime.now
-				const dueAt = DateTime.subtract(now, { seconds: 10 }) // 10 seconds ago (overdue)
 				const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
 				const serviceCallId = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
+
+				// Timer will be due in 5 minutes
+				const dueAt = DateTime.add(now, { minutes: 5 })
 
 				const scheduledTimer = ScheduledTimer.make({
 					correlationId: Option.none(),
 					dueAt,
-					registeredAt: DateTime.subtract(dueAt, { minutes: 5 }),
+					registeredAt: now,
 					serviceCallId,
 					tenantId,
 				})
 
-				// Mock implementations
-				const publishedEvents: unknown[] = []
-				const markedFiredCalls: Array<{ tenantId: string; serviceCallId: string }> = []
-
-				const TestEventBusPort = Layer.succeed(
-					TimerEventBusPort,
-					TimerEventBusPort.of({
-						publishDueTimeReached: (timer, _firedAt) =>
-							Effect.sync(() => {
-								publishedEvents.push({ timer })
-							}),
-						subscribeToScheduleTimerCommands: () => Effect.void,
-					}),
-				)
-
+				// Get persistence and save timer
 				const persistence = yield* TimerPersistencePort
+				yield* persistence.save(scheduledTimer)
 
-				// Act: Execute workflow
-				yield* pollDueTimersWorkflow().pipe(Effect.provide(TestEventBusPort))
+				// Verify timer is not due yet
+				const notDueYet = yield* persistence.findDue(yield* DateTime.now)
+				expect(Chunk.isEmpty(notDueYet)).toBe(true)
+
+				// Act: Advance time to make timer due (5 minutes + 1 second)
+				// yield* Effect.sleep(Duration.minutes(5))
+				// yield* Effect.sleep(Duration.seconds(1))
+				yield* TestClock.adjust('6 minutes')
+
+				// Execute workflow
+				yield* pollDueTimersWorkflow()
 
 				// Assert: Verify event was published
 				expect(publishedEvents).toHaveLength(1)
 
+				// Assert: Verify timer was marked as Reached
 				const found = yield* persistence.find(tenantId, serviceCallId)
 				expect(Option.isSome(found)).toBe(true)
 
-				// Assert: Verify timer was marked as fired
-				expect(markedFiredCalls).toHaveLength(1)
-				expect(markedFiredCalls[0].tenantId).toBe(tenantId)
-				expect(markedFiredCalls[0].serviceCallId).toBe(serviceCallId)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest))),
-		)
+				const timer = Option.getOrThrow(found)
+				expect(timer._tag).toBe('Reached')
+
+				// Assert: Timer should no longer appear in findDue
+				const afterFired = yield* persistence.findDue(yield* DateTime.now)
+				expect(Chunk.isEmpty(afterFired)).toBe(true)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus)))
+		})
 
 		it.todo('processes multiple due timers sequentially', () => {
 			/**
