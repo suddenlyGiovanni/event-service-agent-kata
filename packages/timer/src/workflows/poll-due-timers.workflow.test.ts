@@ -309,13 +309,57 @@ describe('pollDueTimersWorkflow', () => {
 	})
 
 	describe('Edge Cases - Timing Boundaries', () => {
-		it.todo('processes timer exactly at dueAt time', () => {
+		it.effect('processes timer exactly at dueAt time', () => {
 			/**
 			 * GIVEN a timer with dueAt exactly equal to current time (now === dueAt)
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN the timer should be included in due timers
 			 *   AND should be processed successfully
 			 */
+
+			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: (timer, firedAt) =>
+					Effect.sync(() => {
+						publishedEvents.push({ firedAt, timer })
+					}),
+			})
+
+			return Effect.gen(function* () {
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const correlationId = yield* CorrelationId.makeUUID7()
+				// Arrange: Create a timer where dueAt === now (boundary condition)
+				const clock = yield* ClockPort
+				const persistence = yield* TimerPersistencePort
+				const now = yield* clock.now()
+
+				// Timer is due right now (no offset)
+				const scheduledTimer = ScheduledTimer.make({
+					correlationId: Option.some(correlationId),
+					dueAt: now,
+					registeredAt: now,
+					serviceCallId,
+					tenantId,
+				})
+
+				yield* persistence.save(scheduledTimer)
+
+				// Act: Execute workflow (timer should be due)
+				yield* pollDueTimersWorkflow()
+
+				// Assert: Event should be published (timer is due)
+				expect(publishedEvents).toHaveLength(1)
+
+				// Assert: Timer should be marked as Reached
+				yield* pipe(
+					persistence.find(tenantId, serviceCallId),
+					Effect.andThen(found => {
+						expect(Option.isSome(found)).toBe(true)
+						expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
+					}),
+				)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
 		it.todo('does not process timer scheduled in the future', () => {
