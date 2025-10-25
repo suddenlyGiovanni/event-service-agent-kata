@@ -418,13 +418,64 @@ describe('pollDueTimersWorkflow', () => {
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
-		it.todo('processes timer that is overdue', () => {
+		it.effect('processes timer that is overdue', () => {
 			/**
-			 * GIVEN a timer with dueAt < now (overdue by several seconds)
+			 * GIVEN a timer scheduled for 5 minutes from now
+			 *   AND time advances 15 minutes (timer is 10 minutes overdue)
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN the timer should be included in due timers
 			 *   AND should be processed successfully
 			 */
+
+			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: (timer, firedAt) =>
+					Effect.sync(() => {
+						publishedEvents.push({ firedAt, timer })
+					}),
+			})
+
+			return Effect.gen(function* () {
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const correlationId = yield* CorrelationId.makeUUID7()
+
+				// Arrange: Schedule a timer for 5 minutes from now
+				const clock = yield* ClockPort
+				const persistence = yield* TimerPersistencePort
+				const registeredAt = yield* clock.now()
+
+				// Timer due in 5 minutes
+				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
+
+				const scheduledTimer = ScheduledTimer.make({
+					correlationId: Option.some(correlationId),
+					dueAt,
+					registeredAt,
+					serviceCallId,
+					tenantId,
+				})
+
+				yield* persistence.save(scheduledTimer)
+
+				// Act: Advance time to 15 minutes (timer is now 10 minutes overdue)
+				yield* TestClock.adjust('15 minutes')
+
+				// Execute workflow (timer is overdue and should fire)
+				yield* pollDueTimersWorkflow()
+
+				// Assert: Event should be published (timer is overdue)
+				expect(publishedEvents).toHaveLength(1)
+
+				// Assert: Timer should be marked as Reached
+				yield* pipe(
+					persistence.find(tenantId, serviceCallId),
+					Effect.andThen(found => {
+						expect(Option.isSome(found)).toBe(true)
+						expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
+					}),
+				)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 	})
 
