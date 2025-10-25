@@ -6,12 +6,12 @@ import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
-import { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
 import { ClockPortTest } from '../adapters/clock.adapter.ts'
 import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
 import { ScheduledTimer } from '../domain/timer-entry.domain.ts'
-import { TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
+import { ClockPort, TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
 import { pollDueTimersWorkflow } from './poll-due-timers.workflow.ts'
 
 /**
@@ -37,6 +37,10 @@ describe('pollDueTimersWorkflow', () => {
 					}),
 			})
 
+			const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
+			const serviceCallId = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
+			const correlationId = CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
+
 			return Effect.gen(function* () {
 				/**
 				 * GIVEN a single timer that is due
@@ -47,9 +51,8 @@ describe('pollDueTimersWorkflow', () => {
 				 */
 
 				// Arrange: Create a timer that will be due
-				const now = yield* DateTime.now
-				const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
-				const serviceCallId = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
+				const clock = yield* ClockPort
+				const now = yield* clock.now()
 
 				// Timer will be due in 5 minutes
 				const dueAt = DateTime.add(now, { minutes: 5 })
@@ -71,8 +74,6 @@ describe('pollDueTimersWorkflow', () => {
 				expect(Chunk.isEmpty(notDueYet)).toBe(true)
 
 				// Act: Advance time to make timer due (5 minutes + 1 second)
-				// yield* Effect.sleep(Duration.minutes(5))
-				// yield* Effect.sleep(Duration.seconds(1))
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow
