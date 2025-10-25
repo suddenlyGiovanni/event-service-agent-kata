@@ -1,6 +1,18 @@
-import { describe, it } from '@effect/vitest'
+import { describe, expect, it } from '@effect/vitest'
+import * as Chunk from 'effect/Chunk'
+import * as DateTime from 'effect/DateTime'
+import * as Effect from 'effect/Effect'
+import * as Layer from 'effect/Layer'
+import * as Option from 'effect/Option'
+import * as TestClock from 'effect/TestClock'
 
-// import { pollDueTimersWorkflow } from './poll-due-timers.workflow.ts'
+import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+
+import { ClockPortTest } from '../adapters/clock.adapter.ts'
+import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
+import { ScheduledTimer } from '../domain/timer-entry.domain.ts'
+import { ClockPort, TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
+import { pollDueTimersWorkflow } from './poll-due-timers.workflow.ts'
 
 /**
  * Test suite for pollDueTimersWorkflow
@@ -15,14 +27,72 @@ import { describe, it } from '@effect/vitest'
  */
 describe('pollDueTimersWorkflow', () => {
 	describe('Happy Path', () => {
-		it.todo('processes due timers successfully', () => {
-			/**
-			 * GIVEN a single timer that is due
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN the DueTimeReached event should be published
-			 *   AND the timer should be marked as Reached
-			 *   AND workflow should complete successfully
-			 */
+		it.effect('processes due timers successfully', () => {
+			// Mock EventBus to track published events
+			const publishedEvents: unknown[] = []
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: (timer, firedAt) =>
+					Effect.sync(() => {
+						publishedEvents.push({ firedAt, timer })
+					}),
+			})
+
+			const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
+			const serviceCallId = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
+			const correlationId = CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
+
+			return Effect.gen(function* () {
+				/**
+				 * GIVEN a single timer that is due
+				 * WHEN pollDueTimersWorkflow executes
+				 * THEN the DueTimeReached event should be published
+				 *   AND the timer should be marked as Reached
+				 *   AND workflow should complete successfully
+				 */
+
+				// Arrange: Create a timer that will be due
+				const clock = yield* ClockPort
+				const now = yield* clock.now()
+
+				// Timer will be due in 5 minutes
+				const dueAt = DateTime.add(now, { minutes: 5 })
+
+				const scheduledTimer = ScheduledTimer.make({
+					correlationId: Option.some(correlationId),
+					dueAt,
+					registeredAt: now,
+					serviceCallId,
+					tenantId,
+				})
+
+				// Get persistence and save timer
+				const persistence = yield* TimerPersistencePort
+				yield* persistence.save(scheduledTimer)
+
+				// Verify timer is not due yet
+				const notDueYet = yield* persistence.findDue(yield* DateTime.now)
+				expect(Chunk.isEmpty(notDueYet)).toBe(true)
+
+				// Act: Advance time to make timer due (5 minutes + 1 second)
+				yield* TestClock.adjust('6 minutes')
+
+				// Execute workflow
+				yield* pollDueTimersWorkflow()
+
+				// Assert: Verify event was published
+				expect(publishedEvents).toHaveLength(1)
+
+				// Assert: Verify timer was marked as Reached
+				const found = yield* persistence.find(tenantId, serviceCallId)
+				expect(Option.isSome(found)).toBe(true)
+
+				const timer = Option.getOrThrow(found)
+				expect(timer._tag).toBe('Reached')
+
+				// Assert: Timer should no longer appear in findDue
+				const afterFired = yield* persistence.findDue(yield* DateTime.now)
+				expect(Chunk.isEmpty(afterFired)).toBe(true)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus)))
 		})
 
 		it.todo('processes multiple due timers sequentially', () => {
