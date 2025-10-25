@@ -537,7 +537,7 @@ describe('pollDueTimersWorkflow', () => {
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
-		it.todo('continues with other timers when one publish fails', () => {
+		it.effect.fails('continues with other timers when one publish fails', () => {
 			/**
 			 * GIVEN three timers that are due
 			 *   AND the second timer's publish will fail
@@ -546,7 +546,92 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND timer 2 publish should fail (timer stays Scheduled)
 			 *   AND timer 3 should still be processed successfully
 			 *   AND workflow should complete (not fail-fast)
+			 *
+			 * TODO(PL-4.4): Decide error handling strategy
+			 * Current implementation uses Effect.forEach which fails fast.
+			 * This test expects continue-on-error behavior.
+			 * Design decision needed: fail-fast vs continue-processing
+			 * See: ADR needed for batch error handling strategy
 			 */
+
+			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			let callCount = 0
+
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: (timer, firedAt) => {
+					callCount++
+					// Fail on second timer (callCount === 2)
+					if (callCount === 2) {
+						return Effect.fail(new PublishError({ cause: 'Event bus publish failed' }))
+					}
+					return Effect.sync(() => {
+						publishedEvents.push({ firedAt, timer })
+					})
+				},
+			})
+
+			return Effect.gen(function* () {
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId1 = yield* ServiceCallId.makeUUID7()
+				const serviceCallId2 = yield* ServiceCallId.makeUUID7()
+				const serviceCallId3 = yield* ServiceCallId.makeUUID7()
+				const serviceCallIds = [serviceCallId1, serviceCallId2, serviceCallId3]
+				const correlationId = yield* CorrelationId.makeUUID7()
+
+				// Arrange: Create three timers that will be due
+				const clock = yield* ClockPort
+				const persistence = yield* TimerPersistencePort
+				const registeredAt = yield* clock.now()
+				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
+
+				const timers = serviceCallIds.map(serviceCallId =>
+					ScheduledTimer.make({
+						correlationId: Option.some(correlationId),
+						dueAt,
+						registeredAt,
+						serviceCallId,
+						tenantId,
+					}),
+				)
+
+				yield* Effect.forEach(timers, persistence.save, { concurrency: 1, discard: true })
+
+				// Act: Advance time to make all timers due
+				yield* TestClock.adjust('6 minutes')
+
+				// Execute workflow (should not fail-fast)
+				yield* pollDueTimersWorkflow()
+
+				// Assert: Two events should be published (timers 1 and 3)
+				expect(publishedEvents).toHaveLength(2)
+
+				// Assert: Timer 1 should be marked as Reached
+				yield* pipe(
+					persistence.find(tenantId, serviceCallId1),
+					Effect.andThen(found => {
+						expect(Option.isSome(found)).toBe(true)
+						expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
+					}),
+				)
+
+				// Assert: Timer 2 should still be Scheduled (publish failed)
+				yield* pipe(
+					persistence.find(tenantId, serviceCallId2),
+					Effect.andThen(found => {
+						expect(Option.isSome(found)).toBe(true)
+						expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
+					}),
+				)
+
+				// Assert: Timer 3 should be marked as Reached
+				yield* pipe(
+					persistence.find(tenantId, serviceCallId3),
+					Effect.andThen(found => {
+						expect(Option.isSome(found)).toBe(true)
+						expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
+					}),
+				)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
 		it.todo('logs error when publish fails', () => {
