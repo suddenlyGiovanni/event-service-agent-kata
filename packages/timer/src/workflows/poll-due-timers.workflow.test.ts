@@ -14,7 +14,7 @@ import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/con
 import { ClockPortTest } from '../adapters/clock.adapter.ts'
 import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
 import { ScheduledTimer, TimerEntry } from '../domain/timer-entry.domain.ts'
-import { ClockPort, PublishError, TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
+import { ClockPort, PersistenceError, PublishError, TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
 import { pollDueTimersWorkflow } from './poll-due-timers.workflow.ts'
 
 /**
@@ -646,7 +646,7 @@ describe('pollDueTimersWorkflow', () => {
 	})
 
 	describe('Error Handling - Persistence Failures', () => {
-		it.todo('handles markFired failure after successful publish', () => {
+		it.effect('handles markFired failure after successful publish', () => {
 			/**
 			 * GIVEN a timer that is due
 			 *   AND eventBus.publish succeeds
@@ -657,6 +657,71 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND the timer should remain in Scheduled state
 			 *   AND an error should be logged
 			 */
+
+			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: (timer, firedAt) =>
+					Effect.sync(() => {
+						publishedEvents.push({ firedAt, timer })
+					}),
+			})
+
+			return Effect.gen(function* () {
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const correlationId = yield* CorrelationId.makeUUID7()
+
+				// Arrange: Create a timer that will be due
+				const clock = yield* ClockPort
+				const registeredAt = yield* clock.now()
+				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
+
+				const scheduledTimer = ScheduledTimer.make({
+					correlationId: Option.some(correlationId),
+					dueAt,
+					registeredAt,
+					serviceCallId,
+					tenantId,
+				})
+
+				// Use base persistence for save, then provide a mock that fails markFired
+				const basePersistence = yield* TimerPersistencePort
+				yield* basePersistence.save(scheduledTimer)
+
+				// Create test layer with failing markFired
+				const TestPersistence = Layer.succeed(
+					TimerPersistencePort,
+					TimerPersistencePort.of({
+						...basePersistence,
+						markFired: () =>
+							Effect.fail(new PersistenceError({ cause: 'Database connection lost', operation: 'markFired' })),
+					}),
+				)
+
+				// Act: Advance time to make timer due
+				yield* TestClock.adjust('6 minutes')
+
+				// Execute workflow with failing markFired - should fail at markFired stage
+				const result = yield* Effect.exit(pollDueTimersWorkflow()).pipe(Effect.provide(TestPersistence))
+
+				// Assert: Workflow should have failed with PersistenceError
+				expect(result).toStrictEqual(
+					Exit.fail(new PersistenceError({ cause: 'Database connection lost', operation: 'markFired' })),
+				)
+
+				// Assert: Event should have been published (will be duplicate on retry)
+				expect(publishedEvents).toHaveLength(1)
+
+				// Assert: Timer should still be in Scheduled state (markFired failed)
+				yield* pipe(
+					basePersistence.find(tenantId, serviceCallId),
+					Effect.andThen(found => {
+						expect(Option.isSome(found)).toBe(true)
+						expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
+					}),
+				)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
 		it.todo('continues with other timers when one markFired fails', () => {
