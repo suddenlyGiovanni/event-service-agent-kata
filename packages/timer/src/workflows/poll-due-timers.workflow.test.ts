@@ -2,6 +2,7 @@ import { describe, expect, it } from '@effect/vitest'
 import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
+import * as Exit from 'effect/Exit'
 import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
@@ -13,7 +14,7 @@ import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/con
 import { ClockPortTest } from '../adapters/clock.adapter.ts'
 import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
 import { ScheduledTimer, TimerEntry } from '../domain/timer-entry.domain.ts'
-import { ClockPort, TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
+import { ClockPort, PublishError, TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
 import { pollDueTimersWorkflow } from './poll-due-timers.workflow.ts'
 
 /**
@@ -480,7 +481,7 @@ describe('pollDueTimersWorkflow', () => {
 	})
 
 	describe('Error Handling - Publish Failures', () => {
-		it.todo('stops processing timer when publish fails', () => {
+		it.effect('stops processing timer when publish fails', () => {
 			/**
 			 * GIVEN a timer that is due
 			 *   AND eventBus.publish will fail
@@ -490,6 +491,50 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND markFired should NOT be called (short-circuit)
 			 *   AND the timer should remain in Scheduled state
 			 */
+
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: () => Effect.fail(new PublishError({ cause: 'Event bus publish failed' })),
+			})
+
+			return Effect.gen(function* () {
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const correlationId = yield* CorrelationId.makeUUID7()
+
+				// Arrange: Create a timer that will be due
+				const clock = yield* ClockPort
+				const persistence = yield* TimerPersistencePort
+				const registeredAt = yield* clock.now()
+				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
+
+				const scheduledTimer = ScheduledTimer.make({
+					correlationId: Option.some(correlationId),
+					dueAt,
+					registeredAt,
+					serviceCallId,
+					tenantId,
+				})
+
+				yield* persistence.save(scheduledTimer)
+
+				// Act: Advance time to make timer due
+				yield* TestClock.adjust('6 minutes')
+
+				// Execute workflow - should fail due to publish error
+				const result = yield* Effect.exit(pollDueTimersWorkflow())
+
+				// Assert: Workflow should have failed with PublishError
+				expect(result).toStrictEqual(Exit.fail(new PublishError({ cause: 'Event bus publish failed' })))
+
+				// Assert: Timer should still be in Scheduled state (markFired NOT called)
+				yield* pipe(
+					persistence.find(tenantId, serviceCallId),
+					Effect.andThen(found => {
+						expect(Option.isSome(found)).toBe(true)
+						expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
+					}),
+				)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
 		it.todo('continues with other timers when one publish fails', () => {
