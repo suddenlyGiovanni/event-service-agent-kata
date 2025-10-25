@@ -271,13 +271,40 @@ describe('pollDueTimersWorkflow', () => {
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
-		it.todo('completes successfully when persistence is empty', () => {
+		it.effect('completes successfully when persistence is empty', () => {
 			/**
 			 * GIVEN persistence has no timers at all
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN findDue should return empty Chunk
 			 *   AND workflow should complete successfully
 			 */
+
+			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: (timer, firedAt) =>
+					Effect.sync(() => {
+						publishedEvents.push({ firedAt, timer })
+					}),
+			})
+
+			return Effect.gen(function* () {
+				// Arrange: Start with empty persistence (no timers saved)
+				const clock = yield* ClockPort
+				const persistence = yield* TimerPersistencePort
+
+				// Verify persistence is empty
+				const noDueTimers = yield* persistence.findDue(yield* clock.now())
+				expect(Chunk.isEmpty(noDueTimers)).toBe(true)
+
+				// Act: Execute workflow (should find nothing)
+				yield* pollDueTimersWorkflow()
+
+				// Assert: No events published
+				expect(publishedEvents).toHaveLength(0)
+
+				// Assert: Workflow completed successfully
+				// (implicit - if we reach here, no exceptions were thrown)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus)))
 		})
 	})
 
