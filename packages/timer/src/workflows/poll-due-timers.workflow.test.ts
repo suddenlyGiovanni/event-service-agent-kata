@@ -7,6 +7,7 @@ import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
+import { UUID7 } from '@event-service-agent/contracts/services'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
 import { ClockPortTest } from '../adapters/clock.adapter.ts'
@@ -206,7 +207,7 @@ describe('pollDueTimersWorkflow', () => {
 	})
 
 	describe('Edge Cases - Empty Results', () => {
-		it.todo('completes successfully when no timers are due', () => {
+		it.effect('completes successfully when no timers are due', () => {
 			/**
 			 * GIVEN no timers are due (findDue returns empty Chunk)
 			 * WHEN pollDueTimersWorkflow executes
@@ -214,6 +215,60 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND no persistence operations should occur
 			 *   AND workflow should complete successfully
 			 */
+
+			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: (timer, firedAt) =>
+					Effect.sync(() => {
+						publishedEvents.push({ firedAt, timer })
+					}),
+			})
+
+			return Effect.gen(function* () {
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const correlationId = yield* CorrelationId.makeUUID7()
+
+				// Arrange: Create a timer that is NOT due yet (future)
+				const clock = yield* ClockPort
+				const persistence = yield* TimerPersistencePort
+				const now = yield* clock.now()
+
+				// Timer due in 10 minutes (well into the future)
+				const dueAt = DateTime.add(now, { minutes: 10 })
+
+				const scheduledTimer = ScheduledTimer.make({
+					correlationId: Option.some(correlationId),
+					dueAt,
+					registeredAt: now,
+					serviceCallId,
+					tenantId,
+				})
+
+				// Save the future timer
+				yield* persistence.save(scheduledTimer)
+
+				// Act: Advance time to while timer is still not due
+				yield* TestClock.adjust('9 minutes')
+
+				// Verify timer exists but is not due
+				const notDueYet = yield* persistence.findDue(yield* clock.now())
+				expect(Chunk.isEmpty(notDueYet)).toBe(true)
+
+				// Act: Execute workflow (should find no due timers)
+				yield* pollDueTimersWorkflow()
+
+				// Assert: No events should be published
+				expect(publishedEvents).toHaveLength(0)
+
+				// Assert: Timer should still be in Scheduled state (not processed)
+				const found = yield* persistence.find(tenantId, serviceCallId)
+				expect(Option.isSome(found)).toBe(true)
+				expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
+
+				// Assert: Workflow completed successfully (no errors)
+				// (implicit - if we reach here, no exceptions were thrown)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
 		it.todo('completes successfully when persistence is empty', () => {
