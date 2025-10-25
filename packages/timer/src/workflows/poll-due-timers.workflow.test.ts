@@ -58,7 +58,7 @@ describe('pollDueTimersWorkflow', () => {
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
 				const scheduledTimer = ScheduledTimer.make({
-					correlationId: Option.none(),
+					correlationId: Option.some(correlationId),
 					dueAt,
 					registeredAt: now,
 					serviceCallId,
