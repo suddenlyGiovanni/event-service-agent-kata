@@ -1,5 +1,7 @@
 import * as Effect from 'effect/Effect'
+import { pipe } from 'effect/Function'
 
+import type { ScheduledTimer } from '../domain/timer-entry.domain.ts'
 import {
 	ClockPort,
 	type PersistenceError,
@@ -8,25 +10,41 @@ import {
 	TimerPersistencePort,
 } from '../ports/index.ts'
 
-export const pollDueTimersWorkflow: () => Effect.Effect<
-	void,
-	PersistenceError | PublishError,
-	TimerPersistencePort | TimerEventBusPort | ClockPort
-> = Effect.fn('Timer.PollDueTimers')(function* () {
-	const persistence = yield* TimerPersistencePort
-	const eventBus = yield* TimerEventBusPort
-	const clock = yield* ClockPort
+/**
+ * Processes a single due timer by publishing its event and marking it as fired.
+ *
+ * @param timer - The scheduled timer to process
+ * @param firedAt - The timestamp when the timer fired
+ * @returns Effect that completes when both operations succeed
+ */
+const processTimerFiring: (
+	timer: ScheduledTimer,
+) => Effect.Effect<void, PublishError | PersistenceError, TimerEventBusPort | ClockPort | TimerPersistencePort> =
+	Effect.fn('Timer.ProcessTimerFiring')(function* (timer: ScheduledTimer) {
+		const eventBus = yield* TimerEventBusPort
+		const persistence = yield* TimerPersistencePort
+		const clock = yield* ClockPort
 
-	const now = yield* clock.now()
+		const now = yield* clock.now()
 
-	const dueTimers = yield* persistence.findDue(now)
-
-	// Process each timer sequentially
-	for (const timer of dueTimers) {
 		// Publish event first
 		yield* eventBus.publishDueTimeReached(timer, now)
 
 		// Then mark as fired
 		yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
-	}
+	})
+
+export const pollDueTimersWorkflow: () => Effect.Effect<
+	void,
+	PersistenceError | PublishError,
+	TimerPersistencePort | ClockPort | TimerEventBusPort
+> = Effect.fn('Timer.PollDueTimersWorkflow')(function* () {
+	const persistence = yield* TimerPersistencePort
+	const clock = yield* ClockPort
+
+	yield* pipe(
+		clock.now(),
+		Effect.flatMap(persistence.findDue),
+		Effect.flatMap(Effect.forEach(processTimerFiring, { concurrency: 1, discard: true })),
+	)
 })
