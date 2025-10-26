@@ -42,7 +42,6 @@ describe('pollDueTimersWorkflow', () => {
 
 			const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
 			const serviceCallId = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
-			const correlationId = CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
 
 			return Effect.gen(function* () {
 				/**
@@ -61,14 +60,12 @@ describe('pollDueTimersWorkflow', () => {
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
 				const scheduledTimer = ScheduledTimer.make({
-					correlationId: Option.some(correlationId),
+					correlationId: Option.none(),
 					dueAt,
 					registeredAt: now,
 					serviceCallId,
 					tenantId,
-				})
-
-				// Get persistence and save timer
+				}) // Get persistence and save timer
 				const persistence = yield* TimerPersistencePort
 				yield* persistence.save(scheduledTimer)
 
@@ -125,7 +122,6 @@ describe('pollDueTimersWorkflow', () => {
 				ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2'),
 				ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3'),
 			]
-			const correlationId = CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a4')
 
 			return Effect.gen(function* () {
 				// Arrange: Create three timers that will be due
@@ -137,7 +133,7 @@ describe('pollDueTimersWorkflow', () => {
 				// Create and save timers using iteration
 				const timers = serviceCallIds.map(serviceCallId =>
 					ScheduledTimer.make({
-						correlationId: Option.some(correlationId),
+						correlationId: Option.none(),
 						dueAt,
 						registeredAt,
 						serviceCallId,
@@ -199,7 +195,6 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
-				const correlationId = yield* CorrelationId.makeUUID7()
 
 				// Arrange: Create a timer that will be due
 				const clock = yield* ClockPort
@@ -208,7 +203,7 @@ describe('pollDueTimersWorkflow', () => {
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
 				const scheduledTimer = ScheduledTimer.make({
-					correlationId: Option.some(correlationId),
+					correlationId: Option.none(),
 					dueAt,
 					registeredAt,
 					serviceCallId,
@@ -245,13 +240,58 @@ describe('pollDueTimersWorkflow', () => {
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
-		it.todo('propagates correlationId from timer to event', () => {
+		it.effect('propagates correlationId from timer to event', () => {
 			/**
 			 * GIVEN a timer with a correlationId
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN the published DueTimeReached event should include the correlationId
 			 *   AND the correlationId should match the timer's correlationId
 			 */
+
+			let publishedTimer: ScheduledTimer | undefined
+
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: timer =>
+					Effect.sync(() => {
+						publishedTimer = timer
+					}),
+			})
+
+			return Effect.gen(function* () {
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const correlationId = yield* CorrelationId.makeUUID7()
+
+				// Arrange: Create a timer with a specific correlationId
+				const clock = yield* ClockPort
+				const persistence = yield* TimerPersistencePort
+				const registeredAt = yield* clock.now()
+				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
+
+				const scheduledTimer = ScheduledTimer.make({
+					correlationId: Option.some(correlationId),
+					dueAt,
+					registeredAt,
+					serviceCallId,
+					tenantId,
+				})
+
+				yield* persistence.save(scheduledTimer)
+
+				// Act: Advance time to make timer due
+				yield* TestClock.adjust('6 minutes')
+
+				// Execute workflow
+				yield* pollDueTimersWorkflow()
+
+				// Assert: Timer should have been published
+				expect(publishedTimer).toBeDefined()
+				if (!publishedTimer) throw new Error('Timer was not published')
+
+				// Assert: Published timer should have the same correlationId
+				expect(Option.isSome(publishedTimer.correlationId)).toBe(true)
+				expect(Option.getOrThrow(publishedTimer.correlationId)).toBe(correlationId)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
 		it.todo('handles timer without correlationId', () => {
@@ -285,7 +325,6 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
-				const correlationId = yield* CorrelationId.makeUUID7()
 
 				// Arrange: Create a timer that is NOT due yet (future)
 				const clock = yield* ClockPort
@@ -296,14 +335,12 @@ describe('pollDueTimersWorkflow', () => {
 				const dueAt = DateTime.add(now, { minutes: 10 })
 
 				const scheduledTimer = ScheduledTimer.make({
-					correlationId: Option.some(correlationId),
+					correlationId: Option.none(),
 					dueAt,
 					registeredAt: now,
 					serviceCallId,
 					tenantId,
-				})
-
-				// Save the future timer
+				}) // Save the future timer
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Advance time to while timer is still not due
@@ -386,7 +423,6 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
-				const correlationId = yield* CorrelationId.makeUUID7()
 				// Arrange: Create a timer where dueAt === now (boundary condition)
 				const clock = yield* ClockPort
 				const persistence = yield* TimerPersistencePort
@@ -394,7 +430,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Timer is due right now (no offset)
 				const scheduledTimer = ScheduledTimer.make({
-					correlationId: Option.some(correlationId),
+					correlationId: Option.none(),
 					dueAt: now,
 					registeredAt: now,
 					serviceCallId,
@@ -439,7 +475,6 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
-				const correlationId = yield* CorrelationId.makeUUID7()
 
 				// Arrange: Create a timer due in the future
 				const clock = yield* ClockPort
@@ -450,7 +485,7 @@ describe('pollDueTimersWorkflow', () => {
 				const dueAt = DateTime.add(now, { seconds: 1 })
 
 				const scheduledTimer = ScheduledTimer.make({
-					correlationId: Option.some(correlationId),
+					correlationId: Option.none(),
 					dueAt,
 					registeredAt: now,
 					serviceCallId,
@@ -496,7 +531,6 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
-				const correlationId = yield* CorrelationId.makeUUID7()
 
 				// Arrange: Schedule a timer for 5 minutes from now
 				const clock = yield* ClockPort
@@ -507,7 +541,7 @@ describe('pollDueTimersWorkflow', () => {
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
 				const scheduledTimer = ScheduledTimer.make({
-					correlationId: Option.some(correlationId),
+					correlationId: Option.none(),
 					dueAt,
 					registeredAt,
 					serviceCallId,
@@ -556,7 +590,6 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
-				const correlationId = yield* CorrelationId.makeUUID7()
 
 				// Arrange: Create a timer that will be due
 				const clock = yield* ClockPort
@@ -565,7 +598,7 @@ describe('pollDueTimersWorkflow', () => {
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
 				const scheduledTimer = ScheduledTimer.make({
-					correlationId: Option.some(correlationId),
+					correlationId: Option.none(),
 					dueAt,
 					registeredAt,
 					serviceCallId,
@@ -633,7 +666,6 @@ describe('pollDueTimersWorkflow', () => {
 				const serviceCallId2 = yield* ServiceCallId.makeUUID7()
 				const serviceCallId3 = yield* ServiceCallId.makeUUID7()
 				const serviceCallIds = [serviceCallId1, serviceCallId2, serviceCallId3]
-				const correlationId = yield* CorrelationId.makeUUID7()
 
 				// Arrange: Create three timers that will be due
 				const clock = yield* ClockPort
@@ -643,7 +675,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				const timers = serviceCallIds.map(serviceCallId =>
 					ScheduledTimer.make({
-						correlationId: Option.some(correlationId),
+						correlationId: Option.none(),
 						dueAt,
 						registeredAt,
 						serviceCallId,
@@ -727,7 +759,6 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
-				const correlationId = yield* CorrelationId.makeUUID7()
 
 				// Arrange: Create a timer that will be due
 				const clock = yield* ClockPort
@@ -735,14 +766,12 @@ describe('pollDueTimersWorkflow', () => {
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
 				const scheduledTimer = ScheduledTimer.make({
-					correlationId: Option.some(correlationId),
+					correlationId: Option.none(),
 					dueAt,
 					registeredAt,
 					serviceCallId,
 					tenantId,
-				})
-
-				// Use base persistence for save, then provide a mock that fails markFired
+				}) // Use base persistence for save, then provide a mock that fails markFired
 				const basePersistence = yield* TimerPersistencePort
 				yield* basePersistence.save(scheduledTimer)
 
