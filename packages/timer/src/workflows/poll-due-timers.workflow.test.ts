@@ -597,7 +597,7 @@ describe('pollDueTimersWorkflow', () => {
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, UUID7.Default))),
 		)
 
-		it.effect.fails('propagates batch failure when some timers fail', () => {
+		it.effect('propagates batch failure when some timers fail', () => {
 			/**
 			 * GIVEN three timers that are due
 			 *   AND the second timer's publish will fail
@@ -704,7 +704,7 @@ describe('pollDueTimersWorkflow', () => {
 	})
 
 	describe('Error Handling - Persistence Failures', () => {
-		it.effect.fails('propagates batch failure when markFired fails', () => {
+		it.effect('propagates batch failure when markFired fails', () => {
 			/**
 			 * GIVEN a timer that is due
 			 *   AND eventBus.publish succeeds

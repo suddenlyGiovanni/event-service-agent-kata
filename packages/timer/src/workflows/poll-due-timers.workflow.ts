@@ -72,10 +72,16 @@ export const pollDueTimersWorkflow: () => Effect.Effect<
 		concurrency: 1,
 	})
 
-	// TODO: Add observability when Logger service is available
-	// - Log failures for monitoring
-	// - Annotate span with metrics (dueCount, processed, failed)
+	// Propagate failures to error channel for caller to handle (retry policies, alerting, etc.)
 	if (failures.length > 0) {
-		// yield* Effect.logError(`Timer processing failures: ${failures.length}/${dueTimers.length}`)
+		return yield* Effect.fail(
+			new BatchProcessingError({
+				failedCount: failures.length,
+				failures,
+				totalCount: dueTimers.length,
+			}),
+		)
 	}
+
+	// Success: all timers processed (return void, successes forgotten)
 })
