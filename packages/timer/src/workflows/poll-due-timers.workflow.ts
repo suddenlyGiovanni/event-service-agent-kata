@@ -1,4 +1,6 @@
+import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
+import { round } from 'effect/Number'
 import * as Schema from 'effect/Schema'
 
 import type { ScheduledTimer } from '../domain/timer-entry.domain.ts'
@@ -34,31 +36,43 @@ export class BatchProcessingError extends Schema.TaggedError<BatchProcessingErro
 /**
  * Processes a single due timer by publishing its event and marking it as fired.
  *
+ * Effect.fn automatically creates a span named 'Timer.ProcessTimerFiring' for tracing.
+ *
  * @param timer - The scheduled timer to process
- * @param firedAt - The timestamp when the timer fired
  * @returns Effect that completes when both operations succeed
  */
-const processTimerFiring: (
-	timer: ScheduledTimer,
-) => Effect.Effect<void, PublishError | PersistenceError, TimerEventBusPort | ClockPort | TimerPersistencePort> =
-	Effect.fn('Timer.ProcessTimerFiring')(function* (timer: ScheduledTimer) {
-		const eventBus = yield* TimerEventBusPort
-		const persistence = yield* TimerPersistencePort
-		const clock = yield* ClockPort
+const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (timer: ScheduledTimer) {
+	const eventBus = yield* TimerEventBusPort
+	const persistence = yield* TimerPersistencePort
+	const clock = yield* ClockPort
 
-		const now = yield* clock.now()
+	const now = yield* clock.now()
 
-		// Publish event first
-		yield* eventBus.publishDueTimeReached(timer, now)
-
-		// Then mark as fired
-		yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
+	// Annotate span with timer metadata for tracing
+	yield* Effect.annotateCurrentSpan({
+		'timer.dueAt': DateTime.formatIsoDateUtc(timer.dueAt),
+		'timer.serviceCallId': timer.serviceCallId,
+		'timer.tenantId': timer.tenantId,
 	})
 
+	// Publish event first
+	yield* eventBus.publishDueTimeReached(timer, now)
+
+	// Then mark as fired
+	yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
+
+	// Log successful processing
+	yield* Effect.logDebug('Timer fired successfully', {
+		dueAt: DateTime.formatIsoDateUtc(timer.dueAt),
+		serviceCallId: timer.serviceCallId,
+		tenantId: timer.tenantId,
+	})
+})
+
 export const pollDueTimersWorkflow: () => Effect.Effect<
-	void,
-	PersistenceError | BatchProcessingError, // findDue can fail (infra) | batch failures (domain)
-	TimerPersistencePort | ClockPort | TimerEventBusPort
+	undefined,
+	PersistenceError | BatchProcessingError,
+	TimerEventBusPort | TimerPersistencePort | ClockPort
 > = Effect.fn('Timer.PollDueTimersWorkflow')(function* () {
 	const persistence = yield* TimerPersistencePort
 	const clock = yield* ClockPort
@@ -66,14 +80,45 @@ export const pollDueTimersWorkflow: () => Effect.Effect<
 	const now = yield* clock.now()
 	const dueTimers = yield* persistence.findDue(now)
 
+	// Annotate span with workflow metadata for tracing
+	yield* Effect.annotateCurrentSpan({
+		'timer.operation': 'batch-processing',
+		'timer.workflow': 'poll-due-timers',
+	})
+
+	// Log batch start
+	yield* Effect.logInfo('Polling due timers', {
+		dueCount: dueTimers.length,
+		timestamp: now.toString(),
+	})
+
+	// Early return if no timers due
+	if (dueTimers.length === 0) {
+		yield* Effect.logDebug('No due timers found')
+		return
+	}
+
 	// Use partition for error accumulation: process all timers, collect failures separately
 	// Error channel is never for partition - workflow doesn't fail on individual timer errors
-	const [failures, _successes] = yield* Effect.partition(dueTimers, processTimerFiring, {
+	const [failures, successes] = yield* Effect.partition(dueTimers, processTimerFiring, {
 		concurrency: 1,
+	})
+
+	// Log processing results
+	yield* Effect.logInfo('Timer batch processing completed', {
+		failedCount: failures.length,
+		successCount: successes.length,
+		totalCount: dueTimers.length,
 	})
 
 	// Propagate failures to error channel for caller to handle (retry policies, alerting, etc.)
 	if (failures.length > 0) {
+		yield* Effect.logWarning('Timer batch processing had failures', {
+			failedCount: failures.length,
+			failureRate: round((failures.length / dueTimers.length) * 100, 1),
+			totalCount: dueTimers.length,
+		})
+
 		return yield* Effect.fail(
 			new BatchProcessingError({
 				failedCount: failures.length,
@@ -83,5 +128,8 @@ export const pollDueTimersWorkflow: () => Effect.Effect<
 		)
 	}
 
-	// Success: all timers processed (return void, successes forgotten)
+	// Success: all timers processed
+	yield* Effect.logInfo('All timers processed successfully', {
+		processedCount: successes.length,
+	})
 })
