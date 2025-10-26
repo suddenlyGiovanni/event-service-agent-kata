@@ -293,15 +293,6 @@ describe('pollDueTimersWorkflow', () => {
 				expect(Option.getOrThrow(publishedTimer.correlationId)).toBe(correlationId)
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
-
-		it.todo('handles timer without correlationId', () => {
-			/**
-			 * GIVEN a timer without a correlationId (Option.none)
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN the DueTimeReached event should be published without correlationId
-			 *   AND the timer should be processed successfully
-			 */
-		})
 	})
 
 	describe('Edge Cases - Empty Results', () => {
