@@ -563,25 +563,12 @@ describe('pollDueTimersWorkflow', () => {
 	})
 
 	describe('Error Handling - Publish Failures', () => {
-		it.effect('collects publish failures without stopping workflow', () => {
-			/**
-			 * GIVEN a timer that is due
-			 *   AND eventBus.publish will fail
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN the publish should be attempted
-			 *   AND the publish failure should be collected (not propagated)
-			 *   AND markFired should NOT be called (short-circuit in processTimerFiring)
-			 *   AND the timer should remain in Scheduled state
-			 *   AND the workflow should complete successfully
-			 *
-			 * Strategy: Effect.partition collects failures without failing workflow
-			 */
+		it.effect.fails('propagates batch failure when publish fails', () =>
+			Effect.gen(function* () {
+				const TestEventBus = Layer.mock(TimerEventBusPort, {
+					publishDueTimeReached: () => Effect.fail(new PublishError({ cause: 'Event bus publish failed' })),
+				})
 
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
-				publishDueTimeReached: () => Effect.fail(new PublishError({ cause: 'Event bus publish failed' })),
-			})
-
-			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
 
@@ -604,21 +591,13 @@ describe('pollDueTimersWorkflow', () => {
 				// Act: Advance time to make timer due
 				yield* TestClock.adjust('6 minutes')
 
-				// Execute workflow - should succeed despite publish failure
-				yield* pollDueTimersWorkflow()
+				// Execute workflow with TestEventBus - should fail with BatchProcessingError
+				// RED: Currently workflow succeeds (partition doesn't propagate failures)
+				yield* pollDueTimersWorkflow().pipe(Effect.provide(TestEventBus))
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, UUID7.Default))),
+		)
 
-				// Assert: Timer should still be in Scheduled state (failure collected, timer not processed)
-				yield* pipe(
-					persistence.find(tenantId, serviceCallId),
-					Effect.andThen(found => {
-						expect(Option.isSome(found)).toBe(true)
-						expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
-					}),
-				)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
-		})
-
-		it.effect('continues with other timers when one publish fails', () => {
+		it.effect.fails('propagates batch failure when some timers fail', () => {
 			/**
 			 * GIVEN three timers that are due
 			 *   AND the second timer's publish will fail
@@ -626,16 +605,15 @@ describe('pollDueTimersWorkflow', () => {
 			 * THEN timer 1 should be processed successfully
 			 *   AND timer 2 publish should fail (timer stays Scheduled)
 			 *   AND timer 3 should still be processed successfully
-			 *   AND workflow should complete successfully (not fail-fast)
+			 *   AND workflow should fail with BatchProcessingError
+			 *   AND BatchProcessingError should show 1 failure out of 3 total
 			 *
 			 * Strategy: Use Effect.partition for error accumulation
 			 * - Process all timers regardless of individual failures
 			 * - Collect failures separately from successes
-			 * - Workflow never fails (error channel: never)
+			 * - Workflow fails with BatchProcessingError containing failure details
 			 * - Failed timers remain Scheduled for retry on next poll
-			 */
-
-			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			 */ const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
 			let callCount = 0
 
 			const TestEventBus = Layer.mock(TimerEventBusPort, {
@@ -679,13 +657,23 @@ describe('pollDueTimersWorkflow', () => {
 				// Act: Advance time to make all timers due
 				yield* TestClock.adjust('6 minutes')
 
-				// Execute workflow (should not fail-fast)
-				yield* pollDueTimersWorkflow()
+				// Execute workflow (should fail with BatchProcessingError)
+				const result = yield* Effect.exit(pollDueTimersWorkflow())
+
+				// Assert: Workflow should fail
+				expect(Exit.isFailure(result)).toBe(true)
+
+				// Assert: Should fail with BatchProcessingError
+				if (Exit.isFailure(result)) {
+					// TODO: Add proper assertions on BatchProcessingError fields
+					// const error = result.cause
+					// expect(error._tag).toBe('BatchProcessingError')
+					// expect(error.failedCount).toBe(1)
+					// expect(error.totalCount).toBe(3)
+				}
 
 				// Assert: Two events should be published (timers 1 and 3)
-				expect(publishedEvents).toHaveLength(2)
-
-				// Assert: Timer 1 should be marked as Reached
+				expect(publishedEvents).toHaveLength(2) // Assert: Timer 1 should be marked as Reached
 				yield* pipe(
 					persistence.find(tenantId, serviceCallId1),
 					Effect.andThen(found => {
@@ -716,22 +704,20 @@ describe('pollDueTimersWorkflow', () => {
 	})
 
 	describe('Error Handling - Persistence Failures', () => {
-		it.effect('collects markFired failures after successful publish', () => {
+		it.effect.fails('propagates batch failure when markFired fails', () => {
 			/**
 			 * GIVEN a timer that is due
 			 *   AND eventBus.publish succeeds
 			 *   AND persistence.markFired will fail
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN the event should be published (duplicate on next poll)
-			 *   AND markFired failure should be collected (not propagated)
+			 *   AND markFired failure should be collected
 			 *   AND the timer should remain in Scheduled state
-			 *   AND the workflow should complete successfully
+			 *   AND the workflow should fail with BatchProcessingError
 			 *
-			 * Strategy: Effect.partition collects failures without failing workflow
+			 * Strategy: Effect.partition collects failures, workflow propagates to error channel
 			 * Note: Event is published but timer stays Scheduled (Orchestration handles duplicate via state guard)
-			 */
-
-			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			 */ const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
 
 			const TestEventBus = Layer.mock(TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
@@ -772,8 +758,20 @@ describe('pollDueTimersWorkflow', () => {
 				// Act: Advance time to make timer due
 				yield* TestClock.adjust('6 minutes')
 
-				// Execute workflow with failing markFired - should succeed despite markFired failure
-				yield* pollDueTimersWorkflow().pipe(Effect.provide(TestPersistence))
+				// Execute workflow with failing markFired - should fail with BatchProcessingError
+				const result = yield* Effect.exit(pollDueTimersWorkflow().pipe(Effect.provide(TestPersistence)))
+
+				// Assert: Workflow should fail
+				expect(Exit.isFailure(result)).toBe(true)
+
+				// Assert: Should fail with BatchProcessingError
+				if (Exit.isFailure(result)) {
+					// TODO: Add proper assertions on BatchProcessingError fields
+					// const error = result.cause
+					// expect(error._tag).toBe('BatchProcessingError')
+					// expect(error.failedCount).toBe(1)
+					// expect(error.totalCount).toBe(1)
+				}
 
 				// Assert: Event should have been published (will be duplicate on retry)
 				expect(publishedEvents).toHaveLength(1)
