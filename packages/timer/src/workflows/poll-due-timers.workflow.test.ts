@@ -815,7 +815,7 @@ describe('pollDueTimersWorkflow', () => {
 	})
 
 	describe('Error Handling - Query Failures', () => {
-		it.todo('propagates error when findDue fails', () => {
+		it.effect('propagates error when findDue fails', () => {
 			/**
 			 * GIVEN persistence.findDue will fail with PersistenceError
 			 * WHEN pollDueTimersWorkflow executes
@@ -823,6 +823,31 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND no events should be published
 			 *   AND no timers should be marked
 			 */
+
+			const publishedEvents: unknown[] = []
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: (timer, firedAt) =>
+					Effect.sync(() => {
+						publishedEvents.push({ firedAt, timer })
+					}),
+			})
+
+			const TestPersistence = Layer.mock(TimerPersistencePort, {
+				findDue: () => Effect.fail(new PersistenceError({ cause: 'Database connection failed', operation: 'findDue' })),
+			})
+
+			return Effect.gen(function* () {
+				// Act: Execute workflow with failing findDue
+				const result = yield* Effect.exit(pollDueTimersWorkflow())
+
+				// Assert: Workflow should have failed with PersistenceError
+				expect(result).toStrictEqual(
+					Exit.fail(new PersistenceError({ cause: 'Database connection failed', operation: 'findDue' })),
+				)
+
+				// Assert: No events should have been published
+				expect(publishedEvents).toHaveLength(0)
+			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, ClockPortTest, TestEventBus)))
 		})
 
 		it.todo('propagates error when clock.now fails', () => {
