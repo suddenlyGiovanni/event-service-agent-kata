@@ -4,13 +4,7 @@ import { round } from 'effect/Number'
 import * as Schema from 'effect/Schema'
 
 import type { ScheduledTimer } from '../domain/timer-entry.domain.ts'
-import {
-	ClockPort,
-	type PersistenceError,
-	type PublishError,
-	TimerEventBusPort,
-	TimerPersistencePort,
-} from '../ports/index.ts'
+import { ClockPort, type PersistenceError, TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
 
 /**
  * Error representing batch processing failures during timer polling.
