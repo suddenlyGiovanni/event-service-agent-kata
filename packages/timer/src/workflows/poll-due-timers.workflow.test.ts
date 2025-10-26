@@ -713,16 +713,6 @@ describe('pollDueTimersWorkflow', () => {
 				)
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
-
-		it.todo('logs error when publish fails', () => {
-			/**
-			 * GIVEN a timer that is due
-			 *   AND eventBus.publish will fail with PublishError
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN an error log should be emitted
-			 *   AND the log should include serviceCallId, tenantId, error details
-			 */
-		})
 	})
 
 	describe('Error Handling - Persistence Failures', () => {
@@ -800,18 +790,6 @@ describe('pollDueTimersWorkflow', () => {
 				)
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
-
-		it.todo('continues with other timers when one markFired fails', () => {
-			/**
-			 * GIVEN three timers that are due
-			 *   AND the second timer's markFired will fail
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN timer 1 should be fully processed (published + marked)
-			 *   AND timer 2 should be published but not marked (stays Scheduled)
-			 *   AND timer 3 should be fully processed
-			 *   AND workflow should complete
-			 */
-		})
 	})
 
 	describe('Error Handling - Query Failures', () => {
@@ -849,223 +827,19 @@ describe('pollDueTimersWorkflow', () => {
 				expect(publishedEvents).toHaveLength(0)
 			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, ClockPortTest, TestEventBus)))
 		})
-
-		it.todo('propagates error when clock.now fails', () => {
-			/**
-			 * GIVEN clock.now will fail
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN the workflow should fail immediately
-			 *   AND no persistence operations should occur
-			 */
-		})
 	})
 
-	describe('Partial Batch Failures', () => {
-		it.todo('tracks processed and failed counts correctly', () => {
-			/**
-			 * GIVEN five timers that are due
-			 *   AND timers 2 and 4 will fail (publish or markFired)
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN processed count should be 3
-			 *   AND failed count should be 2
-			 *   AND spans should be annotated with these counts
-			 */
-		})
+	// TODO: Partial batch failure tests blocked by design decision (ADR needed)
+	// Current implementation: fail-fast (stop on first error)
+	// Alternative: continue-on-error (process all timers, track failures)
+	// Decision needed: Which strategy for production?
+	// - "tracks processed and failed counts correctly"
+	// - "processes all timers despite individual failures"
 
-		it.todo('processes all timers despite individual failures', () => {
-			/**
-			 * GIVEN ten timers that are due
-			 *   AND three timers will fail at different stages
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN all ten timers should be attempted
-			 *   AND seven should succeed (published + marked)
-			 *   AND three should fail but not stop batch processing
-			 */
-		})
-	})
-
-	describe('Idempotency - Duplicate Processing', () => {
-		it.todo('handles timer that is already Reached', () => {
-			/**
-			 * GIVEN a timer that was already marked as Reached
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN findDue should NOT return the timer (already Reached)
-			 *   AND no duplicate event should be published
-			 */
-		})
-
-		it.todo('safely retries timer that failed publish on previous poll', () => {
-			/**
-			 * GIVEN a timer that failed publish in previous poll (still Scheduled)
-			 * WHEN pollDueTimersWorkflow executes again
-			 * THEN the timer should be found again (still due)
-			 *   AND publish should be retried
-			 *   AND if successful, timer should be marked as Reached
-			 */
-		})
-
-		it.todo('handles duplicate event publishing when markFired fails', () => {
-			/**
-			 * GIVEN a timer that was published but markFired failed (still Scheduled)
-			 * WHEN pollDueTimersWorkflow executes again
-			 * THEN the timer should be found again
-			 *   AND the event should be published again (duplicate)
-			 *   AND this time markFired succeeds
-			 *   AND Orchestration handles duplicate via state guard
-			 */
-		})
-	})
-
-	describe('Observability - Span Annotations', () => {
-		it.todo('annotates span with due count', () => {
-			/**
-			 * GIVEN three timers that are due
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN the span should be annotated with timer.due_count = 3
-			 */
-		})
-
-		it.todo('annotates span with processed and failed counts', () => {
-			/**
-			 * GIVEN five timers, where 2 fail processing
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN the span should be annotated with:
-			 *   - timer.processed_count = 3
-			 *   - timer.failed_count = 2
-			 */
-		})
-
-		it.todo('annotates span with poll time', () => {
-			/**
-			 * GIVEN current time is 2025-10-18T10:00:00Z
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN the span should be annotated with timer.poll_time = "2025-10-18T10:00:00.000Z"
-			 */
-		})
-
-		it.todo('annotates per-timer span with context', () => {
-			/**
-			 * GIVEN a timer with tenantId, serviceCallId, correlationId, dueAt
-			 * WHEN the timer is processed
-			 * THEN the processTimerFiring span should be annotated with:
-			 *   - timer.tenant_id
-			 *   - timer.service_call_id
-			 *   - timer.correlation_id
-			 *   - timer.due_at
-			 *   - timer.fired_at
-			 */
-		})
-	})
-
-	describe('Observability - Logging', () => {
-		it.todo('logs debug message at start of poll cycle', () => {
-			/**
-			 * GIVEN workflow is about to execute
-			 * WHEN pollDueTimersWorkflow starts
-			 * THEN a debug log "Starting poll cycle" should be emitted
-			 */
-		})
-
-		it.todo('logs info message at end of poll cycle with summary', () => {
-			/**
-			 * GIVEN workflow processes 3 timers (2 succeed, 1 fails)
-			 * WHEN pollDueTimersWorkflow completes
-			 * THEN an info log should be emitted with:
-			 *   - message: "Poll cycle completed"
-			 *   - dueCount: 3
-			 *   - processed: 2
-			 *   - failed: 1
-			 */
-		})
-
-		it.todo('logs debug message when event is published', () => {
-			/**
-			 * GIVEN a timer is being processed
-			 * WHEN the DueTimeReached event is published successfully
-			 * THEN a debug log should be emitted
-			 *   AND should include serviceCallId
-			 */
-		})
-
-		it.todo('logs debug message when timer is marked as fired', () => {
-			/**
-			 * GIVEN a timer has been published
-			 * WHEN persistence.markFired succeeds
-			 * THEN a debug log should be emitted
-			 *   AND should include serviceCallId
-			 */
-		})
-
-		it.todo('logs error with context when timer processing fails', () => {
-			/**
-			 * GIVEN a timer fails during processing
-			 * WHEN pollDueTimersWorkflow handles the error
-			 * THEN an error log should be emitted with:
-			 *   - message: "Timer processing failed - will retry next poll"
-			 *   - serviceCallId
-			 *   - tenantId
-			 *   - error details
-			 */
-		})
-	})
-
-	describe('Sequential Processing', () => {
-		it.todo('processes timers in sequential order (not concurrent)', () => {
-			/**
-			 * GIVEN three timers that are due
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN timer 1 should be fully processed before timer 2 starts
-			 *   AND timer 2 should be fully processed before timer 3 starts
-			 *   AND processing order should be deterministic
-			 */
-		})
-
-		it.todo('ensures publish happens before markFired for each timer', () => {
-			/**
-			 * GIVEN multiple timers that are due
-			 * WHEN processing each timer
-			 * THEN for EACH timer: publish must complete before its markFired
-			 *   AND timers should not interleave operations
-			 */
-		})
-	})
-
-	describe('Integration with Ports', () => {
-		it.todo('uses ClockPort to get current time', () => {
-			/**
-			 * GIVEN workflow needs current time
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN it should call ClockPort.now()
-			 *   AND use the returned DateTime.Utc for findDue and markFired
-			 */
-		})
-
-		it.todo('uses TimerPersistencePort to find due timers', () => {
-			/**
-			 * GIVEN current time is now
-			 * WHEN pollDueTimersWorkflow executes
-			 * THEN it should call persistence.findDue(now)
-			 *   AND process the returned Chunk of ScheduledTimers
-			 */
-		})
-
-		it.todo('uses EventBusPort to publish events', () => {
-			/**
-			 * GIVEN a timer needs to fire
-			 * WHEN processTimerFiring executes
-			 * THEN it should call eventBus.publish(DueTimeReached)
-			 *   AND the event should contain timer details
-			 */
-		})
-
-		it.todo('uses TimerPersistencePort to mark timers as fired', () => {
-			/**
-			 * GIVEN an event was published successfully
-			 * WHEN processTimerFiring continues
-			 * THEN it should call persistence.markFired(tenantId, serviceCallId, firedAt)
-			 */
-		})
-	})
+	// TODO: Observability tests deferred until Logger/Tracer infrastructure implemented
+	// - Span annotations (due count, processed/failed counts, poll time, timer context)
+	// - Logging (poll cycle start/end, event publish, timer marked, error context)
+	// These tests require Effect Tracer and Logger services to be implemented
 })
 
 describe('processTimerFiring', () => {
@@ -1111,36 +885,8 @@ describe('processTimerFiring', () => {
 		})
 	})
 
-	describe('Observability', () => {
-		it.todo('annotates span with timer context', () => {
-			/**
-			 * GIVEN a timer with full context
-			 * WHEN processTimerFiring executes
-			 * THEN the span should be annotated with:
-			 *   - timer.tenant_id
-			 *   - timer.service_call_id
-			 *   - timer.correlation_id (or null if None)
-			 *   - timer.due_at (ISO8601)
-			 *   - timer.fired_at (ISO8601)
-			 */
-		})
-
-		it.todo('logs debug when event is published', () => {
-			/**
-			 * GIVEN processTimerFiring is executing
-			 * WHEN eventBus.publish succeeds
-			 * THEN a debug log should be emitted
-			 *   AND should include serviceCallId
-			 */
-		})
-
-		it.todo('logs debug when timer is marked as fired', () => {
-			/**
-			 * GIVEN processTimerFiring is executing
-			 * WHEN persistence.markFired succeeds
-			 * THEN a debug log should be emitted
-			 *   AND should include serviceCallId
-			 */
-		})
-	})
+	// TODO: Observability tests deferred until Logger/Tracer infrastructure implemented
+	// - annotates span with timer context (tenant_id, service_call_id, correlation_id, due_at, fired_at)
+	// - logs debug when event is published
+	// - logs debug when timer is marked as fired
 })
