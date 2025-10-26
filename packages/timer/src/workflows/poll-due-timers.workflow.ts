@@ -1,5 +1,4 @@
 import * as Effect from 'effect/Effect'
-import { pipe } from 'effect/Function'
 
 import type { ScheduledTimer } from '../domain/timer-entry.domain.ts'
 import {
@@ -36,15 +35,25 @@ const processTimerFiring: (
 
 export const pollDueTimersWorkflow: () => Effect.Effect<
 	void,
-	PersistenceError | PublishError,
+	PersistenceError, // Only findDue can fail
 	TimerPersistencePort | ClockPort | TimerEventBusPort
 > = Effect.fn('Timer.PollDueTimersWorkflow')(function* () {
 	const persistence = yield* TimerPersistencePort
 	const clock = yield* ClockPort
 
-	yield* pipe(
-		clock.now(),
-		Effect.flatMap(persistence.findDue),
-		Effect.flatMap(Effect.forEach(processTimerFiring, { concurrency: 1, discard: true })),
-	)
+	const now = yield* clock.now()
+	const dueTimers = yield* persistence.findDue(now)
+
+	// Use partition for error accumulation: process all timers, collect failures separately
+	// Error channel is never for partition - workflow doesn't fail on individual timer errors
+	const [failures, _successes] = yield* Effect.partition(dueTimers, processTimerFiring, {
+		concurrency: 1,
+	})
+
+	// TODO: Add observability when Logger service is available
+	// - Log failures for monitoring
+	// - Annotate span with metrics (dueCount, processed, failed)
+	if (failures.length > 0) {
+		// yield* Effect.logError(`Timer processing failures: ${failures.length}/${dueTimers.length}`)
+	}
 })

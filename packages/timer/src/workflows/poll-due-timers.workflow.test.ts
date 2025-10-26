@@ -563,15 +563,18 @@ describe('pollDueTimersWorkflow', () => {
 	})
 
 	describe('Error Handling - Publish Failures', () => {
-		it.effect('stops processing timer when publish fails', () => {
+		it.effect('collects publish failures without stopping workflow', () => {
 			/**
 			 * GIVEN a timer that is due
 			 *   AND eventBus.publish will fail
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN the publish should be attempted
-			 *   AND the publish should fail
-			 *   AND markFired should NOT be called (short-circuit)
+			 *   AND the publish failure should be collected (not propagated)
+			 *   AND markFired should NOT be called (short-circuit in processTimerFiring)
 			 *   AND the timer should remain in Scheduled state
+			 *   AND the workflow should complete successfully
+			 *
+			 * Strategy: Effect.partition collects failures without failing workflow
 			 */
 
 			const TestEventBus = Layer.mock(TimerEventBusPort, {
@@ -601,13 +604,10 @@ describe('pollDueTimersWorkflow', () => {
 				// Act: Advance time to make timer due
 				yield* TestClock.adjust('6 minutes')
 
-				// Execute workflow - should fail due to publish error
-				const result = yield* Effect.exit(pollDueTimersWorkflow())
+				// Execute workflow - should succeed despite publish failure
+				yield* pollDueTimersWorkflow()
 
-				// Assert: Workflow should have failed with PublishError
-				expect(result).toStrictEqual(Exit.fail(new PublishError({ cause: 'Event bus publish failed' })))
-
-				// Assert: Timer should still be in Scheduled state (markFired NOT called)
+				// Assert: Timer should still be in Scheduled state (failure collected, timer not processed)
 				yield* pipe(
 					persistence.find(tenantId, serviceCallId),
 					Effect.andThen(found => {
@@ -618,7 +618,7 @@ describe('pollDueTimersWorkflow', () => {
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
-		it.effect.fails('continues with other timers when one publish fails', () => {
+		it.effect('continues with other timers when one publish fails', () => {
 			/**
 			 * GIVEN three timers that are due
 			 *   AND the second timer's publish will fail
@@ -626,13 +626,13 @@ describe('pollDueTimersWorkflow', () => {
 			 * THEN timer 1 should be processed successfully
 			 *   AND timer 2 publish should fail (timer stays Scheduled)
 			 *   AND timer 3 should still be processed successfully
-			 *   AND workflow should complete (not fail-fast)
+			 *   AND workflow should complete successfully (not fail-fast)
 			 *
-			 * TODO(PL-4.4): Decide error handling strategy
-			 * Current implementation uses Effect.forEach which fails fast.
-			 * This test expects continue-on-error behavior.
-			 * Design decision needed: fail-fast vs continue-processing
-			 * See: ADR needed for batch error handling strategy
+			 * Strategy: Use Effect.partition for error accumulation
+			 * - Process all timers regardless of individual failures
+			 * - Collect failures separately from successes
+			 * - Workflow never fails (error channel: never)
+			 * - Failed timers remain Scheduled for retry on next poll
 			 */
 
 			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
@@ -716,16 +716,19 @@ describe('pollDueTimersWorkflow', () => {
 	})
 
 	describe('Error Handling - Persistence Failures', () => {
-		it.effect('handles markFired failure after successful publish', () => {
+		it.effect('collects markFired failures after successful publish', () => {
 			/**
 			 * GIVEN a timer that is due
 			 *   AND eventBus.publish succeeds
 			 *   AND persistence.markFired will fail
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN the event should be published (duplicate on next poll)
-			 *   AND markFired should fail
+			 *   AND markFired failure should be collected (not propagated)
 			 *   AND the timer should remain in Scheduled state
-			 *   AND an error should be logged
+			 *   AND the workflow should complete successfully
+			 *
+			 * Strategy: Effect.partition collects failures without failing workflow
+			 * Note: Event is published but timer stays Scheduled (Orchestration handles duplicate via state guard)
 			 */
 
 			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
@@ -769,18 +772,13 @@ describe('pollDueTimersWorkflow', () => {
 				// Act: Advance time to make timer due
 				yield* TestClock.adjust('6 minutes')
 
-				// Execute workflow with failing markFired - should fail at markFired stage
-				const result = yield* Effect.exit(pollDueTimersWorkflow()).pipe(Effect.provide(TestPersistence))
-
-				// Assert: Workflow should have failed with PersistenceError
-				expect(result).toStrictEqual(
-					Exit.fail(new PersistenceError({ cause: 'Database connection lost', operation: 'markFired' })),
-				)
+				// Execute workflow with failing markFired - should succeed despite markFired failure
+				yield* pollDueTimersWorkflow().pipe(Effect.provide(TestPersistence))
 
 				// Assert: Event should have been published (will be duplicate on retry)
 				expect(publishedEvents).toHaveLength(1)
 
-				// Assert: Timer should still be in Scheduled state (markFired failed)
+				// Assert: Timer should still be in Scheduled state (markFired failed but collected)
 				yield* pipe(
 					basePersistence.find(tenantId, serviceCallId),
 					Effect.andThen(found => {
