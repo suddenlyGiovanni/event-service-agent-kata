@@ -178,7 +178,7 @@ describe('pollDueTimersWorkflow', () => {
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus)))
 		})
 
-		it.todo('publishes event before marking timer as fired', () => {
+		it.effect('publishes event before marking timer as fired', () => {
 			/**
 			 * GIVEN a timer that is due
 			 * WHEN pollDueTimersWorkflow executes
@@ -186,6 +186,63 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND the timer should be marked as fired second
 			 *   AND the order should be verifiable via call sequence
 			 */
+
+			const operations: string[] = []
+
+			const TestEventBus = Layer.mock(TimerEventBusPort, {
+				publishDueTimeReached: timer =>
+					Effect.sync(() => {
+						operations.push(`publish:${timer.serviceCallId}`)
+					}),
+			})
+
+			return Effect.gen(function* () {
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const correlationId = yield* CorrelationId.makeUUID7()
+
+				// Arrange: Create a timer that will be due
+				const clock = yield* ClockPort
+				const basePersistence = yield* TimerPersistencePort
+				const registeredAt = yield* clock.now()
+				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
+
+				const scheduledTimer = ScheduledTimer.make({
+					correlationId: Option.some(correlationId),
+					dueAt,
+					registeredAt,
+					serviceCallId,
+					tenantId,
+				})
+
+				yield* basePersistence.save(scheduledTimer)
+
+				// Create wrapped persistence that tracks markFired calls
+				const TestPersistence = Layer.succeed(
+					TimerPersistencePort,
+					TimerPersistencePort.of({
+						...basePersistence,
+						markFired: (tenantId, serviceCallId, reachedAt) =>
+							Effect.gen(function* () {
+								operations.push(`markFired:${serviceCallId}`)
+								yield* basePersistence.markFired(tenantId, serviceCallId, reachedAt)
+							}),
+					}),
+				)
+
+				// Act: Advance time to make timer due
+				yield* TestClock.adjust('6 minutes')
+
+				// Execute workflow with wrapped persistence
+				yield* pollDueTimersWorkflow().pipe(Effect.provide(TestPersistence))
+
+				// Assert: Should have exactly 2 operations
+				expect(operations).toHaveLength(2)
+
+				// Assert: publish should happen before markFired
+				expect(operations[0]).toBe(`publish:${serviceCallId}`)
+				expect(operations[1]).toBe(`markFired:${serviceCallId}`)
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
 		it.todo('propagates correlationId from timer to event', () => {
