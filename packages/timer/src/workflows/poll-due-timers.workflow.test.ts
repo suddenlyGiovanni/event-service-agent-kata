@@ -840,53 +840,12 @@ describe('pollDueTimersWorkflow', () => {
 	// - Span annotations (due count, processed/failed counts, poll time, timer context)
 	// - Logging (poll cycle start/end, event publish, timer marked, error context)
 	// These tests require Effect Tracer and Logger services to be implemented
-})
 
-describe('processTimerFiring', () => {
-	describe('Happy Path', () => {
-		it.todo('publishes event and marks timer as fired', () => {
-			/**
-			 * GIVEN a ScheduledTimer and a firedAt timestamp
-			 * WHEN processTimerFiring executes
-			 * THEN the DueTimeReached event should be published
-			 *   AND the timer should be marked as Reached
-			 *   AND both operations should succeed
-			 */
-		})
-
-		it.todo('uses firedAt timestamp for both event and markFired', () => {
-			/**
-			 * GIVEN a timer and firedAt = 2025-10-18T10:00:00Z
-			 * WHEN processTimerFiring executes
-			 * THEN the DueTimeReached event should have reachedAt = firedAt
-			 *   AND persistence.markFired should be called with reachedAt = firedAt
-			 */
-		})
-	})
-
-	describe('Error Handling', () => {
-		it.todo('propagates PublishError when event publishing fails', () => {
-			/**
-			 * GIVEN eventBus.publish will fail with PublishError
-			 * WHEN processTimerFiring executes
-			 * THEN the workflow should fail with PublishError
-			 *   AND markFired should NOT be called
-			 */
-		})
-
-		it.todo('propagates PersistenceError when markFired fails', () => {
-			/**
-			 * GIVEN eventBus.publish succeeds
-			 *   AND persistence.markFired will fail with PersistenceError
-			 * WHEN processTimerFiring executes
-			 * THEN the workflow should fail with PersistenceError
-			 *   AND the event was already published (duplicate on retry)
-			 */
-		})
-	})
-
-	// TODO: Observability tests deferred until Logger/Tracer infrastructure implemented
-	// - annotates span with timer context (tenant_id, service_call_id, correlation_id, due_at, fired_at)
-	// - logs debug when event is published
-	// - logs debug when timer is marked as fired
+	// NOTE: processTimerFiring is a private helper function (not exported)
+	// All its behavior is already covered by workflow tests:
+	// - "processes due timers successfully" covers publish + markFired success
+	// - "publishes event before marking timer as fired" covers operation ordering
+	// - "stops processing timer when publish fails" covers PublishError propagation
+	// - "handles markFired failure after successful publish" covers PersistenceError propagation
+	// Testing private functions separately would violate "test through public API" principle
 })
