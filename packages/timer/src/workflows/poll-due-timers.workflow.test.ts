@@ -613,7 +613,9 @@ describe('pollDueTimersWorkflow', () => {
 			 * - Collect failures separately from successes
 			 * - Workflow fails with BatchProcessingError containing failure details
 			 * - Failed timers remain Scheduled for retry on next poll
-			 */ const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			 */
+
+			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
 			let callCount = 0
 
 			const TestEventBus = Layer.mock(TimerEventBusPort, {
@@ -717,7 +719,9 @@ describe('pollDueTimersWorkflow', () => {
 			 *
 			 * Strategy: Effect.partition collects failures, workflow propagates to error channel
 			 * Note: Event is published but timer stays Scheduled (Orchestration handles duplicate via state guard)
-			 */ const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			 */
+
+			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
 
 			const TestEventBus = Layer.mock(TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>

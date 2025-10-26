@@ -30,10 +30,8 @@ export class BatchProcessingError extends Schema.TaggedError<BatchProcessingErro
 /**
  * Processes a single due timer by publishing its event and marking it as fired.
  *
- * Effect.fn automatically creates a span named 'Timer.ProcessTimerFiring' for tracing.
- *
  * @param timer - The scheduled timer to process
- * @returns Effect that completes when both operations succeed
+ * @returns Effect that succeeds when the timer is processed, or fails with PublishError or PersistenceError
  */
 const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (timer: ScheduledTimer) {
 	const eventBus = yield* TimerEventBusPort
@@ -63,6 +61,15 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
 	})
 })
 
+/**
+ * Polls for due timers and processes them.
+ *
+ * Processes all due timers regardless of individual failures. Failed timers are collected
+ * and reported via BatchProcessingError, allowing the caller to implement retry policies.
+ *
+ * @returns Effect that succeeds when all timers process successfully, or fails with
+ *          PersistenceError (query failure) or BatchProcessingError (processing failures)
+ */
 export const pollDueTimersWorkflow: () => Effect.Effect<
 	undefined,
 	PersistenceError | BatchProcessingError,
