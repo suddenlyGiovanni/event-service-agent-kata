@@ -6,6 +6,8 @@
 - Each entry lists type, producer(s), consumer(s), and payload schema.
 - Conventions unify naming, metadata, and versioning.
 
+**Note on Schema Implementations**: This document defines the **wire format contracts** (DTOs) for documentation and discussion. The **source of truth** for runtime validation and domain types is the **Effect Schema implementations** in each module's `domain/` folder (e.g., `packages/timer/src/domain/events.domain.ts`). See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for schema migration strategy.
+
 ## Conventions
 
 - Type: `command` | `event`.
@@ -18,6 +20,48 @@
 - Identity: each message has a unique `messageId`; aggregate identity is `(tenantId, serviceCallId)`.
 - Ordering: per-aggregate ordering is preserved by broker partition key `tenantId.serviceCallId`; consumers must be idempotent.
 - Transport: broker-first; domain events are published after Orchestration commits DB changes (via outbox dispatcher).
+
+## Serialization Flow
+
+Messages traverse four architectural layers from domain to wire:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Layer 1: Domain Events (validated, branded types)          │
+│   new DueTimeReached({ tenantId, serviceCallId, ... })     │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ Schema.encode (Type → DTO)
+┌─────────────────────────▼───────────────────────────────────┐
+│ Layer 2: Adapter (DTO + envelope wrapping)                  │
+│   dto = yield* DueTimeReached.encode(event)                 │
+│   envelope = makeEnvelope('DueTimeReached', dto, metadata)  │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ EventBusPort.publish([envelope])
+┌─────────────────────────▼───────────────────────────────────┐
+│ Layer 3: EventBusPort (payload: unknown abstraction)        │
+│   Type-erased for polymorphism across message types         │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ JSON.stringify (NATS adapter)
+┌─────────────────────────▼───────────────────────────────────┐
+│ Layer 4: Wire (JSON bytes over NATS)                        │
+│   '{"id":"...","type":"DueTimeReached","payload":{...}}'    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Points**:
+- **Domain events** use branded types (e.g., `TenantId.Type`, `ServiceCallId.Type`)
+- **DTOs** (Encoded) unbrand types for JSON serialization (e.g., `string`)
+- **Envelope** wraps DTO with routing metadata (tenantId, correlationId, timestampMs)
+- **JSON** serialization happens at NATS adapter (not domain/adapter layers)
+
+**Consuming (reverse flow)**:
+1. NATS receives JSON bytes
+2. `MessageEnvelopeSchema.parseJson` validates envelope structure
+3. Route based on `envelope.type` discriminator
+4. `DomainEventSchema.decode(envelope.payload)` validates payload
+5. Workflow receives validated domain event
+
+See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 
 ## Index by Context
 
