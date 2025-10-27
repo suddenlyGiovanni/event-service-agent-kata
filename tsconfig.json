@@ -1,5 +1,6 @@
 {
 	"$schema": "https://json.schemastore.org/tsconfig",
+	"exclude": ["node_modules", "dist"],
 	"extends": "./packages/typescript/tsconfig.json",
 	"files": [],
 	"include": []

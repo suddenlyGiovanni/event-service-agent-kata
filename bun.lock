@@ -79,6 +79,20 @@
         "typescript": "catalog:typescript",
       },
     },
+    "packages/schemas": {
+      "name": "@event-service-agent/schemas",
+      "version": "0.0.1",
+      "dependencies": {
+        "@event-service-agent/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
+      },
+    },
     "packages/timer": {
       "name": "@event-service-agent/timer",
       "version": "0.0.1",
@@ -226,6 +240,8 @@
     "@event-service-agent/execution": ["@event-service-agent/execution@workspace:packages/execution"],
 
     "@event-service-agent/orchestration": ["@event-service-agent/orchestration@workspace:packages/orchestration"],
+
+    "@event-service-agent/schemas": ["@event-service-agent/schemas@workspace:packages/schemas"],
 
     "@event-service-agent/timer": ["@event-service-agent/timer@workspace:packages/timer"],
 

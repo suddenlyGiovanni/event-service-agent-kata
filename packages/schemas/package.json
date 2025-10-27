@@ -1,0 +1,31 @@
+{
+	"name": "@event-service-agent/schemas",
+	"version": "0.0.1",
+	"description": "Effect Schema definitions for all domain messages and foundational types",
+	"private": true,
+	"type": "module",
+	"exports": {
+		"./shared": "./src/shared/index.ts",
+		"./messages/timer": "./src/messages/timer/index.ts",
+		"./envelope": "./src/envelope/index.ts",
+		"./http": "./src/http/index.ts"
+	},
+	"dependencies": {
+		"effect": "catalog:effect"
+	},
+	"devDependencies": {
+		"@effect/vitest": "catalog:test",
+		"@event-service-agent/typescript": "workspace:*",
+		"@total-typescript/ts-reset": "catalog:types",
+		"@types/bun": "catalog:types",
+		"typescript": "catalog:typescript"
+	},
+	"scripts": {
+		"check": "biome check --write .",
+		"format": "biome format --write .",
+		"lint": "biome lint --write .",
+		"test": "bun --bun vitest",
+		"type-check": "tsc --noEmit"
+	}
+}
+
