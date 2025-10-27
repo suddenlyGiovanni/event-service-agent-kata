@@ -32,22 +32,29 @@ const { tenantId, serviceCallId, correlationId, dueAt } = command;
 // Store TimerEntry keyed by (tenantId, serviceCallId)
 await db.upsert({ tenantId, serviceCallId, dueAt, status: "armed" });
 
-// When firing: generate EnvelopeId and publish self-contained envelope
-const envelopeId = Schema.make(EnvelopeId)(crypto.randomUUID());
-const envelope = MessageEnvelope({
-  id: envelopeId,
-  type: 'DueTimeReached',
-  tenantId,               // Required: for routing and multi-tenancy
-  correlationId,          // Optional: for tracing (may be undefined for autonomous timers)
-  timestampMs: firedAt,
-  payload: DueTimeReached({ serviceCallId, dueAt, firedAt }),
+// When firing: construct domain event
+const event = new DueTimeReached({
+  tenantId,
+  serviceCallId,
+  reachedAt: Iso8601DateTime.make(DateTime.formatIso(firedAt)),
+});
+
+// Encode to DTO
+const dto = yield* DueTimeReached.encode(event);
+
+// Wrap in validated envelope (makeEnvelope generates EnvelopeId)
+const envelope = yield* makeEnvelope('DueTimeReached', dto, {
+  tenantId,
+  correlationId: Option.getOrUndefined(correlationId),
+  timestampMs: firedAt.epochMillis,
+  aggregateId: serviceCallId,  // For per-aggregate ordering
 });
 
 // Publish - envelope contains all metadata, no separate context needed
-await bus.publish([envelope]);
+yield* bus.publish([envelope]);
 ```
 
-**Rationale:** Timer is stateless regarding identity (doesn't own ServiceCall aggregate). All IDs flow through from Orchestration via [ScheduleTimer]. Timer only generates EnvelopeId for broker deduplication. Envelope is self-contained with all routing metadata (tenantId, correlationId) - no separate context parameter needed. See [ADR-0010][] for identity generation strategy.
+**Rationale:** Timer is stateless regarding identity (doesn't own ServiceCall aggregate). All IDs flow through from Orchestration via [ScheduleTimer]. Timer only generates EnvelopeId (via `makeEnvelope` helper) for broker deduplication. Envelope is self-contained with all routing metadata (tenantId, correlationId) - no separate context parameter needed. Domain event is validated via Effect Schema before encoding to DTO. See [ADR-0010][] for identity generation strategy and [ADR-0011][] for schema patterns.
 
 Policies
 
@@ -94,6 +101,7 @@ Inputs/Outputs
 <!-- ADRs -->
 
 [ADR-0010]: ../../decisions/ADR-0010-identity.md
+[ADR-0011]: ../../decisions/ADR-0011-message-schemas.md
 [DueTimeReached]: ../messages.md#duetimereached
 [ClockPort]: ../ports.md#clockport
 [EventBusPort]: ../ports.md#eventbusport
