@@ -42,7 +42,11 @@ Prioritized queue.
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
-- [ ] (PL-14) Migrate all events/commands to Effect Schema [contracts] [adr: [ADR-0011]] — **IN PROGRESS**: Creating Schema classes for runtime validation. Branch: `contracts/pl-14-schema-migration`
+- [x] (PL-14.1) Document package split decision [contracts] [adr: [ADR-0012]] — COMPLETE: ADR-0012 created, documents schemas/platform split rationale
+- [ ] (PL-14.2) Create @event-service-agent/schemas package [schemas] — **NEXT**: Extract all Effect Schemas to new package
+- [ ] (PL-14.3) Rename contracts → platform + update refs [platform] — After PL-14.2
+- [ ] (PL-14.4) Update module dependencies + imports [all modules] — After PL-14.3
+- [ ] (PL-14.5) Update documentation (ADRs, design docs) [docs] — After PL-14.4
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
@@ -69,9 +73,10 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: PL-14 🚀 STARTED — Migrating all events/commands to Effect Schema. Branch created: `contracts/pl-14-schema-migration`
-- Strategy: Per ADR-0011, use Schema.TaggedClass with direct field repetition pattern. Create module-owned schemas, then central registry.
-- Scope: 9 events + 3 commands + 2 metadata types (ResponseMeta, ErrorMeta) + 2 HTTP types (RequestSpec, RequestSpecWithoutBody)
+- Focus: PL-14.2 🚀 NEXT — Creating @event-service-agent/schemas package (extract all Effect Schemas)
+- Strategy: Per ADR-0012, split contracts into schemas (all Effect Schemas) + platform (ports + routing)
+- Migration: 5 phases documented in ADR-0012. Currently on phase 2 (create schemas package).
+- Branch: `contracts/pl-14-schema-migration`
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
@@ -98,6 +103,8 @@ Minimal legend.
 
 [ADR-0001]: ../decisions/ADR-0001-topology.md
 [ADR-0002]: ../decisions/ADR-0002-broker.md
+[ADR-0011]: ../decisions/ADR-0011-message-schemas.md
+[ADR-0012]: ../decisions/ADR-0012-package-structure.md
 [ADR-0003]: ../decisions/ADR-0003-timer.md
 [ADR-0004]: ../decisions/ADR-0004-database.md
 [ADR-0005]: ../decisions/ADR-0005-schema.md
