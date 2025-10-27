@@ -144,7 +144,7 @@ export class TimerPersistence {
 				 * Find all timers with dueAt <= now and status = 'Scheduled'
 				 *
 				 * Only returns Scheduled timers (Reached excluded).
-				 * Returns empty chunk sorted by:
+				 * Returns sorted chunk containing due timers sorted by:
 				 *   1. dueAt ASC (earliest first)
 				 *   2. registeredAt ASC (first-come-first-served for same dueAt)
 				 *   3. serviceCallId ASC (UUID7 has embedded timestamp, provides deterministic tiebreaker)
