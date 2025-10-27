@@ -126,18 +126,46 @@ export namespace Topics {
 	export type Type = Timer.Topic | Orchestration.Topic | Execution.Topic | Api.Topic
 
 	/**
+	 * Canonical list of all topics
+	 *
+	 * Enables runtime iteration over all known topics for configuration,
+	 * validation, and adapter setup.
+	 */
+	export const All: ReadonlyArray<Type> = [
+		Timer.Commands,
+		Timer.Events,
+		Orchestration.Commands,
+		Orchestration.Events,
+		Execution.Events,
+		Api.Commands,
+	] as const
+
+	/**
+	 * Runtime type guard for topic validation
+	 *
+	 * @param t - String to validate
+	 * @returns True if t is a valid topic
+	 */
+	export const isTopic = (t: string): t is Type => (All as ReadonlyArray<string>).includes(t)
+
+	/**
+	 * Module names for type-safe metadata
+	 */
+	type Module = 'Api' | 'Orchestration' | 'Execution' | 'Timer'
+
+	/**
 	 * Metadata shape for a topic
 	 *
 	 * Defines the structure of metadata for each topic:
-	 * - producer: Which module publishes to this topic
-	 * - consumer: Which module(s) subscribe to this topic
+	 * - producer: Which module publishes to this topic (null if external/user-initiated)
+	 * - consumers: Which module(s) subscribe to this topic
 	 * - description: Human-readable description of the topic's purpose
 	 */
-	type TopicMetadata = {
-		readonly producer: string
-		readonly consumer: string
-		readonly description: string
-	}
+	type TopicMetadata = Readonly<{
+		producer: Module | null
+		consumers: ReadonlyArray<Module>
+		description: string
+	}>
 
 	/**
 	 * Topic metadata for documentation and tooling
@@ -145,7 +173,7 @@ export namespace Topics {
 	 * Provides human-readable information about each topic:
 	 * - description: What messages flow through this topic
 	 * - producer: Which module publishes to this topic
-	 * - consumer: Which module(s) subscribe to this topic
+	 * - consumers: Which module(s) subscribe to this topic
 	 *
 	 * This metadata is optional but useful for:
 	 * - Generated documentation
@@ -156,34 +184,34 @@ export namespace Topics {
 	 */
 	export const Metadata = {
 		[Timer.Commands]: {
-			consumer: 'Timer',
+			consumers: ['Timer'],
 			description: 'Commands consumed by Timer module (e.g., ScheduleTimer)',
 			producer: 'Orchestration',
 		},
 		[Timer.Events]: {
-			consumer: 'Orchestration',
+			consumers: ['Orchestration'],
 			description: 'Events published by Timer module (e.g., DueTimeReached)',
 			producer: 'Timer',
 		},
 		[Orchestration.Commands]: {
-			consumer: 'Orchestration',
+			consumers: ['Orchestration'],
 			description: 'Commands consumed by Orchestration module (none in MVP)',
-			producer: 'N/A',
+			producer: null,
 		},
 		[Orchestration.Events]: {
-			consumer: 'Timer, Execution',
+			consumers: ['Timer', 'Execution'],
 			description: 'Events published by Orchestration module (e.g., ServiceCallScheduled, ServiceCallSubmitted)',
 			producer: 'Orchestration',
 		},
 		[Execution.Events]: {
-			consumer: 'Orchestration',
+			consumers: ['Orchestration'],
 			description: 'Events published by Execution module (e.g., ExecutionStarted, ExecutionSucceeded)',
 			producer: 'Execution',
 		},
 		[Api.Commands]: {
-			consumer: 'Orchestration',
+			consumers: ['Orchestration'],
 			description: 'Commands from API module (e.g., SubmitServiceCall)',
-			producer: 'API',
+			producer: 'Api',
 		},
 	} as const satisfies Record<Type, TopicMetadata>
 }
