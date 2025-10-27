@@ -151,7 +151,7 @@ export namespace Topics {
 	/**
 	 * Module names for type-safe metadata
 	 */
-	type Module = 'Api' | 'Orchestration' | 'Execution' | 'Timer'
+	export type Module = 'Api' | 'Orchestration' | 'Execution' | 'Timer'
 
 	/**
 	 * Metadata shape for a topic
