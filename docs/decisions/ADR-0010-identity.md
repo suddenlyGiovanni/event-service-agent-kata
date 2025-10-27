@@ -149,10 +149,12 @@ This enables:
 
 ### Migration: Brand.nominal → Schema.brand
 
-**Current problem:** `shared.ts` uses `Brand.nominal` (type-only, no runtime validation):
+**Status**: ✅ **Migration Complete** (as of PL-14)
+
+**Previous problem:** `shared.ts` used `Brand.nominal` (type-only, no runtime validation):
 
 ```typescript
-// ❌ CURRENT: No validation!
+// ❌ OLD: No validation!
 export type TenantId = string & Brand.Brand<"TenantId">;
 export const TenantId = Brand.nominal<TenantId>();
 
@@ -160,28 +162,31 @@ export const TenantId = Brand.nominal<TenantId>();
 const tenantId = req.body.tenantId as TenantId; // Accepts ANYTHING!
 ```
 
-**Required fix:** Migrate to `Schema.brand` with UUID v7 validation:
+**Current implementation:** Migrated to `Schema.brand` with UUID v7 validation:
 
 ```typescript
-// ✅ REQUIRED: Runtime validation
+// ✅ CURRENT: Runtime validation with UUID7 schema
 import * as Schema from "effect/Schema";
 
-export class TenantId extends Schema.String.pipe(
-  Schema.pattern(
-    /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-    {
-      message: () => "TenantId must be a valid UUID v7",
-    },
-  ),
-  Schema.brand("TenantId"),
-) {}
+export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
+  static readonly makeUUID7 = (time?: DateTime.Utc) => 
+    Effect.gen(function* () {
+      const uuid7 = yield* Uuid7Service.randomUUIDv7(time)
+      return TenantId.make(uuid7)  // Validated UUID7 → branded TenantId
+    })
+  
+  static readonly decode = (value: string) => 
+    Schema.decode(TenantId)(value)  // Validates UUID7 format!
+}
 
 // API handler (SAFE):
-const tenantId = yield * Schema.decode(TenantId)(req.body.tenantId);
-// ✅ Validates format! Rejects invalid input with clear error
+const tenantId = yield * TenantId.decode(req.body.tenantId);
+// ✅ Validates UUID7 format! Rejects invalid input with ParseError
 ```
 
-**Action:** Update `packages/contracts/src/types/shared.ts` to use `Schema.brand` for all ID types (TenantId, ServiceCallId, CorrelationId, EnvelopeId).
+**Completed in:** `packages/contracts/src/types/shared.type.ts`  
+**Branded types migrated:** TenantId, ServiceCallId, CorrelationId, EnvelopeId  
+**Pattern:** All extend `UUID7.pipe(Schema.brand(UniqueSymbol))` for double-branding
 
 ## References
 
