@@ -203,7 +203,7 @@ describe('UUID7', () => {
 
 		it.effect('should use default prefix "00000000" when not provided', () =>
 			Effect.gen(function* () {
-				const [uuid1, uuid2] = yield* Effect.all([UUID7.randomUUIDv7(), UUID7.randomUUIDv7(), UUID7.randomUUIDv7()])
+				const [uuid1, uuid2] = yield* Effect.all([UUID7.randomUUIDv7(), UUID7.randomUUIDv7()])
 
 				expect(uuid1).toBe('00000000-0000-7000-8000-000000000000' as UUID7Schema.Type)
 				expect(uuid2).toBe('00000000-0000-7000-8000-000000000001' as UUID7Schema.Type)
