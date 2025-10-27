@@ -28,17 +28,29 @@ Identity & Context
 // Receive IDs from command
 const { tenantId, serviceCallId, correlationId, requestSpec } = command;
 
-// Generate EnvelopeId when publishing events
-const envelopeId = Schema.make(EnvelopeId)(crypto.randomUUID());
-const envelope = MessageEnvelope({
-  envelopeId,
+// Construct domain event
+const event = new ExecutionStarted({
   tenantId,
-  correlationId,
-  payload: ExecutionStarted({ serviceCallId, startedAt }),
+  serviceCallId,
+  startedAt: Iso8601DateTime.make(DateTime.formatIso(now)),
 });
+
+// Encode to DTO
+const dto = yield* ExecutionStarted.encode(event);
+
+// Wrap in validated envelope (makeEnvelope generates EnvelopeId)
+const envelope = yield* makeEnvelope('ExecutionStarted', dto, {
+  tenantId,
+  correlationId: Option.getOrUndefined(correlationId),
+  timestampMs: now.epochMillis,
+  aggregateId: serviceCallId,
+});
+
+// Publish
+yield* bus.publish([envelope]);
 ```
 
-**Rationale:** Execution is stateless and doesn't own any aggregates. All IDs flow through from Orchestration via [StartExecution] command. Execution only generates EnvelopeId for broker deduplication. See [ADR-0010][] for identity generation strategy.
+**Rationale:** Execution is stateless and doesn't own any aggregates. All IDs flow through from Orchestration via [StartExecution] command. Execution only generates EnvelopeId (via `makeEnvelope` helper) for broker deduplication. See [ADR-0010][] for identity generation strategy and [ADR-0011][] for schema patterns.
 
 Behavior
 
@@ -147,6 +159,11 @@ Messages
 
 [ExecutionFailed]: ../messages.md#executionfailed
 [ExecutionStarted]: ../messages.md#executionstarted
+
+<!-- ADRs -->
+
+[ADR-0010]: ../../decisions/ADR-0010-identity.md
+[ADR-0011]: ../../decisions/ADR-0011-message-schemas.md
 [ExecutionSucceeded]: ../messages.md#executionsucceeded
 
 <!-- Ports -->
