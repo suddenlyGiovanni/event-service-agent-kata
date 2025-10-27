@@ -2,6 +2,7 @@
 	"dependencies": {
 		"effect": "catalog:effect"
 	},
+	"description": "Message types and port interfaces for the event service agent",
 	"devDependencies": {
 		"@effect/vitest": "catalog:test",
 		"@event-service-agent/typescript": "workspace:*",
@@ -9,11 +10,11 @@
 		"@types/bun": "catalog:types",
 		"typescript": "catalog:typescript"
 	},
-	"description": "Message types and port interfaces for the event service agent",
 	"exports": {
 		"./adapters": "./src/adapters/index.ts",
 		"./messages": "./src/messages/index.ts",
 		"./ports": "./src/ports/index.ts",
+		"./routing": "./src/routing/index.ts",
 		"./services": "./src/services/index.ts",
 		"./types": "./src/types/index.ts"
 	},

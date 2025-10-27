@@ -1,1 +1,1 @@
-export { UUID7 } from './uuid7.service.ts'
+export * from './uuid7.service.ts'

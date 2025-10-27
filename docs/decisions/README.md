@@ -38,6 +38,7 @@ Core ADRs (canonical)
 - ADR-0008: [Outbox Pattern & Dispatcher][ADR-0008]
 - ADR-0009: [Observability Baseline][ADR-0009]
 - ADR-0010: [Identity Generation Strategy][ADR-0010]
+- ADR-0011: [Message Schema Validation with Effect Schema][ADR-0011]
 
 Gates Index
 
@@ -52,18 +53,22 @@ Ordered Gates (Decision Flow)
 - Gate 07 — API → [ADR-0007]
 - Gate 08 — Outbox → [ADR-0008]
 - Gate 09 — Observability → [ADR-0009]
+- Gate 10 — Identity → [ADR-0010]
+- Gate 11 — Message Schemas → [ADR-0011]
 
 Checklist
 
 - [x] Gate 01 — Topology (Status: Accepted)
-- [ ] Gate 02 — Broker (Status: Proposed)
-- [ ] Gate 03 — Timer (Status: Proposed)
-- [ ] Gate 04 — Database (Status: Proposed)
+- [x] Gate 02 — Broker (Status: Accepted)
+- [x] Gate 03 — Timer (Status: Accepted)
+- [x] Gate 04 — Database (Status: Accepted)
 - [ ] Gate 05 — Schema (Status: Proposed)
 - [ ] Gate 06 — Idempotency (Status: Proposed)
 - [ ] Gate 07 — API (Status: Proposed)
 - [ ] Gate 08 — Outbox (Status: Proposed)
 - [ ] Gate 09 — Observability (Status: Proposed)
+- [x] Gate 10 — Identity (Status: Accepted)
+- [x] Gate 11 — Message Schemas (Status: Accepted)
 
 Links
 
@@ -81,3 +86,4 @@ Links
 [ADR-0008]: ADR-0008-outbox.md
 [ADR-0009]: ADR-0009-observability.md
 [ADR-0010]: ADR-0010-identity.md
+[ADR-0011]: ADR-0011-message-schemas.md

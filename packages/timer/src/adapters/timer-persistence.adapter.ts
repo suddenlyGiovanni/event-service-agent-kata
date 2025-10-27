@@ -4,8 +4,8 @@ import * as Effect from 'effect/Effect'
 import * as HashMap from 'effect/HashMap'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
-import * as Predicate from 'effect/Predicate'
 import * as Ref from 'effect/Ref'
+import * as EffString from 'effect/String'
 
 import type { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
@@ -144,21 +144,34 @@ export class TimerPersistence {
 				 * Find all timers with dueAt <= now and status = 'Scheduled'
 				 *
 				 * Only returns Scheduled timers (Reached excluded).
-				 * Returns empty chunk if none found.
+				 * Returns sorted chunk containing due timers sorted by:
+				 *   1. dueAt ASC (earliest first)
+				 *   2. registeredAt ASC (first-come-first-served for same dueAt)
+				 *   3. serviceCallId ASC (UUID7 has embedded timestamp, provides deterministic tiebreaker)
+				 *
+				 * Sorting matches SQL behavior: ORDER BY due_at ASC, registered_at ASC, service_call_id ASC
 				 */
 				findDue: (now: DateTime.Utc) =>
 					Ref.get(storage).pipe(
-						Effect.map(
-							HashMap.filter(
-								Predicate.and(TimerEntry.isScheduled, (entry): entry is TimerEntry.ScheduledTimer =>
-									DateTime.greaterThanOrEqualTo(now, entry.dueAt),
-								),
-							),
-						),
+						Effect.map(HashMap.filter(TimerEntry.isScheduled)),
+						Effect.map(HashMap.filter(entry => TimerEntry.isDue(entry, now))),
 						Effect.map(HashMap.values),
 						Effect.map(Chunk.fromIterable),
-					),
+						Effect.map(
+							Chunk.sort((a: TimerEntry.ScheduledTimer, b: TimerEntry.ScheduledTimer): -1 | 0 | 1 => {
+								// Primary sort: dueAt ascending (earliest due first)
+								const dueCompare = DateTime.Order(a.dueAt, b.dueAt)
+								if (dueCompare !== 0) return dueCompare
 
+								// Secondary sort: registeredAt ascending (first-come-first-served)
+								const registeredCompare = DateTime.Order(a.registeredAt, b.registeredAt)
+								if (registeredCompare !== 0) return registeredCompare
+
+								// Tertiary sort: serviceCallId ascending (UUID7 determinism)
+								return EffString.Order(a.serviceCallId, b.serviceCallId)
+							}),
+						),
+					),
 				/**
 				 * Find a timer only if it's in SCHEDULED state
 				 * Returns Option<ScheduledTimer> - filters out Reached timers.

@@ -24,7 +24,7 @@ export declare namespace Message {
 	 *
 	 * @template M - The payload type (must be a Command or Event)
 	 */
-	interface Envelope<M extends Message = Message> {
+	interface Envelope<M extends Message.Message = Message.Message> {
 		/** Unique identifier for this envelope */
 		readonly id: EnvelopeId.Type
 

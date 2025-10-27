@@ -30,25 +30,19 @@ Prioritized queue.
     Link ADRs like [adr: ADR-0001]; add tags like [infra] or [Api].
 -->
 
+- (PL-4.6) SQLite persistence adapter [Timer] — Deferred until after Schema migration (PL-14)
 - (PL-2) Orchestration core domain model and transitions [Orchestration]
 - (PL-3) Broker adapter implementation + local broker setup [infra]
 - (PL-5) Execution module with mock HttpClientPort [Execution]
 - (PL-6) Persistence adapter (SQLite) and migrations [infra]
 - (PL-7) API server with submit/list/detail routes [Api]
 - (PL-8) Redaction & idempotency utilities + tests [contracts]
-- (PL-20) Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001]]
 
 ## Doing (WIP ≤ 2)
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
-- [ ] (PL-4) Timer module with periodic polling [Timer] — Breakdown:
-  - [x] (PL-4.1) TimerEntry domain model + tests [Timer] — Effect Schema with TaggedClass, DateTime.Utc, all tests passing
-  - [x] (PL-4.2) Port interfaces (Clock, EventBus, Persistence) [Timer]
-  - [x] (PL-4.3) ScheduleTimer workflow + tests [Timer]
-  - [o] (PL-4.4) Polling worker workflow + tests [Timer]
-  - [x] (PL-4.5) In-memory test adapters [Timer] — PR ready: Full state machine, 16/16 tests passing
-  - [ ] (PL-4.6) SQLite persistence adapter [Timer]
+- [ ] (PL-14) Migrate all events/commands to Effect Schema [contracts] [adr: [ADR-0011]] — Schema.TaggedClass for runtime validation, contracts/schemas.ts unions, type-safe broker routing. Timer workflows (PL-4.1-4.4) complete and ready for integration.
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
@@ -60,6 +54,7 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-4.4) Polling worker workflow + tests [Timer] — COMPLETE: pollDueTimersWorkflow with Effect.fn, BatchProcessingError for partial failures, Effect.partition continue-on-error semantics, observability (spans + structured logging), 13/13 tests passing (53 total timer tests)
 - (PL-4.5) In-memory test adapters [Timer] — PR ready: Full state machine persistence (Scheduled → Reached), 16/16 tests passing, two-operation query model (findScheduledTimer/find), Effect.acquireRelease lifecycle, idempotency guarantees
 - (PL-4.3) ScheduleTimer workflow + tests [Timer] — PR #25: scheduleTimerWorkflow with Effect.fn, 8/9 tests passing, TimerPersistence.inMemory adapter (Layer.effect + Ref + HashMap)
 - (PL-4.2) Port interfaces (Clock, EventBus, Persistence) [Timer] — PR #20 merged
@@ -74,9 +69,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: PL-4 🚀 IN PROGRESS — Timer module implementation, TDD + hexagonal architecture patterns established.
-- Current: PL-4.5 ✅ COMPLETE (PR ready) — Full state machine persistence with idempotency, 16/16 tests passing, two-operation query model, Effect.acquireRelease lifecycle.
-- Next: PL-4.4 — Polling worker workflow. Implement pollDueTimersWorkflow using findDue + markFired with TDD.
+- Focus: PL-14 🚀 STARTING — Migrate events/commands to Effect Schema for runtime validation and type-safe broker routing.
+- Completed: PL-4.4 ✅ — Timer workflows complete (PL-4.1-4.4): domain model, ports, scheduleTimer, pollDueTimers. 53 passing tests, Effect.fn observability, continue-on-error batch processing.
+- Next: PL-4.6 (deferred) — SQLite adapter after Schema migration ensures type-safe persistence layer.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
@@ -110,3 +105,5 @@ Minimal legend.
 [ADR-0007]: ../decisions/ADR-0007-api.md
 [ADR-0008]: ../decisions/ADR-0008-outbox.md
 [ADR-0009]: ../decisions/ADR-0009-observability.md
+[ADR-0010]: ../decisions/ADR-0010-identity.md
+[ADR-0011]: ../decisions/ADR-0011-message-schemas.md

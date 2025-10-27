@@ -253,7 +253,17 @@ LIMIT 100;
 
 ```typescript
 for (const schedule of dueSchedules) {
-  await eventBus.publish(DueTimeReached(schedule)); // First
+  // Envelope is self-contained with all routing metadata
+  const envelope = {
+    id: generateEnvelopeId(),
+    type: 'DueTimeReached',
+    tenantId: schedule.tenantId,
+    correlationId: schedule.correlationId,  // Optional
+    timestampMs: now,
+    payload: DueTimeReached(schedule)
+  };
+  
+  await eventBus.publish([envelope]);              // First
   await db.update("SET state = 'Reached' WHERE ..."); // Second
 }
 ```
