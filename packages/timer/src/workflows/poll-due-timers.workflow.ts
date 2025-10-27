@@ -1,3 +1,4 @@
+import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import { round } from 'effect/Number'
@@ -89,12 +90,12 @@ export const pollDueTimersWorkflow: () => Effect.Effect<
 
 	// Log batch start
 	yield* Effect.logInfo('Polling due timers', {
-		dueCount: dueTimers.length,
-		timestamp: now.toString(),
+		dueCount: Chunk.size(dueTimers),
+		timestamp: DateTime.formatIso(now),
 	})
 
 	// Early return if no timers due
-	if (dueTimers.length === 0) {
+	if (Chunk.isEmpty(dueTimers)) {
 		yield* Effect.logDebug('No due timers found')
 		return
 	}
@@ -109,22 +110,22 @@ export const pollDueTimersWorkflow: () => Effect.Effect<
 	yield* Effect.logInfo('Timer batch processing completed', {
 		failedCount: failures.length,
 		successCount: successes.length,
-		totalCount: dueTimers.length,
+		totalCount: Chunk.size(dueTimers),
 	})
 
 	// Propagate failures to error channel for caller to handle (retry policies, alerting, etc.)
 	if (failures.length > 0) {
 		yield* Effect.logWarning('Timer batch processing had failures', {
 			failedCount: failures.length,
-			failureRate: round((failures.length / dueTimers.length) * 100, 1),
-			totalCount: dueTimers.length,
+			failureRate: round((failures.length / Chunk.size(dueTimers)) * 100, 1),
+			totalCount: Chunk.size(dueTimers),
 		})
 
 		return yield* Effect.fail(
 			new BatchProcessingError({
 				failedCount: failures.length,
 				failures,
-				totalCount: dueTimers.length,
+				totalCount: Chunk.size(dueTimers),
 			}),
 		)
 	}
