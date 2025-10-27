@@ -157,23 +157,23 @@ export class TimerPersistence {
 						Effect.map(HashMap.filter(entry => TimerEntry.isDue(entry, now))),
 						Effect.map(HashMap.values),
 						Effect.map(Chunk.fromIterable),
-					Effect.map(
-						Chunk.sort((a: TimerEntry.ScheduledTimer, b: TimerEntry.ScheduledTimer): -1 | 0 | 1 => {
-							// Primary sort: dueAt ascending (earliest due first)
-							const dueCompare = DateTime.Order(a.dueAt, b.dueAt)
-							if (dueCompare !== 0) return dueCompare
+						Effect.map(
+							Chunk.sort((a: TimerEntry.ScheduledTimer, b: TimerEntry.ScheduledTimer): -1 | 0 | 1 => {
+								// Primary sort: dueAt ascending (earliest due first)
+								const dueCompare = DateTime.Order(a.dueAt, b.dueAt)
+								if (dueCompare !== 0) return dueCompare
 
-							// Secondary sort: registeredAt ascending (first-come-first-served)
-							const registeredCompare = DateTime.Order(a.registeredAt, b.registeredAt)
-							if (registeredCompare !== 0) return registeredCompare
+								// Secondary sort: registeredAt ascending (first-come-first-served)
+								const registeredCompare = DateTime.Order(a.registeredAt, b.registeredAt)
+								if (registeredCompare !== 0) return registeredCompare
 
-							// Tertiary sort: serviceCallId ascending (UUID7 determinism)
-							return String.Order(a.serviceCallId, b.serviceCallId)
-						}),
+								// Tertiary sort: serviceCallId ascending (UUID7 determinism)
+								return String.Order(a.serviceCallId, b.serviceCallId)
+							}),
+						),
 					),
-				),
 
-			/**
+				/**
 				 * Find a timer only if it's in SCHEDULED state
 				 * Returns Option<ScheduledTimer> - filters out Reached timers.
 				 * This is the primary query for domain operations (workflows that need to check/update scheduled timers).

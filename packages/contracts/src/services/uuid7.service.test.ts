@@ -2,8 +2,12 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: UUID7Regex validates the match before accessing named capture groups */
 
 import { describe, expect, it } from '@effect/vitest'
+import * as Cause from 'effect/Cause'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
+import * as Exit from 'effect/Exit'
+import * as Option from 'effect/Option'
+import type * as ParseResult from 'effect/ParseResult'
 
 import { UUID7Regex, type UUID7 as UUID7Schema } from '../types/uuid7.type.ts'
 import { UUID7 } from './uuid7.service.ts'
@@ -94,7 +98,7 @@ describe('UUID7', () => {
 			}).pipe(Effect.provide(UUID7.Default)),
 		)
 
-		it('should generate different UUIDs with different timestamp overrides', () =>
+		it.effect('should generate different UUIDs with different timestamp overrides', () =>
 			Effect.gen(function* () {
 				const { randomUUIDv7 } = yield* UUID7
 				// Two different timestamps
@@ -128,7 +132,8 @@ describe('UUID7', () => {
 				// Both should be valid UUID v7
 				expect(uuid1).toMatch(UUID7Regex)
 				expect(uuid2).toMatch(UUID7Regex)
-			}).pipe(Effect.provide(UUID7.Default)))
+			}).pipe(Effect.provide(UUID7.Default)),
+		)
 	})
 
 	describe('UUID7.Test', () => {
@@ -160,17 +165,24 @@ describe('UUID7', () => {
 			}).pipe(Effect.provide(UUID7.Test(fixedUuid))),
 		)
 
-		it('should fail if fixed UUID is invalid', async () => {
+		it.effect('should fail if fixed UUID is invalid', () => {
 			const invalidUuid = '01234567-89ab-4cde-89ab-0123456789ab' // v4, not v7
 
-			const program = UUID7.pipe(
-				Effect.andThen(uuid7 => uuid7.randomUUIDv7()),
-				Effect.provide(UUID7.Test(invalidUuid)), // Inject test adapter with fixed UUID
-			)
+			return Effect.gen(function* () {
+				const uuid7 = yield* UUID7
+				const result = yield* Effect.exit(uuid7.randomUUIDv7())
 
-			await expect(Effect.runPromise(program)).rejects.toThrow(
-				'Must be a valid UUID version 7 (format: xxxxxxxx-xxxx-7xxx-[89ab]xxx-xxxxxxxxxxxx)',
-			)
+				expect(Exit.isFailure(result)).toBe(true)
+				if (Exit.isFailure(result)) {
+					const error = Cause.failureOption(result.cause)
+					expect(Option.isSome(error)).toBe(true)
+					if (Option.isSome(error)) {
+						expect((error.value as ParseResult.ParseError).message).toBe(
+							'Must be a valid UUID version 7 (format: xxxxxxxx-xxxx-7xxx-[89ab]xxx-xxxxxxxxxxxx)',
+						)
+					}
+				}
+			}).pipe(Effect.provide(UUID7.Test(invalidUuid)))
 		})
 	})
 
