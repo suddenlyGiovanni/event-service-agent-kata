@@ -111,7 +111,7 @@ export interface EventBusPort {
 	 * - Routing to appropriate subjects/topics/queues (using envelope.tenantId + envelope.aggregateId)
 	 * - Deduplication via envelope.id (within broker's deduplication window)
 	 * - Idempotent publish (safe to retry on transient failures)
-	 * - Per-aggregate ordering (via tenantId + aggregateId routing key)
+	 * - Per-aggregate ordering (via tenantId + aggregateId routing key, e.g., tenant-123.order-456, tenant-123.serviceCallId-789)
 	 * - Tracing propagation (via envelope.correlationId if present)
 	 *
 	 * @param envelopes - Array of message envelopes to publish (self-contained with all routing metadata)
@@ -156,7 +156,7 @@ export interface EventBusPort {
 	 * Processing semantics:
 	 * - Sequential (MVP): processes one message at a time (safe, simple)
 	 * - Handler must be idempotent (messages may be redelivered)
-	 * - Preserves per-aggregate order (via tenantId.serviceCallId routing)
+	 * - Preserves per-aggregate order (via tenantId + aggregateId routing key, e.g., tenant-123.serviceCallId-789)
 	 *
 	 * Work-sharing (multiple instances):
 	 * - Multiple instances with same consumer name share work automatically
