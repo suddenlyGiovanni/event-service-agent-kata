@@ -33,7 +33,7 @@ describe('pollDueTimersWorkflow', () => {
 	describe('Happy Path', () => {
 		it.effect('processes due timers successfully', () => {
 			// Mock EventBus to track published events
-			const publishedEvents: unknown[] = []
+			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
 			const TestEventBus = Layer.mock(TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
 					Effect.sync(() => {
@@ -105,7 +105,7 @@ describe('pollDueTimersWorkflow', () => {
 
 			// Track the order of operations to verify sequential processing
 			const operations: string[] = []
-			const publishedEvents: unknown[] = []
+			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
 
 			const TestEventBus = Layer.mock(TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
@@ -156,15 +156,15 @@ describe('pollDueTimersWorkflow', () => {
 					serviceCallIds,
 					// biome-ignore lint/suspicious/useIterableCallbackReturn: Ensure proper iteration
 					Effect.forEach(serviceCallId => persistence.find(tenantId, serviceCallId), { concurrency: 1 }),
-					Effect.andThen(foundTimers => {
-						foundTimers.forEach(found => {
-							expect(Option.isSome(found)).toBe(true)
-							expect(found.pipe(Option.exists(TimerEntry.isReached))).toBe(true)
-						})
-					}),
-				)
-
-				// Assert: No timers should remain in findDue
+					Effect.tap(foundTimers =>
+						Effect.sync(() => {
+							foundTimers.forEach(found => {
+								expect(Option.isSome(found)).toBe(true)
+								expect(found.pipe(Option.exists(TimerEntry.isReached))).toBe(true)
+							})
+						}),
+					),
+				) // Assert: No timers should remain in findDue
 				const afterFired = yield* persistence.findDue(yield* clock.now())
 				expect(Chunk.isEmpty(afterFired)).toBe(true)
 
@@ -438,10 +438,12 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Timer should be marked as Reached
 				yield* pipe(
 					persistence.find(tenantId, serviceCallId),
-					Effect.andThen(found => {
-						expect(Option.isSome(found)).toBe(true)
-						expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
-					}),
+					Effect.tap(found =>
+						Effect.sync(() => {
+							expect(Option.isSome(found)).toBe(true)
+							expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
+						}),
+					),
 				)
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
@@ -493,10 +495,12 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Timer should still be in Scheduled state
 				yield* pipe(
 					persistence.find(tenantId, serviceCallId),
-					Effect.andThen(found => {
-						expect(Option.isSome(found)).toBe(true)
-						expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
-					}),
+					Effect.tap(found =>
+						Effect.sync(() => {
+							expect(Option.isSome(found)).toBe(true)
+							expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
+						}),
+					),
 				)
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
@@ -552,10 +556,12 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Timer should be marked as Reached
 				yield* pipe(
 					persistence.find(tenantId, serviceCallId),
-					Effect.andThen(found => {
-						expect(Option.isSome(found)).toBe(true)
-						expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
-					}),
+					Effect.tap(found =>
+						Effect.sync(() => {
+							expect(Option.isSome(found)).toBe(true)
+							expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
+						}),
+					),
 				)
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
@@ -679,28 +685,32 @@ describe('pollDueTimersWorkflow', () => {
 				expect(publishedEvents).toHaveLength(2) // Assert: Timer 1 should be marked as Reached
 				yield* pipe(
 					persistence.find(tenantId, serviceCallId1),
-					Effect.andThen(found => {
-						expect(Option.isSome(found)).toBe(true)
-						expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
-					}),
+					Effect.tap(found =>
+						Effect.sync(() => {
+							expect(Option.isSome(found)).toBe(true)
+							expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
+						}),
+					),
 				)
-
 				// Assert: Timer 2 should still be Scheduled (publish failed)
 				yield* pipe(
 					persistence.find(tenantId, serviceCallId2),
-					Effect.andThen(found => {
-						expect(Option.isSome(found)).toBe(true)
-						expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
-					}),
+					Effect.tap(found =>
+						Effect.sync(() => {
+							expect(Option.isSome(found)).toBe(true)
+							expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
+						}),
+					),
 				)
-
 				// Assert: Timer 3 should be marked as Reached
 				yield* pipe(
 					persistence.find(tenantId, serviceCallId3),
-					Effect.andThen(found => {
-						expect(Option.isSome(found)).toBe(true)
-						expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
-					}),
+					Effect.tap(found =>
+						Effect.sync(() => {
+							expect(Option.isSome(found)).toBe(true)
+							expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
+						}),
+					),
 				)
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
@@ -785,10 +795,12 @@ describe('pollDueTimersWorkflow', () => {
 				expect(publishedEvents).toHaveLength(1) // Assert: Timer should still be in Scheduled state (markFired failed but collected)
 				yield* pipe(
 					basePersistence.find(tenantId, serviceCallId),
-					Effect.andThen(found => {
-						expect(Option.isSome(found)).toBe(true)
-						expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
-					}),
+					Effect.tap(found =>
+						Effect.sync(() => {
+							expect(Option.isSome(found)).toBe(true)
+							expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
+						}),
+					),
 				)
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
@@ -804,7 +816,7 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND no timers should be marked
 			 */
 
-			const publishedEvents: unknown[] = []
+			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
 			const TestEventBus = Layer.mock(TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
 					Effect.sync(() => {
@@ -821,9 +833,17 @@ describe('pollDueTimersWorkflow', () => {
 				const result = yield* Effect.exit(pollDueTimersWorkflow())
 
 				// Assert: Workflow should have failed with PersistenceError
-				expect(result).toStrictEqual(
-					Exit.fail(new PersistenceError({ cause: 'Database connection failed', operation: 'findDue' })),
-				)
+				expect(Exit.isFailure(result)).toBe(true)
+				if (Exit.isFailure(result)) {
+					const failure = Cause.failureOption(result.cause)
+					expect(Option.isSome(failure)).toBe(true)
+					if (Option.isSome(failure)) {
+						const error = failure.value as PersistenceError
+						expect(error).toBeInstanceOf(PersistenceError)
+						expect(error.operation).toBe('findDue')
+						expect(error.cause).toBe('Database connection failed')
+					}
+				}
 
 				// Assert: No events should have been published
 				expect(publishedEvents).toHaveLength(0)
