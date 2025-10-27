@@ -11,7 +11,7 @@ import { UUID7 } from '@event-service-agent/contracts/services'
 import { type CorrelationId, EnvelopeId, Iso8601DateTime, type Message } from '@event-service-agent/contracts/types'
 
 import type { TimerEntry } from '../domain/timer-entry.domain.ts'
-import { EventBusPort, SubscribeError, TimerEventBusPort } from '../ports/index.ts'
+import { EventBusPort, TimerEventBusPort } from '../ports/index.ts'
 
 export class TimerEventBus {
 	/**
@@ -89,24 +89,23 @@ export class TimerEventBus {
 						correlationId?: CorrelationId.Type,
 					) => Effect.Effect<void, E>,
 				) {
-					yield* sharedBus.subscribe([Topics.Timer.Commands], (envelope: Message.Envelope) =>
-						Effect.gen(function* () {
-							// 1. Type guard: Ensure it's a ScheduleTimer command
-							if (envelope.type !== 'ScheduleTimer') {
-								return yield* Effect.fail(
-									new SubscribeError({
-										cause: `Unexpected message type: ${envelope.type}, expected ScheduleTimer`,
-									}),
-								)
-							}
+				yield* sharedBus.subscribe([Topics.Timer.Commands], (envelope: Message.Envelope) =>
+					Effect.gen(function* () {
+						// 1. Type guard: Ensure it's a ScheduleTimer command
+						if (envelope.type !== 'ScheduleTimer') {
+							// Log and ignore unexpected message types to keep consumer alive
+							return yield* Effect.logDebug('Ignoring non-ScheduleTimer message', {
+								receivedType: envelope.type,
+							})
+						}
 
-							// 2. Extract and validate payload (with type assertion for now)
-							// TODO: When schemas exist, use Schema.decode(ScheduleTimer)(envelope.payload)
-							const { payload: command, correlationId } =
-								envelope as Message.Envelope<Messages.Orchestration.Commands.ScheduleTimer>
+						// 2. Extract and validate payload (with type assertion for now)
+						// TODO: When schemas exist, use Schema.decode(ScheduleTimer)(envelope.payload)
+						const { payload: command, correlationId } =
+							envelope as Message.Envelope<Messages.Orchestration.Commands.ScheduleTimer>
 
-							// 3. Delegate to handler
-							yield* handler(command, correlationId)
+						// 3. Delegate to handler
+						yield* handler(command, correlationId)
 						}),
 					)
 				}),
