@@ -5,7 +5,7 @@ import * as HashMap from 'effect/HashMap'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as Ref from 'effect/Ref'
-import * as String from 'effect/String'
+import * as EffString from 'effect/String'
 
 import type { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
 
@@ -168,11 +168,10 @@ export class TimerPersistence {
 								if (registeredCompare !== 0) return registeredCompare
 
 								// Tertiary sort: serviceCallId ascending (UUID7 determinism)
-								return String.Order(a.serviceCallId, b.serviceCallId)
+								return EffString.Order(a.serviceCallId, b.serviceCallId)
 							}),
 						),
 					),
-
 				/**
 				 * Find a timer only if it's in SCHEDULED state
 				 * Returns Option<ScheduledTimer> - filters out Reached timers.
