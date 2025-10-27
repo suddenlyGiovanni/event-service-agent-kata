@@ -22,7 +22,7 @@ import type * as DateTime from 'effect/DateTime'
 import type * as Effect from 'effect/Effect'
 import type * as Option from 'effect/Option'
 
-import type { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+import type { ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import type { TimerEntry } from '../domain/timer-entry.domain.ts'
 

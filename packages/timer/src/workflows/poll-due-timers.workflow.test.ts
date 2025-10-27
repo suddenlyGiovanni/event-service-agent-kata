@@ -9,8 +9,8 @@ import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
-import { UUID7 } from '@event-service-agent/contracts/services'
-import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+import { UUID7 } from '@event-service-agent/schemas'
+import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import { ClockPortTest } from '../adapters/clock.adapter.ts'
 import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'

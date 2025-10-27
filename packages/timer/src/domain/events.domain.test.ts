@@ -2,7 +2,7 @@ import { describe, expect, it } from '@effect/vitest'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 
-import { Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+import { Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import { DueTimeReached } from './events.domain.ts'
 

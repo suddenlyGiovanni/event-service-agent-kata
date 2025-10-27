@@ -7,7 +7,7 @@ import * as Either from 'effect/Either'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
-import { type CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+import { type CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import { ScheduledTimer } from '../domain/timer-entry.domain.ts'
 import { TimerPersistencePort } from '../ports/timer-persistence.port.ts'

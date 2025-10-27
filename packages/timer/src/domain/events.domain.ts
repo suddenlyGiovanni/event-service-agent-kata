@@ -1,6 +1,6 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+import { Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 /**
  * Timer Domain Events

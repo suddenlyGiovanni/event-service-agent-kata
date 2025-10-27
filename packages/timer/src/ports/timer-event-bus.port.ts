@@ -6,7 +6,7 @@ import type * as Effect from 'effect/Effect'
 
 import type * as Messages from '@event-service-agent/contracts/messages'
 import type { PublishError, SubscribeError } from '@event-service-agent/contracts/ports'
-import type { CorrelationId } from '@event-service-agent/contracts/types'
+import type { CorrelationId } from '@event-service-agent/schemas/shared'
 
 import type { TimerEntry } from '../domain/timer-entry.domain.ts'
 

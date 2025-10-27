@@ -10,7 +10,7 @@ import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
 import type * as Messages from '@event-service-agent/contracts/messages'
-import { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+import { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import { ClockPortTest } from '../adapters/clock.adapter.ts'
 import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'

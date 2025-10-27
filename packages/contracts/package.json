@@ -1,6 +1,7 @@
 {
 	"dependencies": {
-		"effect": "catalog:effect"
+		"effect": "catalog:effect",
+		"@event-service-agent/schemas": "workspace:*"
 	},
 	"description": "Message types and port interfaces for the event service agent",
 	"devDependencies": {

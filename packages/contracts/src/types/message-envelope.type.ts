@@ -5,8 +5,9 @@
  * Based on docs/design/ports.md
  */
 
+import type { CorrelationId, EnvelopeId, TenantId } from '@event-service-agent/schemas/shared'
+
 import type { Messages } from '../messages/messages.ts'
-import type { CorrelationId, EnvelopeId, TenantId } from './shared.type.ts'
 
 export declare namespace Message {
 	/**

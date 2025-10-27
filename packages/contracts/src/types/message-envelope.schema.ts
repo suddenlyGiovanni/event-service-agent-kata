@@ -16,7 +16,7 @@ import type * as ParseResult from 'effect/ParseResult'
 import * as Schema from 'effect/Schema'
 import type * as SchemaAst from 'effect/SchemaAST'
 
-import { CorrelationId, EnvelopeId, TenantId } from './shared.type.ts'
+import { CorrelationId, EnvelopeId, TenantId } from '@event-service-agent/schemas/shared'
 
 /**
  * DomainMessage - Union of all domain messages (events + commands)

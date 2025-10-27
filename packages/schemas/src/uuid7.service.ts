@@ -53,7 +53,7 @@ import { UUID7 as UUID7Schema } from './shared/uuid7.schema.ts'
  * }).pipe(Effect.provide(UUID7.Default))
  * ```
  */
-export class UUID7Service extends Effect.Service<UUID7Service>()('@event-service-agent/schemas/UUID7Service', {
+export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas/UUID7', {
 	accessors: true,
 
 	dependencies: [Layer.succeed(UUIDPort, UUIDPort.Default)],
@@ -115,8 +115,8 @@ export class UUID7Service extends Effect.Service<UUID7Service>()('@event-service
 	 */
 	static readonly Test = <A extends `${string}-${string}-${string}-${string}-${string}`>(
 		fixed: A,
-	): Layer.Layer<UUID7Service> =>
-		UUID7Service.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(UUIDPort, UUIDPort.Test(fixed))))
+	): Layer.Layer<UUID7> =>
+		UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(UUIDPort, UUIDPort.Test(fixed))))
 
 	/**
 	 * Test implementation with sequential UUIDs
@@ -140,6 +140,6 @@ export class UUID7Service extends Effect.Service<UUID7Service>()('@event-service
 	 * }).pipe(Effect.provide(UUID7Service.Sequence("12345678")))
 	 * ```
 	 */
-	static readonly Sequence = (prefix = '00000000'): Layer.Layer<UUID7Service> =>
-		UUID7Service.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(UUIDPort, UUIDPort.Sequence(prefix))))
+	static readonly Sequence = (prefix = '00000000'): Layer.Layer<UUID7> =>
+		UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(UUIDPort, UUIDPort.Sequence(prefix))))
 }
