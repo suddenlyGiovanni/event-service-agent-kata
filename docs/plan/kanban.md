@@ -42,7 +42,7 @@ Prioritized queue.
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
-- [ ] (PL-14) Migrate all events/commands to Effect Schema [contracts] [adr: [ADR-0011]] — Schema.TaggedClass for runtime validation, contracts/schemas.ts unions, type-safe broker routing. Timer workflows (PL-4.1-4.4) complete and ready for integration.
+- [ ] (PL-14) Migrate all events/commands to Effect Schema [contracts] [adr: [ADR-0011]] — **IN PROGRESS**: Creating Schema classes for runtime validation. Branch: `contracts/pl-14-schema-migration`
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
@@ -69,9 +69,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: PL-14 🚀 STARTING — Migrate events/commands to Effect Schema for runtime validation and type-safe broker routing.
-- Completed: PL-4.4 ✅ — Timer workflows complete (PL-4.1-4.4): domain model, ports, scheduleTimer, pollDueTimers. 53 passing tests, Effect.fn observability, continue-on-error batch processing.
-- Next: PL-4.6 (deferred) — SQLite adapter after Schema migration ensures type-safe persistence layer.
+- Focus: PL-14 🚀 STARTED — Migrating all events/commands to Effect Schema. Branch created: `contracts/pl-14-schema-migration`
+- Strategy: Per ADR-0011, use Schema.TaggedClass with direct field repetition pattern. Create module-owned schemas, then central registry.
+- Scope: 9 events + 3 commands + 2 metadata types (ResponseMeta, ErrorMeta) + 2 HTTP types (RequestSpec, RequestSpecWithoutBody)
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
