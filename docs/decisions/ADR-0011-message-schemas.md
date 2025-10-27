@@ -1,8 +1,13 @@
 # ADR-0011: Message Schema Validation with Effect Schema
 
-- Status: Accepted
+- Status: Accepted (Partially superseded by ADR-0012)
 - Date: 2025-10-24
 - Context: PL-4.4 (Timer polling workflow), PL-14 (full migration)
+- Superseded by: ADR-0012 (Package structure - central registry location)
+
+> **Note**: Section 3 "Central Registry (Contracts Package)" has been superseded by ADR-0012.
+> Message schemas now live in `@event-service-agent/schemas`, not `@event-service-agent/contracts`.
+> See ADR-0012 for the architectural rationale and migration plan.
 
 ---
 
@@ -232,11 +237,19 @@ export type DueTimeReachedDTO = Schema.Schema.Encoded<
 // }
 ```
 
-### 3. Central Registry (Contracts Package)
+### 3. Central Registry (Superseded by ADR-0012)
 
-Create `packages/contracts/src/messages/schemas.ts` exporting Schema unions:
+> **⚠️ SUPERSEDED**: This section described placing schemas in `@event-service-agent/contracts`.
+> This approach was reconsidered during implementation and superseded by ADR-0012.
+> 
+> **Current Decision (ADR-0012)**: Schemas live in `@event-service-agent/schemas` package.
+> See ADR-0012 for rationale (avoids circular dependencies, preserves DX, clear separation).
 
+~~Create `packages/contracts/src/messages/schemas.ts` exporting Schema unions:~~
+
+**Original proposal** (no longer valid):
 ```typescript
+// ❌ NOT IMPLEMENTED - Creates circular dependency
 import { DueTimeReached } from "@event-service-agent/timer/domain";
 import { ServiceCallScheduled } from "@event-service-agent/orchestration/domain";
 // ... import all schemas
@@ -246,19 +259,23 @@ export const DomainEvent = Schema.Union(
   ServiceCallScheduled,
   // ... all events
 );
-
-export const DomainCommand = Schema.Union(
-  StartExecution,
-  ScheduleTimer,
-  SubmitServiceCall,
-);
-
-export const DomainMessage = Schema.Union(DomainEvent, DomainCommand);
-
-export type DomainEvent = Schema.Schema.Type<typeof DomainEvent>;
-export type DomainCommand = Schema.Schema.Type<typeof DomainCommand>;
-export type DomainMessage = Schema.Schema.Type<typeof DomainMessage>;
 ```
+
+**Actual implementation** (per ADR-0012):
+```typescript
+// ✅ Schemas defined in @event-service-agent/schemas
+// packages/schemas/src/messages/timer/events.schema.ts
+export class DueTimeReached extends Schema.TaggedClass(...) { }
+
+// packages/schemas/src/envelope/domain-message.schema.ts
+export const DomainMessage = Schema.Union(
+  DueTimeReached,
+  ServiceCallScheduled,
+  // ... all messages
+);
+```
+
+For complete architecture, see **ADR-0012: Package Structure - Schemas and Platform Split**.
 
 **Usage in Broker Adapter**:
 
