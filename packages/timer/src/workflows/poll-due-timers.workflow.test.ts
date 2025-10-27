@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@effect/vitest'
+import * as Cause from 'effect/Cause'
 import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
@@ -15,7 +16,7 @@ import { ClockPortTest } from '../adapters/clock.adapter.ts'
 import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
 import { ScheduledTimer, TimerEntry } from '../domain/timer-entry.domain.ts'
 import { ClockPort, PersistenceError, PublishError, TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
-import { pollDueTimersWorkflow } from './poll-due-timers.workflow.ts'
+import { type BatchProcessingError, pollDueTimersWorkflow } from './poll-due-timers.workflow.ts'
 
 /**
  * Test suite for pollDueTimersWorkflow
@@ -70,13 +71,11 @@ describe('pollDueTimersWorkflow', () => {
 				yield* persistence.save(scheduledTimer)
 
 				// Verify timer is not due yet
-				const notDueYet = yield* persistence.findDue(yield* DateTime.now)
+				const notDueYet = yield* persistence.findDue(yield* clock.now())
 				expect(Chunk.isEmpty(notDueYet)).toBe(true)
 
 				// Act: Advance time to make timer due (5 minutes + 1 second)
-				yield* TestClock.adjust('6 minutes')
-
-				// Execute workflow
+				yield* TestClock.adjust('6 minutes') // Execute workflow
 				yield* pollDueTimersWorkflow()
 
 				// Assert: Verify event was published
@@ -90,7 +89,7 @@ describe('pollDueTimersWorkflow', () => {
 				expect(timer._tag).toBe('Reached')
 
 				// Assert: Timer should no longer appear in findDue
-				const afterFired = yield* persistence.findDue(yield* DateTime.now)
+				const afterFired = yield* persistence.findDue(yield* clock.now())
 				expect(Chunk.isEmpty(afterFired)).toBe(true)
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus)))
 		})
@@ -592,7 +591,6 @@ describe('pollDueTimersWorkflow', () => {
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow with TestEventBus - should fail with BatchProcessingError
-				// RED: Currently workflow succeeds (partition doesn't propagate failures)
 				yield* pollDueTimersWorkflow().pipe(Effect.provide(TestEventBus))
 			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, UUID7.Default))),
 		)
@@ -667,11 +665,14 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: Should fail with BatchProcessingError
 				if (Exit.isFailure(result)) {
-					// TODO: Add proper assertions on BatchProcessingError fields
-					// const error = result.cause
-					// expect(error._tag).toBe('BatchProcessingError')
-					// expect(error.failedCount).toBe(1)
-					// expect(error.totalCount).toBe(3)
+					const error = Cause.failureOption(result.cause)
+					expect(Option.isSome(error)).toBe(true)
+					if (Option.isSome(error)) {
+						const batchError = error.value as BatchProcessingError
+						expect(batchError._tag).toBe('BatchProcessingError')
+						expect(batchError.failedCount).toBe(1)
+						expect(batchError.totalCount).toBe(3)
+					}
 				}
 
 				// Assert: Two events should be published (timers 1 and 3)
@@ -770,17 +771,18 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: Should fail with BatchProcessingError
 				if (Exit.isFailure(result)) {
-					// TODO: Add proper assertions on BatchProcessingError fields
-					// const error = result.cause
-					// expect(error._tag).toBe('BatchProcessingError')
-					// expect(error.failedCount).toBe(1)
-					// expect(error.totalCount).toBe(1)
+					const error = Cause.failureOption(result.cause)
+					expect(Option.isSome(error)).toBe(true)
+					if (Option.isSome(error)) {
+						const batchError = error.value as BatchProcessingError
+						expect(batchError._tag).toBe('BatchProcessingError')
+						expect(batchError.failedCount).toBe(1)
+						expect(batchError.totalCount).toBe(1)
+					}
 				}
 
 				// Assert: Event should have been published (will be duplicate on retry)
-				expect(publishedEvents).toHaveLength(1)
-
-				// Assert: Timer should still be in Scheduled state (markFired failed but collected)
+				expect(publishedEvents).toHaveLength(1) // Assert: Timer should still be in Scheduled state (markFired failed but collected)
 				yield* pipe(
 					basePersistence.find(tenantId, serviceCallId),
 					Effect.andThen(found => {
@@ -828,24 +830,4 @@ describe('pollDueTimersWorkflow', () => {
 			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, ClockPortTest, TestEventBus)))
 		})
 	})
-
-	// TODO: Partial batch failure tests blocked by design decision (ADR needed)
-	// Current implementation: fail-fast (stop on first error)
-	// Alternative: continue-on-error (process all timers, track failures)
-	// Decision needed: Which strategy for production?
-	// - "tracks processed and failed counts correctly"
-	// - "processes all timers despite individual failures"
-
-	// TODO: Observability tests deferred until Logger/Tracer infrastructure implemented
-	// - Span annotations (due count, processed/failed counts, poll time, timer context)
-	// - Logging (poll cycle start/end, event publish, timer marked, error context)
-	// These tests require Effect Tracer and Logger services to be implemented
-
-	// NOTE: processTimerFiring is a private helper function (not exported)
-	// All its behavior is already covered by workflow tests:
-	// - "processes due timers successfully" covers publish + markFired success
-	// - "publishes event before marking timer as fired" covers operation ordering
-	// - "stops processing timer when publish fails" covers PublishError propagation
-	// - "handles markFired failure after successful publish" covers PersistenceError propagation
-	// Testing private functions separately would violate "test through public API" principle
 })
