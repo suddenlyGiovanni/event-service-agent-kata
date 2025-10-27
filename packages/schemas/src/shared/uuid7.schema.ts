@@ -76,7 +76,9 @@ export class UUID7 extends Schema.UUID.pipe(
 		schemaId: UUID7SchemaId,
 	}),
 	Schema.brand(UUID7Brand),
-) {}
+) {
+	static readonly decode = Schema.decode(UUID7)
+}
 
 export declare namespace UUID7 {
 	/**

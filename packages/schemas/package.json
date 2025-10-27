@@ -11,7 +11,8 @@
 		"./http": "./src/http/index.ts"
 	},
 	"dependencies": {
-		"effect": "catalog:effect"
+		"effect": "catalog:effect",
+		"@event-service-agent/contracts": "workspace:*"
 	},
 	"devDependencies": {
 		"@effect/vitest": "catalog:test",
