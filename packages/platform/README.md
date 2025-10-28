@@ -57,16 +57,28 @@ yield* bus.subscribe([Topics.Timer.Commands], handler)
 ```
 
 ### 📦 Types (`./types`)
-Shared type definitions:
-- **Message.Envelope**: Wire format for broker messages
-- **HTTP types**: `RequestSpec`, `RequestSpecWithoutBody`
+Shared HTTP type definitions for request specifications:
+- **HTTP types**: `RequestSpec`, `RequestSpecWithoutBody`, `HttpMethod`
 
-**Usage:**
+**Note**: For message envelope types, import from `@event-service-agent/schemas/envelope`:
 ```typescript
-import type { Message } from '@event-service-agent/platform/types'
+import type { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
 
-const envelope: Message.Envelope = {
+// Use the schema-derived type
+const envelope: MessageEnvelopeSchema.Type = {
   id, type, tenantId, payload, timestampMs
+}
+```
+
+**HTTP Types Usage:**
+```typescript
+import type { RequestSpec } from '@event-service-agent/platform/types'
+
+const request: RequestSpec = {
+  method: 'POST',
+  url: 'https://api.example.com',
+  headers: { 'Content-Type': 'application/json' },
+  body: '{"key": "value"}'
 }
 ```
 

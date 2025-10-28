@@ -21,8 +21,9 @@ import * as Context from 'effect/Context'
 import * as Data from 'effect/Data'
 import type * as Effect from 'effect/Effect'
 
+import type { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
+
 import type { Topics } from '../routing/topics.ts'
-import type { Message } from '../types/message-envelope.type.ts'
 
 /**
  * PublishError - Generic error when publishing messages fails
@@ -71,7 +72,7 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  *   const bus = yield* EventBusPort
  *
  *   // Build self-contained envelope with all routing metadata
- *   const envelope: Message.Envelope = {
+ *   const envelope: MessageEnvelopeSchema.Type = {
  *     id: envelopeId,
  *     type: 'ServiceCallScheduled',
  *     tenantId,
@@ -120,7 +121,7 @@ export interface EventBusPort {
 	 *
 	 * @example
 	 * ```typescript
-	 * const envelope: Message.Envelope = {
+	 * const envelope: MessageEnvelopeSchema.Type = {
 	 *   id: envelopeId,
 	 *   type: 'ServiceCallScheduled',
 	 *   tenantId,
@@ -133,7 +134,7 @@ export interface EventBusPort {
 	 * yield* bus.publish([envelope])  // All metadata in envelope!
 	 * ```
 	 */
-	readonly publish: (envelopes: NonEmptyReadonlyArray<Message.Envelope>) => Effect.Effect<void, PublishError>
+	readonly publish: (envelopes: NonEmptyReadonlyArray<MessageEnvelopeSchema.Type>) => Effect.Effect<void, PublishError>
 
 	/**
 	 * Subscribe to topics and process messages
@@ -186,7 +187,7 @@ export interface EventBusPort {
 	 */
 	readonly subscribe: <E>(
 		topics: NonEmptyReadonlyArray<Topics.Type>,
-		handler: (envelope: Message.Envelope) => Effect.Effect<void, E>,
+		handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E>,
 	) => Effect.Effect<void, SubscribeError | E>
 }
 
@@ -200,7 +201,7 @@ export interface EventBusPort {
  * const program = Effect.gen(function* () {
  *   const bus = yield* EventBusPort
  *
- *   const envelope: Message.Envelope = {
+ *   const envelope: MessageEnvelopeSchema.Type = {
  *     id, type, tenantId, payload, timestampMs
  *   }
  *
