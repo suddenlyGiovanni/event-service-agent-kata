@@ -68,7 +68,7 @@ export class TimerEventBus {
 					 * - aggregateId: Would be serviceCallId if we needed per-aggregate ordering
 					 * - timestampMs: Event occurrence time
 					 */
-					const envelope: MessageEnvelopeSchema.Type = new MessageEnvelopeSchema({
+					const envelope = new MessageEnvelopeSchema({
 						...Option.match(correlationId, {
 							onNone: () => ({}),
 							onSome: correlationId => ({ correlationId }),
@@ -90,7 +90,7 @@ export class TimerEventBus {
 						correlationId?: CorrelationId.Type,
 					) => Effect.Effect<void, E>,
 				) {
-					yield* sharedBus.subscribe([Topics.Timer.Commands], (envelope: Message.Envelope) =>
+					yield* sharedBus.subscribe([Topics.Timer.Commands], envelope =>
 						Effect.gen(function* () {
 							// 1. Type guard: Ensure it's a ScheduleTimer command
 							if (envelope.type !== 'ScheduleTimer') {
@@ -102,11 +102,14 @@ export class TimerEventBus {
 
 							// 2. Extract and validate payload (with type assertion for now)
 							// TODO: When schemas exist, use Schema.decode(ScheduleTimer)(envelope.payload)
-							const { payload: command, correlationId } =
-								envelope as Message.Envelope<Messages.Orchestration.Commands.ScheduleTimer>
+							const { payload: command, correlationId } = envelope
 
 							// 3. Delegate to handler
-							yield* handler(command, correlationId)
+							yield* handler(
+								//@ts-expect-error TODO: payload typing should be the union of all Messages
+								command,
+								correlationId,
+							)
 						}),
 					)
 				}),
