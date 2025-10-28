@@ -8,7 +8,7 @@
  * - ClockPort: Time operations (current time)
  * - TimerPersistencePort: Timer storage operations
  *
- * Ports reused from contracts:
+ * Ports reused from platform:
  * - EventBusPort: Message publishing/subscribing
  *
  * Usage in Timer module:
@@ -17,7 +17,7 @@
  * - Adapters implement these interfaces (in-memory, SQLite, etc.)
  */
 
-// Re-export EventBusPort from contracts for convenience
+// Re-export EventBusPort from platform for convenience
 export {
 	EventBusPort,
 	type EventBusPort as EventBusPortType,
