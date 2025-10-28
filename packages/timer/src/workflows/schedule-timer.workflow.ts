@@ -4,7 +4,7 @@ import * as Option from 'effect/Option'
 import type * as ParseResult from 'effect/ParseResult'
 import * as Schema from 'effect/Schema'
 
-import type * as Messages from '@event-service-agent/contracts/messages'
+import type * as Messages from '@event-service-agent/platform/messages'
 import type { CorrelationId } from '@event-service-agent/schemas/shared'
 
 import { ScheduledTimer } from '../domain/timer-entry.domain.ts'

@@ -13,7 +13,7 @@
 	},
 	"dependencies": {
 		"effect": "catalog:effect",
-		"@event-service-agent/contracts": "workspace:*"
+		"@event-service-agent/platform": "workspace:*"
 	},
 	"devDependencies": {
 		"@effect/vitest": "catalog:test",

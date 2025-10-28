@@ -20,8 +20,7 @@ import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import type * as ParseResult from 'effect/ParseResult'
 
-// TODO(PL-14.3): Update to import from platform package after rename
-import { UUIDPort } from '@event-service-agent/contracts/ports'
+import { UUIDPort } from '@event-service-agent/platform/ports'
 
 import { UUID7 as UUID7Schema } from './shared/uuid7.schema.ts'
 

@@ -2,7 +2,7 @@
 
 import * as Context from 'effect/Context'
 
-export class UUIDPort extends Context.Tag('@event-service-agent/contracts/ports/UUID')<
+export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/UUID')<
 	UUIDPort,
 	{
 		/**

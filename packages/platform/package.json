@@ -3,7 +3,7 @@
 		"effect": "catalog:effect",
 		"@event-service-agent/schemas": "workspace:*"
 	},
-	"description": "Message types and port interfaces for the event service agent",
+	"description": "Platform infrastructure - Message types, port interfaces, and shared routing for cross-module communication",
 	"devDependencies": {
 		"@effect/vitest": "catalog:test",
 		"@event-service-agent/typescript": "workspace:*",
@@ -19,7 +19,7 @@
 		"./services": "./src/services/index.ts",
 		"./types": "./src/types/index.ts"
 	},
-	"name": "@event-service-agent/contracts",
+	"name": "@event-service-agent/platform",
 	"private": true,
 	"scripts": {
 		"check": "biome check --write .",

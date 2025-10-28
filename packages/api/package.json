@@ -1,6 +1,6 @@
 {
 	"dependencies": {
-		"@event-service-agent/contracts": "workspace:*"
+		"@event-service-agent/platform": "workspace:*"
 	},
 	"description": "API edge - HTTP API for submitting and querying service calls",
 	"devDependencies": {

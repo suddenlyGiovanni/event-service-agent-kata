@@ -23,7 +23,7 @@ export {
 	type EventBusPort as EventBusPortType,
 	PublishError,
 	SubscribeError,
-} from '@event-service-agent/contracts/ports'
+} from '@event-service-agent/platform/ports'
 
 export * from './clock.port.ts'
 export * from './timer-event-bus.port.ts'

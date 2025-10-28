@@ -1,6 +1,6 @@
 {
 	"dependencies": {
-		"@event-service-agent/contracts": "workspace:*",
+		"@event-service-agent/platform": "workspace:*",
 		"@event-service-agent/schemas": "workspace:*",
 		"effect": "catalog:effect"
 	},

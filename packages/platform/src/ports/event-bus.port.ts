@@ -208,4 +208,4 @@ export interface EventBusPort {
  * })
  * ```
  */
-export const EventBusPort = Context.GenericTag<EventBusPort>('@event-service-agent/contracts/EventBusPort')
+export const EventBusPort = Context.GenericTag<EventBusPort>('@event-service-agent/platform/EventBusPort')

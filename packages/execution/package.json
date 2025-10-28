@@ -1,6 +1,6 @@
 {
 	"dependencies": {
-		"@event-service-agent/contracts": "workspace:*"
+		"@event-service-agent/platform": "workspace:*"
 	},
 	"description": "Execution worker - HTTP request execution handler",
 	"devDependencies": {

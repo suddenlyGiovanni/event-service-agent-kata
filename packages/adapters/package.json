@@ -1,6 +1,6 @@
 {
 	"dependencies": {
-		"@event-service-agent/contracts": "workspace:*"
+		"@event-service-agent/platform": "workspace:*"
 	},
 	"description": "Infrastructure adapters - Broker, persistence, HTTP client implementations",
 	"devDependencies": {

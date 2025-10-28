@@ -4,8 +4,8 @@ import * as Context from 'effect/Context'
 import type * as DateTime from 'effect/DateTime'
 import type * as Effect from 'effect/Effect'
 
-import type * as Messages from '@event-service-agent/contracts/messages'
-import type { PublishError, SubscribeError } from '@event-service-agent/contracts/ports'
+import type * as Messages from '@event-service-agent/platform/messages'
+import type { PublishError, SubscribeError } from '@event-service-agent/platform/ports'
 import type { CorrelationId } from '@event-service-agent/schemas/shared'
 
 import type { TimerEntry } from '../domain/timer-entry.domain.ts'

@@ -3,7 +3,7 @@ import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 import { describe, expect, it } from 'vitest'
 
-import type * as Message from '@event-service-agent/contracts/messages'
+import type * as Message from '@event-service-agent/platform/messages'
 import { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import { ScheduledTimer, TimerEntry } from './timer-entry.domain.ts'

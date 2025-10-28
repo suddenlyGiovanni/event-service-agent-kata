@@ -43,8 +43,8 @@ Prioritized queue.
 <!-- Only what you're actively working on. Move one item at a time. -->
 
 - [x] (PL-14.1) Document package split decision [contracts] [adr: [ADR-0012]] — COMPLETE: ADR-0012 created, documents schemas/platform split rationale
-- [ ] (PL-14.2) Create @event-service-agent/schemas package [schemas] — **NEXT**: Extract all Effect Schemas to new package
-- [ ] (PL-14.3) Rename contracts → platform + update refs [platform] — After PL-14.2
+- [x] (PL-14.2) Create @event-service-agent/schemas package [schemas]
+- [ ] (PL-14.3) Rename contracts → platform + update refs [platform]
 - [ ] (PL-14.4) Update module dependencies + imports [all modules] — After PL-14.3
 - [ ] (PL-14.5) Update documentation (ADRs, design docs) [docs] — After PL-14.4
 

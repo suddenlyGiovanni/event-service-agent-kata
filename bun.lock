@@ -13,7 +13,7 @@
       "name": "@event-service-agent/adapters",
       "version": "0.0.1",
       "dependencies": {
-        "@event-service-agent/contracts": "workspace:*",
+        "@event-service-agent/platform": "workspace:*",
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
@@ -27,21 +27,7 @@
       "name": "@event-service-agent/api",
       "version": "0.0.1",
       "dependencies": {
-        "@event-service-agent/contracts": "workspace:*",
-      },
-      "devDependencies": {
-        "@effect/vitest": "catalog:test",
-        "@event-service-agent/typescript": "workspace:*",
-        "@total-typescript/ts-reset": "catalog:types",
-        "@types/bun": "catalog:types",
-        "typescript": "catalog:typescript",
-      },
-    },
-    "packages/contracts": {
-      "name": "@event-service-agent/contracts",
-      "version": "0.0.1",
-      "dependencies": {
-        "effect": "catalog:effect",
+        "@event-service-agent/platform": "workspace:*",
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
@@ -55,7 +41,7 @@
       "name": "@event-service-agent/execution",
       "version": "0.0.1",
       "dependencies": {
-        "@event-service-agent/contracts": "workspace:*",
+        "@event-service-agent/platform": "workspace:*",
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
@@ -69,7 +55,22 @@
       "name": "@event-service-agent/orchestration",
       "version": "0.0.1",
       "dependencies": {
-        "@event-service-agent/contracts": "workspace:*",
+        "@event-service-agent/platform": "workspace:*",
+      },
+      "devDependencies": {
+        "@effect/vitest": "catalog:test",
+        "@event-service-agent/typescript": "workspace:*",
+        "@total-typescript/ts-reset": "catalog:types",
+        "@types/bun": "catalog:types",
+        "typescript": "catalog:typescript",
+      },
+    },
+    "packages/platform": {
+      "name": "@event-service-agent/platform",
+      "version": "0.0.1",
+      "dependencies": {
+        "@event-service-agent/schemas": "workspace:*",
+        "effect": "catalog:effect",
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
@@ -83,7 +84,8 @@
       "name": "@event-service-agent/schemas",
       "version": "0.0.1",
       "dependencies": {
-        "@event-service-agent/contracts": "workspace:*",
+        "@event-service-agent/platform": "workspace:*",
+        "effect": "catalog:effect",
       },
       "devDependencies": {
         "@effect/vitest": "catalog:test",
@@ -97,7 +99,8 @@
       "name": "@event-service-agent/timer",
       "version": "0.0.1",
       "dependencies": {
-        "@event-service-agent/contracts": "workspace:*",
+        "@event-service-agent/platform": "workspace:*",
+        "@event-service-agent/schemas": "workspace:*",
         "effect": "catalog:effect",
       },
       "devDependencies": {
@@ -235,11 +238,11 @@
 
     "@event-service-agent/api": ["@event-service-agent/api@workspace:packages/api"],
 
-    "@event-service-agent/contracts": ["@event-service-agent/contracts@workspace:packages/contracts"],
-
     "@event-service-agent/execution": ["@event-service-agent/execution@workspace:packages/execution"],
 
     "@event-service-agent/orchestration": ["@event-service-agent/orchestration@workspace:packages/orchestration"],
+
+    "@event-service-agent/platform": ["@event-service-agent/platform@workspace:packages/platform"],
 
     "@event-service-agent/schemas": ["@event-service-agent/schemas@workspace:packages/schemas"],
 
