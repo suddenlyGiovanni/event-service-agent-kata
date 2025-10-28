@@ -8,6 +8,7 @@
 		".": "./src/index.ts",
 		"./shared": "./src/shared/index.ts",
 		"./messages/timer": "./src/messages/timer/index.ts",
+		"./messages/orchestration": "./src/messages/orchestration/index.ts",
 		"./envelope": "./src/envelope/index.ts",
 		"./http": "./src/http/index.ts"
 	},

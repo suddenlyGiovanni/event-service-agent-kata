@@ -4,11 +4,11 @@ import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 
-import type * as Messages from '@event-service-agent/platform/messages'
-import { PublishError } from '@event-service-agent/platform/ports'
+import { PublishError, SubscribeError } from '@event-service-agent/platform/ports'
 import { Topics } from '@event-service-agent/platform/routing'
 import { UUID7 } from '@event-service-agent/schemas'
 import { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
+import { ScheduleTimer } from '@event-service-agent/schemas/messages/orchestration'
 import { DueTimeReached } from '@event-service-agent/schemas/messages/timer'
 import { type CorrelationId, EnvelopeId, Iso8601DateTime } from '@event-service-agent/schemas/shared'
 
@@ -85,32 +85,36 @@ export class TimerEventBus {
 				}),
 
 				subscribeToScheduleTimerCommands: Effect.fn('Timer.subscribeToScheduleTimerCommands')(function* <E>(
-					handler: (
-						command: Messages.Orchestration.Commands.ScheduleTimer,
-						correlationId?: CorrelationId.Type,
-					) => Effect.Effect<void, E>,
+					handler: (command: ScheduleTimer, correlationId?: CorrelationId.Type) => Effect.Effect<void, E>,
 				) {
-					yield* sharedBus.subscribe([Topics.Timer.Commands], envelope =>
-						Effect.gen(function* () {
-							// 1. Type guard: Ensure it's a ScheduleTimer command
-							if (envelope.type !== 'ScheduleTimer') {
-								// Log and ignore unexpected message types to keep consumer alive
-								return yield* Effect.logDebug('Ignoring non-ScheduleTimer message', {
-									receivedType: envelope.type,
-								})
-							}
+					yield* sharedBus.subscribe(
+						[Topics.Timer.Commands],
+						envelope =>
+							Effect.gen(function* () {
+								// 1. Type guard: Ensure it's a ScheduleTimer command
+								if (envelope.type !== 'ScheduleTimer') {
+									// Log and ignore unexpected message types to keep consumer alive
+									return yield* Effect.logDebug('Ignoring non-ScheduleTimer message', {
+										receivedType: envelope.type,
+									})
+								}
 
-							// 2. Extract and validate payload (with type assertion for now)
-							// TODO: When schemas exist, use Schema.decode(ScheduleTimer)(envelope.payload)
-							const { payload: command, correlationId } = envelope
+								// 2. Decode and validate payload using schema
+								// After type guard, TypeScript knows envelope.type is 'ScheduleTimer',
+								// but envelope.payload is still union type. Cast is safe here.
+								const command = yield* ScheduleTimer.decode(envelope.payload as ScheduleTimer).pipe(
+									// Map ParseError to SubscribeError to match port signature
+									Effect.mapError(
+										(parseError): SubscribeError =>
+											new SubscribeError({
+												cause: `Failed to decode ScheduleTimer: ${String(parseError)}`,
+											}),
+									),
+								)
 
-							// 3. Delegate to handler
-							yield* handler(
-								//@ts-expect-error TODO: payload typing should be the union of all Messages
-								command,
-								correlationId,
-							)
-						}),
+								// 3. Delegate to handler
+								yield* handler(command, envelope.correlationId)
+							}) as Effect.Effect<void, SubscribeError | E>,
 					)
 				}),
 			})

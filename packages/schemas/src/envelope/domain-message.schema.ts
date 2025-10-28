@@ -22,6 +22,7 @@
 
 import * as Schema from 'effect/Schema'
 
+import { ScheduleTimer } from '../messages/orchestration/commands.schema.ts'
 import { DueTimeReached } from '../messages/timer/events.schema.ts'
 
 /**
@@ -33,6 +34,9 @@ import { DueTimeReached } from '../messages/timer/events.schema.ts'
 export const DomainMessage = Schema.Union(
 	// Timer Events
 	DueTimeReached,
+
+	// Orchestration Commands
+	ScheduleTimer,
 )
 
 export declare namespace DomainMessage {
