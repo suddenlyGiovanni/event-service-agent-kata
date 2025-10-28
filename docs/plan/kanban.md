@@ -18,6 +18,7 @@ Raw ideas/tasks.
     Keep this short.
 -->
 
+- (PL-23) Refactor EventBusPort to use pure domain types (not DTOs) [Timer] [architecture] — Port should accept/return domain events (DueTimeReached, ScheduleTimer), adapter handles encoding/decoding. Creates symmetric boundary per hexagonal architecture. Deferred until PL-14 schema migration complete.
 - (PL-13) Choose broker adapter details for dev/prod parity [adr: [ADR-0002]]
 - (PL-20) Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001]]
 - (PL-9) Observability baseline [adr: [ADR-0009]] [infra] — blocked by [adr: [ADR-0002]]
