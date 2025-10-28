@@ -42,12 +42,6 @@ Prioritized queue.
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
-- [x] (PL-14.1) Document package split decision [contracts] [adr: [ADR-0012]] — COMPLETE: ADR-0012 created, documents schemas/platform split rationale
-- [x] (PL-14.2) Create @event-service-agent/schemas package [schemas]
-- [ ] (PL-14.3) Rename contracts → platform + update refs [platform]
-- [ ] (PL-14.4) Update module dependencies + imports [all modules] — After PL-14.3
-- [ ] (PL-14.5) Update documentation (ADRs, design docs) [docs] — After PL-14.4
-
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
 ## Blocked
@@ -58,7 +52,11 @@ Prioritized queue.
 
 ## Done (recent)
 
-- (PL-4.4) Polling worker workflow + tests [Timer] — COMPLETE: pollDueTimersWorkflow with Effect.fn, BatchProcessingError for partial failures, Effect.partition continue-on-error semantics, observability (spans + structured logging), 13/13 tests passing (53 total timer tests)
+- (PL-14.5) Update documentation (ADRs, design docs) [docs] — COMPLETE: Updated ports.md reference to schemas package
+- (PL-14.4) Update module dependencies + imports [all modules] — COMPLETE: All active modules (timer, schemas) updated; placeholder modules have no code yet
+- (PL-14.3) Rename contracts → platform + update refs [platform] — COMPLETE: Package renamed, 7 READMEs added, all imports fixed, 142 tests passing
+- (PL-14.2) Create @event-service-agent/schemas package [schemas] — COMPLETE: All schemas extracted, 78 tests passing
+- (PL-14.1) Document package split decision [contracts] [adr: [ADR-0012]] — COMPLETE: ADR-0012 created, documents schemas/platform split rationale
 - (PL-4.5) In-memory test adapters [Timer] — PR ready: Full state machine persistence (Scheduled → Reached), 16/16 tests passing, two-operation query model (findScheduledTimer/find), Effect.acquireRelease lifecycle, idempotency guarantees
 - (PL-4.3) ScheduleTimer workflow + tests [Timer] — PR #25: scheduleTimerWorkflow with Effect.fn, 8/9 tests passing, TimerPersistence.inMemory adapter (Layer.effect + Ref + HashMap)
 - (PL-4.2) Port interfaces (Clock, EventBus, Persistence) [Timer] — PR #20 merged
@@ -73,10 +71,10 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: PL-14.2 🚀 NEXT — Creating @event-service-agent/schemas package (extract all Effect Schemas)
-- Strategy: Per ADR-0012, split contracts into schemas (all Effect Schemas) + platform (ports + routing)
-- Migration: 5 phases documented in ADR-0012. Currently on phase 2 (create schemas package).
-- Branch: `contracts/pl-14-schema-migration`
+- Focus: Schema migration (PL-14) ✅ COMPLETE
+- All 5 phases complete: ADR-0012 documented, schemas package created, contracts → platform renamed, all imports updated, docs refreshed
+- Next milestone: Ready to begin Orchestration core (PL-2) or SQLite persistence (PL-4.6)
+- Branch: `contracts/pl-14-schema-migration` (ready to merge)
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
