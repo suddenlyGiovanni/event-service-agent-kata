@@ -9,9 +9,9 @@ import { PublishError } from '@event-service-agent/platform/ports'
 import { Topics } from '@event-service-agent/platform/routing'
 import { UUID7 } from '@event-service-agent/schemas'
 import { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
+import { DueTimeReached } from '@event-service-agent/schemas/messages/timer'
 import { type CorrelationId, EnvelopeId, Iso8601DateTime } from '@event-service-agent/schemas/shared'
 
-import { DueTimeReached } from '../domain/events.domain.ts'
 import type { TimerEntry } from '../domain/timer-entry.domain.ts'
 import { EventBusPort, TimerEventBusPort } from '../ports/index.ts'
 
