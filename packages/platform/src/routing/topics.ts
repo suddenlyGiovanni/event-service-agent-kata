@@ -15,7 +15,7 @@
  * - Structure allows: Topics.Timer.Commands.ScheduleTimer
  *
  * @see ADR-0002 for broker choice and partitioning strategy
- * @see packages/contracts/src/messages/messages.ts for message schemas
+ * @see packages/schemas/src/messages/ for message schemas
  */
 export namespace Topics {
 	const commands = 'commands' as const

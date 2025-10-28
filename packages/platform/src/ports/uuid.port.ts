@@ -45,7 +45,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 * @example
 	 * ```typescript
 	 * import { Effect } from 'effect'
-	 * import { UUIDPort } from '@event-service-agent/contracts/ports'
+	 * import { UUIDPort } from '@event-service-agent/platform/ports'
 	 *
 	 * const program: Effect.Effect<void, never, UUIDPort> = Effect.gen(function* () {
 	 *     const uuid = yield* UUIDPort

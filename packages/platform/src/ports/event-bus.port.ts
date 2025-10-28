@@ -86,7 +86,7 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  * })
  *
  * // Subscribing to commands (Timer)
- * import { Topics } from '@event-service-agent/contracts/routing'
+ * import { Topics } from '@event-service-agent/platform/routing'
  *
  * const subscribeToCommands = Effect.gen(function* () {
  *   const bus = yield* EventBusPort
@@ -171,7 +171,7 @@ export interface EventBusPort {
 	 *
 	 * @example
 	 * ```typescript
-	 * import { Topics } from '@event-service-agent/contracts/routing'
+	 * import { Topics } from '@event-service-agent/platform/routing'
 	 *
 	 * yield* bus.subscribe([Topics.Timer.Commands], (envelope) =>
 	 *   Effect.gen(function* () {
