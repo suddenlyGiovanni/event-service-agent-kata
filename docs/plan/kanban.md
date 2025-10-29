@@ -31,6 +31,7 @@ Prioritized queue.
     Link ADRs like [adr: ADR-0001]; add tags like [infra] or [Api].
 -->
 
+- (PL-15) Migrate to Schema.DateTimeUtc [schemas, timer, platform] — Replace custom Iso8601DateTime (branded string) with Effect's built-in Schema.DateTimeUtc. Impact: 20 occurrences, 5 phases, ~90 lines removed. Benefits: Better type safety (DateTime.Utc vs string), richer API, standard Effect patterns. Wire format compatible. See docs/plan/datetime-schema-migration.md
 - (PL-4.6) SQLite persistence adapter [Timer] — Deferred until after Schema migration (PL-14)
 - (PL-2) Orchestration core domain model and transitions [Orchestration]
 - (PL-3) Broker adapter implementation + local broker setup [infra]
@@ -72,9 +73,10 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: Schema migration (PL-14) ✅ COMPLETE
-- All 5 phases complete: ADR-0012 documented, schemas package created, contracts → platform renamed, all imports updated, docs refreshed
-- Next milestone: Ready to begin Orchestration core (PL-2) or SQLite persistence (PL-4.6)
+- Focus: Schema migration (PL-14) ✅ COMPLETE + DateTime migration plan (PL-15) documented
+- PL-14: All 5 phases complete, branch ready to merge
+- PL-15: Migration plan created (docs/plan/datetime-schema-migration.md), tracked in Ready queue
+- Next: Merge PL-14, then execute PL-15 in new feature branch, or proceed with Orchestration (PL-2)
 - Branch: `contracts/pl-14-schema-migration` (ready to merge)
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
