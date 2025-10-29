@@ -22,10 +22,16 @@
 
 import * as Schema from 'effect/Schema'
 
-import { ScheduleTimer } from '../messages/orchestration/commands.schema.ts'
-import { ServiceCallSubmitted, ServiceCallScheduled, ServiceCallRunning, ServiceCallSucceeded, ServiceCallFailed } from '../messages/orchestration/events.schema.ts'
-import { ExecutionStarted, ExecutionSucceeded, ExecutionFailed } from '../messages/execution/events.schema.ts'
 import { SubmitServiceCall } from '../messages/api/commands.schema.ts'
+import { ExecutionFailed, ExecutionStarted, ExecutionSucceeded } from '../messages/execution/events.schema.ts'
+import { ScheduleTimer, StartExecution } from '../messages/orchestration/commands.schema.ts'
+import {
+	ServiceCallFailed,
+	ServiceCallRunning,
+	ServiceCallScheduled,
+	ServiceCallSubmitted,
+	ServiceCallSucceeded,
+} from '../messages/orchestration/events.schema.ts'
 import { DueTimeReached } from '../messages/timer/events.schema.ts'
 
 /**
@@ -40,6 +46,7 @@ export const DomainMessage = Schema.Union(
 
 	// Orchestration Commands
 	ScheduleTimer,
+	StartExecution,
 
 	// Orchestration Events
 	ServiceCallSubmitted,

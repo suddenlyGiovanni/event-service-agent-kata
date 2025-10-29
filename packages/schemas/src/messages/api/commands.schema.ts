@@ -5,13 +5,17 @@ import { TenantId } from '../../shared/tenant-id.schema.ts'
 import { RequestSpec } from '../http/request-spec.schema.ts'
 
 export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('SubmitServiceCall', {
-  tenantId: TenantId,
-  name: Schema.String,
-  dueAt: Iso8601DateTime,
-  requestSpec: RequestSpec,
-  tags: Schema.optional(Schema.Array(Schema.String)),
-  idempotencyKey: Schema.optional(Schema.String),
-}) {}
+	dueAt: Iso8601DateTime,
+	idempotencyKey: Schema.optional(Schema.String),
+	name: Schema.String,
+	requestSpec: RequestSpec,
+	tags: Schema.optional(Schema.Array(Schema.String)),
+	tenantId: TenantId,
+}) {
+	static readonly decode = Schema.decode(this)
+
+	static readonly encode = Schema.encode(this)
+}
 
 export const ApiCommands = Schema.Union(SubmitServiceCall)
 

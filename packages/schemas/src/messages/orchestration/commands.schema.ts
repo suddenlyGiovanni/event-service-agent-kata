@@ -3,6 +3,7 @@ import * as Schema from 'effect/Schema'
 import { Iso8601DateTime } from '../../shared/iso8601-datetime.schema.ts'
 import { ServiceCallId } from '../../shared/service-call-id.schema.ts'
 import { TenantId } from '../../shared/tenant-id.schema.ts'
+import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
 
 /**
  * Orchestration Commands
@@ -77,4 +78,19 @@ export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()('Schedule
 	 * - Ready for JSON serialization
 	 */
 	static readonly encode = Schema.encode(ScheduleTimer)
+}
+
+/**
+ * StartExecution - Trigger HTTP execution for a scheduled ServiceCall
+ *
+ * **Produced by**: Orchestration
+ * **Consumed by**: Execution
+ */
+export class StartExecution extends Schema.TaggedClass<StartExecution>()('StartExecution', {
+	requestSpec: RequestSpecWithoutBody,
+	serviceCallId: ServiceCallId,
+	tenantId: TenantId,
+}) {
+	static readonly decode = Schema.decode(StartExecution)
+	static readonly encode = Schema.encode(StartExecution)
 }
