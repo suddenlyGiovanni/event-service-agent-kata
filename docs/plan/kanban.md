@@ -42,6 +42,15 @@ Prioritized queue.
 
 ## Doing (WIP ≤ 2)
 
+- (PL-14.2) Migrate platform message interfaces → `@event-service-agent/schemas` [schemas] — IN PROGRESS
+    - Subtasks:
+        - [ ] Orchestration events: ServiceCallSubmitted, ServiceCallScheduled, ServiceCallRunning, ServiceCallSucceeded, ServiceCallFailed
+        - [ ] Orchestration commands: StartExecution (schema), ScheduleTimer (already migrated)
+        - [ ] Execution events: ExecutionStarted, ExecutionSucceeded, ExecutionFailed
+        - [ ] API commands: SubmitServiceCall
+        - [ ] HTTP schemas: RequestSpec + RequestSpecWithoutBody
+    - Notes: Creating Effect Schema.TaggedClass files in `packages/schemas/src/messages/*` and adding them to `DomainMessage` union. This iteration is schemas-only (no tests).
+
 <!-- Only what you're actively working on. Move one item at a time. -->
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
@@ -57,7 +66,7 @@ Prioritized queue.
 - (PL-14.5) Update documentation (ADRs, design docs) [docs] — COMPLETE: Updated ports.md reference to schemas package
 - (PL-14.4) Update module dependencies + imports [all modules] — COMPLETE: All active modules (timer, schemas) updated; placeholder modules have no code yet
 - (PL-14.3) Rename contracts → platform + update refs [platform] — COMPLETE: Package renamed, 7 READMEs added, all imports fixed, 142 tests passing
-- (PL-14.2) Create @event-service-agent/schemas package [schemas] — COMPLETE: All schemas extracted, 78 tests passing
+- (PL-14.2) Create @event-service-agent/schemas package [schemas] — IN PROGRESS: migrating remaining platform message interfaces to Effect Schemas
 - (PL-14.1) Document package split decision [contracts] [adr: [ADR-0012]] — COMPLETE: ADR-0012 created, documents schemas/platform split rationale
 - (PL-4.5) In-memory test adapters [Timer] — PR ready: Full state machine persistence (Scheduled → Reached), 16/16 tests passing, two-operation query model (findScheduledTimer/find), Effect.acquireRelease lifecycle, idempotency guarantees
 - (PL-4.3) ScheduleTimer workflow + tests [Timer] — PR #25: scheduleTimerWorkflow with Effect.fn, 8/9 tests passing, TimerPersistence.inMemory adapter (Layer.effect + Ref + HashMap)
