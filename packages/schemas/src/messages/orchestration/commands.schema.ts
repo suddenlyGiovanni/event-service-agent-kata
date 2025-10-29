@@ -83,10 +83,20 @@ export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()('Schedule
 /**
  * StartExecution - Trigger HTTP execution for a scheduled ServiceCall
  *
- * **Produced by**: Orchestration
- * **Consumed by**: Execution
+ * Produced by: Orchestration
+ * Consumed by: Execution
+ *
+ * Note: Uses RequestSpecWithoutBody for the command payload. The full request body
+ * is stored separately in persistent storage (see storage contract definition) and retrieved by the Execution module using
+ * the serviceCallId. This avoids transmitting large payloads in commands/events.
  */
 export class StartExecution extends Schema.TaggedClass<StartExecution>()('StartExecution', {
+	/**
+	 * HTTP request specification (body excluded)
+	 *
+	 * The full request body is stored in the database and retrieved by serviceCallId.
+	 * This keeps command payloads small and avoids large messages in the broker.
+	 */
 	requestSpec: RequestSpecWithoutBody,
 	serviceCallId: ServiceCallId,
 	tenantId: TenantId,
