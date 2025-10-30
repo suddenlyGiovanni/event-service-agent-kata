@@ -22,17 +22,7 @@
 
 import * as Schema from 'effect/Schema'
 
-import { SubmitServiceCall } from '../messages/api/commands.schema.ts'
-import { ExecutionFailed, ExecutionStarted, ExecutionSucceeded } from '../messages/execution/events.schema.ts'
-import { ScheduleTimer, StartExecution } from '../messages/orchestration/commands.schema.ts'
-import {
-	ServiceCallFailed,
-	ServiceCallRunning,
-	ServiceCallScheduled,
-	ServiceCallSubmitted,
-	ServiceCallSucceeded,
-} from '../messages/orchestration/events.schema.ts'
-import { DueTimeReached } from '../messages/timer/events.schema.ts'
+import { Api, Execution, Orchestration, Timer } from '../messages/index.ts'
 
 /**
  * DomainMessage Schema Union
@@ -41,27 +31,11 @@ import { DueTimeReached } from '../messages/timer/events.schema.ts'
  * After decode, envelope.payload will have branded types and pattern matching support.
  */
 export const DomainMessage = Schema.Union(
-	// Timer Events
-	DueTimeReached,
-
-	// Orchestration Commands
-	ScheduleTimer,
-	StartExecution,
-
-	// Orchestration Events
-	ServiceCallSubmitted,
-	ServiceCallScheduled,
-	ServiceCallRunning,
-	ServiceCallSucceeded,
-	ServiceCallFailed,
-
-	// Execution Events
-	ExecutionStarted,
-	ExecutionSucceeded,
-	ExecutionFailed,
-
-	// API Commands
-	SubmitServiceCall,
+	Timer.Events.Events,
+	Orchestration.Commands.Commands,
+	Orchestration.Events.Events,
+	Execution.Events.Events,
+	Api.Commands.Commands,
 )
 
 export declare namespace DomainMessage {

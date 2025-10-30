@@ -12,12 +12,8 @@
 		"typescript": "catalog:typescript"
 	},
 	"exports": {
-		"./adapters": "./src/adapters/index.ts",
-		"./messages": "./src/messages/index.ts",
 		"./ports": "./src/ports/index.ts",
-		"./routing": "./src/routing/index.ts",
-		"./services": "./src/services/index.ts",
-		"./types": "./src/types/index.ts"
+		"./routing": "./src/routing/index.ts"
 	},
 	"name": "@event-service-agent/platform",
 	"private": true,

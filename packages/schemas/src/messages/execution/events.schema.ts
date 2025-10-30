@@ -1,8 +1,6 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime } from '../../shared/iso8601-datetime.schema.ts'
-import { ServiceCallId } from '../../shared/service-call-id.schema.ts'
-import { TenantId } from '../../shared/tenant-id.schema.ts'
+import { Iso8601DateTime, ServiceCallId, TenantId } from '../../shared/index.ts'
 import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'
 
 /**
@@ -20,6 +18,11 @@ export class ExecutionStarted extends Schema.TaggedClass<ExecutionStarted>()('Ex
 	static readonly decode = Schema.decode(this)
 
 	static readonly encode = Schema.encode(this)
+}
+
+export declare namespace ExecutionStarted {
+	type Type = typeof ExecutionStarted.Type
+	type Dto = typeof ExecutionStarted.Encoded
 }
 
 /**
@@ -41,6 +44,11 @@ export class ExecutionSucceeded extends Schema.TaggedClass<ExecutionSucceeded>()
 	static readonly encode = Schema.encode(this)
 }
 
+export declare namespace ExecutionSucceeded {
+	type Type = typeof ExecutionSucceeded.Type
+	type Dto = typeof ExecutionSucceeded.Encoded
+}
+
 /**
  * ExecutionFailed - Call failed
  *
@@ -60,6 +68,11 @@ export class ExecutionFailed extends Schema.TaggedClass<ExecutionFailed>()('Exec
 	static readonly encode = Schema.encode(this)
 }
 
-export const ExecutionEvents = Schema.Union(ExecutionStarted, ExecutionSucceeded, ExecutionFailed)
+export declare namespace ExecutionFailed {
+	type Type = typeof ExecutionFailed.Type
+	type Dto = typeof ExecutionFailed.Encoded
+}
 
-export type ExecutionEvents = Schema.Schema.Type<typeof ExecutionEvents>
+export const Events = Schema.Union(ExecutionStarted, ExecutionSucceeded, ExecutionFailed)
+
+export type Events = Schema.Schema.Type<typeof Events>

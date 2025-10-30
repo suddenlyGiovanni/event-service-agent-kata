@@ -1,8 +1,6 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime } from '../../shared/iso8601-datetime.schema.ts'
-import { ServiceCallId } from '../../shared/service-call-id.schema.ts'
-import { TenantId } from '../../shared/tenant-id.schema.ts'
+import { Iso8601DateTime, ServiceCallId, TenantId } from '../../shared/index.ts'
 import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'
 import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
 
@@ -28,6 +26,11 @@ export class ServiceCallSubmitted extends Schema.TaggedClass<ServiceCallSubmitte
 	static readonly encode = Schema.encode(this)
 }
 
+export declare namespace ServiceCallSubmitted {
+	type Type = typeof ServiceCallSubmitted.Type
+	type Dto = typeof ServiceCallSubmitted.Encoded
+}
+
 /**
  * ServiceCallScheduled - DueAt recorded/eligible
  *
@@ -44,6 +47,11 @@ export class ServiceCallScheduled extends Schema.TaggedClass<ServiceCallSchedule
 	static readonly encode = Schema.encode(this)
 }
 
+export declare namespace ServiceCallScheduled {
+	type Type = typeof ServiceCallScheduled.Type
+	type Dto = typeof ServiceCallScheduled.Encoded
+}
+
 /**
  * ServiceCallRunning - Execution started at domain level
  *
@@ -58,6 +66,11 @@ export class ServiceCallRunning extends Schema.TaggedClass<ServiceCallRunning>()
 	static readonly decode = Schema.decode(this)
 
 	static readonly encode = Schema.encode(this)
+}
+
+export declare namespace ServiceCallRunning {
+	type Type = typeof ServiceCallRunning.Type
+	type Dto = typeof ServiceCallRunning.Encoded
 }
 
 /**
@@ -78,6 +91,11 @@ export class ServiceCallSucceeded extends Schema.TaggedClass<ServiceCallSucceede
 	static readonly encode = Schema.encode(this)
 }
 
+export declare namespace ServiceCallSucceeded {
+	type Type = typeof ServiceCallSucceeded.Type
+	type Dto = typeof ServiceCallSucceeded.Encoded
+}
+
 /**
  * ServiceCallFailed - Failed completion at domain level
  *
@@ -96,7 +114,12 @@ export class ServiceCallFailed extends Schema.TaggedClass<ServiceCallFailed>()('
 	static readonly encode = Schema.encode(this)
 }
 
-export const OrchestrationEvents = Schema.Union(
+export declare namespace ServiceCallFailed {
+	type Type = typeof ServiceCallFailed.Type
+	type Dto = typeof ServiceCallFailed.Encoded
+}
+
+export const Events = Schema.Union(
 	ServiceCallSubmitted,
 	ServiceCallScheduled,
 	ServiceCallRunning,
@@ -104,4 +127,4 @@ export const OrchestrationEvents = Schema.Union(
 	ServiceCallFailed,
 )
 
-export type OrchestrationEvents = Schema.Schema.Type<typeof OrchestrationEvents>
+export type Events = Schema.Schema.Type<typeof Events>

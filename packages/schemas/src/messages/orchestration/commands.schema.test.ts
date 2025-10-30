@@ -4,7 +4,7 @@ import * as Exit from 'effect/Exit'
 
 import { ServiceCallId, TenantId } from '../../shared/index.ts'
 import { Iso8601DateTime } from '../../shared/iso8601-datetime.schema.ts'
-import { ScheduleTimer } from './commands.schema.ts'
+import * as Commands from './commands.schema.ts'
 
 describe('ScheduleTimer Command Schema', () => {
 	describe('Schema Validation', () => {
@@ -19,7 +19,7 @@ describe('ScheduleTimer Command Schema', () => {
 				}
 
 				// Act: Decode from wire format
-				const command = yield* ScheduleTimer.decode(dto)
+				const command = yield* Commands.ScheduleTimer.decode(dto)
 
 				// Assert: All fields validated and branded
 				expect(command._tag).toBe('ScheduleTimer')
@@ -38,7 +38,7 @@ describe('ScheduleTimer Command Schema', () => {
 					tenantId: 'not-a-uuid',
 				}
 
-				const exit = yield* Effect.exit(ScheduleTimer.decode(dto))
+				const exit = yield* Effect.exit(Commands.ScheduleTimer.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
 			}),
 		)
@@ -52,7 +52,7 @@ describe('ScheduleTimer Command Schema', () => {
 					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
 				}
 
-				const exit = yield* Effect.exit(ScheduleTimer.decode(dto))
+				const exit = yield* Effect.exit(Commands.ScheduleTimer.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
 			}),
 		)
@@ -66,7 +66,7 @@ describe('ScheduleTimer Command Schema', () => {
 					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
 				}
 
-				const exit = yield* Effect.exit(ScheduleTimer.decode(dto))
+				const exit = yield* Effect.exit(Commands.ScheduleTimer.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
 			}),
 		)
@@ -80,7 +80,7 @@ describe('ScheduleTimer Command Schema', () => {
 				}
 
 				const exit = yield* Effect.exit(
-					ScheduleTimer.decode(
+					Commands.ScheduleTimer.decode(
 						//@ts-expect-error Testing missing _tag
 						dto,
 					),
@@ -99,7 +99,7 @@ describe('ScheduleTimer Command Schema', () => {
 				}
 
 				const exit = yield* Effect.exit(
-					ScheduleTimer.decode(
+					Commands.ScheduleTimer.decode(
 						// @ts-expect-error Testing wrong _tag
 						dto,
 					),
@@ -113,15 +113,15 @@ describe('ScheduleTimer Command Schema', () => {
 		it.effect('survives encode → decode round-trip', () =>
 			Effect.gen(function* () {
 				// Arrange: Construct domain command
-				const original = new ScheduleTimer({
+				const original = new Commands.ScheduleTimer({
 					dueAt: Iso8601DateTime.make('2025-10-28T12:00:00.000Z'),
 					serviceCallId: ServiceCallId.make('01931b66-7d50-7c8a-b762-9d2d3e4e5f6b'),
 					tenantId: TenantId.make('01931b66-7d50-7c8a-b762-9d2d3e4e5f6a'),
 				})
 
 				// Act: Encode to DTO then decode back
-				const encoded = yield* ScheduleTimer.encode(original)
-				const decoded = yield* ScheduleTimer.decode(encoded)
+				const encoded = yield* Commands.ScheduleTimer.encode(original)
+				const decoded = yield* Commands.ScheduleTimer.decode(encoded)
 
 				// Assert: Decoded matches original
 				expect(decoded._tag).toBe(original._tag)

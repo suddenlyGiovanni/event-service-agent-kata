@@ -123,7 +123,7 @@ export declare namespace DueTimeReached {
 	 *
 	 * Used within domain logic where type safety is paramount.
 	 */
-	type Type = Schema.Schema.Type<typeof DueTimeReached>
+	type Type = typeof DueTimeReached.Type
 
 	/**
 	 * DTO type for wire format (encoded representation)
@@ -131,15 +131,15 @@ export declare namespace DueTimeReached {
 	 * Used at adapter boundaries when encoding events for the broker.
 	 * All branded types are converted to their primitive representations.
 	 */
-	type Dto = Schema.Schema.Encoded<typeof DueTimeReached>
+	type Dto = typeof DueTimeReached.Encoded
 }
 
 /**
  * Union type of all Timer events (extensible for future events)
  */
-export type TimerEvent = DueTimeReached
+export type Events = Schema.Schema.Type<typeof Events>
 
 /**
  * Schema union for runtime validation of any Timer event
  */
-export const TimerEvent = Schema.Union(DueTimeReached)
+export const Events = Schema.Union(DueTimeReached)

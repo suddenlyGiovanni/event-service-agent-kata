@@ -5,7 +5,7 @@ import type * as DateTime from 'effect/DateTime'
 import type * as Effect from 'effect/Effect'
 
 import type { PublishError, SubscribeError } from '@event-service-agent/platform/ports'
-import type { ScheduleTimer } from '@event-service-agent/schemas/messages/orchestration'
+import type * as Messages from '@event-service-agent/schemas/messages'
 import type { CorrelationId } from '@event-service-agent/schemas/shared'
 
 import type { TimerEntry } from '../domain/timer-entry.domain.ts'
@@ -70,7 +70,10 @@ export interface TimerEventBusPort {
 	 * ```
 	 */
 	readonly subscribeToScheduleTimerCommands: <E>(
-		handler: (command: ScheduleTimer, correlationId?: CorrelationId.Type) => Effect.Effect<void, E>,
+		handler: (
+			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
+			correlationId?: CorrelationId.Type,
+		) => Effect.Effect<void, E>,
 	) => Effect.Effect<void, SubscribeError | E>
 }
 

@@ -1,8 +1,6 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime } from '../../shared/iso8601-datetime.schema.ts'
-import { ServiceCallId } from '../../shared/service-call-id.schema.ts'
-import { TenantId } from '../../shared/tenant-id.schema.ts'
+import { Iso8601DateTime, ServiceCallId, TenantId } from '../../shared/index.ts'
 import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
 
 /**
@@ -80,6 +78,11 @@ export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()('Schedule
 	static readonly encode = Schema.encode(ScheduleTimer)
 }
 
+export declare namespace ScheduleTimer {
+	type Type = typeof ScheduleTimer.Type
+	type Dto = typeof ScheduleTimer.Encoded
+}
+
 /**
  * StartExecution - Trigger HTTP execution for a scheduled ServiceCall
  *
@@ -104,3 +107,12 @@ export class StartExecution extends Schema.TaggedClass<StartExecution>()('StartE
 	static readonly decode = Schema.decode(StartExecution)
 	static readonly encode = Schema.encode(StartExecution)
 }
+
+export declare namespace StartExecution {
+	type Type = typeof StartExecution.Type
+	type Dto = typeof StartExecution.Encoded
+}
+
+export const Commands = Schema.Union(StartExecution, ScheduleTimer)
+
+export type Commands = Schema.Schema.Type<typeof Commands>

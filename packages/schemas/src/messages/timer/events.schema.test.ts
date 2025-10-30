@@ -5,7 +5,7 @@ import * as Exit from 'effect/Exit'
 import { Iso8601DateTime } from '../../shared/iso8601-datetime.schema.ts'
 import { ServiceCallId } from '../../shared/service-call-id.schema.ts'
 import { TenantId } from '../../shared/tenant-id.schema.ts'
-import { DueTimeReached } from './events.schema.ts'
+import * as Events from './events.schema.ts'
 
 describe('Timer Domain Events', () => {
 	describe('DueTimeReached', () => {
@@ -21,7 +21,7 @@ describe('Timer Domain Events', () => {
 					}
 
 					// Act: Decode from wire format
-					const event = yield* DueTimeReached.decode(dto)
+					const event = yield* Events.DueTimeReached.decode(dto)
 
 					// Assert: All fields validated and branded
 					expect(event._tag).toBe('DueTimeReached')
@@ -41,7 +41,7 @@ describe('Timer Domain Events', () => {
 					}
 
 					// Act: Decode from wire format
-					const event = yield* DueTimeReached.decode(dto)
+					const event = yield* Events.DueTimeReached.decode(dto)
 
 					// Assert: Optional field is undefined
 					expect(event._tag).toBe('DueTimeReached')
@@ -58,7 +58,7 @@ describe('Timer Domain Events', () => {
 				const reachedAt = Iso8601DateTime.make('2025-10-27T12:00:00.000Z')
 
 				// Act: Direct construction (no validation needed - types already validated)
-				const event = new DueTimeReached({
+				const event = new Events.DueTimeReached({
 					reachedAt,
 					serviceCallId,
 					tenantId,
@@ -84,7 +84,7 @@ describe('Timer Domain Events', () => {
 					}
 
 					// Act: Attempt decode
-					const result = yield* Effect.exit(DueTimeReached.decode(dto))
+					const result = yield* Effect.exit(Events.DueTimeReached.decode(dto))
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
@@ -102,7 +102,7 @@ describe('Timer Domain Events', () => {
 					}
 
 					// Act: Attempt decode
-					const result = yield* Effect.exit(DueTimeReached.decode(dto))
+					const result = yield* Effect.exit(Events.DueTimeReached.decode(dto))
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
@@ -120,7 +120,7 @@ describe('Timer Domain Events', () => {
 					}
 
 					// Act: Attempt decode
-					const result = yield* Effect.exit(DueTimeReached.decode(dto))
+					const result = yield* Effect.exit(Events.DueTimeReached.decode(dto))
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
@@ -139,7 +139,7 @@ describe('Timer Domain Events', () => {
 					} as any
 
 					// Act: Attempt decode
-					const result = yield* Effect.exit(DueTimeReached.decode(dto))
+					const result = yield* Effect.exit(Events.DueTimeReached.decode(dto))
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
@@ -158,7 +158,7 @@ describe('Timer Domain Events', () => {
 					} as any
 
 					// Act: Attempt decode
-					const result = yield* Effect.exit(DueTimeReached.decode(dto))
+					const result = yield* Effect.exit(Events.DueTimeReached.decode(dto))
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
@@ -170,15 +170,15 @@ describe('Timer Domain Events', () => {
 			it.effect('round-trips correctly with all fields', () =>
 				Effect.gen(function* () {
 					// Arrange: Create domain event
-					const original = new DueTimeReached({
+					const original = new Events.DueTimeReached({
 						reachedAt: Iso8601DateTime.make('2025-10-27T12:00:00.000Z'),
 						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 					})
 
 					// Act: Encode to wire format, then decode back
-					const dto = yield* DueTimeReached.encode(original)
-					const decoded = yield* DueTimeReached.decode(dto)
+					const dto = yield* Events.DueTimeReached.encode(original)
+					const decoded = yield* Events.DueTimeReached.decode(dto)
 
 					// Assert: Round-trip preserves all data
 					expect(decoded._tag).toBe(original._tag)
@@ -191,14 +191,14 @@ describe('Timer Domain Events', () => {
 			it.effect('round-trips correctly without optional field', () =>
 				Effect.gen(function* () {
 					// Arrange: Create domain event without optional field
-					const original = new DueTimeReached({
+					const original = new Events.DueTimeReached({
 						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 					})
 
 					// Act: Encode to wire format, then decode back
-					const dto = yield* DueTimeReached.encode(original)
-					const decoded = yield* DueTimeReached.decode(dto)
+					const dto = yield* Events.DueTimeReached.encode(original)
+					const decoded = yield* Events.DueTimeReached.decode(dto)
 
 					// Assert: Round-trip preserves all data
 					expect(decoded._tag).toBe(original._tag)
@@ -213,18 +213,18 @@ describe('Timer Domain Events', () => {
 			it.effect('encodes to unbranded DTO type', () =>
 				Effect.gen(function* () {
 					// Arrange: Domain event with branded types
-					const event = new DueTimeReached({
+					const event = new Events.DueTimeReached({
 						reachedAt: Iso8601DateTime.make('2025-10-27T12:00:00.000Z'),
 						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 					})
 
 					// Act: Encode to wire format
-					const dto = yield* DueTimeReached.encode(event)
+					const dto = yield* Events.DueTimeReached.encode(event)
 
 					// Assert: DTO has unbranded string types (safe for JSON)
 					// Type-level assertion ensures DTO type is correct
-					const dtoTypeCheck: DueTimeReached.Dto = dto
+					const dtoTypeCheck: Events.DueTimeReached.Dto = dto
 					void dtoTypeCheck // Type assertion only, value unused
 					expect(typeof dto.tenantId).toBe('string')
 					expect(typeof dto.serviceCallId).toBe('string')

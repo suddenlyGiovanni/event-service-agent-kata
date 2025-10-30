@@ -10,6 +10,7 @@ export const RequestSpec = Schema.Struct({
 	method: Schema.String,
 	url: Schema.String,
 })
+export type RequestSpec = Schema.Schema.Type<typeof RequestSpec>
 
 export const RequestSpecWithoutBody = Schema.Struct({
 	bodySnippet: Schema.optional(Schema.String),
@@ -17,5 +18,4 @@ export const RequestSpecWithoutBody = Schema.Struct({
 	method: Schema.String,
 	url: Schema.String,
 })
-export type RequestSpec = Schema.Schema.Type<typeof RequestSpec>
 export type RequestSpecWithoutBody = Schema.Schema.Type<typeof RequestSpecWithoutBody>

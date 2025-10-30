@@ -1,7 +1,6 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime } from '../../shared/iso8601-datetime.schema.ts'
-import { TenantId } from '../../shared/tenant-id.schema.ts'
+import { Iso8601DateTime, TenantId } from '../../shared/index.ts'
 import { RequestSpec } from '../http/request-spec.schema.ts'
 
 /**
@@ -33,11 +32,16 @@ export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('
 	tags: Schema.optional(Schema.Array(Schema.String)),
 	tenantId: TenantId,
 }) {
-	static readonly decode = Schema.decode(this)
+	static readonly decode = Schema.decode(SubmitServiceCall)
 
-	static readonly encode = Schema.encode(this)
+	static readonly encode = Schema.encode(SubmitServiceCall)
 }
 
-export const ApiCommands = Schema.Union(SubmitServiceCall)
+export declare namespace SubmitServiceCall {
+	type Type = typeof SubmitServiceCall.Type
+	type Dto = typeof SubmitServiceCall.Encoded
+}
 
-export type ApiCommands = Schema.Schema.Type<typeof ApiCommands>
+export const Commands = Schema.Union(SubmitServiceCall)
+
+export type Commands = Schema.Schema.Type<typeof Commands>

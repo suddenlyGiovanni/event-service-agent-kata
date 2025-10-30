@@ -1,9 +1,4 @@
-export { ScheduleTimer, StartExecution } from './commands.schema.ts'
-export {
-	OrchestrationEvents,
-	ServiceCallFailed,
-	ServiceCallRunning,
-	ServiceCallScheduled,
-	ServiceCallSubmitted,
-	ServiceCallSucceeded,
-} from './events.schema.ts'
+import * as Commands from './commands.schema.ts'
+import * as Events from './events.schema.ts'
+
+export { Events, Commands }

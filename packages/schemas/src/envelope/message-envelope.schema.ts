@@ -139,5 +139,5 @@ export declare namespace MessageEnvelopeSchema {
 	/**
 	 * Encoded - DTO envelope (unbranded types, JSON-serializable)
 	 */
-	type Encoded = Schema.Schema.Encoded<typeof MessageEnvelopeSchema>
+	type Dto = Schema.Schema.Encoded<typeof MessageEnvelopeSchema>
 }

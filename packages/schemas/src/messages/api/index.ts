@@ -1,1 +1,1 @@
-export { ApiCommands, SubmitServiceCall } from './commands.schema.ts'
+export * as Commands from './commands.schema.ts'

@@ -3,7 +3,7 @@ import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 import { describe, expect, it } from 'vitest'
 
-import type * as Message from '@event-service-agent/platform/messages'
+import type * as Message from '@event-service-agent/schemas/messages'
 import { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import { ScheduledTimer, TimerEntry } from './timer-entry.domain.ts'
@@ -14,11 +14,13 @@ describe('TimerEntry', () => {
 	const correlationId = CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
 
 	/** Helper to create command with ISO8601 string (simulating external message) */
-	const makeScheduleTimerCommand = (dueAtIso: Iso8601DateTime.Type): Message.Orchestration.Commands.ScheduleTimer => ({
+	const makeScheduleTimerCommand = (
+		dueAtIso: Iso8601DateTime.Type,
+	): Message.Orchestration.Commands.ScheduleTimer.Type => ({
+		_tag: 'ScheduleTimer',
 		dueAt: dueAtIso,
 		serviceCallId,
 		tenantId,
-		type: 'ScheduleTimer',
 	})
 
 	describe('Schema.decode(ScheduledTimer)', () => {
