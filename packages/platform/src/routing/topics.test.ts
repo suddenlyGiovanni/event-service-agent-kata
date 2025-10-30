@@ -271,7 +271,7 @@ describe('Topics', () => {
 					const metadata = Topics.Metadata[topic as Topics.Type]
 					expect(metadata).toHaveProperty('producer')
 					expect(metadata.producer === null || typeof metadata.producer === 'string').toBe(true)
-				})
+				}
 			})
 
 			it('should have consumers array for all metadata', () => {
@@ -280,7 +280,7 @@ describe('Topics', () => {
 					expect(metadata).toHaveProperty('consumers')
 					expect(Array.isArray(metadata.consumers)).toBe(true)
 					expect(metadata.consumers.length).toBeGreaterThan(0)
-				})
+				}
 			})
 
 			it('should have description string for all metadata', () => {
@@ -289,7 +289,7 @@ describe('Topics', () => {
 					expect(metadata).toHaveProperty('description')
 					expect(typeof metadata.description).toBe('string')
 					expect(metadata.description.length).toBeGreaterThan(0)
-				})
+				}
 			})
 
 			it('should have valid module names in producer field', () => {
@@ -297,7 +297,7 @@ describe('Topics', () => {
 				for (const topic of Topics.All) {
 					const metadata = Topics.Metadata[topic as Topics.Type]
 					expect(validModules).toContain(metadata.producer)
-				})
+				}
 			})
 
 			it('should have valid module names in consumers array', () => {
@@ -406,7 +406,7 @@ describe('Topics', () => {
 					const metadata = Topics.Metadata[topic as Topics.Type]
 					// Producer is either null or a single module name
 					expect(metadata.producer === null || typeof metadata.producer === 'string').toBe(true)
-				})
+				}
 			})
 
 			it('should have at least one consumer per topic', () => {
@@ -456,7 +456,7 @@ describe('Topics', () => {
 			for (const topic of Topics.All) {
 				const metadata = Topics.Metadata[topic as Topics.Type]
 				expect(metadata.description.length).toBeGreaterThan(10) // Meaningful description
-			})
+			}
 		})
 
 		it('should mention message examples in descriptions', () => {
