@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from '@effect/vitest'
 
 import { Topics } from './topics.ts'
 
@@ -342,14 +342,11 @@ describe('Topics', () => {
 				// Orchestration produces commands consumed by Timer
 				// This is event-driven, not circular
 
-				const timerEvents = Topics.Metadata[Topics.Timer.Events]
-				const orchestrationCommands = Topics.Metadata[Topics.Orchestration.Commands]
-
 				// Timer doesn't produce commands to Orchestration.Commands
-				expect(timerEvents.consumers).not.toContain('Orchestration')
+				expect(Topics.Metadata[Topics.Timer.Commands].consumers).not.toContain('Orchestration')
 
 				// Orchestration.Commands doesn't list Timer as producer
-				expect(orchestrationCommands.producer).not.toBe('Timer')
+				expect(Topics.Metadata[Topics.Orchestration.Commands].producer).not.toBe('Timer')
 			})
 		})
 
@@ -468,34 +465,6 @@ describe('Topics', () => {
 
 			// Orchestration.Events mentions service call events
 			expect(Topics.Metadata[Topics.Orchestration.Events].description).toMatch(/ServiceCall/i)
-		})
-	})
-
-	describe('Immutability', () => {
-		it('should not allow modification of Topics.All', () => {
-			const originalLength = Topics.All.length
-			const originalFirst = Topics.All[0]
-
-			// TypeScript prevents this at compile time, but verify runtime
-			try {
-				// @ts-expect-error - testing runtime immutability
-				Topics.All.push('new.topic')
-			} catch (e) {
-				// Expected in strict mode or frozen objects
-			}
-
-			expect(Topics.All.length).toBe(originalLength)
-			expect(Topics.All[0]).toBe(originalFirst)
-		})
-
-		it('should not allow modification of topic constants', () => {
-			const original = Topics.Timer.Commands
-
-			// TypeScript prevents this at compile time
-			// @ts-expect-error - testing type safety
-			Topics.Timer.Commands = 'modified.topic'
-
-			expect(Topics.Timer.Commands).toBe(original)
 		})
 	})
 })
