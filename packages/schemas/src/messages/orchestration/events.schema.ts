@@ -25,9 +25,9 @@ export class ServiceCallSubmitted extends Schema.TaggedClass<ServiceCallSubmitte
 		tenantId: TenantId,
 	},
 ) {
-	static readonly decode = Schema.decode(this)
+	static readonly decode = Schema.decode(ServiceCallSubmitted)
 
-	static readonly encode = Schema.encode(this)
+	static readonly encode = Schema.encode(ServiceCallSubmitted)
 }
 
 export declare namespace ServiceCallSubmitted {
@@ -49,9 +49,9 @@ export class ServiceCallScheduled extends Schema.TaggedClass<ServiceCallSchedule
 		tenantId: TenantId,
 	},
 ) {
-	static readonly decode = Schema.decode(this)
+	static readonly decode = Schema.decode(ServiceCallScheduled)
 
-	static readonly encode = Schema.encode(this)
+	static readonly encode = Schema.encode(ServiceCallScheduled)
 }
 
 export declare namespace ServiceCallScheduled {
@@ -73,9 +73,9 @@ export class ServiceCallRunning extends Schema.TaggedClass<ServiceCallRunning>()
 		tenantId: TenantId,
 	},
 ) {
-	static readonly decode = Schema.decode(this)
+	static readonly decode = Schema.decode(ServiceCallRunning)
 
-	static readonly encode = Schema.encode(this)
+	static readonly encode = Schema.encode(ServiceCallRunning)
 }
 
 export declare namespace ServiceCallRunning {
@@ -99,9 +99,9 @@ export class ServiceCallSucceeded extends Schema.TaggedClass<ServiceCallSucceede
 		tenantId: TenantId,
 	},
 ) {
-	static readonly decode = Schema.decode(this)
+	static readonly decode = Schema.decode(ServiceCallSucceeded)
 
-	static readonly encode = Schema.encode(this)
+	static readonly encode = Schema.encode(ServiceCallSucceeded)
 }
 
 export declare namespace ServiceCallSucceeded {
@@ -125,9 +125,9 @@ export class ServiceCallFailed extends Schema.TaggedClass<ServiceCallFailed>()(
 		tenantId: TenantId,
 	},
 ) {
-	static readonly decode = Schema.decode(this)
+	static readonly decode = Schema.decode(ServiceCallFailed)
 
-	static readonly encode = Schema.encode(this)
+	static readonly encode = Schema.encode(ServiceCallFailed)
 }
 
 export declare namespace ServiceCallFailed {
