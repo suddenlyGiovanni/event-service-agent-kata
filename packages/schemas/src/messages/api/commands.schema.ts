@@ -2,6 +2,7 @@ import * as Schema from 'effect/Schema'
 
 import { Iso8601DateTime, TenantId } from '../../shared/index.ts'
 import { RequestSpec } from '../http/request-spec.schema.ts'
+import { Tag } from '../tag.ts'
 
 /**
  * SubmitServiceCall - Create and schedule a new ServiceCall
@@ -9,9 +10,10 @@ import { RequestSpec } from '../http/request-spec.schema.ts'
  * Produced by: API
  * Consumed by: Orchestration
  */
-export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('SubmitServiceCall', {
+export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()(Tag.Api.Commands.SubmitServiceCall, {
 	/** Timestamp when execution should start (ISO8601) */
 	dueAt: Iso8601DateTime,
+
 	/**
 	 * Optional idempotency key for duplicate detection
 	 *
@@ -19,8 +21,10 @@ export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('
 	 * See ADR-0006 for idempotency strategy details.
 	 */
 	idempotencyKey: Schema.optional(Schema.String),
+
 	/** Human-readable name for the service call */
 	name: Schema.String,
+
 	/**
 	 * Complete HTTP request specification (includes body)
 	 *
@@ -28,8 +32,10 @@ export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('
 	 * Subsequent commands/events use RequestSpecWithoutBody to keep payloads small.
 	 */
 	requestSpec: RequestSpec,
+
 	/** Optional tags for categorization and filtering */
 	tags: Schema.optional(Schema.Array(Schema.String)),
+
 	tenantId: TenantId,
 }) {
 	static readonly decode = Schema.decode(SubmitServiceCall)
