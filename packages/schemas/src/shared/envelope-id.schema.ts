@@ -15,11 +15,11 @@ import * as Schema from 'effect/Schema'
 
 import * as Service from '@event-service-agent/platform/uuid7'
 
-import * as Schemas from './index.ts'
+import { UUID7 } from './uuid7.schema.ts'
 
 const EnvelopeIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/EnvelopeId')
 
-export class EnvelopeId extends Schemas.UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
+export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 	/**
 	 * Generates a new EnvelopeId using UUID version 7
 	 *
@@ -53,7 +53,7 @@ export class EnvelopeId extends Schemas.UUID7.pipe(Schema.brand(EnvelopeIdBrand)
 		Service.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
 			// Use make() instead of decode() - the UUID7 is already validated by the service
-			Effect.map((uuid7: Schemas.UUID7.Type): EnvelopeId.Type => EnvelopeId.make(uuid7)),
+			Effect.map((uuid7: UUID7.Type): EnvelopeId.Type => EnvelopeId.make(uuid7)),
 		)
 	static readonly decode: (value: string) => Effect.Effect<EnvelopeId.Type, ParseResult.ParseError> = value =>
 		Schema.decode(EnvelopeId)(value)

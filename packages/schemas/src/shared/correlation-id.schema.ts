@@ -15,11 +15,11 @@ import * as Schema from 'effect/Schema'
 
 import * as Service from '@event-service-agent/platform/uuid7'
 
-import * as Schemas from './index.ts'
+import { UUID7 } from './uuid7.schema.ts'
 
 const CorrelationIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/CorrelationId')
 
-export class CorrelationId extends Schemas.UUID7.pipe(Schema.brand(CorrelationIdBrand)) {
+export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) {
 	/**
 	 * Generates a new CorrelationId using UUID version 7
 	 *
@@ -53,7 +53,7 @@ export class CorrelationId extends Schemas.UUID7.pipe(Schema.brand(CorrelationId
 		Service.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
 			// Use make() instead of decode() - the UUID7 is already validated by the service
-			Effect.map((uuid7: Schemas.UUID7.Type): CorrelationId.Type => CorrelationId.make(uuid7)),
+			Effect.map((uuid7: UUID7.Type): CorrelationId.Type => CorrelationId.make(uuid7)),
 		)
 	static readonly decode: (value: string) => Effect.Effect<CorrelationId.Type, ParseResult.ParseError> = value =>
 		Schema.decode(CorrelationId)(value)
