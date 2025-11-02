@@ -111,6 +111,7 @@ packages/schemas/
 **Dependencies**: `effect`, `@event-service-agent/schemas`
 
 **Structure**:
+
 ```
 packages/platform/
   src/
