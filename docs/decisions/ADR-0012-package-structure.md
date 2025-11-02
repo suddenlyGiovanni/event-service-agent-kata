@@ -236,6 +236,7 @@ import { Topics } from '@event-service-agent/platform/routing'
 ### Module Dependencies Update
 
 **Before** (`timer/package.json`):
+
 ```json
 {
   "dependencies": {
@@ -245,6 +246,7 @@ import { Topics } from '@event-service-agent/platform/routing'
 ```
 
 **After**:
+
 ```json
 {
   "dependencies": {
@@ -266,6 +268,7 @@ import { Topics } from '@event-service-agent/platform/routing'
 - ADR-0010: Update identity generation (contracts/services → schemas/)
 
 ### Design Documents
+
 - `docs/design/ports.md`: Update port locations (contracts → platform)
 - `docs/design/messages.md`: Update schema locations (contracts → schemas)
 - `docs/design/hexagonal-architecture-layers.md`: Update package references
@@ -281,6 +284,7 @@ import { Topics } from '@event-service-agent/platform/routing'
 ## Consequences
 
 ### Positive
+
 - ✅ Clear separation of concerns (schemas vs infrastructure)
 - ✅ No circular dependencies (clean dependency graph)
 - ✅ Excellent DX (full type power, pattern matching works)
@@ -295,6 +299,7 @@ import { Topics } from '@event-service-agent/platform/routing'
 - ❌ Import paths change (automated refactoring mitigates)
 
 ### Neutral
+
 - Package.json workspace configuration needs updates
 - CI/build pipeline may need adjustments (though should be automatic)
 
@@ -303,12 +308,14 @@ import { Topics } from '@event-service-agent/platform/routing'
 ## Migration Strategy
 
 **Phase 1: Create schemas package**
+
 1. Create `packages/schemas/` with package.json
 2. Copy relevant files from contracts (keep originals)
 3. Update imports within schemas package
 4. Verify schemas package builds independently
 
 **Phase 2: Rename contracts → platform**
+
 1. Rename directory: `contracts/` → `platform/`
 2. Update package.json name
 3. Remove files moved to schemas
@@ -316,18 +323,21 @@ import { Topics } from '@event-service-agent/platform/routing'
 5. Verify platform builds (depends on schemas)
 
 **Phase 3: Update modules**
+
 1. Update timer package.json dependencies
 2. Update timer imports (contracts → schemas + platform)
 3. Repeat for orchestration, execution, api (when implemented)
 4. Verify all tests pass
 
 **Phase 4: Update documentation**
+
 1. Update ADRs (especially ADR-0011)
 2. Update design docs (ports.md, messages.md, etc.)
 3. Update module design docs (import examples)
 4. Update plan documents
 
 **Phase 5: Cleanup**
+
 1. Remove deprecated files (messages.ts, old interfaces)
 2. Update root package.json workspace config
 3. Verify clean build from scratch
@@ -338,24 +348,29 @@ import { Topics } from '@event-service-agent/platform/routing'
 ## Alternatives Considered
 
 ### A. Keep contracts, define DTO shapes (REJECTED)
+
 - **Pro**: No refactoring needed
 - **Con**: Fatal DX issue (decoded payloads unusable, type mismatch)
 - **Verdict**: Not viable for production use
 
 ### B. Move schemas to contracts (REJECTED)
+
 - **Pro**: Simple (one package)
 - **Con**: Violates DDD bounded contexts, loses module autonomy
 - **Verdict**: Architectural anti-pattern
 
 ### C. Type-only circular imports (REJECTED)
+
 ```typescript
 import type { DueTimeReached } from '@event-service-agent/timer/domain'
 ```
+
 - **Pro**: Solves circular dependency at runtime
 - **Con**: Still violates architectural principle (contracts depends on modules)
 - **Verdict**: Too clever, fragile
 
 ### D. Schemas + Platform Split (ACCEPTED)
+
 - **Pro**: Clean architecture, excellent DX, no circular deps
 - **Con**: More packages, migration effort
 - **Verdict**: Best long-term solution
