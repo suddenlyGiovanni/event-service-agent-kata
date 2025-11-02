@@ -23,6 +23,7 @@ Migrate from custom `Iso8601DateTime` (branded string) to Effect's built-in `Sch
 ### Current Implementation
 
 **Custom `Iso8601DateTime` schema** (`packages/schemas/src/shared/iso8601-datetime.schema.ts`):
+
 ```typescript
 // Current: Just a branded string
 export class Iso8601DateTime extends Schema.String.pipe(
@@ -34,6 +35,7 @@ export class Iso8601DateTime extends Schema.String.pipe(
 ```
 
 **Problems**:
+
 1. Domain code receives `DateTime.Utc` but must convert to string for messages
 2. Two validation steps: string validation + DateTime construction
 3. No semantic type representation—just a validated string
@@ -42,6 +44,7 @@ export class Iso8601DateTime extends Schema.String.pipe(
 ### Effect's Built-in Solution
 
 **`Schema.DateTimeUtc`** (from `effect/Schema`):
+
 ```typescript
 // Built-in: Transforms string ↔ DateTime.Utc
 import { Schema } from 'effect'
@@ -53,6 +56,7 @@ const schema = Schema.DateTimeUtc
 ```
 
 **Benefits**:
+
 1. **Direct usage**: Domain code works with `DateTime.Utc` directly
 2. **Single validation**: String → DateTime.Utc in one schema transformation
 3. **Rich API**: All DateTime methods available (add, subtract, compare, format)
@@ -66,28 +70,34 @@ const schema = Schema.DateTimeUtc
 ### Files Affected (20 occurrences across 8 files)
 
 #### 1. **Schema Definitions** (3 files)
+
 - `packages/schemas/src/shared/iso8601-datetime.schema.ts` — **DELETE** (custom implementation)
 - `packages/schemas/src/messages/timer/events.schema.ts` — Update `reachedAt` field
 - `packages/schemas/src/messages/orchestration/commands.schema.ts` — Update `dueAt` field
 
 #### 2. **Platform Message Types** (1 file)
+
 - `packages/platform/src/messages/messages.ts` — Update all TypeScript type signatures (declare namespace)
 
 #### 3. **Timer Module** (2 files)
+
 - `packages/timer/src/adapters/timer-event-bus.adapter.ts` — Remove `DateTime.formatIso()` wrapper
 - `packages/timer/src/domain/timer-entry.domain.test.ts` — Update test fixtures
 
 #### 4. **Tests** (2 files)
+
 - `packages/schemas/src/envelope/message-envelope.schema.test.ts` — Update test data
 - `packages/schemas/src/shared/iso8601-datetime.schema.test.ts` — **DELETE** (no longer needed)
 
 #### 5. **Documentation** (2 files)
+
 - `docs/decisions/ADR-0011-message-schemas.md` — Update examples
 - `docs/decisions/ADR-0012-package-structure.md` — Remove from foundational schemas list
 
 ### Breaking Changes
 
 **Domain Type Change**:
+
 ```typescript
 // BEFORE: string (branded)
 type DueAt = Iso8601DateTime.Type  // = string & Brand<"Iso8601DateTime">
@@ -183,6 +193,7 @@ export { Iso8601DateTime } from './iso8601-datetime.schema.ts'
 #### Step 1.4: Delete Custom Implementation
 
 **Delete files**:
+
 - `packages/schemas/src/shared/iso8601-datetime.schema.ts`
 - `packages/schemas/src/shared/iso8601-datetime.schema.test.ts`
 
@@ -216,6 +227,7 @@ interface ServiceCallSubmitted extends Event<Type.Submitted> {
 ```
 
 **Fields to update** (10 occurrences):
+
 - `ServiceCallSubmitted.submittedAt`
 - `ServiceCallScheduled.dueAt`
 - `ServiceCallRunning.startedAt`
@@ -293,6 +305,7 @@ const command = makeScheduleTimerCommand(dueAt) // No conversion needed!
 ```
 
 **Changes**:
+
 - Remove `Iso8601DateTime` import
 - Change parameter type from `Iso8601DateTime.Type` → `DateTime.Utc`
 - Remove `Iso8601DateTime.make(DateTime.formatIso(...))` wrapper
@@ -328,6 +341,7 @@ const validEnvelope = {
 ```
 
 **Alternative** (if you want to use current time in tests):
+
 ```typescript
 const now = DateTime.unsafeNow()
 const validEnvelope = {
@@ -384,6 +398,7 @@ Remove `Iso8601DateTime` from foundational schemas list:
 ```
 
 Add note about DateTime usage:
+
 ```markdown
 ### DateTime Handling
 
@@ -401,6 +416,7 @@ Date/time fields use Effect's built-in `Schema.DateTimeUtc`:
 ### Unit Tests
 
 1. **Schema validation tests** (already covered by existing tests):
+
    ```typescript
    it.effect('should decode valid ISO8601 string to DateTime.Utc', () =>
      Effect.gen(function* () {
@@ -412,6 +428,7 @@ Date/time fields use Effect's built-in `Schema.DateTimeUtc`:
    ```
 
 2. **Round-trip tests** (encode → decode):
+
    ```typescript
    it.effect('should round-trip DateTime.Utc through encoding', () =>
      Effect.gen(function* () {
@@ -428,6 +445,7 @@ Date/time fields use Effect's built-in `Schema.DateTimeUtc`:
 ### Migration Validation
 
 After migration:
+
 1. ✅ All 138+ tests must pass
 2. ✅ Type-check must pass (`bun run type-check`)
 3. ✅ No runtime errors in workflows
@@ -438,6 +456,7 @@ After migration:
 ## Rollback Plan
 
 If issues arise:
+
 1. Revert schema changes (restore `Iso8601DateTime` import)
 2. Revert adapter changes (restore `DateTime.formatIso()` wrappers)
 3. Revert test changes
@@ -468,12 +487,14 @@ Add to `docs/plan/kanban.md`:
 ## Benefits Summary
 
 ### Code Reduction
+
 - **Delete**: Custom `Iso8601DateTime` schema (~40 lines)
 - **Delete**: Custom schema tests (~30 lines)
 - **Simplify**: Remove `DateTime.formatIso()` wrappers (20+ occurrences)
 - **Net**: ~90 lines removed
 
 ### Type Safety Improvements
+
 ```typescript
 // BEFORE: String operations (error-prone)
 const dueAt: Iso8601DateTime.Type = '2025-10-27T12:00:00.000Z'
@@ -485,6 +506,7 @@ const later = DateTime.add(dueAt, { hours: 1 }) // ✅ Type-safe!
 ```
 
 ### Developer Experience
+
 - ✅ No manual conversions (`DateTime.formatIso()` wrapper removed)
 - ✅ Rich DateTime API available (add, subtract, compare, format)
 - ✅ Immutable by design (no accidental mutations)
