@@ -1,7 +1,7 @@
 import * as Schema from 'effect/Schema'
 
 import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'
-import { X } from '../common/xxx.ts'
+import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
 import { Tag } from '../tag.ts'
 
 /**
@@ -11,7 +11,7 @@ import { Tag } from '../tag.ts'
  * Consumed by: Orchestration
  */
 export class ExecutionStarted extends Schema.TaggedClass<ExecutionStarted>()(Tag.Execution.Events.ExecutionStarted, {
-	...X.fields,
+	...ServiceCallEventBase.fields,
 
 	/** Timestamp when HTTP request execution began (ISO8601) */
 	startedAt: Schema.DateTimeUtc,
@@ -35,7 +35,7 @@ export declare namespace ExecutionStarted {
 export class ExecutionSucceeded extends Schema.TaggedClass<ExecutionSucceeded>()(
 	Tag.Execution.Events.ExecutionSucceeded,
 	{
-		...X.fields,
+		...ServiceCallEventBase.fields,
 
 		/**
 		 * Timestamp when HTTP request completed successfully (ISO8601)
@@ -65,7 +65,7 @@ export declare namespace ExecutionSucceeded {
  * Consumed by: Orchestration
  */
 export class ExecutionFailed extends Schema.TaggedClass<ExecutionFailed>()(Tag.Execution.Events.ExecutionFailed, {
-	...X.fields,
+	...ServiceCallEventBase.fields,
 
 	/**
 	 * Error details (kind, message, latency, additional context)

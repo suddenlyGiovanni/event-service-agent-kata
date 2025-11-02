@@ -1,6 +1,6 @@
 import * as Schema from 'effect/Schema'
 
-import { X } from '../common/xxx.ts'
+import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
 import { Tag } from '../tag.ts'
 
 /**
@@ -46,7 +46,7 @@ import { Tag } from '../tag.ts'
  * const event = new DueTimeReached({
  *   tenantId,
  *   serviceCallId,
- *   reachedAt: Iso8601DateTime.make(DateTime.formatIso(firedAt)),
+ *   reachedAt: firedAt, // DateTime.Utc directly (or undefined)
  * })
  *
  * // Encode to wire format (validated domain → JSON DTO)
@@ -54,15 +54,16 @@ import { Tag } from '../tag.ts'
  * ```
  */
 export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(Tag.Timer.Events.DueTimeReached, {
-	...X.fields,
+	...ServiceCallEventBase.fields,
 
 	/**
-	 * Optional timestamp when the due time was detected (ISO8601)
+	 * Optional timestamp when the due time was detected
 	 *
 	 * - **Present**: Indicates polling worker detected the timer was due
 	 * - **Absent**: May indicate fast-path (timer was immediately eligible)
 	 *
-	 * Validated as ISO8601 DateTime string at runtime.
+	 * Domain type: `DateTime.Utc` (Effect's immutable datetime)
+	 * Wire format: ISO8601 string (e.g., "2025-10-27T12:00:00.000Z")
 	 */
 	reachedAt: Schema.optional(Schema.DateTimeUtc),
 }) {

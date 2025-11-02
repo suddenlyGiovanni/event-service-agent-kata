@@ -2,8 +2,13 @@ import * as Schema from 'effect/Schema'
 
 import { ServiceCallId, TenantId } from '../../shared/index.ts'
 
-// FIXME: find a better name for this
-export const X = Schema.Struct({
+/**
+ * Base fields common to all service call events across modules.
+ *
+ * This schema provides the fundamental identity fields that every service call event
+ * must include, regardless of which module produces it (Timer, Orchestration, Execution, API).
+ */
+export const ServiceCallEventBase = Schema.Struct({
 	/**
 	 * Aggregate root identifier for the service call
 	 *

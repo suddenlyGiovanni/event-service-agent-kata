@@ -1,6 +1,6 @@
 import * as Schema from 'effect/Schema'
 
-import { X } from '../common/xxx.ts'
+import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
 import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
 import { Tag } from '../tag.ts'
 
@@ -47,7 +47,7 @@ import { Tag } from '../tag.ts'
  * const command = new ScheduleTimer({
  *   tenantId,
  *   serviceCallId,
- *   dueAt: DateTimeUtc.make(DateTime.formatIso(scheduledTime)),
+ *   dueAt: scheduledTime, // DateTime.Utc directly
  * })
  *
  * // Encode to wire format (validated command → JSON DTO)
@@ -55,7 +55,7 @@ import { Tag } from '../tag.ts'
  * ```
  */
 export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()(Tag.Orchestration.Commands.ScheduleTimer, {
-	...X.fields,
+	...ServiceCallEventBase.fields,
 
 	dueAt: Schema.DateTimeUtc,
 }) {
@@ -95,7 +95,7 @@ export declare namespace ScheduleTimer {
  * the serviceCallId. This avoids transmitting large payloads in commands/events.
  */
 export class StartExecution extends Schema.TaggedClass<StartExecution>()(Tag.Orchestration.Commands.StartExecution, {
-	...X.fields,
+	...ServiceCallEventBase.fields,
 
 	/**
 	 * HTTP request specification (body excluded)

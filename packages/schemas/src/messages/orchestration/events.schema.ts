@@ -1,7 +1,7 @@
 import * as Schema from 'effect/Schema'
 
 import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'
-import { X } from '../common/xxx.ts'
+import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
 import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
 import { Tag } from '../tag.ts'
 
@@ -13,7 +13,7 @@ import { Tag } from '../tag.ts'
 export class ServiceCallSubmitted extends Schema.TaggedClass<ServiceCallSubmitted>()(
 	Tag.Orchestration.Events.ServiceCallSubmitted,
 	{
-		...X.fields,
+		...ServiceCallEventBase.fields,
 
 		/** Human-readable name for the service call */
 		name: Schema.String,
@@ -46,7 +46,7 @@ export declare namespace ServiceCallSubmitted {
 export class ServiceCallScheduled extends Schema.TaggedClass<ServiceCallScheduled>()(
 	Tag.Orchestration.Events.ServiceCallScheduled,
 	{
-		...X.fields,
+		...ServiceCallEventBase.fields,
 
 		/** Timestamp when execution should start (ISO8601) */
 		dueAt: Schema.DateTimeUtc,
@@ -70,7 +70,7 @@ export declare namespace ServiceCallScheduled {
 export class ServiceCallRunning extends Schema.TaggedClass<ServiceCallRunning>()(
 	Tag.Orchestration.Events.ServiceCallRunning,
 	{
-		...X.fields,
+		...ServiceCallEventBase.fields,
 
 		/** Timestamp when execution began (ISO8601) */
 		startedAt: Schema.DateTimeUtc,
@@ -94,7 +94,7 @@ export declare namespace ServiceCallRunning {
 export class ServiceCallSucceeded extends Schema.TaggedClass<ServiceCallSucceeded>()(
 	Tag.Orchestration.Events.ServiceCallSucceeded,
 	{
-		...X.fields,
+		...ServiceCallEventBase.fields,
 
 		/** Timestamp when execution completed successfully (ISO8601) */
 
@@ -123,7 +123,7 @@ export declare namespace ServiceCallSucceeded {
 export class ServiceCallFailed extends Schema.TaggedClass<ServiceCallFailed>()(
 	Tag.Orchestration.Events.ServiceCallFailed,
 	{
-		...X.fields,
+		...ServiceCallEventBase.fields,
 
 		/** Error details (kind, message, latency, additional context) */
 
