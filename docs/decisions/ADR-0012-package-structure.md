@@ -224,6 +224,7 @@ import { Topics } from '@event-service-agent/contracts/routing'
 ```
 
 **After**:
+
 ```typescript
 import { TenantId } from '@event-service-agent/schemas/shared'
 import { DueTimeReached } from '@event-service-agent/schemas/messages/timer'
