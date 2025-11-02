@@ -6,15 +6,15 @@
 	},
 	"catalogs": {
 		"effect": {
-			"@effect/language-service": "0.48.0",
+			"@effect/language-service": "0.53.2",
 			"effect": "3.18.4"
 		},
 		"lint": {
-			"@biomejs/biome": "2.3.0"
+			"@biomejs/biome": "2.3.2"
 		},
 		"test": {
 			"@effect/vitest": "latest",
-			"vitest": "4.0.2"
+			"vitest": "4.0.6"
 		},
 		"types": {
 			"@total-typescript/ts-reset": "latest",
