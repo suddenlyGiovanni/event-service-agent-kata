@@ -1,7 +1,7 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime, ServiceCallId, TenantId } from '../../shared/index.ts'
 import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'
+import { X } from '../common/xxx.ts'
 import { Tag } from '../tag.ts'
 
 /**
@@ -11,10 +11,10 @@ import { Tag } from '../tag.ts'
  * Consumed by: Orchestration
  */
 export class ExecutionStarted extends Schema.TaggedClass<ExecutionStarted>()(Tag.Execution.Events.ExecutionStarted, {
-	serviceCallId: ServiceCallId,
+	...X.fields,
+
 	/** Timestamp when HTTP request execution began (ISO8601) */
-	startedAt: Iso8601DateTime,
-	tenantId: TenantId,
+	startedAt: Schema.DateTimeUtc,
 }) {
 	static readonly decode = Schema.decode(ExecutionStarted)
 
@@ -35,12 +35,17 @@ export declare namespace ExecutionStarted {
 export class ExecutionSucceeded extends Schema.TaggedClass<ExecutionSucceeded>()(
 	Tag.Execution.Events.ExecutionSucceeded,
 	{
-		/** Timestamp when HTTP request completed successfully (ISO8601) */
-		finishedAt: Iso8601DateTime,
-		/** HTTP response metadata (status, headers, latency, body snippet) */
+		...X.fields,
+
+		/**
+		 * Timestamp when HTTP request completed successfully (ISO8601)
+		 */
+		finishedAt: Schema.DateTimeUtc,
+
+		/**
+		 * HTTP response metadata (status, headers, latency, body snippet)
+		 */
 		responseMeta: ResponseMeta,
-		serviceCallId: ServiceCallId,
-		tenantId: TenantId,
 	},
 ) {
 	static readonly decode = Schema.decode(ExecutionSucceeded)
@@ -60,12 +65,17 @@ export declare namespace ExecutionSucceeded {
  * Consumed by: Orchestration
  */
 export class ExecutionFailed extends Schema.TaggedClass<ExecutionFailed>()(Tag.Execution.Events.ExecutionFailed, {
-	/** Error details (kind, message, latency, additional context) */
+	...X.fields,
+
+	/**
+	 * Error details (kind, message, latency, additional context)
+	 */
 	errorMeta: ErrorMeta,
-	/** Timestamp when HTTP request failed (ISO8601) */
-	finishedAt: Iso8601DateTime,
-	serviceCallId: ServiceCallId,
-	tenantId: TenantId,
+
+	/**
+	 * Timestamp when HTTP request failed (ISO8601)
+	 */
+	finishedAt: Schema.DateTimeUtc,
 }) {
 	static readonly decode = Schema.decode(ExecutionFailed)
 

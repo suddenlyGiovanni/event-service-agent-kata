@@ -1,12 +1,10 @@
 import { describe, expect, it } from '@effect/vitest'
+import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 
 import { DueTimeReached } from '../messages/timer/events.schema.ts'
-import { EnvelopeId } from '../shared/envelope-id.schema.ts'
-import { Iso8601DateTime } from '../shared/iso8601-datetime.schema.ts'
-import { ServiceCallId } from '../shared/service-call-id.schema.ts'
-import { TenantId } from '../shared/tenant-id.schema.ts'
+import { EnvelopeId, ServiceCallId, TenantId } from '../shared/index.ts'
 import { MessageEnvelopeSchema } from './message-envelope.schema.ts'
 
 describe('MessageEnvelopeSchema', () => {
@@ -42,7 +40,10 @@ describe('MessageEnvelopeSchema', () => {
 				if (envelope.payload._tag === 'DueTimeReached') {
 					expect(envelope.payload.tenantId).toBe('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
 					expect(envelope.payload.serviceCallId).toBe('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
-					expect(envelope.payload.reachedAt).toBe('2025-10-27T12:00:00.000Z')
+					// reachedAt is now DateTime.Utc after decoding
+					if (envelope.payload.reachedAt) {
+						expect(DateTime.formatIso(envelope.payload.reachedAt)).toBe('2025-10-27T12:00:00.000Z')
+					}
 				}
 			}),
 		)
@@ -130,9 +131,9 @@ describe('MessageEnvelopeSchema', () => {
 	describe('encodeJson', () => {
 		it.effect('encodes envelope to JSON string', () =>
 			Effect.gen(function* () {
-				// Arrange: Create envelope with properly typed DueTimeReached
+				// Arrange: Create envelope with properly typed DueTimeReached (DateTime.Utc)
 				const dueTimeReached = new DueTimeReached({
-					reachedAt: Iso8601DateTime.make('2025-10-27T12:00:00.000Z'),
+					reachedAt: DateTime.unsafeMake('2025-10-27T12:00:00.000Z'),
 					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 					tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 				})
@@ -145,7 +146,7 @@ describe('MessageEnvelopeSchema', () => {
 					type: 'DueTimeReached',
 				})
 
-				// Act: Encode to JSON
+				// Act: Encode to JSON (DateTime → ISO8601 string)
 				const json = yield* MessageEnvelopeSchema.encodeJson(envelope)
 
 				// Assert: Valid JSON string
@@ -163,9 +164,9 @@ describe('MessageEnvelopeSchema', () => {
 
 		it.effect('round-trips correctly', () =>
 			Effect.gen(function* () {
-				// Arrange: Create envelope with properly typed DueTimeReached
+				// Arrange: Create envelope with properly typed DueTimeReached (DateTime.Utc)
 				const dueTimeReached = new DueTimeReached({
-					reachedAt: Iso8601DateTime.make('2025-10-27T12:00:00.000Z'),
+					reachedAt: DateTime.unsafeMake('2025-10-27T12:00:00.000Z'),
 					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 					tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 				})

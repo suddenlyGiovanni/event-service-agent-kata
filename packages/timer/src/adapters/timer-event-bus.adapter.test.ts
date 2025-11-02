@@ -9,13 +9,7 @@ import * as PortsPlatform from '@event-service-agent/platform/ports'
 import { Topics } from '@event-service-agent/platform/routing'
 import type { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
 import * as Messages from '@event-service-agent/schemas/messages'
-import {
-	CorrelationId,
-	EnvelopeId,
-	Iso8601DateTime,
-	ServiceCallId,
-	TenantId,
-} from '@event-service-agent/schemas/shared'
+import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import * as Domain from '../domain/timer-entry.domain.ts'
 import * as PortsTimer from '../ports/index.ts'
@@ -207,7 +201,8 @@ describe('TimerEventBus', () => {
 
 					const payload = envelope.payload
 					assert(payload._tag === Messages.Tag.Timer.Events.DueTimeReached)
-					expect(payload.reachedAt).toBe(Iso8601DateTime.make(DateTime.formatIso(firedAt)))
+					assert(payload.reachedAt !== undefined)
+					expect(DateTime.Equivalence(payload.reachedAt, firedAt)).toBe(true)
 				}).pipe(Effect.provide(TestLayers))
 			})
 		})
@@ -284,14 +279,15 @@ describe('TimerEventBus', () => {
 				let receivedCorrelationId: CorrelationId.Type | undefined
 
 				const now = DateTime.unsafeNow()
-				const dueAt = Iso8601DateTime.make(DateTime.formatIso(DateTime.add(now, { minutes: 5 })))
+				const dueAt = DateTime.add(now, { minutes: 5 })
 
+				// Create envelope (already decoded, domain types)
 				const envelope: MessageEnvelopeSchema.Type = {
 					correlationId,
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
 					payload: {
 						_tag: Messages.Tag.Orchestration.Commands.ScheduleTimer,
-						dueAt,
+						dueAt, // Domain type: DateTime.Utc
 						serviceCallId,
 						tenantId,
 					},
@@ -345,7 +341,7 @@ describe('TimerEventBus', () => {
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
 					payload: {
 						_tag: Messages.Tag.Timer.Events.DueTimeReached, // Wrong type
-						reachedAt: Iso8601DateTime.make(DateTime.formatIso(now)),
+						reachedAt: now,
 						serviceCallId,
 						tenantId,
 					},
@@ -384,7 +380,7 @@ describe('TimerEventBus', () => {
 				let receivedCorrelationId: CorrelationId.Type | undefined = 'not-set' as CorrelationId.Type
 
 				const now = DateTime.unsafeNow()
-				const dueAt = Iso8601DateTime.make(DateTime.formatIso(DateTime.add(now, { minutes: 5 })))
+				const dueAt = DateTime.add(now, { minutes: 5 })
 
 				const envelope: MessageEnvelopeSchema.Type = {
 					// No correlationId
@@ -430,7 +426,7 @@ describe('TimerEventBus', () => {
 		describe('Error Handling', () => {
 			it.effect('should propagate handler errors', () => {
 				const now = DateTime.unsafeNow()
-				const dueAt = Iso8601DateTime.make(DateTime.formatIso(DateTime.add(now, { minutes: 5 })))
+				const dueAt = DateTime.add(now, { minutes: 5 })
 
 				const envelope: MessageEnvelopeSchema.Type = {
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
@@ -469,7 +465,10 @@ describe('TimerEventBus', () => {
 				}).pipe(Effect.provide(TestLayer))
 			})
 
-			it.effect('should map decode errors to SubscribeError', () => {
+			// TODO: This test is no longer relevant after removing decode logic from adapter
+			// The EventBusPort (platform layer) is now responsible for decoding/validation
+			// The TimerEventBus adapter assumes it receives valid, decoded envelopes
+			it.skip('should map decode errors to SubscribeError', () => {
 				const now = DateTime.unsafeNow()
 
 				// Invalid payload (missing required fields)

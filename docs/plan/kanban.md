@@ -30,8 +30,6 @@ Prioritized queue.
     Pull the top item into Doing. Avoid more than 7 items.
     Link ADRs like [adr: ADR-0001]; add tags like [infra] or [Api].
 -->
-
-- (PL-15) Migrate to Schema.DateTimeUtc [schemas, timer, platform] — Replace custom Iso8601DateTime (branded string) with Effect's built-in Schema.DateTimeUtc. Impact: 20 occurrences, 5 phases, ~90 lines removed. Benefits: Better type safety (DateTime.Utc vs string), richer API, standard Effect patterns. Wire format compatible. See docs/plan/datetime-schema-migration.md
 - (PL-4.6) SQLite persistence adapter [Timer] — Deferred until after Schema migration (PL-14)
 - (PL-2) Orchestration core domain model and transitions [Orchestration]
 - (PL-3) Broker adapter implementation + local broker setup [infra]
@@ -41,15 +39,8 @@ Prioritized queue.
 - (PL-8) Redaction & idempotency utilities + tests [platform]
 
 ## Doing (WIP ≤ 2)
+- (PL-15) Migrate to Schema.DateTimeUtc [schemas, timer, platform] — Replace custom Iso8601DateTime (branded string) with Effect's built-in Schema.DateTimeUtc. Impact: 20 occurrences, 5 phases, ~90 lines removed. Benefits: Better type safety (DateTime.Utc vs string), richer API, standard Effect patterns. Wire format compatible. See docs/plan/datetime-schema-migration.md
 
-- (PL-14.2) Migrate platform message interfaces → `@event-service-agent/schemas` [schemas] — IN PROGRESS
-  - Subtasks:
-    - [x] Orchestration events: ServiceCallSubmitted, ServiceCallScheduled, ServiceCallRunning, ServiceCallSucceeded, ServiceCallFailed
-    - [x] Orchestration commands: StartExecution (schema), ScheduleTimer (already migrated)
-    - [x] Execution events: ExecutionStarted, ExecutionSucceeded, ExecutionFailed
-    - [x] API commands: SubmitServiceCall
-    - [x] HTTP schemas: RequestSpec + RequestSpecWithoutBody
-  - Notes: Creating Effect Schema.TaggedClass files in `packages/schemas/src/messages/*` and adding them to `DomainMessage` union. This iteration is schemas-only (no tests).
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
@@ -62,7 +53,7 @@ Prioritized queue.
 - (PL-9) Observability baseline [adr: [ADR-0009]] [infra] — blocked by [adr: [ADR-0002]]
 
 ## Done (recent)
-
+- (PL-14.2) Migrate platform message interfaces → `@event-service-agent/schemas` [schemas]
 - (PL-14.5) Update documentation (ADRs, design docs) [docs] — COMPLETE: Updated ports.md reference to schemas package
 - (PL-14.4) Update module dependencies + imports [all modules] — COMPLETE: All active modules (timer, schemas) updated; placeholder modules have no code yet
 - (PL-14.3) Rename contracts → platform + update refs [platform] — COMPLETE: Package renamed, 7 READMEs added, all imports fixed, 142 tests passing

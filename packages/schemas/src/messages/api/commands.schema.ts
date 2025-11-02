@@ -1,6 +1,6 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime, TenantId } from '../../shared/index.ts'
+import { TenantId } from '../../shared/index.ts'
 import { RequestSpec } from '../http/request-spec.schema.ts'
 import { Tag } from '../tag.ts'
 
@@ -12,8 +12,7 @@ import { Tag } from '../tag.ts'
  */
 export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()(Tag.Api.Commands.SubmitServiceCall, {
 	/** Timestamp when execution should start (ISO8601) */
-	dueAt: Iso8601DateTime,
-
+	dueAt: Schema.DateTimeUtc,
 	/**
 	 * Optional idempotency key for duplicate detection
 	 *

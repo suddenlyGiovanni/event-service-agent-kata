@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@effect/vitest'
+import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Schema from 'effect/Schema'
@@ -21,7 +22,7 @@ describe('Execution Events Schema', () => {
 				expect(event._tag).toBe('ExecutionStarted')
 				expect(event.tenantId).toBe(dto.tenantId)
 				expect(event.serviceCallId).toBe(dto.serviceCallId)
-				expect(event.startedAt).toBe(dto.startedAt)
+				expect(DateTime.formatIso(event.startedAt)).toBe(dto.startedAt)
 			}),
 		)
 

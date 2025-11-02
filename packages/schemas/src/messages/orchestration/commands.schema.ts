@@ -1,6 +1,6 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime, ServiceCallId, TenantId } from '../../shared/index.ts'
+import { X } from '../common/xxx.ts'
 import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
 import { Tag } from '../tag.ts'
 
@@ -47,7 +47,7 @@ import { Tag } from '../tag.ts'
  * const command = new ScheduleTimer({
  *   tenantId,
  *   serviceCallId,
- *   dueAt: Iso8601DateTime.make(DateTime.formatIso(scheduledTime)),
+ *   dueAt: DateTimeUtc.make(DateTime.formatIso(scheduledTime)),
  * })
  *
  * // Encode to wire format (validated command → JSON DTO)
@@ -55,9 +55,9 @@ import { Tag } from '../tag.ts'
  * ```
  */
 export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()(Tag.Orchestration.Commands.ScheduleTimer, {
-	dueAt: Iso8601DateTime,
-	serviceCallId: ServiceCallId,
-	tenantId: TenantId,
+	...X.fields,
+
+	dueAt: Schema.DateTimeUtc,
 }) {
 	/**
 	 * Decode from unknown/wire format to validated command
@@ -95,6 +95,8 @@ export declare namespace ScheduleTimer {
  * the serviceCallId. This avoids transmitting large payloads in commands/events.
  */
 export class StartExecution extends Schema.TaggedClass<StartExecution>()(Tag.Orchestration.Commands.StartExecution, {
+	...X.fields,
+
 	/**
 	 * HTTP request specification (body excluded)
 	 *
@@ -102,8 +104,6 @@ export class StartExecution extends Schema.TaggedClass<StartExecution>()(Tag.Orc
 	 * This keeps command payloads small and avoids large messages in the broker.
 	 */
 	requestSpec: RequestSpecWithoutBody,
-	serviceCallId: ServiceCallId,
-	tenantId: TenantId,
 }) {
 	static readonly decode = Schema.decode(StartExecution)
 	static readonly encode = Schema.encode(StartExecution)

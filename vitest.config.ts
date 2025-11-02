@@ -14,5 +14,6 @@ export default defineConfig({
 				singleFork: true,
 			},
 		},
+		projects: ['packages/*'],
 	},
 })

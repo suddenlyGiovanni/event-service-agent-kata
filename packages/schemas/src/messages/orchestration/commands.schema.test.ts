@@ -1,9 +1,9 @@
 import { describe, expect, it } from '@effect/vitest'
+import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 
 import { ServiceCallId, TenantId } from '../../shared/index.ts'
-import { Iso8601DateTime } from '../../shared/iso8601-datetime.schema.ts'
 import * as Commands from './commands.schema.ts'
 
 describe('ScheduleTimer Command Schema', () => {
@@ -21,11 +21,11 @@ describe('ScheduleTimer Command Schema', () => {
 				// Act: Decode from wire format
 				const command = yield* Commands.ScheduleTimer.decode(dto)
 
-				// Assert: All fields validated and branded
+				// Assert: All fields validated and branded (dueAt is now DateTime.Utc)
 				expect(command._tag).toBe('ScheduleTimer')
 				expect(command.tenantId).toBe(dto.tenantId)
 				expect(command.serviceCallId).toBe(dto.serviceCallId)
-				expect(command.dueAt).toBe(dto.dueAt)
+				expect(DateTime.formatIso(command.dueAt)).toBe(dto.dueAt)
 			}),
 		)
 
@@ -112,22 +112,22 @@ describe('ScheduleTimer Command Schema', () => {
 	describe('Round-trip Encoding', () => {
 		it.effect('survives encode → decode round-trip', () =>
 			Effect.gen(function* () {
-				// Arrange: Construct domain command
+				// Arrange: Construct domain command with DateTime.Utc
 				const original = new Commands.ScheduleTimer({
-					dueAt: Iso8601DateTime.make('2025-10-28T12:00:00.000Z'),
+					dueAt: DateTime.unsafeMake('2025-10-28T12:00:00.000Z'),
 					serviceCallId: ServiceCallId.make('01931b66-7d50-7c8a-b762-9d2d3e4e5f6b'),
 					tenantId: TenantId.make('01931b66-7d50-7c8a-b762-9d2d3e4e5f6a'),
 				})
 
-				// Act: Encode to DTO then decode back
+				// Act: Encode to DTO (DateTime → string) then decode back (string → DateTime)
 				const encoded = yield* Commands.ScheduleTimer.encode(original)
 				const decoded = yield* Commands.ScheduleTimer.decode(encoded)
 
-				// Assert: Decoded matches original
+				// Assert: Decoded matches original (compare DateTime objects by ISO format)
 				expect(decoded._tag).toBe(original._tag)
 				expect(decoded.tenantId).toBe(original.tenantId)
 				expect(decoded.serviceCallId).toBe(original.serviceCallId)
-				expect(decoded.dueAt).toBe(original.dueAt)
+				expect(DateTime.formatIso(decoded.dueAt)).toBe(DateTime.formatIso(original.dueAt))
 			}),
 		)
 	})

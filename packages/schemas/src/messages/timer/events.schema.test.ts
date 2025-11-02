@@ -1,10 +1,9 @@
 import { describe, expect, it } from '@effect/vitest'
+import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 
-import { Iso8601DateTime } from '../../shared/iso8601-datetime.schema.ts'
-import { ServiceCallId } from '../../shared/service-call-id.schema.ts'
-import { TenantId } from '../../shared/tenant-id.schema.ts'
+import { ServiceCallId, TenantId } from '../../shared/index.ts'
 import * as Events from './events.schema.ts'
 
 describe('Timer Domain Events', () => {
@@ -20,14 +19,19 @@ describe('Timer Domain Events', () => {
 						tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
 					}
 
-					// Act: Decode from wire format
+					// Act: Decode from wire format (string → DateTime.Utc transformation)
 					const event = yield* Events.DueTimeReached.decode(dto)
 
 					// Assert: All fields validated and branded
 					expect(event._tag).toBe('DueTimeReached')
 					expect(event.tenantId).toBe(dto.tenantId)
 					expect(event.serviceCallId).toBe(dto.serviceCallId)
-					expect(event.reachedAt).toBe(dto.reachedAt)
+					// reachedAt is now DateTime.Utc, compare by formatting back to ISO string
+					if (event.reachedAt) {
+						expect(DateTime.formatIso(event.reachedAt)).toBe(dto.reachedAt)
+					} else {
+						throw new Error('Expected reachedAt to be defined')
+					}
 				}),
 			)
 
@@ -52,10 +56,10 @@ describe('Timer Domain Events', () => {
 			)
 
 			it('constructs event directly with validated types', () => {
-				// Arrange: Validated domain types
+				// Arrange: Validated domain types (DateTime.Utc from string)
 				const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
 				const serviceCallId = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
-				const reachedAt = Iso8601DateTime.make('2025-10-27T12:00:00.000Z')
+				const reachedAt = DateTime.unsafeMake('2025-10-27T12:00:00.000Z')
 
 				// Act: Direct construction (no validation needed - types already validated)
 				const event = new Events.DueTimeReached({
@@ -169,14 +173,14 @@ describe('Timer Domain Events', () => {
 		describe('Encode/Decode Round-Trip', () => {
 			it.effect('round-trips correctly with all fields', () =>
 				Effect.gen(function* () {
-					// Arrange: Create domain event
+					// Arrange: Create domain event with DateTime.Utc
 					const original = new Events.DueTimeReached({
-						reachedAt: Iso8601DateTime.make('2025-10-27T12:00:00.000Z'),
+						reachedAt: DateTime.unsafeMake('2025-10-27T12:00:00.000Z'),
 						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 					})
 
-					// Act: Encode to wire format, then decode back
+					// Act: Encode to wire format (DateTime → string), then decode back (string → DateTime)
 					const dto = yield* Events.DueTimeReached.encode(original)
 					const decoded = yield* Events.DueTimeReached.decode(dto)
 
@@ -184,7 +188,12 @@ describe('Timer Domain Events', () => {
 					expect(decoded._tag).toBe(original._tag)
 					expect(decoded.tenantId).toBe(original.tenantId)
 					expect(decoded.serviceCallId).toBe(original.serviceCallId)
-					expect(decoded.reachedAt).toBe(original.reachedAt)
+					// Compare DateTime objects by ISO format
+					if (original.reachedAt && decoded.reachedAt) {
+						expect(DateTime.formatIso(decoded.reachedAt)).toBe(DateTime.formatIso(original.reachedAt))
+					} else {
+						throw new Error('Expected both reachedAt values to be defined')
+					}
 				}),
 			)
 
@@ -212,14 +221,14 @@ describe('Timer Domain Events', () => {
 		describe('DTO Type Safety', () => {
 			it.effect('encodes to unbranded DTO type', () =>
 				Effect.gen(function* () {
-					// Arrange: Domain event with branded types
+					// Arrange: Domain event with branded types (DateTime.Utc in domain)
 					const event = new Events.DueTimeReached({
-						reachedAt: Iso8601DateTime.make('2025-10-27T12:00:00.000Z'),
+						reachedAt: DateTime.unsafeMake('2025-10-27T12:00:00.000Z'),
 						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 					})
 
-					// Act: Encode to wire format
+					// Act: Encode to wire format (DateTime.Utc → ISO8601 string)
 					const dto = yield* Events.DueTimeReached.encode(event)
 
 					// Assert: DTO has unbranded string types (safe for JSON)

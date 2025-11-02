@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from '@effect/vitest'
+import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Schema from 'effect/Schema'
@@ -26,12 +27,12 @@ describe('SubmitServiceCall Command Schema', () => {
 				// Act: Decode from wire format
 				const command = yield* Commands.SubmitServiceCall.decode(dto)
 
-				// Assert: All fields validated
+				// Assert: All fields validated (dueAt is now DateTime.Utc)
 				expectTypeOf(command).toEqualTypeOf<Commands.SubmitServiceCall.Type>()
 				expect(command._tag).toBe('SubmitServiceCall')
 				expect(command.tenantId).toBe(dto.tenantId)
 				expect(command.name).toBe(dto.name)
-				expect(command.dueAt).toBe(dto.dueAt)
+				expect(DateTime.formatIso(command.dueAt)).toBe(dto.dueAt)
 				expect(command.requestSpec.url).toBe(dto.requestSpec.url)
 				expect(command.requestSpec.method).toBe(dto.requestSpec.method)
 			}),

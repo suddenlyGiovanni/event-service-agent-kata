@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from '@effect/vitest'
+import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Schema from 'effect/Schema'
@@ -86,7 +87,7 @@ describe('Orchestration Events Schema', () => {
 
 				expectTypeOf(event).toEqualTypeOf<Events.ServiceCallScheduled.Type>()
 				expect(event._tag).toBe('ServiceCallScheduled')
-				expect(event.dueAt).toBe('2025-10-28T12:05:00.000Z')
+				expect(DateTime.formatIso(event.dueAt)).toBe('2025-10-28T12:05:00.000Z')
 			}),
 		)
 
@@ -136,7 +137,7 @@ describe('Orchestration Events Schema', () => {
 
 				expectTypeOf(event).toEqualTypeOf<Events.ServiceCallRunning.Type>()
 				expect(event._tag).toBe('ServiceCallRunning')
-				expect(event.startedAt).toBe('2025-10-28T12:05:00.000Z')
+				expect(DateTime.formatIso(event.startedAt)).toBe('2025-10-28T12:05:00.000Z')
 			}),
 		)
 

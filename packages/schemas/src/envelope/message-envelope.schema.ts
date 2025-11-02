@@ -17,9 +17,7 @@ import type * as ParseResult from 'effect/ParseResult'
 import * as Schema from 'effect/Schema'
 import type * as SchemaAst from 'effect/SchemaAST'
 
-import { CorrelationId } from '../shared/correlation-id.schema.ts'
-import { EnvelopeId } from '../shared/envelope-id.schema.ts'
-import { TenantId } from '../shared/tenant-id.schema.ts'
+import { CorrelationId, EnvelopeId, TenantId } from '../shared/index.ts'
 import { DomainMessage } from './domain-message.schema.ts'
 
 export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('MessageEnvelope')({

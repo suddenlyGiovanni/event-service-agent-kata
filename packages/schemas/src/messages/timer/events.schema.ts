@@ -1,6 +1,6 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime, ServiceCallId, TenantId } from '../../shared/index.ts'
+import { X } from '../common/xxx.ts'
 import { Tag } from '../tag.ts'
 
 /**
@@ -54,6 +54,8 @@ import { Tag } from '../tag.ts'
  * ```
  */
 export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(Tag.Timer.Events.DueTimeReached, {
+	...X.fields,
+
 	/**
 	 * Optional timestamp when the due time was detected (ISO8601)
 	 *
@@ -62,22 +64,7 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(Tag.Tim
 	 *
 	 * Validated as ISO8601 DateTime string at runtime.
 	 */
-	reachedAt: Schema.optional(Iso8601DateTime),
-
-	/**
-	 * Aggregate root identifier for the service call
-	 *
-	 * Links this event to a specific service call instance.
-	 * Validated as UUID7 format at runtime.
-	 */
-	serviceCallId: ServiceCallId,
-	/**
-	 * Multi-tenancy identifier for data isolation
-	 *
-	 * All events must include tenantId for proper routing and data isolation.
-	 * Validated as UUID7 format at runtime.
-	 */
-	tenantId: TenantId,
+	reachedAt: Schema.optional(Schema.DateTimeUtc),
 }) {
 	/**
 	 * Decode from unknown/wire format to validated domain event
