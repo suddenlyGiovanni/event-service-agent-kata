@@ -289,6 +289,7 @@ import { Topics } from '@event-service-agent/platform/routing'
 - ✅ Consistent naming (all schemas together)
 
 ### Negative
+
 - ❌ Breaking change (requires migration across all modules)
 - ❌ More packages to manage (2 instead of 1)
 - ❌ Import paths change (automated refactoring mitigates)
