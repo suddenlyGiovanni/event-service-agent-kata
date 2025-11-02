@@ -134,11 +134,11 @@ export declare namespace DueTimeReached {
 }
 
 /**
- * Union type of all Timer events (extensible for future events)
- */
-export type Events = Schema.Schema.Type<typeof Events>
-
-/**
  * Schema union for runtime validation of any Timer event
  */
 export const Events = Schema.Union(DueTimeReached)
+
+/**
+ * Union type of all Timer events (extensible for future events)
+ */
+export type Events = Schema.Schema.Type<typeof Events>
