@@ -1,3 +1,4 @@
+
 {
 	"name": "@event-service-agent/schemas",
 	"version": "0.0.1",
@@ -8,8 +9,7 @@
 		".": "./src/index.ts",
 		"./shared": "./src/shared/index.ts",
 		"./messages": "./src/messages/index.ts",
-		"./envelope": "./src/envelope/index.ts",
-		"./http": "./src/http/index.ts"
+		"./envelope": "./src/envelope/index.ts"
 	},
 	"dependencies": {
 		"effect": "catalog:effect",
