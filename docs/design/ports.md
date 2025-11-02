@@ -20,6 +20,7 @@ export interface RequestContext {
 Minimal envelope shared by publishers/consumers. See [Semantics](./messages.md#semantics-essentials).
 
 **Note**: MessageEnvelope exists as both:
+
 - **TypeScript interface** (type-level documentation, below)
 - **Effect Schema** (`MessageEnvelopeSchema` in `@event-service-agent/schemas`) for runtime validation
 
