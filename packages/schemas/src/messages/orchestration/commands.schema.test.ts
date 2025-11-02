@@ -113,8 +113,9 @@ describe('ScheduleTimer Command Schema', () => {
 		it.effect('survives encode → decode round-trip', () =>
 			Effect.gen(function* () {
 				// Arrange: Construct domain command with DateTime.Utc
+				const dueAt = yield* DateTime.make('2025-10-28T12:00:00.000Z')
 				const original = new Commands.ScheduleTimer({
-					dueAt: DateTime.unsafeMake('2025-10-28T12:00:00.000Z'),
+					dueAt,
 					serviceCallId: ServiceCallId.make('01931b66-7d50-7c8a-b762-9d2d3e4e5f6b'),
 					tenantId: TenantId.make('01931b66-7d50-7c8a-b762-9d2d3e4e5f6a'),
 				})
@@ -123,11 +124,13 @@ describe('ScheduleTimer Command Schema', () => {
 				const encoded = yield* Commands.ScheduleTimer.encode(original)
 				const decoded = yield* Commands.ScheduleTimer.decode(encoded)
 
-				// Assert: Decoded matches original (compare DateTime objects by ISO format)
+				// Assert: Decoded matches original
 				expect(decoded._tag).toBe(original._tag)
 				expect(decoded.tenantId).toBe(original.tenantId)
 				expect(decoded.serviceCallId).toBe(original.serviceCallId)
-				expect(DateTime.formatIso(decoded.dueAt)).toBe(DateTime.formatIso(original.dueAt))
+
+				// ✅ CORRECT: Use DateTime.Equivalence for DateTime.Utc comparison
+				expect(DateTime.Equivalence(decoded.dueAt, original.dueAt)).toBe(true)
 			}),
 		)
 	})
