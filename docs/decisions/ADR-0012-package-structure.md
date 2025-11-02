@@ -208,6 +208,7 @@ From `timer/src/domain/`:
 - `contracts/src/routing/` → `platform/src/routing/`
 
 ### Files Removed
+
 - `contracts/src/messages/messages.ts` (deprecated interfaces, replaced by schemas)
 - `contracts/src/types/message-envelope.type.ts` (old interface, replaced by schema)
 
