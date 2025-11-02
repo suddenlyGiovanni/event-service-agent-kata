@@ -1,4 +1,5 @@
 export * as Api from './api/index.ts'
 export * as Execution from './execution/index.ts'
 export * as Orchestration from './orchestration/index.ts'
+export * from './tag.ts'
 export * as Timer from './timer/index.ts'

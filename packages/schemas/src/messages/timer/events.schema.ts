@@ -1,8 +1,7 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime } from '../../shared/iso8601-datetime.schema.ts'
-import { ServiceCallId } from '../../shared/service-call-id.schema.ts'
-import { TenantId } from '../../shared/tenant-id.schema.ts'
+import { Iso8601DateTime, ServiceCallId, TenantId } from '../../shared/index.ts'
+import { Tag } from '../tag.ts'
 
 /**
  * Timer Domain Events
@@ -54,7 +53,7 @@ import { TenantId } from '../../shared/tenant-id.schema.ts'
  * const dto = yield* DueTimeReached.encode(event)
  * ```
  */
-export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTimeReached', {
+export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(Tag.Timer.Events.DueTimeReached, {
 	/**
 	 * Optional timestamp when the due time was detected (ISO8601)
 	 *
