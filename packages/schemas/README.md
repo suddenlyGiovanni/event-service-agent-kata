@@ -10,7 +10,7 @@ All runtime-validated types used across modules. If it has `Schema.Class` or `Sc
 
 ## What's Inside
 
-```
+```txt
 shared/              TenantId, ServiceCallId, UUID7, Iso8601DateTime
 messages/
   timer/             DueTimeReached
@@ -78,7 +78,7 @@ See [ADR-0012](../../docs/decisions/ADR-0012-package-structure.md) for full rati
 
 **Schemas package is self-contained** — zero dependencies on internal packages.
 
-```
+```txt
 effect → schemas → platform → modules
 ```
 

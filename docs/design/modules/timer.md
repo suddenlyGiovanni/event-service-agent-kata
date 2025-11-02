@@ -90,7 +90,7 @@ Inputs/Outputs
 - Inputs: [ScheduleTimer]
 - Outputs: [DueTimeReached]
 
-# Ports
+## Ports
 
 - [ClockPort]
 - [EventBusPort]

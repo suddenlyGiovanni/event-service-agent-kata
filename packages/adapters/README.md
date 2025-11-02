@@ -33,7 +33,7 @@ This package is currently a **placeholder** for future infrastructure adapters. 
 
 Adapters sit at the **outer layer** of hexagonal architecture:
 
-```
+```txt
 ┌─────────────────────────────────────┐
 │       Domain Modules                │
 │  (Timer, Orchestration, etc.)       │
