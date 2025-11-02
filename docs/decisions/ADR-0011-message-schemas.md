@@ -658,6 +658,7 @@ const envelope = yield* MessageEnvelopeSchema.parseJson(jsonString)
 ```
 
 **Generic Constructor Considered**:
+
 ```typescript
 // Alternative: Generic schema constructor
 const MessageEnvelopeSchema = <M extends Schema.Schema.All>(
