@@ -63,6 +63,7 @@ Used in: [Orchestration], [Execution], [Timer], [API] (publish only).
 **Design Note**: The envelope is self-contained with all routing metadata (tenantId, correlationId, aggregateId). No separate context parameter needed - this eliminates duplication and ensures single source of truth.
 
 ```ts
+import * as Data from 'effect/Data'
 import type * as Effect from 'effect/Effect'
 import type { NonEmptyReadonlyArray } from 'effect/Array'
 

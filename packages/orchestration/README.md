@@ -47,7 +47,7 @@ Owns the **ServiceCall** aggregate root with states:
 
 Orchestration is the **single writer** for ServiceCall data:
 
-```
+```txt
          API
           ↓ SubmitServiceCall
     ┌──────────────────────────┐
@@ -89,13 +89,13 @@ This package exists as a placeholder. The Orchestration module will be implement
 
 ## Dependencies
 
-- **@event-service-agent/platform**: All messages, EventBusPort, types
-- **@event-service-agent/schemas**: UUID7 service, validated types
+- **@event-service-agent/platform**: Shared ports (EventBusPort, UuidPort) and integration types
+- **@event-service-agent/schemas**: Message payload schemas, UUID7/ID types (TenantId, ServiceCallId, etc.), validated message types
 - **effect**: Effect runtime
 
 ## Planned Structure
 
-```
+```txt
 packages/orchestration/
 ├── src/
 │   ├── domain/
@@ -114,7 +114,7 @@ packages/orchestration/
 
 ## State Machine
 
-```
+```txt
 Submitted → Scheduled → Running → Succeeded
                             ↓
                          Failed

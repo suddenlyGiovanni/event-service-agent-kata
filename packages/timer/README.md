@@ -11,6 +11,7 @@ The Timer module provides **durable delayed execution** for service calls. It re
 ### Domain Model
 
 **TimerEntry** - Aggregate root with two states:
+
 - **Scheduled**: Timer waiting for due time
 - **Reached**: Timer has fired (terminal state)
 
@@ -38,17 +39,19 @@ type TimerEntry =
 ### Ports
 
 **Required dependencies:**
+
 - **ClockPort**: Current time operations
 - **TimerPersistencePort**: Timer storage (find, save, transition)
 - **TimerEventBusPort**: Event publishing and command subscription
 
 **Adapters provided:**
+
 - **In-memory**: HashMap-based for testing (full lifecycle)
 - **SQLite**: Production persistence (planned - PL-4.6)
 
 ## Package Structure
 
-```
+```txt
 packages/timer/
 ├── src/
 │   ├── domain/
@@ -73,21 +76,28 @@ packages/timer/
 ## Key Features
 
 ### ✅ Durable Scheduling
+
 Timers survive process restarts via persistence (SQLite in production).
 
 ### ✅ Idempotency
+
 All operations safe to retry:
+
 - `scheduleTimerWorkflow`: Upserts by `(tenantId, serviceCallId)`
 - `pollDueTimersWorkflow`: Two-operation model prevents duplicate events
 
 ### ✅ Multi-Tenancy
+
 All queries scoped by `tenantId` for data isolation.
 
 ### ✅ Observability
+
 Structured logging and distributed tracing via `correlationId`.
 
 ### ✅ Partial Failure Handling
+
 Batch processing continues on individual timer errors:
+
 ```typescript
 BatchProcessingError {
   successCount: 97,
@@ -99,6 +109,7 @@ BatchProcessingError {
 ## Usage Example
 
 ### Schedule a Timer
+
 ```typescript
 import { scheduleTimerWorkflow } from '@event-service-agent/timer'
 
@@ -116,6 +127,7 @@ const program = Effect.gen(function* () {
 ```
 
 ### Poll Due Timers
+
 ```typescript
 import { pollDueTimersWorkflow } from '@event-service-agent/timer'
 
@@ -135,11 +147,13 @@ const program = Effect.gen(function* () {
 ## Test Coverage
 
 **53 tests passing:**
+
 - Domain: 19 tests (TimerEntry state machine, events)
 - Workflows: 22 tests (schedule, poll, error handling)
 - Adapters: 24 tests (persistence lifecycle, clock operations)
 
 **Run tests:**
+
 ```bash
 bun run --filter @event-service-agent/timer test
 ```
@@ -154,6 +168,7 @@ bun run --filter @event-service-agent/timer test
 ## Current Status
 
 **Completed (PL-4):**
+
 - ✅ Domain model and state machine
 - ✅ scheduleTimerWorkflow with validation
 - ✅ pollDueTimersWorkflow with batch processing
@@ -161,6 +176,7 @@ bun run --filter @event-service-agent/timer test
 - ✅ Comprehensive test coverage (53 tests)
 
 **Pending (PL-4.6):**
+
 - [ ] SQLite persistence adapter
 - [ ] Integration tests with real broker
 - [ ] Performance benchmarks

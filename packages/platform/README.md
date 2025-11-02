@@ -99,7 +99,7 @@ const request: RequestSpec = {
 
 The `platform` package sits at the **center** of the hexagonal architecture:
 
-```
+```txt
 ┌─────────────────────────────────────────────┐
 │ Domain Modules (Timer, Orchestration, etc.) │
 │                                             │
@@ -145,7 +145,7 @@ The `platform` package sits at the **center** of the hexagonal architecture:
 
 ## Related Documentation
 
-- [ADR-0012: Package Split](../../docs/decisions/ADR-0012-package-split.md) - Why platform was separated from schemas
+- [ADR-0012: Package Structure](../../docs/decisions/ADR-0012-package-structure.md) - Why platform was separated from schemas
 - [Hexagonal Architecture Layers](../../docs/design/hexagonal-architecture-layers.md)
 - [Messages Design](../../docs/design/messages.md)
 - [Ports Design](../../docs/design/ports.md)
