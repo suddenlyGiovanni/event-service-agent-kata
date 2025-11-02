@@ -241,7 +241,7 @@ export type DueTimeReachedDTO = Schema.Schema.Encoded<
 
 > **⚠️ SUPERSEDED**: This section described placing schemas in `@event-service-agent/contracts`.
 > This approach was reconsidered during implementation and superseded by ADR-0012.
-> 
+>
 > **Current Decision (ADR-0012)**: Schemas live in `@event-service-agent/schemas` package.
 > See ADR-0012 for rationale (avoids circular dependencies, preserves DX, clear separation).
 
