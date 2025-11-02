@@ -9,7 +9,9 @@ The `orchestration` module is the **central coordinator** of the event service a
 ## Responsibilities
 
 ### 🎯 ServiceCall Aggregate
+
 Owns the **ServiceCall** aggregate root with states:
+
 - **Submitted**: Request received and validated
 - **Scheduled**: Timer scheduled, waiting for due time
 - **Running**: Execution started
@@ -19,6 +21,7 @@ Owns the **ServiceCall** aggregate root with states:
 ### 🔄 Command Handling
 
 #### SubmitServiceCall (from API)
+
 1. Generate `ServiceCallId`
 2. Validate request specification
 3. Store request body (with body)
@@ -27,12 +30,14 @@ Owns the **ServiceCall** aggregate root with states:
 6. Send `ScheduleTimer` command to Timer
 
 #### DueTimeReached (from Timer)
+
 1. Validate timer hasn't already fired
 2. Transition to `Running` state
 3. Publish `ServiceCallRunning` event
 4. Send `StartExecution` command to Execution
 
 #### ExecutionSucceeded / ExecutionFailed (from Execution)
+
 1. Validate execution hasn't already completed
 2. Transition to `Succeeded` or `Failed` state
 3. Publish `ServiceCallSucceeded` or `ServiceCallFailed` event
@@ -65,6 +70,7 @@ Orchestration is the **single writer** for ServiceCall data:
 ```
 
 **Key Principles:**
+
 - ✅ Single Writer: Only orchestration writes to `service_calls` table
 - ✅ Event-Driven: All inter-module communication via EventBus
 - ✅ Idempotent: All handlers safe to retry
@@ -75,6 +81,7 @@ Orchestration is the **single writer** for ServiceCall data:
 **Not Yet Implemented (PL-2)**
 
 This package exists as a placeholder. The Orchestration module will be implemented after:
+
 - ✅ Timer module (PL-4) - Complete
 - ✅ Schema migration (PL-14) - Complete
 - [ ] Domain model design (PL-2) - Next
@@ -114,6 +121,7 @@ Submitted → Scheduled → Running → Succeeded
 ```
 
 **Transitions:**
+
 1. `submit` → **Submitted** (via SubmitServiceCall command)
 2. `schedule` → **Scheduled** (after timer scheduled)
 3. `start` → **Running** (via DueTimeReached event)
@@ -121,6 +129,7 @@ Submitted → Scheduled → Running → Succeeded
 5. `fail` → **Failed** (via ExecutionFailed event)
 
 **Invariants:**
+
 - Can only transition forward (no backward transitions)
 - Terminal states: `Succeeded`, `Failed`
 - Idempotent: Duplicate events are no-ops
@@ -145,6 +154,7 @@ const fail: (call: Running, meta: ErrorMeta) => Failed
 ## Workflows (Planned)
 
 ### submitWorkflow
+
 ```typescript
 const submitWorkflow = Effect.fn('Orchestration.Submit')(
   function* (command: SubmitServiceCall) {
@@ -173,6 +183,7 @@ const submitWorkflow = Effect.fn('Orchestration.Submit')(
 ```
 
 ### dueWorkflow
+
 ```typescript
 const dueWorkflow = Effect.fn('Orchestration.Due')(
   function* (event: DueTimeReached) {
@@ -229,16 +240,19 @@ CREATE INDEX idx_service_calls_status
 ## Testing Strategy
 
 ### Unit Tests
+
 - State transition functions (pure)
 - Domain validation rules
 - Event/command construction
 
 ### Integration Tests
+
 - Full workflow with in-memory adapters
 - Event sequencing (submit → schedule → run → succeed)
 - Error scenarios (duplicate events, invalid transitions)
 
 ### Property Tests
+
 - State machine invariants
 - Idempotency guarantees
 
@@ -263,6 +277,7 @@ CREATE INDEX idx_service_calls_status
 ## Observability
 
 All workflows include:
+
 - **Spans**: Distributed tracing via correlationId
 - **Logs**: Structured logging with tenantId + serviceCallId
 - **Metrics**: State transition counts, latency histograms

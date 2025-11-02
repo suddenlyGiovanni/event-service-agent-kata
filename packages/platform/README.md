@@ -9,12 +9,15 @@ The `platform` package provides the foundational infrastructure that enables mod
 ## What's Inside
 
 ### 📬 Messages (`./messages`)
+
 Type definitions for all commands and events in the system:
+
 - **Commands**: Imperative requests (e.g., `ScheduleTimer`, `StartExecution`)
 - **Events**: Facts about what happened (e.g., `DueTimeReached`, `ServiceCallScheduled`)
 - Organized by module namespaces: `Orchestration`, `Execution`, `Timer`, `Api`
 
 **Usage:**
+
 ```typescript
 import type * as Messages from '@event-service-agent/platform/messages'
 
@@ -25,13 +28,16 @@ const handleCommand = (cmd: Messages.Orchestration.Commands.ScheduleTimer) => {
 ```
 
 ### 🔌 Ports (`./ports`)
+
 Domain-facing interfaces for external dependencies:
+
 - **EventBusPort**: Message broker abstraction (publish/subscribe)
 - **UUIDPort**: UUID v7 generation service
 
 Ports define **what** the domain needs, adapters provide **how** it works.
 
 **Usage:**
+
 ```typescript
 import { EventBusPort } from '@event-service-agent/platform/ports'
 
@@ -43,12 +49,15 @@ const workflow = Effect.gen(function* () {
 ```
 
 ### 🗺️ Routing (`./routing`)
+
 Centralized topic/routing configuration:
+
 - Type-safe topic references (e.g., `Topics.Timer.Commands`)
 - Metadata about producers/consumers
 - Runtime topic validation
 
 **Usage:**
+
 ```typescript
 import { Topics } from '@event-service-agent/platform/routing'
 
@@ -57,10 +66,13 @@ yield* bus.subscribe([Topics.Timer.Commands], handler)
 ```
 
 ### 📦 Types (`./types`)
+
 Shared HTTP type definitions for request specifications:
+
 - **HTTP types**: `RequestSpec`, `RequestSpecWithoutBody`, `HttpMethod`
 
 **Note**: For message envelope types, import from `@event-service-agent/schemas/envelope`:
+
 ```typescript
 import type { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
 
@@ -71,6 +83,7 @@ const envelope: MessageEnvelopeSchema.Type = {
 ```
 
 **HTTP Types Usage:**
+
 ```typescript
 import type { RequestSpec } from '@event-service-agent/platform/types'
 
@@ -108,6 +121,7 @@ The `platform` package sits at the **center** of the hexagonal architecture:
 ```
 
 **Key Principles:**
+
 - ✅ Modules depend on `platform` contracts, never on each other
 - ✅ Adapters implement `platform` ports for different technologies
 - ✅ Domain code works with messages/ports, not infrastructure details

@@ -9,7 +9,9 @@ The `api` module provides the **HTTP REST API** that external clients use to int
 ## Responsibilities
 
 ### 📨 Submit Service Calls (POST /service-calls)
+
 Accept HTTP requests with:
+
 - Service call name
 - Scheduled execution time (`dueAt`)
 - HTTP request specification (method, URL, headers, body)
@@ -18,13 +20,17 @@ Accept HTTP requests with:
 Publish `SubmitServiceCall` command to orchestration.
 
 ### 📋 Query Service Calls (GET /service-calls)
+
 Return list of service calls with:
+
 - Filtering by status, tags, time range
 - Pagination support
 - Summary information (not full details)
 
 ### 🔍 Get Service Call Details (GET /service-calls/:id)
+
 Return full details of a specific service call:
+
 - Current state
 - Request/response metadata
 - Execution history
@@ -54,6 +60,7 @@ EventBusPort.publish(SubmitServiceCall)
 ```
 
 **Key Characteristics:**
+
 - ✅ No business logic (domain-free zone)
 - ✅ Thin translation layer (HTTP ↔ Commands)
 - ✅ Stateless (no persistence)
@@ -64,6 +71,7 @@ EventBusPort.publish(SubmitServiceCall)
 **Not Yet Implemented (PL-7)**
 
 This package exists as a placeholder. The API module will be implemented after:
+
 - ✅ Timer module (PL-4) - Complete
 - ✅ Schema migration (PL-14) - Complete
 - [ ] Orchestration module (PL-2) - Pending
@@ -97,6 +105,7 @@ packages/api/
 ## API Design (Planned)
 
 ### Submit Service Call
+
 ```http
 POST /service-calls
 Content-Type: application/json
@@ -115,6 +124,7 @@ X-Tenant-ID: 01234567-89ab-7def-0123-456789abcdef
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "serviceCallId": "01234567-89ab-7def-0123-456789abcdef",
@@ -124,12 +134,14 @@ X-Tenant-ID: 01234567-89ab-7def-0123-456789abcdef
 ```
 
 ### List Service Calls
+
 ```http
 GET /service-calls?status=scheduled&limit=50&offset=0
 X-Tenant-ID: 01234567-89ab-7def-0123-456789abcdef
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "items": [
@@ -148,12 +160,14 @@ X-Tenant-ID: 01234567-89ab-7def-0123-456789abcdef
 ```
 
 ### Get Service Call Details
+
 ```http
 GET /service-calls/01234567-89ab-7def-0123-456789abcdef
 X-Tenant-ID: 01234567-89ab-7def-0123-456789abcdef
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "serviceCallId": "...",
@@ -177,19 +191,25 @@ X-Tenant-ID: 01234567-89ab-7def-0123-456789abcdef
 ## Security Considerations
 
 ### Multi-Tenancy
+
 Every request must include `X-Tenant-ID` header:
+
 - Validated against tenant registry
 - Used for data isolation in queries
 - Included in all published commands
 
 ### Authentication
+
 To be determined (options):
+
 - API keys (simple, good for MVP)
 - JWT tokens (OAuth 2.0)
 - mTLS (for service-to-service)
 
 ### Rate Limiting
+
 Protect against abuse:
+
 - Per-tenant rate limits
 - Adaptive throttling under load
 

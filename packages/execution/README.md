@@ -9,6 +9,7 @@ The `execution` module is responsible for **executing HTTP requests** on behalf 
 ## Responsibilities
 
 ### 🚀 Execute HTTP Requests
+
 1. Receive `StartExecution` command (contains RequestSpec without body)
 2. Fetch full request body from storage (using serviceCallId)
 3. Execute HTTP request via HttpClientPort
@@ -16,7 +17,9 @@ The `execution` module is responsible for **executing HTTP requests** on behalf 
 5. Publish `ExecutionSucceeded` or `ExecutionFailed` event
 
 ### 🔄 Error Handling
+
 Classify and report errors:
+
 - **Network errors**: Connection failures, timeouts
 - **HTTP errors**: 4xx/5xx status codes
 - **Validation errors**: Invalid response format
@@ -48,6 +51,7 @@ The Execution module is a **domain module** that orchestrates external HTTP call
 ```
 
 **Key Characteristics:**
+
 - ✅ Consumes commands, produces events
 - ✅ Stateless (no persistence)
 - ✅ Idempotent via deduplication in orchestration
@@ -58,6 +62,7 @@ The Execution module is a **domain module** that orchestrates external HTTP call
 **Not Yet Implemented (PL-5)**
 
 This package exists as a placeholder. The Execution module will be implemented after:
+
 - ✅ Timer module (PL-4) - Complete
 - ✅ Schema migration (PL-14) - Complete
 - [ ] Orchestration module (PL-2) - Pending
@@ -91,6 +96,7 @@ packages/execution/
 ## Workflow Design (Planned)
 
 ### executeRequestWorkflow
+
 ```typescript
 const executeRequestWorkflow = Effect.fn('Execution.ExecuteRequest')(
   function* (command: StartExecution) {
@@ -123,6 +129,7 @@ const executeRequestWorkflow = Effect.fn('Execution.ExecuteRequest')(
 ## Ports Required
 
 ### HttpClientPort
+
 ```typescript
 interface HttpClientPort {
   // Execute HTTP request with timeout/retry
@@ -131,6 +138,7 @@ interface HttpClientPort {
 ```
 
 ### BodyStoragePort
+
 ```typescript
 interface BodyStoragePort {
   // Retrieve full request body by serviceCallId
@@ -155,6 +163,7 @@ type ErrorKind =
 ```
 
 Each error includes:
+
 - `kind`: Error classification
 - `message`: Sanitized user-facing message
 - `details`: Additional context (no secrets)
@@ -163,6 +172,7 @@ Each error includes:
 ## Response Metadata
 
 Success responses capture:
+
 ```typescript
 interface ResponseMeta {
   status: number          // HTTP status code (2xx)
@@ -173,6 +183,7 @@ interface ResponseMeta {
 ```
 
 **Privacy considerations:**
+
 - `bodySnippet` is truncated and may be redacted
 - Sensitive headers excluded (Authorization, etc.)
 - Full response body stored separately if needed
@@ -180,16 +191,19 @@ interface ResponseMeta {
 ## Testing Strategy
 
 ### Unit Tests
+
 - Error classification logic
 - Metadata capture (sanitization)
 - Workflow orchestration
 
 ### Integration Tests
+
 - Real HTTP calls to test server
 - Timeout handling
 - Error scenarios (network down, 500 errors)
 
 ### Contract Tests
+
 - Verify published events match schema
 - Ensure EventBusPort usage correct
 
