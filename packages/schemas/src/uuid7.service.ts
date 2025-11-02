@@ -20,9 +20,9 @@ import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import type * as ParseResult from 'effect/ParseResult'
 
-import { UUIDPort } from '@event-service-agent/platform/ports'
+import * as Ports from '@event-service-agent/platform/ports'
 
-import { UUID7 as UUID7Schema } from './shared/uuid7.schema.ts'
+import * as Schema from './shared/index.ts'
 
 /**
  * UUID7 - Domain service for generating validated UUID7 values
@@ -55,9 +55,9 @@ import { UUID7 as UUID7Schema } from './shared/uuid7.schema.ts'
 export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas/UUID7', {
 	accessors: true,
 
-	dependencies: [Layer.succeed(UUIDPort, UUIDPort.Default)],
+	dependencies: [Layer.succeed(Ports.UUIDPort, Ports.UUIDPort.Default)],
 
-	effect: UUIDPort.pipe(
+	effect: Ports.UUIDPort.pipe(
 		Effect.map(uuid => ({
 			/**
 			 * Generate a new validated UUID7 with optional timestamp
@@ -84,8 +84,8 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 			 * const id = yield* uuid7.randomUUIDv7(now)
 			 * ```
 			 */
-			randomUUIDv7: (time?: DateTime.Utc): Effect.Effect<UUID7Schema.Type, ParseResult.ParseError> =>
-				pipe(uuid.randomUUIDv7(time?.epochMillis), UUID7Schema.decode),
+			randomUUIDv7: (time?: DateTime.Utc): Effect.Effect<Schema.UUID7.Type, ParseResult.ParseError> =>
+				pipe(uuid.randomUUIDv7(time?.epochMillis), Schema.UUID7.decode),
 		})),
 	),
 }) {
@@ -115,7 +115,7 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	static readonly Test = <A extends `${string}-${string}-${string}-${string}-${string}`>(
 		fixed: A,
 	): Layer.Layer<UUID7> =>
-		UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(UUIDPort, UUIDPort.Test(fixed))))
+		UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(Ports.UUIDPort, Ports.UUIDPort.Test(fixed))))
 
 	/**
 	 * Test implementation with sequential UUIDs
@@ -140,5 +140,5 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 * ```
 	 */
 	static readonly Sequence = (prefix = '00000000'): Layer.Layer<UUID7> =>
-		UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(UUIDPort, UUIDPort.Sequence(prefix))))
+		UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(Ports.UUIDPort, Ports.UUIDPort.Sequence(prefix))))
 }
