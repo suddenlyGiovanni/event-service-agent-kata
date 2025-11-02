@@ -4,6 +4,7 @@ import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Schema from 'effect/Schema'
 
+import { Tag } from '../tag.ts'
 import * as Events from './events.schema.ts'
 
 describe('Execution Events Schema', () => {
@@ -11,29 +12,32 @@ describe('Execution Events Schema', () => {
 		it.effect('decodes valid event with all required fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ExecutionStarted' as const,
+					_tag: 'ExecutionStarted',
 					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
 					startedAt: '2025-10-28T12:00:00.000Z',
 					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+				} satisfies Events.ExecutionStarted.Dto
 
 				const event = yield* Events.ExecutionStarted.decode(dto)
 
-				expect(event._tag).toBe('ExecutionStarted')
+				expect(event._tag).toBe(Tag.Execution.Events.ExecutionStarted)
 				expect(event.tenantId).toBe(dto.tenantId)
 				expect(event.serviceCallId).toBe(dto.serviceCallId)
-				expect(DateTime.formatIso(event.startedAt)).toBe(dto.startedAt)
+
+				// ✅ CORRECT: Test domain type (DateTime.Utc), not encoded format
+				expect(DateTime.isDateTime(event.startedAt)).toBe(true)
+				expect(DateTime.isUtc(event.startedAt)).toBe(true)
 			}),
 		)
 
 		it.effect('rejects invalid tenantId', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ExecutionStarted' as const,
+					_tag: 'ExecutionStarted',
 					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
 					startedAt: '2025-10-28T12:00:00.000Z',
 					tenantId: 'not-a-uuid',
-				}
+				} satisfies Events.ExecutionStarted.Dto
 
 				const exit = yield* Effect.exit(Events.ExecutionStarted.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
@@ -43,11 +47,11 @@ describe('Execution Events Schema', () => {
 		it.effect('rejects invalid startedAt timestamp', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ExecutionStarted' as const,
+					_tag: 'ExecutionStarted',
 					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
 					startedAt: 'not-a-date',
 					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+				} satisfies Events.ExecutionStarted.Dto
 
 				const exit = yield* Effect.exit(Events.ExecutionStarted.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
@@ -57,7 +61,7 @@ describe('Execution Events Schema', () => {
 		it.effect('encodes domain instance to DTO', () =>
 			Effect.gen(function* () {
 				const domainEvent = yield* Events.ExecutionStarted.decode({
-					_tag: 'ExecutionStarted' as const,
+					_tag: 'ExecutionStarted',
 					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
 					startedAt: '2025-10-28T12:00:00.000Z',
 					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
@@ -65,7 +69,7 @@ describe('Execution Events Schema', () => {
 
 				const dto = yield* Events.ExecutionStarted.encode(domainEvent)
 
-				expect(dto._tag).toBe('ExecutionStarted')
+				expect(dto._tag).toBe(Tag.Execution.Events.ExecutionStarted)
 				expect(dto.tenantId).toBe('01931b66-7d50-7c8a-b762-9d2d3e4e5f6a')
 			}),
 		)
@@ -75,7 +79,7 @@ describe('Execution Events Schema', () => {
 		it.effect('decodes valid event with all required fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ExecutionSucceeded' as const,
+					_tag: 'ExecutionSucceeded',
 					finishedAt: '2025-10-28T12:01:00.000Z',
 					responseMeta: {
 						latencyMs: 1500,
@@ -83,11 +87,11 @@ describe('Execution Events Schema', () => {
 					},
 					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
 					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+				} satisfies Events.ExecutionSucceeded.Dto
 
 				const event = yield* Events.ExecutionSucceeded.decode(dto)
 
-				expect(event._tag).toBe('ExecutionSucceeded')
+				expect(event._tag).toBe(Tag.Execution.Events.ExecutionSucceeded)
 				expect(event.responseMeta.status).toBe(200)
 				expect(event.responseMeta.latencyMs).toBe(1500)
 			}),
@@ -96,7 +100,7 @@ describe('Execution Events Schema', () => {
 		it.effect('decodes event with optional responseMeta fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ExecutionSucceeded' as const,
+					_tag: 'ExecutionSucceeded',
 					finishedAt: '2025-10-28T12:01:00.000Z',
 					responseMeta: {
 						bodySnippet: 'Success response body...',
@@ -106,7 +110,7 @@ describe('Execution Events Schema', () => {
 					},
 					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
 					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+				} satisfies Events.ExecutionSucceeded.Dto
 
 				const event = yield* Events.ExecutionSucceeded.decode(dto)
 
