@@ -184,8 +184,13 @@ const tenantId = yield * TenantId.decode(req.body.tenantId);
 // ✅ Validates UUID7 format! Rejects invalid input with ParseError
 ```
 
-**Completed in:** `packages/contracts/src/types/shared.type.ts`  
-**Branded types migrated:** TenantId, ServiceCallId, CorrelationId, EnvelopeId  
+**Completed in:** `packages/schemas/src/shared/`  
+**Branded types migrated:**
+- TenantId → `packages/schemas/src/shared/tenant-id.schema.ts`
+- ServiceCallId → `packages/schemas/src/shared/service-call-id.schema.ts`
+- CorrelationId → `packages/schemas/src/shared/correlation-id.schema.ts`
+- EnvelopeId → `packages/schemas/src/shared/envelope-id.schema.ts`
+
 **Pattern:** All extend `UUID7.pipe(Schema.brand(UniqueSymbol))` for double-branding
 
 ## References
