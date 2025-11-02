@@ -1,0 +1,97 @@
+{
+    // === Nix + direnv Integration ===
+    // IMPORTANT: Install mkhl.direnv extension for tasks to work correctly
+    // The direnv extension automatically loads .envrc environment (including Bun)
+    "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
+    "direnv.restart.automatic": true,
+
+    // === TypeScript Configuration ===
+    "typescript.tsdk": "./node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "typescript.preferences.includePackageJsonAutoImports": "on",
+    "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "typescript.suggest.autoImports": true,
+    "typescript.preferences.importModuleSpecifier": "relative",
+    
+    // === JavaScript/TypeScript Formatting (Delegated to Biome) ===
+    "[typescript]": {
+        "editor.defaultFormatter": "biomejs.biome",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "quickfix.biome": "explicit",
+            "source.organizeImports.biome": "explicit"
+        }
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "biomejs.biome",
+        "editor.formatOnSave": true
+    },
+    "[json]": {
+        "editor.defaultFormatter": "biomejs.biome",
+        "editor.formatOnSave": true
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "biomejs.biome",
+        "editor.formatOnSave": true
+    },
+
+    // === Biome (Linter/Formatter) ===
+    "biome.lsp.bin": "./node_modules/@biomejs/biome/bin/biome",
+    
+    // === Testing (Vitest) ===
+    "vitest.enable": true,
+    "vitest.commandLine": "bun run test",
+
+    // === File Management ===
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/node_modules": true,
+        "**/dist": true,
+        "**/.turbo": true,
+        "**/bun.lockb": true
+    },
+    "files.watcherExclude": {
+        "**/node_modules/**": true,
+        "**/dist/**": true,
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/bun.lockb": true
+    },
+    "files.associations": {
+        "*.json": "jsonc"
+    },
+
+    // === Search Configuration ===
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/dist": true,
+        "**/.git": true,
+        "**/bun.lockb": true,
+        "**/.turbo": true
+    },
+
+    // === Editor Improvements ===
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+    "editor.linkedEditing": true,
+    "editor.inlineSuggest.enabled": true,
+    "editor.suggest.preview": true,
+    
+    // === Git ===
+    "git.ignoreLimitWarning": true,
+    "git.autofetch": true,
+
+    // === Effect-TS Specific ===
+    "editor.quickSuggestions": {
+        "strings": true
+    },
+    
+    // === Bun Runtime ===
+    "debug.javascript.defaultRuntimeExecutable": {
+        "pwa-node": "bun"
+    }
+}
