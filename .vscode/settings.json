@@ -1,27 +1,4 @@
 {
-	// === Nix + direnv Integration ===
-	// IMPORTANT: Install mkhl.direnv extension for tasks to work correctly
-	// The direnv extension automatically loads .envrc environment (including Bun)
-	"nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
-	"direnv.restart.automatic": true,
-
-	// === TypeScript Configuration ===
-	"typescript.tsdk": "./node_modules/typescript/lib",
-	"typescript.enablePromptUseWorkspaceTsdk": true,
-	"typescript.preferences.includePackageJsonAutoImports": "on",
-	"typescript.tsserver.experimental.enableProjectDiagnostics": false,
-	"typescript.updateImportsOnFileMove.enabled": "always",
-	"typescript.suggest.autoImports": true,
-	"typescript.preferences.importModuleSpecifier": "relative",
-
-	// === JavaScript/TypeScript Formatting (Delegated to Biome) ===
-	"[typescript]": {
-		"editor.defaultFormatter": "biomejs.biome",
-		"editor.formatOnSave": true,
-		"editor.codeActionsOnSave": {
-			"source.fixAll.biome": "explicit"
-		}
-	},
 	"[javascript]": {
 		"editor.defaultFormatter": "biomejs.biome",
 		"editor.formatOnSave": true
@@ -35,62 +12,85 @@
 		"editor.formatOnSave": true
 	},
 
+	// === JavaScript/TypeScript Formatting (Delegated to Biome) ===
+	"[typescript]": {
+		"editor.codeActionsOnSave": {
+			"source.fixAll.biome": "explicit"
+		},
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true
+	},
+
 	// === Biome (Linter/Formatter) ===
 	"biome.lsp.bin": "./node_modules/@biomejs/biome/bin/biome",
 
-	// === Testing (Vitest) ===
-	"vitest.enable": true,
-	"vitest.commandLine": "bun run test",
-
-	// === File Management ===
-	"files.exclude": {
-		"**/.git": true,
-		"**/.DS_Store": true,
-		"**/node_modules": true,
-		"**/dist": true,
-		"**/.turbo": true,
-		"**/bun.lockb": true
+	// === Bun Runtime ===
+	"debug.javascript.defaultRuntimeExecutable": {
+		"pwa-node": "bun"
 	},
-	"files.watcherExclude": {
-		"**/node_modules/**": true,
-		"**/dist/**": true,
-		"**/.git/objects/**": true,
-		"**/.git/subtree-cache/**": true,
-		"**/bun.lockb": true
-	},
-	"files.associations": {
-		"*.json": "jsonc"
-	},
-
-	// === Search Configuration ===
-	"search.exclude": {
-		"**/node_modules": true,
-		"**/dist": true,
-		"**/.git": true,
-		"**/bun.lockb": true,
-		"**/.turbo": true
+	"direnv.restart.automatic": true,
+	"editor.codeActionsOnSave": {
+		"source.fixAll": "explicit"
 	},
 
 	// === Editor Improvements ===
 	"editor.formatOnSave": true,
-	"editor.codeActionsOnSave": {
-		"source.fixAll": "explicit"
-	},
-	"editor.linkedEditing": true,
 	"editor.inlineSuggest.enabled": true,
-	"editor.suggest.preview": true,
-
-	// === Git ===
-	"git.ignoreLimitWarning": true,
-	"git.autofetch": true,
+	"editor.linkedEditing": true,
 
 	// === Effect-TS Specific ===
 	"editor.quickSuggestions": {
 		"strings": true
 	},
+	"editor.suggest.preview": true,
+	"files.associations": {
+		"*.json": "jsonc"
+	},
 
-	// === Bun Runtime ===
-	"debug.javascript.defaultRuntimeExecutable": {
-		"pwa-node": "bun"
-	}
+	// === File Management ===
+	"files.exclude": {
+		"**/.DS_Store": true,
+		"**/.git": true,
+		"**/.turbo": true,
+		"**/bun.lockb": true,
+		"**/dist": true,
+		"**/node_modules": true
+	},
+	"files.watcherExclude": {
+		"**/.git/objects/**": true,
+		"**/.git/subtree-cache/**": true,
+		"**/bun.lockb": true,
+		"**/dist/**": true,
+		"**/node_modules/**": true
+	},
+	"git.autofetch": true,
+
+	// === Git ===
+	"git.ignoreLimitWarning": true,
+	// === Nix + direnv Integration ===
+	// IMPORTANT: Install mkhl.direnv extension for tasks to work correctly
+	// The direnv extension automatically loads .envrc environment (including Bun)
+	"nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
+
+	// === Search Configuration ===
+	"search.exclude": {
+		"**/.git": true,
+		"**/.turbo": true,
+		"**/bun.lockb": true,
+		"**/dist": true,
+		"**/node_modules": true
+	},
+	"typescript.enablePromptUseWorkspaceTsdk": true,
+	"typescript.preferences.importModuleSpecifier": "relative",
+	"typescript.preferences.includePackageJsonAutoImports": "on",
+	"typescript.suggest.autoImports": true,
+
+	// === TypeScript Configuration ===
+	"typescript.tsdk": "./node_modules/typescript/lib",
+	"typescript.tsserver.experimental.enableProjectDiagnostics": false,
+	"typescript.updateImportsOnFileMove.enabled": "always",
+	"vitest.commandLine": "bun run test",
+
+	// === Testing (Vitest) ===
+	"vitest.enable": true
 }
