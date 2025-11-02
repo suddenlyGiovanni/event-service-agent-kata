@@ -55,6 +55,7 @@ Identity & Context
 
 ```typescript
 // Typical: ServiceCallId provided by API in SubmitServiceCall command
+// correlationId is Option<CorrelationId> from command schema
 const { tenantId, serviceCallId, correlationId, ...commandData } = command
 
 // Fallback: If command lacks ServiceCallId (shouldn't happen per ADR-0010)

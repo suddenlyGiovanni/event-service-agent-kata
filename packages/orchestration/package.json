@@ -1,6 +1,7 @@
 {
   "dependencies": {
-    "@event-service-agent/platform": "workspace:*"
+    "@event-service-agent/platform": "workspace:*",
+    "@event-service-agent/schemas": "workspace:*"
   },
   "description": "Orchestration core - ServiceCall aggregate and state transitions",
   "devDependencies": {
