@@ -185,10 +185,10 @@ export interface EventBusPort {
 	 * )
 	 * ```
 	 */
-	readonly subscribe: <E>(
+	readonly subscribe: <E, R>(
 		topics: NonEmptyReadonlyArray<Topics.Type>,
-		handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E>,
-	) => Effect.Effect<void, SubscribeError | E>
+		handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E, R>,
+	) => Effect.Effect<void, SubscribeError | E, R>
 }
 
 /**
