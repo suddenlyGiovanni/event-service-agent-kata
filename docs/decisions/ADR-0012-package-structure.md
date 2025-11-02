@@ -189,6 +189,7 @@ modules (timer, orchestration, execution, api)
 ### Files Moved to `schemas/`
 
 From `contracts/src/types/`:
+
 - `shared.type.ts` → `schemas/src/shared/*.schema.ts` (split by type)
 - `uuid7.type.ts` → `schemas/src/shared/uuid7.schema.ts`
 - `http.type.ts` → `schemas/src/http/request-spec.schema.ts`
