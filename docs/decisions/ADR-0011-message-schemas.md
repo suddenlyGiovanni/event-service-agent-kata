@@ -625,6 +625,7 @@ When consuming messages from the wire (NATS), we need to:
 3. Type-safely route based on message type
 
 **Why Union Works**:
+
 ```typescript
 // Envelope with union payload
 payload: DomainMessage  // Union of all message schemas
