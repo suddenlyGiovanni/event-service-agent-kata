@@ -179,6 +179,7 @@ modules (timer, orchestration, execution, api)
 ## Migration Impact
 
 ### Package Renaming
+
 - `@event-service-agent/contracts` → `@event-service-agent/platform`
 
 ### New Package
