@@ -145,6 +145,7 @@ packages/platform/
 ### Why Not Keep Everything in Contracts?
 
 **Problem**: Name confusion after splitting
+
 - "Contracts" originally meant "message contracts"
 - After extracting schemas, what's left? (ports, routing, services)
 - "Platform" better describes infrastructure abstractions
