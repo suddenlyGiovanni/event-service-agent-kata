@@ -61,6 +61,7 @@ import { DueTimeReached } from '@event-service-agent/timer/domain'
 **Purpose**: Single source of truth for all Effect Schema definitions (foundational types + domain messages).
 
 **Contents**:
+
 - Foundational schemas: `TenantId`, `ServiceCallId`, `CorrelationId`, `EnvelopeId`, `Iso8601DateTime`, `UUID7`
 - Domain message schemas: `DueTimeReached`, `ServiceCallScheduled`, `StartExecution`, etc.
 - Envelope schema: `MessageEnvelopeSchema` with typed `DomainMessage` union
