@@ -40,6 +40,7 @@ yield* workflow.handle(envelope.payload)
 **Fatal DX flaw**: Decoded payload loses type information (brands, validation), defeating the purpose of Effect Schema.
 
 ### Option 2: Import schemas from modules (REJECTED)
+
 ```typescript
 // contracts imports from timer
 import { DueTimeReached } from '@event-service-agent/timer/domain'
