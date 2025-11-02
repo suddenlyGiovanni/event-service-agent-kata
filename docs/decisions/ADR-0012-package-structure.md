@@ -259,6 +259,7 @@ import { Topics } from '@event-service-agent/platform/routing'
 ## Documentation Updates Required
 
 ### ADRs Referencing "contracts"
+
 - ✅ ADR-0011: Update "Central Registry" section to reference `schemas` package
 - ADR-0001: Update topology diagram (contracts → platform + schemas)
 - ADR-0002: Update broker references (contracts/routing → platform/routing)
