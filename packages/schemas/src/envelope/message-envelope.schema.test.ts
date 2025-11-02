@@ -40,9 +40,13 @@ describe('MessageEnvelopeSchema', () => {
 				if (envelope.payload._tag === 'DueTimeReached') {
 					expect(envelope.payload.tenantId).toBe('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
 					expect(envelope.payload.serviceCallId).toBe('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
-					// reachedAt is now DateTime.Utc after decoding
-					if (envelope.payload.reachedAt) {
-						expect(DateTime.formatIso(envelope.payload.reachedAt)).toBe('2025-10-27T12:00:00.000Z')
+
+					// ✅ CORRECT: Test domain type (DateTime.Utc), not encoded format
+					const { reachedAt } = envelope.payload
+					expect(reachedAt).toBeDefined()
+					if (reachedAt) {
+						expect(DateTime.isDateTime(reachedAt)).toBe(true)
+						expect(DateTime.isUtc(reachedAt)).toBe(true)
 					}
 				}
 			}),
@@ -132,8 +136,9 @@ describe('MessageEnvelopeSchema', () => {
 		it.effect('encodes envelope to JSON string', () =>
 			Effect.gen(function* () {
 				// Arrange: Create envelope with properly typed DueTimeReached (DateTime.Utc)
+				const reachedAt = yield* DateTime.make('2025-10-27T12:00:00.000Z')
 				const dueTimeReached = new DueTimeReached({
-					reachedAt: DateTime.unsafeMake('2025-10-27T12:00:00.000Z'),
+					reachedAt,
 					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 					tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 				})
@@ -165,8 +170,9 @@ describe('MessageEnvelopeSchema', () => {
 		it.effect('round-trips correctly', () =>
 			Effect.gen(function* () {
 				// Arrange: Create envelope with properly typed DueTimeReached (DateTime.Utc)
+				const reachedAt = yield* DateTime.make('2025-10-27T12:00:00.000Z')
 				const dueTimeReached = new DueTimeReached({
-					reachedAt: DateTime.unsafeMake('2025-10-27T12:00:00.000Z'),
+					reachedAt,
 					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 					tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 				})

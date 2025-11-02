@@ -39,8 +39,13 @@ Prioritized queue.
 - (PL-8) Redaction & idempotency utilities + tests [platform]
 
 ## Doing (WIP ≤ 2)
-- (PL-15) Migrate to Schema.DateTimeUtc [schemas, timer, platform] — Replace custom Iso8601DateTime (branded string) with Effect's built-in Schema.DateTimeUtc. Impact: 20 occurrences, 5 phases, ~90 lines removed. Benefits: Better type safety (DateTime.Utc vs string), richer API, standard Effect patterns. Wire format compatible. See docs/plan/datetime-schema-migration.md
 
+- (PL-15) Migrate to Schema.DateTimeUtc [schemas, timer, platform]
+    Replace custom Iso8601DateTime (branded string) with Effect's built-in Schema.DateTimeUtc.
+    Impact: 20 occurrences, 5 phases, ~90 lines removed.
+    Benefits: Better type safety (DateTime.Utc vs string), richer API, standard Effect patterns.
+    Wire format compatible.
+    See docs/plan/datetime-schema-migration.md
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
@@ -53,6 +58,7 @@ Prioritized queue.
 - (PL-9) Observability baseline [adr: [ADR-0009]] [infra] — blocked by [adr: [ADR-0002]]
 
 ## Done (recent)
+
 - (PL-14.2) Migrate platform message interfaces → `@event-service-agent/schemas` [schemas]
 - (PL-14.5) Update documentation (ADRs, design docs) [docs] — COMPLETE: Updated ports.md reference to schemas package
 - (PL-14.4) Update module dependencies + imports [all modules] — COMPLETE: All active modules (timer, schemas) updated; placeholder modules have no code yet

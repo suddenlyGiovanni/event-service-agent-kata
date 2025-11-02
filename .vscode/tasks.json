@@ -1,7 +1,7 @@
 {
 	"tasks": [
 		{
-			"command": "bun --bun --workspaces run test --run",
+			"command": "bun run test --run",
 			"group": "test",
 			"label": "test: all",
 			"presentation": {
