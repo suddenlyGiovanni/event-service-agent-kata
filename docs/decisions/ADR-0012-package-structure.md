@@ -199,6 +199,7 @@ From `contracts/src/services/`:
 - `uuid7.service.ts` → `schemas/src/uuid7.service.ts`
 
 From `timer/src/domain/`:
+
 - `events.domain.ts` → `schemas/src/messages/timer/events.schema.ts`
 
 ### Files Remaining in `platform/`
