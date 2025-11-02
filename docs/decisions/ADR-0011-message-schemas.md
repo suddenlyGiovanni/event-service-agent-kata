@@ -314,6 +314,7 @@ function handleIncoming(raw: unknown) {
 #### Problem: Envelope Wrapping & JSON Serialization
 
 Domain events need to be:
+
 1. Encoded to DTOs (Schema.encode)
 2. Wrapped in MessageEnvelope with routing metadata
 3. Serialized to JSON for NATS wire format
