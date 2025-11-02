@@ -446,6 +446,7 @@ export const makeEnvelope = <T extends DomainMessage.Encoded>(
 ```
 
 **Note**: `makeEnvelope` constrains `payload` to `DomainMessage.Encoded` (union of all message DTOs). This ensures:
+
 - ✅ Only valid domain messages can be enveloped
 - ✅ TypeScript catches invalid payloads at compile time
 - ✅ Effect Schema validates structure at runtime
