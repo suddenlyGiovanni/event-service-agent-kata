@@ -151,6 +151,7 @@ packages/platform/
 - "Platform" better describes infrastructure abstractions
 
 **Alternative considered**: Keep "contracts" name with narrowed scope
+
 - **Rejected**: Causes confusion (people expect message contracts)
 
 ---
