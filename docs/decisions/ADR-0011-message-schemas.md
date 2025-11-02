@@ -263,6 +263,7 @@ export const DomainEvent = Schema.Union(
 ```
 
 **Actual implementation** (per ADR-0012):
+
 ```typescript
 // ✅ Schemas defined in @event-service-agent/schemas
 // packages/schemas/src/messages/timer/events.schema.ts
