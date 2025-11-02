@@ -55,6 +55,7 @@
 				]
 			}
 		],
+		"skipDefaultLibCheck": true,
 		"skipLibCheck": true,
 
 		// Best practices
