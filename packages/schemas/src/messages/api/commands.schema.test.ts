@@ -12,7 +12,7 @@ describe('SubmitServiceCall Command Schema', () => {
 			Effect.gen(function* () {
 				// Arrange: Valid wire format DTO
 				const dto = {
-					_tag: 'SubmitServiceCall' as const,
+					_tag: 'SubmitServiceCall',
 					dueAt: '2025-10-28T12:00:00.000Z',
 					name: 'Test Service Call',
 					requestSpec: {
@@ -22,7 +22,7 @@ describe('SubmitServiceCall Command Schema', () => {
 						url: 'https://api.example.com/endpoint',
 					},
 					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+				} satisfies Commands.SubmitServiceCall.Dto
 
 				// Act: Decode from wire format
 				const command = yield* Commands.SubmitServiceCall.decode(dto)
@@ -32,7 +32,11 @@ describe('SubmitServiceCall Command Schema', () => {
 				expect(command._tag).toBe('SubmitServiceCall')
 				expect(command.tenantId).toBe(dto.tenantId)
 				expect(command.name).toBe(dto.name)
-				expect(DateTime.formatIso(command.dueAt)).toBe(dto.dueAt)
+
+				// ✅ CORRECT: Test domain type (DateTime.Utc), not encoded format
+				expect(DateTime.isDateTime(command.dueAt)).toBe(true)
+				expect(DateTime.isUtc(command.dueAt)).toBe(true)
+
 				expect(command.requestSpec.url).toBe(dto.requestSpec.url)
 				expect(command.requestSpec.method).toBe(dto.requestSpec.method)
 			}),
@@ -40,10 +44,15 @@ describe('SubmitServiceCall Command Schema', () => {
 
 		it.effect('decodes command with optional fields', () =>
 			Effect.gen(function* () {
+				const idempotencyKey = 'unique-key-123'
+
+				const tags = ['urgent', 'production']
+
+				// Arrange: Valid DTO with optional fields
 				const dto = {
-					_tag: 'SubmitServiceCall' as const,
+					_tag: 'SubmitServiceCall',
 					dueAt: '2025-10-28T12:00:00.000Z',
-					idempotencyKey: 'unique-key-123',
+					idempotencyKey,
 					name: 'Test Service Call',
 					requestSpec: {
 						body: JSON.stringify({ key: 'value' }),
@@ -51,15 +60,15 @@ describe('SubmitServiceCall Command Schema', () => {
 						method: 'POST',
 						url: 'https://api.example.com/endpoint',
 					},
-					tags: ['urgent', 'production'],
+					tags,
 					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+				} satisfies Commands.SubmitServiceCall.Dto
 
 				const command = yield* Commands.SubmitServiceCall.decode(dto)
 
 				expectTypeOf(command).toEqualTypeOf<Commands.SubmitServiceCall.Type>()
-				expect(command.idempotencyKey).toBe('unique-key-123')
-				expect(command.tags).toEqual(['urgent', 'production'])
+				expect(command.idempotencyKey).toBe(idempotencyKey)
+				expect(command.tags).toEqual(tags)
 			}),
 		)
 
@@ -76,7 +85,7 @@ describe('SubmitServiceCall Command Schema', () => {
 						url: 'https://api.example.com/endpoint',
 					},
 					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+				} satisfies Commands.SubmitServiceCall.Dto
 
 				const command = yield* Commands.SubmitServiceCall.decode(dto)
 
@@ -98,7 +107,7 @@ describe('SubmitServiceCall Command Schema', () => {
 						url: 'https://api.example.com',
 					},
 					tenantId: 'not-a-uuid',
-				}
+				} satisfies Commands.SubmitServiceCall.Dto
 
 				const exit = yield* Effect.exit(Commands.SubmitServiceCall.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
@@ -117,7 +126,7 @@ describe('SubmitServiceCall Command Schema', () => {
 						url: 'https://api.example.com',
 					},
 					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+				} satisfies Commands.SubmitServiceCall.Dto
 
 				const exit = yield* Effect.exit(Commands.SubmitServiceCall.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
