@@ -13,16 +13,19 @@ This package is currently a **placeholder** for future infrastructure adapters. 
 ### 🔜 Planned Adapters
 
 #### Message Broker Adapters
+
 - **NATS JetStream**: Production message broker implementation
 - **In-Memory**: Test/dev broker for local development
 - **Kafka**: Alternative broker adapter (if needed)
 
 #### Persistence Adapters
+
 - **SQLite**: Production database adapter (file-based)
 - **PostgreSQL**: Alternative database adapter (if needed)
 - **In-Memory**: Test adapter (already in domain modules)
 
 #### HTTP Client Adapters
+
 - **Bun Fetch**: Production HTTP client (native Bun)
 - **Mock HTTP**: Test adapter with recorded responses
 
@@ -61,6 +64,7 @@ Adapters sit at the **outer layer** of hexagonal architecture:
 ```
 
 **Key Principles:**
+
 - ✅ Implements port interfaces from `@event-service-agent/platform`
 - ✅ Contains infrastructure concerns (connection pooling, retries, etc.)
 - ✅ Maps infrastructure errors to domain errors
@@ -70,11 +74,13 @@ Adapters sit at the **outer layer** of hexagonal architecture:
 ## When to Use This Package
 
 **Use adapters for:**
+
 - Production deployments (real NATS, SQLite, HTTP)
 - Integration tests (real infrastructure)
 - Performance testing
 
 **Don't use adapters for:**
+
 - Unit tests (use in-memory adapters in domain modules)
 - Fast development iteration (use test adapters)
 
@@ -91,12 +97,14 @@ Adapters sit at the **outer layer** of hexagonal architecture:
 **Not Yet Implemented**
 
 This package exists to establish the structure but doesn't contain adapters yet. Current development uses:
+
 - **In-memory adapters** (in domain modules like `timer`) for testing
 - **Test doubles** (layers with `Effect.succeed`) for workflows
 
 ## Future Development
 
 ### Phase 1: Broker Adapter (PL-3)
+
 ```typescript
 // packages/adapters/src/broker/nats-event-bus.adapter.ts
 export class NatsEventBus {
@@ -114,6 +122,7 @@ export class NatsEventBus {
 ```
 
 ### Phase 2: Persistence Adapter (PL-6)
+
 ```typescript
 // packages/adapters/src/persistence/sqlite-timer-persistence.adapter.ts
 export class SqliteTimerPersistence {
@@ -133,6 +142,7 @@ export class SqliteTimerPersistence {
 ## Testing Strategy
 
 Each adapter should have:
+
 1. **Unit tests**: Adapter logic in isolation (with mocked infrastructure)
 2. **Integration tests**: Real infrastructure (NATS container, SQLite file)
 3. **Contract tests**: Verify port interface compliance

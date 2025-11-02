@@ -43,13 +43,13 @@ Prioritized queue.
 ## Doing (WIP ≤ 2)
 
 - (PL-14.2) Migrate platform message interfaces → `@event-service-agent/schemas` [schemas] — IN PROGRESS
-    - Subtasks:
-        - [x] Orchestration events: ServiceCallSubmitted, ServiceCallScheduled, ServiceCallRunning, ServiceCallSucceeded, ServiceCallFailed
-        - [x] Orchestration commands: StartExecution (schema), ScheduleTimer (already migrated)
-        - [x] Execution events: ExecutionStarted, ExecutionSucceeded, ExecutionFailed
-        - [x] API commands: SubmitServiceCall
-        - [x] HTTP schemas: RequestSpec + RequestSpecWithoutBody
-    - Notes: Creating Effect Schema.TaggedClass files in `packages/schemas/src/messages/*` and adding them to `DomainMessage` union. This iteration is schemas-only (no tests).
+  - Subtasks:
+    - [x] Orchestration events: ServiceCallSubmitted, ServiceCallScheduled, ServiceCallRunning, ServiceCallSucceeded, ServiceCallFailed
+    - [x] Orchestration commands: StartExecution (schema), ScheduleTimer (already migrated)
+    - [x] Execution events: ExecutionStarted, ExecutionSucceeded, ExecutionFailed
+    - [x] API commands: SubmitServiceCall
+    - [x] HTTP schemas: RequestSpec + RequestSpecWithoutBody
+  - Notes: Creating Effect Schema.TaggedClass files in `packages/schemas/src/messages/*` and adding them to `DomainMessage` union. This iteration is schemas-only (no tests).
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 

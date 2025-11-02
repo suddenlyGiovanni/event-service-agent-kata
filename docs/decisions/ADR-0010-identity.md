@@ -186,6 +186,7 @@ const tenantId = yield * TenantId.decode(req.body.tenantId);
 
 **Completed in:** `packages/schemas/src/shared/`  
 **Branded types migrated:**
+
 - TenantId → `packages/schemas/src/shared/tenant-id.schema.ts`
 - ServiceCallId → `packages/schemas/src/shared/service-call-id.schema.ts`
 - CorrelationId → `packages/schemas/src/shared/correlation-id.schema.ts`
