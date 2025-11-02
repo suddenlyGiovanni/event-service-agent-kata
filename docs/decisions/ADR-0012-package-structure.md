@@ -72,6 +72,7 @@ import { DueTimeReached } from '@event-service-agent/timer/domain'
 **Dependencies**: `effect` only (self-contained)
 
 **Structure**:
+
 ```
 packages/schemas/
   src/
