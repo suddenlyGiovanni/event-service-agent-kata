@@ -1,23 +1,11 @@
 /**
  * DomainMessage - Union of all domain messages (events + commands)
  *
- * **Architecture Note**: This centralized union avoids circular dependencies.
- * Each module's events are defined in schemas/src/messages/<module>/ and imported here.
- *
- * **Key Benefit**: By having all schemas in one package, we can use the actual Effect Schemas
- * instead of duplicating DTO shapes. The envelope payload will have full type power:
+ * This centralized union avoids circular dependencies by having all schemas
+ * in a single package. The envelope payload has full Effect Schema type power:
  * branded types, pattern matching, and single-phase decode.
  *
- * Currently includes:
- * - Timer: DueTimeReached
- *
- * TODO (PL-14): Add remaining messages as modules are implemented:
- * - Orchestration: ServiceCallSubmitted, ServiceCallScheduled, ServiceCallRunning,
- *                 ServiceCallSucceeded, ServiceCallFailed, StartExecution, ScheduleTimer
- * - Execution: ExecutionStarted, ExecutionSucceeded, ExecutionFailed
- * - API: SubmitServiceCall
- *
- * @see ADR-0012 for rationale (centralized schemas avoid circular dependencies)
+ * @see ADR-0012 for rationale
  */
 
 import * as Schema from 'effect/Schema'
