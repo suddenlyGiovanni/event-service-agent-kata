@@ -169,6 +169,7 @@ modules (timer, orchestration, execution, api)
 ```
 
 **Key properties**:
+
 - Unidirectional dependencies (no cycles)
 - Clear layering (foundation → abstractions → implementations)
 - Modules depend on both: schemas (for types) + platform (for ports)
