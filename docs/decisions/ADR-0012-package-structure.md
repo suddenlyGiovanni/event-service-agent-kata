@@ -272,6 +272,7 @@ import { Topics } from '@event-service-agent/platform/routing'
 - `docs/design/modules/*.md`: Update import paths in examples
 
 ### Plan Documents
+
 - `docs/plan/kanban.md`: Add migration tasks
 - `docs/plan/plan.md`: Update architecture section if applicable
 
