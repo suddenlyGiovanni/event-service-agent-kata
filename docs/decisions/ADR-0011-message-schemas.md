@@ -248,6 +248,7 @@ export type DueTimeReachedDTO = Schema.Schema.Encoded<
 ~~Create `packages/contracts/src/messages/schemas.ts` exporting Schema unions:~~
 
 **Original proposal** (no longer valid):
+
 ```typescript
 // ❌ NOT IMPLEMENTED - Creates circular dependency
 import { DueTimeReached } from "@event-service-agent/timer/domain";
