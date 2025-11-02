@@ -9,8 +9,8 @@ import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
-import { UUID7 } from '@event-service-agent/contracts/services'
-import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+import { UUID7 } from '@event-service-agent/platform/uuid7'
+import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import { ClockPortTest } from '../adapters/clock.adapter.ts'
 import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
@@ -91,7 +91,7 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Timer should no longer appear in findDue
 				const afterFired = yield* persistence.findDue(yield* clock.now())
 				expect(Chunk.isEmpty(afterFired)).toBe(true)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus)))
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
 		it.effect('processes multiple due timers sequentially', () => {
@@ -170,7 +170,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: All operations should have occurred (3 publishes)
 				expect(operations.filter(op => op.startsWith('publish:'))).toHaveLength(serviceCallIds.length)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus)))
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 
 		it.effect('publishes event before marking timer as fired', () => {
@@ -389,7 +389,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: Workflow completed successfully
 				// (implicit - if we reach here, no exceptions were thrown)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus)))
+			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 	})
 
@@ -847,7 +847,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: No events should have been published
 				expect(publishedEvents).toHaveLength(0)
-			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, ClockPortTest, TestEventBus)))
+			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 	})
 })

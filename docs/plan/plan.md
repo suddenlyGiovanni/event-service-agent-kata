@@ -9,7 +9,7 @@ Current Focus
 
 - Milestone 1 — Contracts & Scaffolding: [ADR-0003] accepted (periodic polling, 5s interval, shared DB with strong boundaries, publish-then-update pattern). [ADR-0004] accepted (single shared database `event_service.db` with module-specific ports/adapters). Timer will be broker-agnostic with SQLite persistence.
 - Defining message ADTs and port interfaces in TypeScript, aligned to `docs/design/messages.md` and `docs/design/ports.md`.
-- Next: Create contracts package structure with message types (ScheduleTimer, DueTimeReached, SubmitServiceCall, etc.) and port interfaces (EventBusPort, TimerPort, PersistencePort, etc.).
+- Next: Create schemas and platform package structure with message types (ScheduleTimer, DueTimeReached, SubmitServiceCall, etc.) and port interfaces (EventBusPort, TimerPort, PersistencePort, etc.).
 
 Principles
 
@@ -22,65 +22,65 @@ Milestones (aligned to Gates)
 1. Contracts & Scaffolding
 
 - Define message ADTs and port interfaces in TypeScript, aligned to `docs/design/messages.md` and `docs/design/ports.md`.
-- Set up pnpm workspaces (packages: `contracts`, later adapters/services).
+- Set up Bun workspaces (packages: `schemas`, `platform`, later module packages).
 - Acceptance: type-check passes; unit tests cover message constructors and basic validation.
 
-2. Orchestration Core (Pure)
+1. Orchestration Core (Pure)
 
 - Model `ServiceCall` aggregate as discriminated union; legal transitions only.
 - Implement handlers for intents/events: `SubmitServiceCall`, `DueTimeReached`, `Execution*` mapping to domain updates.
 - Ports as dependencies (Clock, Persistence, Outbox, EventBus, Timer) via Effect layers; keep core pure where possible.
 - Acceptance: property-based/unit tests verify transitions; idempotency/guards for `dueAt`.
 
-3. Messaging Adapter (Broker from Day One) [Gate 02 — [ADR-0002]]
+1. Messaging Adapter (Broker from Day One) [Gate 02 — [ADR-0002]]
 
 - Implement `EventBusPort` adapter for the chosen broker (see [ADR-0002]) with partition/subject routing by `tenantId.serviceCallId`.
 - Provide a lightweight docker-compose or devcontainer for local broker.
 - Acceptance: adapter integration tests verify ordering and at-least-once semantics in dev.
 
-4. Timer Strategy Implementation [Gate 03 — [ADR-0003]]
+1. Timer Strategy Implementation [Gate 03 — [ADR-0003]]
 
 - If broker supports delayed messages, implement broker-based delay for `DueTimeReached`.
 - Else, implement a minimal durable timer service that publishes `DueTimeReached` via the broker.
 - Acceptance: scheduled calls fire at/after `dueAt` with at-least-once; Orchestration guards start.
 
-5. Execution Worker (HTTP)
+1. Execution Worker (HTTP)
 
 - Implement Execution module with `HttpClientPort` adapter:
   - Mock client for offline tests.
   - Real client (e.g., undici/fetch) optional.
 - Acceptance: emits `ExecutionStarted` then exactly one of `ExecutionSucceeded`/`ExecutionFailed`.
 
-6. Persistence Adapter (MVP) [Gate 04 → 05 — [ADR-0004], [ADR-0005]]
+1. Persistence Adapter (MVP) [Gate 04 → 05 — [ADR-0004], [ADR-0005]]
 
 - Database structure decided ([ADR-0004] Accepted): single shared `event_service.db` with module-specific ports/adapters. Simple schema reflecting domain state and outbox table.
 - Implement `PersistencePort` guarded updates and basic list/detail queries (with filters: status, tags, date).
 - Acceptance: migrations applied; API can read; Orchestration writes transactional with outbox append.
 
-7. API Edge [Gate 06 → 07 — [ADR-0006], [ADR-0007]]
+1. API Edge [Gate 06 → 07 — [ADR-0006], [ADR-0007]]
 
 - Minimal HTTP server with routes from `modules/api.md`; validate input; publish `SubmitServiceCall`.
 - Read models served directly from domain DB; add pagination and filters.
 - Acceptance: curl/HTTPie scripts demonstrate submission, listing, and details; Location header returns canonical URL.
 
-8. Redaction & Idempotency [Gate 06]
+1. Redaction & Idempotency [Gate 06]
 
 - Implement `bodySnippet` truncation/redaction and response snippet policy.
 - Compute `serviceCallId` from `(tenantId, idempotencyKey)` when provided; otherwise generate UUID and treat as best-effort uniqueness.
 - Acceptance: tests for redaction; idempotent submission within tenant.
 
-9. Outbox Dispatcher [Gate 08 — [ADR-0008]]
+1. Outbox Dispatcher [Gate 08 — [ADR-0008]]
 
 - Implement outbox table usage and background dispatcher publishing to the broker (batching, marking dispatched).
 - Acceptance: domain events are published after commit with preserved per-aggregate ordering.
 
-10. Observability Baseline [Gate 09 — [ADR-0009][ADR-0009]]
+1. Observability Baseline [Gate 09 — [ADR-0009][ADR-0009]]
 
 - Structured logs with correlation IDs; minimal metrics (counts/latency) per module.
 - Tracing optional once message bus is chosen.
 - Acceptance: logs include `tenantId`, `serviceCallId`, `correlationId`.
 
-10. Hardening & Demos
+1. Hardening & Demos
 
 - Negative path tests, timeouts, and watchdog behavior for long-running `Running` state.
 - Demo scripts and a minimal UI page (optional) to visualize states.
@@ -114,7 +114,7 @@ Risks & Mitigations
 
 Deliverables
 
-- Packages: `contracts`, `orchestration`, `execution`, `timer`, `api`, `infra-adapters`.
+- Packages: `schemas`, `platform`, `orchestration`, `execution`, `timer`, `api`, `adapters`.
 - Broker adapter package aligned to [ADR-0002]; docker-compose for local broker.
 
 ---

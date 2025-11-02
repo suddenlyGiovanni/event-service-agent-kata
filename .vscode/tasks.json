@@ -1,0 +1,86 @@
+{
+	"tasks": [
+		{
+			"command": "bun --bun --workspaces run test --run",
+			"group": "test",
+			"label": "test: all",
+			"presentation": {
+				"panel": "shared",
+				"reveal": "always"
+			},
+			"problemMatcher": [],
+			"type": "shell"
+		},
+		{
+			"command": "bun --bun --workspaces run test",
+			"group": "test",
+			"isBackground": true,
+			"label": "test: watch",
+			"presentation": {
+				"panel": "dedicated",
+				"reveal": "always"
+			},
+			"problemMatcher": [],
+			"type": "shell"
+		},
+		{
+			"command": "bun --bun --workspaces format",
+			"group": "none",
+			"label": "format: all",
+			"presentation": {
+				"panel": "shared",
+				"reveal": "silent"
+			},
+			"problemMatcher": [],
+			"type": "shell"
+		},
+		{
+			"command": "bun --bun --workspaces lint",
+			"group": "none",
+			"label": "lint: all",
+			"presentation": {
+				"panel": "shared",
+				"reveal": "always"
+			},
+			"problemMatcher": [],
+			"type": "shell"
+		},
+		{
+			"command": "bun --bun --workspaces check",
+			"group": {
+				"isDefault": true,
+				"kind": "build"
+			},
+			"label": "check: all (format + lint)",
+			"presentation": {
+				"panel": "shared",
+				"reveal": "always"
+			},
+			"problemMatcher": [],
+			"type": "shell"
+		},
+		{
+			"command": "bun --bun --workspaces type-check",
+			"group": "build",
+			"label": "typecheck: all",
+			"presentation": {
+				"panel": "shared",
+				"reveal": "always"
+			},
+			"problemMatcher": ["$tsc"],
+			"type": "shell"
+		},
+		{
+			"command": "bun install",
+			"group": "none",
+			"label": "install dependencies",
+			"presentation": {
+				"panel": "shared",
+				"reveal": "always"
+			},
+			"problemMatcher": [],
+			"type": "shell"
+		}
+	],
+	"version": "2.0.0"
+}

@@ -1,0 +1,32 @@
+{
+	"configurations": [
+		{
+			"args": ["run", "${relativeFile}"],
+			"cwd": "${workspaceFolder}",
+			"internalConsoleOptions": "neverOpen",
+			"name": "Debug Current Test File",
+			"program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+			"request": "launch",
+			"type": "bun"
+		},
+		{
+			"args": ["run"],
+			"cwd": "${workspaceFolder}",
+			"internalConsoleOptions": "neverOpen",
+			"name": "Debug All Tests",
+			"program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+			"request": "launch",
+			"type": "bun"
+		},
+		{
+			"args": [],
+			"cwd": "${workspaceFolder}",
+			"internalConsoleOptions": "neverOpen",
+			"name": "Debug Tests (Watch Mode)",
+			"program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+			"request": "launch",
+			"type": "bun"
+		}
+	],
+	"version": "0.2.0"
+}

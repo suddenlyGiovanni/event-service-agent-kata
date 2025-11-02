@@ -7,7 +7,7 @@ import * as Option from 'effect/Option'
 import * as Ref from 'effect/Ref'
 import * as EffString from 'effect/String'
 
-import type { ServiceCallId, TenantId } from '@event-service-agent/contracts/types'
+import type { ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import { TimerEntry } from '../domain/timer-entry.domain.ts'
 import { PersistenceError, TimerPersistencePort } from '../ports/timer-persistence.port.ts'

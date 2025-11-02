@@ -4,9 +4,9 @@ import * as Context from 'effect/Context'
 import type * as DateTime from 'effect/DateTime'
 import type * as Effect from 'effect/Effect'
 
-import type * as Messages from '@event-service-agent/contracts/messages'
-import type { PublishError, SubscribeError } from '@event-service-agent/contracts/ports'
-import type { CorrelationId } from '@event-service-agent/contracts/types'
+import type { PublishError, SubscribeError } from '@event-service-agent/platform/ports'
+import type * as Messages from '@event-service-agent/schemas/messages'
+import type { CorrelationId } from '@event-service-agent/schemas/shared'
 
 import type { TimerEntry } from '../domain/timer-entry.domain.ts'
 
@@ -69,12 +69,12 @@ export interface TimerEventBusPort {
 	 * )
 	 * ```
 	 */
-	readonly subscribeToScheduleTimerCommands: <E>(
+	readonly subscribeToScheduleTimerCommands: <E, R>(
 		handler: (
-			command: Messages.Orchestration.Commands.ScheduleTimer,
+			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
 			correlationId?: CorrelationId.Type,
-		) => Effect.Effect<void, E>,
-	) => Effect.Effect<void, SubscribeError | E>
+		) => Effect.Effect<void, E, R>,
+	) => Effect.Effect<void, SubscribeError | E, R>
 }
 
 export const TimerEventBusPort = Context.GenericTag<TimerEventBusPort>('@event-service-agent/timer/TimerEventBusPort')

@@ -1,0 +1,4 @@
+{
+	"extends": "@event-service-agent/typescript",
+	"include": ["src/**/*"]
+}

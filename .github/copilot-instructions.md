@@ -916,7 +916,7 @@ When encountering a choice:
 **Scope values** (prefer these):
 
 - `timer`, `orchestration`, `execution`, `api`
-- `ports`, `contracts`, `adapters`
+- `ports`, `platform`, `adapters`
 - `design`, `plan`, `adr` (for docs)
 
 ---

@@ -19,6 +19,13 @@ export interface RequestContext {
 
 Minimal envelope shared by publishers/consumers. See [Semantics](./messages.md#semantics-essentials).
 
+**Note**: MessageEnvelope exists as both:
+
+- **TypeScript interface** (type-level documentation, below)
+- **Effect Schema** (`MessageEnvelopeSchema` in `@event-service-agent/schemas`) for runtime validation
+
+The schema provides JSON serialization (`parseJson`/`encodeJson`) and validation at infrastructure boundaries.
+
 ```ts
 export interface MessageEnvelope<T = unknown> {
   id: EnvelopeId; // unique id
@@ -56,13 +63,28 @@ Used in: [Orchestration], [Execution], [Timer], [API] (publish only).
 **Design Note**: The envelope is self-contained with all routing metadata (tenantId, correlationId, aggregateId). No separate context parameter needed - this eliminates duplication and ensures single source of truth.
 
 ```ts
+import * as Data from 'effect/Data'
+import type * as Effect from 'effect/Effect'
+import type { NonEmptyReadonlyArray } from 'effect/Array'
+
 export interface EventBusPort {
-  publish(envelopes: MessageEnvelope[]): Promise<void>;
-  subscribe(
+  publish(
+    envelopes: NonEmptyReadonlyArray<MessageEnvelope>
+  ): Effect.Effect<void, PublishError>;
+  
+  subscribe<E>(
     topics: string[],
-    handler: (env: MessageEnvelope) => Promise<void>,
-  ): Promise<void>;
+    handler: (env: MessageEnvelope) => Effect.Effect<void, E>,
+  ): Effect.Effect<void, SubscribeError>;
 }
+
+export class PublishError extends Data.TaggedError('PublishError')<{
+  readonly cause: string
+}> {}
+
+export class SubscribeError extends Data.TaggedError('SubscribeError')<{
+  readonly cause: string
+}> {}
 ```
 
 **Routing**: Adapter extracts `tenantId` and optional `aggregateId` from envelope to construct partition/routing key (e.g., `tenantId.serviceCallId`).

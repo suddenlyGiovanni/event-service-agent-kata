@@ -470,7 +470,7 @@ Sensitivity notes moved to Appendix.
 - Risk of subject/consumer sprawl requires naming lint / provisioning automation.
 - Potential future migration path: keep domain envelopes and handler contracts broker-agnostic; avoid leaking JetStream-specific headers beyond adapter.
 
-#### Why one shared stream first
+### Why one shared stream first
 
 One shared JetStream stream (`svc`) interleaves all tenants’ subjects but preserves each tenant’s and aggregate’s ordering (ordering is per subject; handlers enforce per-key single-flight). This minimizes early operational overhead (one retention policy, simple provisioning, fast local parity) and defers complexity until real isolation pressures appear. We split to per-tenant streams or accounts only when: (a) divergent retention/ACL needs, (b) a noisy tenant dominates backlog, (c) compliance or deletion isolation is required, or (d) subject/consumer cardinality approaches operational limits.
 
@@ -601,7 +601,7 @@ Escalation path (future ADR if needed): introduce a parking subject before DLQ f
 
 MVP adopts the most minimal workable taxonomy:
 
-```
+```txt
 svc.<tenant>.serviceCall   # all domain events + StartExecution (immediate or scheduled)
 svc.<tenant>.dlq           # dead letters (after MaxDeliver or fatal)
 ```
@@ -627,7 +627,7 @@ Evolution triggers to split subjects (defer until one is true):
 
 First split path (if triggered):
 
-```
+```txt
 svc.<tenant>.serviceCall.events
 svc.<tenant>.serviceCall.start
 svc.<tenant>.dlq

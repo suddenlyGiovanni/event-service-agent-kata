@@ -1,0 +1,96 @@
+{
+	"[javascript]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true
+	},
+	"[json]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true
+	},
+	"[jsonc]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true
+	},
+
+	// === JavaScript/TypeScript Formatting (Delegated to Biome) ===
+	"[typescript]": {
+		"editor.codeActionsOnSave": {
+			"source.fixAll.biome": "explicit"
+		},
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true
+	},
+
+	// === Biome (Linter/Formatter) ===
+	"biome.lsp.bin": "./node_modules/@biomejs/biome/bin/biome",
+
+	// === Bun Runtime ===
+	"debug.javascript.defaultRuntimeExecutable": {
+		"pwa-node": "bun"
+	},
+	"direnv.restart.automatic": true,
+	"editor.codeActionsOnSave": {
+		"source.fixAll": "explicit"
+	},
+
+	// === Editor Improvements ===
+	"editor.formatOnSave": true,
+	"editor.inlineSuggest.enabled": true,
+	"editor.linkedEditing": true,
+
+	// === Effect-TS Specific ===
+	"editor.quickSuggestions": {
+		"strings": true
+	},
+	"editor.suggest.preview": true,
+	"files.associations": {
+		"*.json": "jsonc"
+	},
+
+	// === File Management ===
+	"files.exclude": {
+		"**/.DS_Store": true,
+		"**/.git": true,
+		"**/.turbo": true,
+		"**/bun.lockb": true,
+		"**/dist": true,
+		"**/node_modules": true
+	},
+	"files.watcherExclude": {
+		"**/.git/objects/**": true,
+		"**/.git/subtree-cache/**": true,
+		"**/bun.lockb": true,
+		"**/dist/**": true,
+		"**/node_modules/**": true
+	},
+	"git.autofetch": true,
+
+	// === Git ===
+	"git.ignoreLimitWarning": true,
+	// === Nix + direnv Integration ===
+	// IMPORTANT: Install mkhl.direnv extension for tasks to work correctly
+	// The direnv extension automatically loads .envrc environment (including Bun)
+	"nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
+
+	// === Search Configuration ===
+	"search.exclude": {
+		"**/.git": true,
+		"**/.turbo": true,
+		"**/bun.lockb": true,
+		"**/dist": true,
+		"**/node_modules": true
+	},
+	"typescript.enablePromptUseWorkspaceTsdk": true,
+	"typescript.preferences.importModuleSpecifier": "relative",
+	"typescript.preferences.includePackageJsonAutoImports": "on",
+	"typescript.suggest.autoImports": true,
+
+	// === TypeScript Configuration ===
+	"typescript.tsdk": "./node_modules/typescript/lib",
+	"typescript.tsserver.experimental.enableProjectDiagnostics": false,
+	"typescript.updateImportsOnFileMove.enabled": "always",
+	"vitest.commandLine": "bun run test",
+
+	// === Testing (Vitest) ===
+	"vitest.enable": true
+}

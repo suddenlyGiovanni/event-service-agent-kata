@@ -68,13 +68,13 @@ const tenantId = yield * Schema.decode(TenantId)(req.params.tenantId); // Valida
 
 const serviceCallId = req.body.serviceCallId
   ? yield * Schema.decode(ServiceCallId)(req.body.serviceCallId) // Validate client ID
-  : Schema.make(ServiceCallId)(crypto.randomUUID()); // Generate server ID
+  : yield * ServiceCallId.makeUUID7(); // Generate server ID
 
 // Pass to domain via RequestContext
 const ctx = RequestContext({ tenantId, correlationId });
 ```
 
-**Rationale:** API is the validation boundary. All external input must be validated before entering domain. See [ADR-0010][] for identity generation strategy.
+**Rationale:** API is the validation boundary. All external input must be validated before entering domain. Uses Effect Schema for ID validation and generation. See [ADR-0010][] for identity generation strategy and [ADR-0011][] for schema patterns.
 
 Inputs/Outputs Recap
 
@@ -95,3 +95,4 @@ Messages
 [EventBusPort]: ../ports.md#eventbusport
 [PersistencePort]: ../ports.md#persistenceport-domain-db
 [ADR-0010]: ../../decisions/ADR-0010-identity.md
+[ADR-0011]: ../../decisions/ADR-0011-message-schemas.md
