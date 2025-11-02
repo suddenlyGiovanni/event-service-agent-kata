@@ -672,6 +672,7 @@ const envelope = yield* MessageEnvelopeSchema(???).parseJson(jsonString)
 ```
 
 **Conclusion**: Union of domain messages is the idiomatic Effect Schema pattern for discriminated message types. It provides:
+
 - ✅ Single decode operation (envelope + payload)
 - ✅ Type-safe discrimination via Effect Schema union handling
 - ✅ Pattern matching with exhaustiveness checking
