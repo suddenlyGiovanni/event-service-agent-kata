@@ -2,6 +2,7 @@ import * as Schema from 'effect/Schema'
 
 import { Iso8601DateTime, ServiceCallId, TenantId } from '../../shared/index.ts'
 import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'
+import { Tag } from '../tag.ts'
 
 /**
  * ExecutionStarted - Execution attempt started
@@ -9,15 +10,15 @@ import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'
  * Produced by: Execution
  * Consumed by: Orchestration
  */
-export class ExecutionStarted extends Schema.TaggedClass<ExecutionStarted>()('ExecutionStarted', {
+export class ExecutionStarted extends Schema.TaggedClass<ExecutionStarted>()(Tag.Execution.Events.ExecutionStarted, {
 	serviceCallId: ServiceCallId,
 	/** Timestamp when HTTP request execution began (ISO8601) */
 	startedAt: Iso8601DateTime,
 	tenantId: TenantId,
 }) {
-	static readonly decode = Schema.decode(this)
+	static readonly decode = Schema.decode(ExecutionStarted)
 
-	static readonly encode = Schema.encode(this)
+	static readonly encode = Schema.encode(ExecutionStarted)
 }
 
 export declare namespace ExecutionStarted {
@@ -31,17 +32,20 @@ export declare namespace ExecutionStarted {
  * Produced by: Execution
  * Consumed by: Orchestration
  */
-export class ExecutionSucceeded extends Schema.TaggedClass<ExecutionSucceeded>()('ExecutionSucceeded', {
-	/** Timestamp when HTTP request completed successfully (ISO8601) */
-	finishedAt: Iso8601DateTime,
-	/** HTTP response metadata (status, headers, latency, body snippet) */
-	responseMeta: ResponseMeta,
-	serviceCallId: ServiceCallId,
-	tenantId: TenantId,
-}) {
-	static readonly decode = Schema.decode(this)
+export class ExecutionSucceeded extends Schema.TaggedClass<ExecutionSucceeded>()(
+	Tag.Execution.Events.ExecutionSucceeded,
+	{
+		/** Timestamp when HTTP request completed successfully (ISO8601) */
+		finishedAt: Iso8601DateTime,
+		/** HTTP response metadata (status, headers, latency, body snippet) */
+		responseMeta: ResponseMeta,
+		serviceCallId: ServiceCallId,
+		tenantId: TenantId,
+	},
+) {
+	static readonly decode = Schema.decode(ExecutionSucceeded)
 
-	static readonly encode = Schema.encode(this)
+	static readonly encode = Schema.encode(ExecutionSucceeded)
 }
 
 export declare namespace ExecutionSucceeded {
@@ -55,7 +59,7 @@ export declare namespace ExecutionSucceeded {
  * Produced by: Execution
  * Consumed by: Orchestration
  */
-export class ExecutionFailed extends Schema.TaggedClass<ExecutionFailed>()('ExecutionFailed', {
+export class ExecutionFailed extends Schema.TaggedClass<ExecutionFailed>()(Tag.Execution.Events.ExecutionFailed, {
 	/** Error details (kind, message, latency, additional context) */
 	errorMeta: ErrorMeta,
 	/** Timestamp when HTTP request failed (ISO8601) */
@@ -63,9 +67,9 @@ export class ExecutionFailed extends Schema.TaggedClass<ExecutionFailed>()('Exec
 	serviceCallId: ServiceCallId,
 	tenantId: TenantId,
 }) {
-	static readonly decode = Schema.decode(this)
+	static readonly decode = Schema.decode(ExecutionFailed)
 
-	static readonly encode = Schema.encode(this)
+	static readonly encode = Schema.encode(ExecutionFailed)
 }
 
 export declare namespace ExecutionFailed {

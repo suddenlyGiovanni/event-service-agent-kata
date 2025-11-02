@@ -15,7 +15,7 @@
 		"dev": "bun --watch src/index.ts",
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
-		"test": "bun --bun vitest",
+		"test": "bun run --bun vitest",
 		"type-check": "tsc --noEmit"
 	},
 	"type": "module",

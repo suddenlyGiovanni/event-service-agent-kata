@@ -2,6 +2,7 @@ import * as Schema from 'effect/Schema'
 
 import { Iso8601DateTime, ServiceCallId, TenantId } from '../../shared/index.ts'
 import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
+import { Tag } from '../tag.ts'
 
 /**
  * Orchestration Commands
@@ -53,7 +54,7 @@ import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
  * const dto = yield* ScheduleTimer.encode(command)
  * ```
  */
-export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()('ScheduleTimer', {
+export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()(Tag.Orchestration.Commands.ScheduleTimer, {
 	dueAt: Iso8601DateTime,
 	serviceCallId: ServiceCallId,
 	tenantId: TenantId,
@@ -93,7 +94,7 @@ export declare namespace ScheduleTimer {
  * is stored separately in persistent storage (see storage contract definition) and retrieved by the Execution module using
  * the serviceCallId. This avoids transmitting large payloads in commands/events.
  */
-export class StartExecution extends Schema.TaggedClass<StartExecution>()('StartExecution', {
+export class StartExecution extends Schema.TaggedClass<StartExecution>()(Tag.Orchestration.Commands.StartExecution, {
 	/**
 	 * HTTP request specification (body excluded)
 	 *
