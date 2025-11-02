@@ -49,12 +49,14 @@ Messages traverse four architectural layers from domain to wire:
 ```
 
 **Key Points**:
+
 - **Domain events** use branded types (e.g., `TenantId.Type`, `ServiceCallId.Type`)
 - **DTOs** (Encoded) unbrand types for JSON serialization (e.g., `string`)
 - **Envelope** wraps DTO with routing metadata (tenantId, correlationId, timestampMs)
 - **JSON** serialization happens at NATS adapter (not domain/adapter layers)
 
 **Consuming (reverse flow)**:
+
 1. NATS receives JSON bytes
 2. `MessageEnvelopeSchema.parseJson` validates envelope structure
 3. Route based on `envelope.type` discriminator
