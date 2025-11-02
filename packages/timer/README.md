@@ -112,6 +112,7 @@ BatchProcessingError {
 
 ```typescript
 import { scheduleTimerWorkflow } from '@event-service-agent/timer'
+import { Iso8601DateTime } from '@event-service-agent/schemas/shared'
 
 const program = Effect.gen(function* () {
   yield* scheduleTimerWorkflow({
@@ -140,8 +141,8 @@ const program = Effect.gen(function* () {
 
 ## Dependencies
 
-- **@event-service-agent/platform**: Messages, ports, routing
-- **@event-service-agent/schemas**: Validated types (TenantId, ServiceCallId, etc.)
+- **@event-service-agent/platform**: Ports (EventBusPort), routing (Topics), UUID7 service
+- **@event-service-agent/schemas**: Message schemas and validated types (TenantId, ServiceCallId, Iso8601DateTime, etc.)
 - **effect**: Effect system for workflows and state management
 
 ## Test Coverage

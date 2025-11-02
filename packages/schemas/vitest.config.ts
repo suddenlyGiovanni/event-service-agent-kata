@@ -5,6 +5,6 @@ export default defineConfig({
     name: "schemas",
     environment: "node",
     passWithNoTests: true,
-    include: ["src/**/*.{test,spec}.{ts,tsx}"]
+    include: ["src/**/*.test.ts"]
   }
 });
