@@ -619,6 +619,7 @@ switch (envelope.payload._tag) {
 **Rationale**:
 
 When consuming messages from the wire (NATS), we need to:
+
 1. Parse JSON string → validate envelope structure
 2. Validate payload is a valid domain message
 3. Type-safely route based on message type
