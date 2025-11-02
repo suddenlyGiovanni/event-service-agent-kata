@@ -83,42 +83,40 @@ export class TimerEventBus {
 					yield* sharedBus.publish([envelope])
 				}),
 
-				subscribeToScheduleTimerCommands: Effect.fn('Timer.subscribeToScheduleTimerCommands')(function* <E>(
+				subscribeToScheduleTimerCommands: Effect.fn('Timer.subscribeToScheduleTimerCommands')(function* <E, R>(
 					handler: (
 						command: Messages.Orchestration.Commands.ScheduleTimer.Type,
 						correlationId?: CorrelationId.Type,
-					) => Effect.Effect<void, E>,
+					) => Effect.Effect<void, E, R>,
 				) {
-					yield* sharedBus.subscribe(
-						[Topics.Timer.Commands],
-						envelope =>
-							Effect.gen(function* () {
-								// 1. Type guard: Ensure it's a ScheduleTimer command
-								if (envelope.type !== 'ScheduleTimer') {
-									// Log and ignore unexpected message types to keep consumer alive
-									return yield* Effect.logDebug('Ignoring non-ScheduleTimer message', {
-										receivedType: envelope.type,
-									})
-								}
+					yield* sharedBus.subscribe([Topics.Timer.Commands], envelope =>
+						Effect.gen(function* () {
+							// 1. Type guard: Ensure it's a ScheduleTimer command
+							if (envelope.type !== 'ScheduleTimer') {
+								// Log and ignore unexpected message types to keep consumer alive
+								return yield* Effect.logDebug('Ignoring non-ScheduleTimer message', {
+									receivedType: envelope.type,
+								})
+							}
 
-								// 2. Decode and validate payload using schema
-								// After type guard, TypeScript knows envelope.type is 'ScheduleTimer',
-								// but envelope.payload is still union type. Cast is safe here.
-								const command = yield* Messages.Orchestration.Commands.ScheduleTimer.decode(
-									envelope.payload as Messages.Orchestration.Commands.ScheduleTimer.Type,
-								).pipe(
-									// Map ParseError to SubscribeError to match port signature
-									Effect.mapError(
-										(parseError): SubscribeError =>
-											new SubscribeError({
-												cause: `Failed to decode ScheduleTimer: ${String(parseError)}`,
-											}),
-									),
-								)
+							// 2. Decode and validate payload using schema
+							// After type guard, TypeScript knows envelope.type is 'ScheduleTimer',
+							// but envelope.payload is still union type. Cast is safe here.
+							const command = yield* Messages.Orchestration.Commands.ScheduleTimer.decode(
+								envelope.payload as Messages.Orchestration.Commands.ScheduleTimer.Type,
+							).pipe(
+								// Map ParseError to SubscribeError to match port signature
+								Effect.mapError(
+									(parseError): SubscribeError =>
+										new SubscribeError({
+											cause: `Failed to decode ScheduleTimer: ${String(parseError)}`,
+										}),
+								),
+							)
 
-								// 3. Delegate to handler
-								yield* handler(command, envelope.correlationId)
-							}) as Effect.Effect<void, SubscribeError | E>,
+							// 3. Delegate to handler
+							yield* handler(command, envelope.correlationId)
+						}),
 					)
 				}),
 			})

@@ -69,12 +69,12 @@ export interface TimerEventBusPort {
 	 * )
 	 * ```
 	 */
-	readonly subscribeToScheduleTimerCommands: <E>(
+	readonly subscribeToScheduleTimerCommands: <E, R>(
 		handler: (
 			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
 			correlationId?: CorrelationId.Type,
-		) => Effect.Effect<void, E>,
-	) => Effect.Effect<void, SubscribeError | E>
+		) => Effect.Effect<void, E, R>,
+	) => Effect.Effect<void, SubscribeError | E, R>
 }
 
 export const TimerEventBusPort = Context.GenericTag<TimerEventBusPort>('@event-service-agent/timer/TimerEventBusPort')
