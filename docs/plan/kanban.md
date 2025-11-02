@@ -38,7 +38,7 @@ Prioritized queue.
 - (PL-5) Execution module with mock HttpClientPort [Execution]
 - (PL-6) Persistence adapter (SQLite) and migrations [infra]
 - (PL-7) API server with submit/list/detail routes [Api]
-- (PL-8) Redaction & idempotency utilities + tests [contracts]
+- (PL-8) Redaction & idempotency utilities + tests [platform]
 
 ## Doing (WIP ≤ 2)
 

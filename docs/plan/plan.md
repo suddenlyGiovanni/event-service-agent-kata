@@ -9,7 +9,7 @@ Current Focus
 
 - Milestone 1 — Contracts & Scaffolding: [ADR-0003] accepted (periodic polling, 5s interval, shared DB with strong boundaries, publish-then-update pattern). [ADR-0004] accepted (single shared database `event_service.db` with module-specific ports/adapters). Timer will be broker-agnostic with SQLite persistence.
 - Defining message ADTs and port interfaces in TypeScript, aligned to `docs/design/messages.md` and `docs/design/ports.md`.
-- Next: Create contracts package structure with message types (ScheduleTimer, DueTimeReached, SubmitServiceCall, etc.) and port interfaces (EventBusPort, TimerPort, PersistencePort, etc.).
+- Next: Create schemas and platform package structure with message types (ScheduleTimer, DueTimeReached, SubmitServiceCall, etc.) and port interfaces (EventBusPort, TimerPort, PersistencePort, etc.).
 
 Principles
 
@@ -22,7 +22,7 @@ Milestones (aligned to Gates)
 1. Contracts & Scaffolding
 
 - Define message ADTs and port interfaces in TypeScript, aligned to `docs/design/messages.md` and `docs/design/ports.md`.
-- Set up pnpm workspaces (packages: `contracts`, later adapters/services).
+- Set up Bun workspaces (packages: `schemas`, `platform`, later module packages).
 - Acceptance: type-check passes; unit tests cover message constructors and basic validation.
 
 2. Orchestration Core (Pure)
@@ -114,7 +114,7 @@ Risks & Mitigations
 
 Deliverables
 
-- Packages: `contracts`, `orchestration`, `execution`, `timer`, `api`, `infra-adapters`.
+- Packages: `schemas`, `platform`, `orchestration`, `execution`, `timer`, `api`, `adapters`.
 - Broker adapter package aligned to [ADR-0002]; docker-compose for local broker.
 
 ---
