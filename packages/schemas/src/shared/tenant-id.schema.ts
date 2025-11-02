@@ -13,13 +13,13 @@ import type * as Either from 'effect/Either'
 import type * as ParseResult from 'effect/ParseResult'
 import * as Schema from 'effect/Schema'
 
-import { UUID7 as Uuid7Service } from '@event-service-agent/platform/uuid7'
+import * as Service from '@event-service-agent/platform/uuid7'
 
-import { UUID7 } from './uuid7.schema.ts'
+import * as Schemas from './index.ts'
 
 const TenantIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/TenantId')
 
-export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
+export class TenantId extends Schemas.UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	/**
 	 * Generates a new TenantId using UUID version 7
 	 *
@@ -49,12 +49,12 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	 */
 	static readonly makeUUID7: (
 		time?: DateTime.Utc,
-	) => Effect.Effect<TenantId.Type, ParseResult.ParseError, Uuid7Service> = time =>
-		Uuid7Service.pipe(
+	) => Effect.Effect<TenantId.Type, ParseResult.ParseError, Service.UUID7> = time =>
+		Service.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
 			Effect.map(
 				// Use make() instead of decode() - the UUID7 is already validated by the service
-				(uuid7: UUID7.Type): TenantId.Type => TenantId.make(uuid7),
+				(uuid7: Schemas.UUID7.Type): TenantId.Type => TenantId.make(uuid7),
 			),
 		)
 
