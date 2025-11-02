@@ -642,6 +642,7 @@ match(envelope.payload, {
 ```
 
 **Why Schema.Unknown Doesn't Work**:
+
 ```typescript
 // Envelope with unknown payload
 payload: Schema.Unknown
