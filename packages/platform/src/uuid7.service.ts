@@ -10,8 +10,8 @@
  * The service bridges the gap between low-level system UUID generation
  * and domain-level validated UUID7 values.
  *
- * @see {@link ./shared/uuid7.schema.ts} for UUID7 schema definition
- * @see {@link @event-service-agent/platform/ports/uuid.port.ts} for UUID port interface (will be in platform)
+ * @see {@link @event-service-agent/schemas/shared} for UUID7 schema definition
+ * @see {@link ./ports/uuid.port.ts} for UUID port interface
  */
 
 import type * as DateTime from 'effect/DateTime'
@@ -20,9 +20,9 @@ import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import type * as ParseResult from 'effect/ParseResult'
 
-import * as Ports from '@event-service-agent/platform/ports'
+import * as Schema from '@event-service-agent/schemas/shared'
 
-import * as Schema from './shared/index.ts'
+import * as Ports from './ports/index.ts'
 
 /**
  * UUID7 - Domain service for generating validated UUID7 values
@@ -36,7 +36,7 @@ import * as Schema from './shared/index.ts'
  * @example
  * ```typescript
  * import { Effect } from 'effect'
- * import { UUID7 } from '@event-service-agent/schemas/uuid7.service'
+ * import { UUID7 } from '@event-service-agent/platform'
  *
  * // Production usage with accessor
  * const program = Effect.gen(function* () {
@@ -100,15 +100,15 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 * @example
 	 * ```typescript
 	 * import { Effect } from 'effect'
-	 * import { UUID7Service } from '@event-service-agent/schemas/uuid7.service'
+	 * import { UUID7 } from '@event-service-agent/platform'
 	 *
 	 * const testProgram = Effect.gen(function* () {
-	 *   const id1 = yield* UUID7Service.randomUUIDv7()
-	 *   const id2 = yield* UUID7Service.randomUUIDv7()
+	 *   const id1 = yield* UUID7.randomUUIDv7()
+	 *   const id2 = yield* UUID7.randomUUIDv7()
 	 *   // Both will be "01234567-89ab-7cde-89ab-0123456789ab"
 	 *   return [id1, id2]
 	 * }).pipe(Effect.provide(
-	 *   UUID7Service.Test("01234567-89ab-7cde-89ab-0123456789ab")
+	 *   UUID7.Test("01234567-89ab-7cde-89ab-0123456789ab")
 	 * ))
 	 * ```
 	 */
@@ -129,14 +129,14 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 * @example
 	 * ```typescript
 	 * import { Effect } from 'effect'
-	 * import { UUID7Service } from '@event-service-agent/schemas/uuid7.service'
+	 * import { UUID7 } from '@event-service-agent/platform'
 	 *
 	 * const testProgram = Effect.gen(function* () {
-	 *   const id1 = yield* UUID7Service.randomUUIDv7() // "12345678-0000-7000-8000-000000000000"
-	 *   const id2 = yield* UUID7Service.randomUUIDv7() // "12345678-0000-7000-8000-000000000001"
-	 *   const id3 = yield* UUID7Service.randomUUIDv7() // "12345678-0000-7000-8000-000000000002"
+	 *   const id1 = yield* UUID7.randomUUIDv7() // "12345678-0000-7000-8000-000000000000"
+	 *   const id2 = yield* UUID7.randomUUIDv7() // "12345678-0000-7000-8000-000000000001"
+	 *   const id3 = yield* UUID7.randomUUIDv7() // "12345678-0000-7000-8000-000000000002"
 	 *   return [id1, id2, id3]
-	 * }).pipe(Effect.provide(UUID7Service.Sequence("12345678")))
+	 * }).pipe(Effect.provide(UUID7.Sequence("12345678")))
 	 * ```
 	 */
 	static readonly Sequence = (prefix = '00000000'): Layer.Layer<UUID7> =>

@@ -6,7 +6,7 @@ import * as Option from 'effect/Option'
 
 import { PublishError, SubscribeError } from '@event-service-agent/platform/ports'
 import { Topics } from '@event-service-agent/platform/routing'
-import { UUID7 } from '@event-service-agent/schemas'
+import { UUID7 } from '@event-service-agent/platform/uuid7'
 import { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { type CorrelationId, EnvelopeId, Iso8601DateTime } from '@event-service-agent/schemas/shared'

@@ -13,7 +13,8 @@ import type * as Either from 'effect/Either'
 import type * as ParseResult from 'effect/ParseResult'
 import * as Schema from 'effect/Schema'
 
-import { UUID7 as Uuid7Service } from '../uuid7.service.ts'
+import { UUID7 as Uuid7Service } from '@event-service-agent/platform/uuid7'
+
 import { UUID7 } from './uuid7.schema.ts'
 
 const CorrelationIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/CorrelationId')

@@ -13,7 +13,8 @@
 	},
 	"exports": {
 		"./ports": "./src/ports/index.ts",
-		"./routing": "./src/routing/index.ts"
+		"./routing": "./src/routing/index.ts",
+		"./uuid7": "./src/uuid7.service.ts"
 	},
 	"name": "@event-service-agent/platform",
 	"private": true,

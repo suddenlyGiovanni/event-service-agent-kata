@@ -12,10 +12,10 @@
 		"./envelope": "./src/envelope/index.ts"
 	},
 	"dependencies": {
-		"effect": "catalog:effect",
-		"@event-service-agent/platform": "workspace:*"
+		"effect": "catalog:effect"
 	},
 	"devDependencies": {
+		"@event-service-agent/platform": "workspace:*",
 		"@effect/vitest": "catalog:test",
 		"@event-service-agent/typescript": "workspace:*",
 		"@total-typescript/ts-reset": "catalog:types",

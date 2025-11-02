@@ -9,7 +9,8 @@ import * as Exit from 'effect/Exit'
 import * as Option from 'effect/Option'
 import type * as ParseResult from 'effect/ParseResult'
 
-import * as Schema from './shared/index.ts'
+import * as Schema from '@event-service-agent/schemas/shared'
+
 import * as Services from './uuid7.service.ts'
 
 describe('UUID7', () => {

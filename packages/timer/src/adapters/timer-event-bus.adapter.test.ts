@@ -301,13 +301,13 @@ describe('TimerEventBus', () => {
 				}
 
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
-					subscribe: <E>(
+					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E>,
+						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E, R>,
 					) =>
 						Effect.gen(function* () {
 							yield* handler(envelope)
-						}) as Effect.Effect<void, E>,
+						}) as Effect.Effect<void, E, R>,
 				})
 
 				const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
@@ -355,13 +355,13 @@ describe('TimerEventBus', () => {
 				}
 
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
-					subscribe: <E>(
+					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E>,
+						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E, R>,
 					) =>
 						Effect.gen(function* () {
 							yield* handler(envelope)
-						}) as Effect.Effect<void, E>,
+						}) as Effect.Effect<void, E, R>,
 				})
 
 				const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
@@ -401,13 +401,13 @@ describe('TimerEventBus', () => {
 				}
 
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
-					subscribe: <E>(
+					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E>,
+						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E, R>,
 					) =>
 						Effect.gen(function* () {
 							yield* handler(envelope)
-						}) as Effect.Effect<void, E>,
+						}) as Effect.Effect<void, E, R>,
 				})
 
 				const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
@@ -446,13 +446,13 @@ describe('TimerEventBus', () => {
 				}
 
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
-					subscribe: <E>(
+					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E>,
+						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E, R>,
 					) =>
 						Effect.gen(function* () {
 							yield* handler(envelope)
-						}) as Effect.Effect<void, E>,
+						}) as Effect.Effect<void, E, R>,
 				})
 
 				const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
@@ -485,13 +485,13 @@ describe('TimerEventBus', () => {
 				} as MessageEnvelopeSchema.Type
 
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
-					subscribe: <E>(
+					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E>,
+						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E, R>,
 					) =>
 						Effect.gen(function* () {
 							yield* handler(envelope)
-						}) as Effect.Effect<void, E>,
+						}) as Effect.Effect<void, E, R>,
 				})
 
 				const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
