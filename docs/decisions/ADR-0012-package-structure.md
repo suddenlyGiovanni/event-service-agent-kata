@@ -103,6 +103,7 @@ packages/schemas/
 **Purpose**: Port interfaces, routing configuration, and infrastructure abstractions (hexagonal architecture boundaries).
 
 **Contents**:
+
 - Port interfaces: `EventBusPort`, `UUID7Port`
 - Error types: `PublishError`, `SubscribeError` (Data.TaggedError)
 - Routing configuration: `Topics` namespace
