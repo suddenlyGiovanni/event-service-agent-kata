@@ -35,7 +35,7 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	 * ```typescript
 	 * import * as Effect from 'effect/Effect'
 	 * import * as Console from 'effect/Console'
-	 * import { Uuid7ServiceLive } from '../services/uuid7.service.ts'
+	 * import { UUID7 } from '@event-service-agent/platform/uuid7'
 	 *
 	 * // Generate with current time
 	 * const program = Effect.gen(function* () {
@@ -44,7 +44,7 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	 *   yield* Console.log(`Generated TenantId: ${tenantId}`)
 	 *
 	 *   return tenantId
-	 * }).pipe(Effect.provide(Uuid7ServiceLive))
+	 * }).pipe(Effect.provide(UUID7.Default))
 	 * ```
 	 */
 	static readonly makeUUID7: (

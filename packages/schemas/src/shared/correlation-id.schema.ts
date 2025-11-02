@@ -35,7 +35,7 @@ export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) 
 	 * ```typescript
 	 * import * as Effect from 'effect/Effect'
 	 * import * as Console from 'effect/Console'
-	 * import { Uuid7ServiceLive } from '../uuid7.service.ts'
+	 * import { UUID7 } from '@event-service-agent/platform/uuid7'
 	 *
 	 * // Generate with current time
 	 * const program = Effect.gen(function* () {
@@ -44,7 +44,7 @@ export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) 
 	 *   yield* Console.log(`Generated CorrelationId: ${correlationId}`)
 	 *
 	 *   return correlationId
-	 * }).pipe(Effect.provide(Uuid7ServiceLive))
+	 * }).pipe(Effect.provide(UUID7.Default))
 	 * ```
 	 */
 	static readonly makeUUID7: (
