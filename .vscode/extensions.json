@@ -1,33 +1,33 @@
 {
-    "recommendations": [
-        // Biome - Fast formatter and linter
-        "biomejs.biome",
-        
-        // TypeScript/JavaScript
-        "effectful-tech.effect-vscode",
-        
-        // Testing
-        "vitest.explorer",
-        
-        // Git
-        "eamodio.gitlens",
-        
-        // Nix + direnv (required for this project)
-        "arrterian.nix-env-selector",
-        "jnoortheen.nix-ide",
-        "mkhl.direnv",
-        
-        // Markdown
-        "yzhang.markdown-all-in-one",
-        "DavidAnson.vscode-markdownlint",
-        
-        // Utilities
-        "usernamehw.errorlens",
-        "streetsidesoftware.code-spell-checker"
-    ],
-    "unwantedRecommendations": [
-        // Conflicts with Biome
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode"
-    ]
+	"recommendations": [
+		// Biome - Fast formatter and linter
+		"biomejs.biome",
+
+		// TypeScript/JavaScript
+		"effectful-tech.effect-vscode",
+
+		// Testing
+		"vitest.explorer",
+
+		// Git
+		"eamodio.gitlens",
+
+		// Nix + direnv (required for this project)
+		"arrterian.nix-env-selector",
+		"jnoortheen.nix-ide",
+		"mkhl.direnv",
+
+		// Markdown
+		"yzhang.markdown-all-in-one",
+		"DavidAnson.vscode-markdownlint",
+
+		// Utilities
+		"usernamehw.errorlens",
+		"streetsidesoftware.code-spell-checker"
+	],
+	"unwantedRecommendations": [
+		// Conflicts with Biome
+		"dbaeumer.vscode-eslint",
+		"esbenp.prettier-vscode"
+	]
 }

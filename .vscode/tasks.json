@@ -1,86 +1,86 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "test: all",
-            "type": "shell",
-            "command": "bun --bun --workspaces run test --run",
-            "group": "test",
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "test: watch",
-            "type": "shell",
-            "command": "bun --bun --workspaces run test",
-            "group": "test",
-            "isBackground": true,
-            "presentation": {
-                "reveal": "always",
-                "panel": "dedicated"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "format: all",
-            "type": "shell",
-            "command": "bun --bun --workspaces format",
-            "group": "none",
-            "presentation": {
-                "reveal": "silent",
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "lint: all",
-            "type": "shell",
-            "command": "bun --bun --workspaces lint",
-            "group": "none",
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "check: all (format + lint)",
-            "type": "shell",
-            "command": "bun --bun --workspaces check",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "typecheck: all",
-            "type": "shell",
-            "command": "bun --bun --workspaces type-check",
-            "group": "build",
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": ["$tsc"]
-        },
-        {
-            "label": "install dependencies",
-            "type": "shell",
-            "command": "bun install",
-            "group": "none",
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        }
-    ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "test: all",
+			"type": "shell",
+			"command": "bun --bun --workspaces run test --run",
+			"group": "test",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "test: watch",
+			"type": "shell",
+			"command": "bun --bun --workspaces run test",
+			"group": "test",
+			"isBackground": true,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "format: all",
+			"type": "shell",
+			"command": "bun --bun --workspaces format",
+			"group": "none",
+			"presentation": {
+				"reveal": "silent",
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "lint: all",
+			"type": "shell",
+			"command": "bun --bun --workspaces lint",
+			"group": "none",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "check: all (format + lint)",
+			"type": "shell",
+			"command": "bun --bun --workspaces check",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "typecheck: all",
+			"type": "shell",
+			"command": "bun --bun --workspaces type-check",
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"problemMatcher": ["$tsc"]
+		},
+		{
+			"label": "install dependencies",
+			"type": "shell",
+			"command": "bun install",
+			"group": "none",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		}
+	]
 }

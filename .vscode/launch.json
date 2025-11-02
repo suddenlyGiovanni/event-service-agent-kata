@@ -1,37 +1,32 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "bun",
-            "request": "launch",
-            "name": "Debug Current Test File",
-            "cwd": "${workspaceFolder}",
-            "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
-            "args": [
-                "run",
-                "${relativeFile}"
-            ],
-            "internalConsoleOptions": "neverOpen"
-        },
-        {
-            "type": "bun",
-            "request": "launch",
-            "name": "Debug All Tests",
-            "cwd": "${workspaceFolder}",
-            "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
-            "args": [
-                "run"
-            ],
-            "internalConsoleOptions": "neverOpen"
-        },
-        {
-            "type": "bun",
-            "request": "launch",
-            "name": "Debug Tests (Watch Mode)",
-            "cwd": "${workspaceFolder}",
-            "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
-            "args": [],
-            "internalConsoleOptions": "neverOpen"
-        }
-    ]
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "bun",
+			"request": "launch",
+			"name": "Debug Current Test File",
+			"cwd": "${workspaceFolder}",
+			"program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+			"args": ["run", "${relativeFile}"],
+			"internalConsoleOptions": "neverOpen"
+		},
+		{
+			"type": "bun",
+			"request": "launch",
+			"name": "Debug All Tests",
+			"cwd": "${workspaceFolder}",
+			"program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+			"args": ["run"],
+			"internalConsoleOptions": "neverOpen"
+		},
+		{
+			"type": "bun",
+			"request": "launch",
+			"name": "Debug Tests (Watch Mode)",
+			"cwd": "${workspaceFolder}",
+			"program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+			"args": [],
+			"internalConsoleOptions": "neverOpen"
+		}
+	]
 }
