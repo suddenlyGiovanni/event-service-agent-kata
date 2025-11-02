@@ -34,7 +34,7 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 	 * ```typescript
 	 * import * as Effect from 'effect/Effect'
 	 * import * as Console from 'effect/Console'
-	 * import { Uuid7ServiceLive } from '../services/uuid7.service.ts'
+	 * import { Uuid7ServiceLive } from '../uuid7.service.ts'
 	 *
 	 * // Generate with current time
 	 * const program = Effect.gen(function* () {
