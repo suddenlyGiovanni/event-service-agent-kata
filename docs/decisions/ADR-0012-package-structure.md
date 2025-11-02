@@ -183,6 +183,7 @@ modules (timer, orchestration, execution, api)
 - `@event-service-agent/contracts` → `@event-service-agent/platform`
 
 ### New Package
+
 - `@event-service-agent/schemas` (created)
 
 ### Files Moved to `schemas/`
