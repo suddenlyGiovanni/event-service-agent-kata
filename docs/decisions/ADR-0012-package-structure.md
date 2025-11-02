@@ -20,6 +20,7 @@ During PL-14 schema migration, we discovered that the `@event-service-agent/cont
 **Core Issue**: Attempting to define `MessageEnvelopeSchema` with typed `DomainMessage` union exposed architectural problems:
 
 ### Option 1: Define DTO shapes in contracts (REJECTED)
+
 ```typescript
 // contracts defines plain DTO shape
 export const DomainMessage = Schema.Union(
