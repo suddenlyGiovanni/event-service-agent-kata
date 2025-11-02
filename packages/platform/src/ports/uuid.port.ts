@@ -38,19 +38,21 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	}
 >() {
 	/**
-	 * Provides a default `UUID` tag implementation backed by `Bun.randomUUIDv7`
-	 * so consumers can depend on an in-process UUIDv7 generator without wiring
-	 * a custom layer.
+	 * Default adapter - Uses Bun's native UUID v7 implementation
+	 *
+	 * Delegates to Bun.randomUUIDv7() which provides a native, high-performance
+	 * implementation of the UUID version 7 specification.
 	 *
 	 * @example
 	 * ```typescript
 	 * import { Effect } from 'effect'
 	 * import { UUIDPort } from '@event-service-agent/platform/ports'
 	 *
-	 * const program: Effect.Effect<void, never, UUIDPort> = Effect.gen(function* () {
+	 * // In domain code
+	 * const program: Effect.Effect<string, never, UUIDPort> = Effect.gen(function* () {
 	 *     const uuid = yield* UUIDPort
 	 *     const rawId = uuid.randomUUIDv7()
-	 *     yield* Console.log(rawId)
+	 *     return rawId
 	 * })
 	 *
 	 * // Provide default implementation
