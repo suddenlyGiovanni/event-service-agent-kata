@@ -216,6 +216,7 @@ From `timer/src/domain/`:
 ### Import Path Changes
 
 **Before**:
+
 ```typescript
 import { TenantId } from '@event-service-agent/contracts/types'
 import { EventBusPort } from '@event-service-agent/contracts/ports'
