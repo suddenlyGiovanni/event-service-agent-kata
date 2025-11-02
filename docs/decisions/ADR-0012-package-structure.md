@@ -195,6 +195,7 @@ From `contracts/src/types/`:
 - `message-envelope.schema.ts` → `schemas/src/envelope/message-envelope.schema.ts`
 
 From `contracts/src/services/`:
+
 - `uuid7.service.ts` → `schemas/src/uuid7.service.ts`
 
 From `timer/src/domain/`:
