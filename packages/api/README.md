@@ -40,7 +40,7 @@ Return full details of a specific service call:
 
 The API module is an **edge adapter** that translates HTTP to domain commands:
 
-```
+```txt
 HTTP Client
     ↓
 ┌─────────────────────────────────┐
@@ -86,7 +86,7 @@ This package exists as a placeholder. The API module will be implemented after:
 
 ## Planned Structure
 
-```
+```txt
 packages/api/
 ├── src/
 │   ├── routes/

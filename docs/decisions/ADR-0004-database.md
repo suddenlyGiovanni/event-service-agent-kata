@@ -89,7 +89,7 @@ Orchestration writes domain + outbox atomically (one transaction). Timer receive
 
 Single `event_service.db` file containing all tables. Each module has its own adapter accessing different tables.
 
-```
+```txt
 ./data/event_service.db
 ├── service_calls       # Orchestration
 ├── service_call_tags   # Orchestration
@@ -114,7 +114,7 @@ Single `event_service.db` file containing all tables. Each module has its own ad
 
 Each module owns its own SQLite file. Physical isolation enforces boundaries.
 
-```
+```txt
 ./data/
 ├── orchestration.db
 │   ├── service_calls

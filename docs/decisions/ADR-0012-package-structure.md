@@ -73,7 +73,7 @@ import { DueTimeReached } from '@event-service-agent/timer/domain'
 
 **Structure**:
 
-```
+```txt
 packages/schemas/
   src/
     shared/
@@ -112,7 +112,7 @@ packages/schemas/
 
 **Structure**:
 
-```
+```txt
 packages/platform/
   src/
     ports/
@@ -158,7 +158,7 @@ packages/platform/
 
 ## Dependency Graph
 
-```
+```txt
 effect (external)
   ↓
 schemas (foundational + domain schemas)

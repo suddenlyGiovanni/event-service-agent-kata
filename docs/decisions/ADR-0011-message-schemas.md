@@ -96,7 +96,7 @@ yield * workflow.handle(event);
 
 Each module owns its message schemas:
 
-```
+```txt
 packages/
   timer/src/domain/
     events.domain.ts          ← export class DueTimeReached
@@ -322,7 +322,7 @@ Domain events need to be:
 
 **Four-Layer Serialization Flow**:
 
-```
+```txt
 Layer 1: Domain Events (branded types, validated)
   ↓ Schema.encode (Type → DTO)
 Layer 2: Adapter wraps DTO in MessageEnvelope

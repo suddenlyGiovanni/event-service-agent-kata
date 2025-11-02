@@ -248,7 +248,7 @@ await tx.run(
 
 **In our case:**
 
-```
+```txt
 ./data/event_service.db  (SQLite file)
 ├── service_calls table
 ├── service_call_tags table
@@ -453,7 +453,7 @@ const program = submitServiceCall(request).pipe(
 
 For `event-service-agent-kata`:
 
-```
+```txt
 Domain Core (packages/orchestration/src/domain/)
     ↓ depends on
 Port Interface (packages/orchestration/src/ports/persistence.ts)

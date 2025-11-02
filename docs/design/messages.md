@@ -25,7 +25,7 @@
 
 Messages traverse four architectural layers from domain to wire:
 
-```
+```txt
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 1: Domain Events (validated, branded types)          │
 │   new DueTimeReached({ tenantId, serviceCallId, ... })     │

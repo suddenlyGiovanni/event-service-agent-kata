@@ -98,7 +98,7 @@ stateDiagram-v2
 
 **Converged Design:**
 
-```
+```txt
 1. Subscribe to ScheduleTimer commands from broker
 2. On command: Persist to storage (upsert by tenantId, serviceCallId)
 3. Worker loop (every 5s):
@@ -141,7 +141,7 @@ stateDiagram-v2
 
 **Migration Path:**
 
-```
+```txt
 Phase 1 (MVP): Single event_service.db + strong code boundaries
 Phase N: Extract to separate timer.db (already event-driven, denormalized)
 ```

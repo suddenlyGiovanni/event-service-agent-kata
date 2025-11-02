@@ -29,7 +29,7 @@ Classify and report errors:
 
 The Execution module is a **domain module** that orchestrates external HTTP calls:
 
-```
+```txt
 ┌─────────────────────────────────┐
 │  Orchestration                  │
 │  Publishes: StartExecution      │
@@ -77,7 +77,7 @@ This package exists as a placeholder. The Execution module will be implemented a
 
 ## Planned Structure
 
-```
+```txt
 packages/execution/
 ├── src/
 │   ├── domain/
