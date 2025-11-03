@@ -2,6 +2,7 @@
 import type * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import * as Match from 'effect/Match'
 import * as Option from 'effect/Option'
 
 import { PublishError } from '@event-service-agent/platform/ports'
@@ -87,23 +88,16 @@ export class TimerEventBus {
 					) => Effect.Effect<void, E, R>,
 				) {
 					yield* sharedBus.subscribe([Topics.Timer.Commands], envelope =>
-						Effect.gen(function* () {
-							// 1. Type guard: Ensure it's a ScheduleTimer command
-							if (envelope.type !== Messages.Orchestration.Commands.ScheduleTimer.Tag) {
-								// Log and ignore unexpected message types to keep consumer alive
-								return yield* Effect.logDebug('Ignoring non-ScheduleTimer message', {
+						MessageEnvelope.matchPayload(envelope).pipe(
+							Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, command =>
+								handler(command, Option.getOrUndefined(envelope.correlationId)),
+							),
+							Match.orElse(() =>
+								Effect.logDebug('Ignoring non-ScheduleTimer message', {
 									receivedType: envelope.type,
-								})
-							} // 2. Extract command from envelope (already decoded by EventBusPort)
-							// After type guard, envelope.payload is narrowed to ScheduleTimer.Type
-							// Cast is safe here since envelope.type === 'ScheduleTimer'
-							const command = envelope.payload as Messages.Orchestration.Commands.ScheduleTimer.Type
-
-							// 3. Delegate to handler
-							// Extract correlationId from Option (undefined if None)
-							const correlationId = Option.getOrUndefined(envelope.correlationId)
-							yield* handler(command, correlationId)
-						}),
+								}),
+							),
+						),
 					)
 				}),
 			})
