@@ -80,7 +80,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	static readonly decodeJson: (
 		jsonString: string,
 		options?: SchemaAst.ParseOptions,
-	) => Effect.Effect<MessageEnvelopeSchema, ParseResult.ParseError> = Schema.decode(
+	) => Effect.Effect<MessageEnvelopeSchema.Type, ParseResult.ParseError> = Schema.decode(
 		Schema.parseJson(MessageEnvelopeSchema),
 	)
 
@@ -122,7 +122,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * @see ADR-0012 for package structure (schemas package)
 	 */
 	static readonly encodeJson = (
-		envelope: MessageEnvelopeSchema,
+		envelope: MessageEnvelopeSchema.Type,
 		options?: SchemaAst.ParseOptions,
 	): Effect.Effect<string, ParseResult.ParseError, never> =>
 		pipe(envelope, Schema.encode(MessageEnvelopeSchema, options), Effect.map(JSON.stringify))

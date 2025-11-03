@@ -1,53 +1,60 @@
-import { describe, expect, it } from '@effect/vitest'
+import { assert, describe, expect, it } from '@effect/vitest'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 
-import { DueTimeReached } from '../messages/timer/events.schema.ts'
+import * as Messages from '../messages/index.ts'
+import { Tag } from '../messages/tag.ts'
 import { EnvelopeId, ServiceCallId, TenantId } from '../shared/index.ts'
 import { MessageEnvelopeSchema } from './message-envelope.schema.ts'
 
 describe('MessageEnvelopeSchema', () => {
+	// Extract common test data
+	const tenantId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'
+	const serviceCallId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'
+	const envelopeId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2'
+	const reachedAt = '2025-10-27T12:00:00.000Z'
+	const timestampMs = 1730030400000
+
 	describe('decodeJson', () => {
 		it.effect('decodes valid envelope with DueTimeReached payload', () =>
 			Effect.gen(function* () {
 				// Arrange: Valid JSON envelope with Timer event
 				const json = JSON.stringify({
 					_tag: 'MessageEnvelope',
-					aggregateId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-					id: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2',
+					aggregateId: serviceCallId,
+					id: envelopeId,
 					payload: {
-						_tag: 'DueTimeReached',
-						reachedAt: '2025-10-27T12:00:00.000Z',
-						serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-						tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
+						_tag: Tag.Timer.Events.DueTimeReached,
+						reachedAt,
+						serviceCallId,
+						tenantId,
 					},
-					tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-					timestampMs: 1730030400000,
-					type: 'DueTimeReached',
+					tenantId,
+					timestampMs,
+					type: Tag.Timer.Events.DueTimeReached,
 				})
 
 				// Act: Decode from JSON
 				const envelope = yield* MessageEnvelopeSchema.decodeJson(json)
 
 				// Assert: Envelope structure validated
-				expect(envelope.type).toBe('DueTimeReached')
-				expect(envelope.tenantId).toBe('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
-				expect(envelope.timestampMs).toBe(1730030400000)
+				expect(envelope.type).toBe(Tag.Timer.Events.DueTimeReached)
+				expect(envelope.tenantId).toBe(tenantId)
+				expect(envelope.timestampMs).toBe(timestampMs)
 
 				// Assert: Payload is DueTimeReached with correct structure
-				expect(envelope.payload._tag).toBe('DueTimeReached')
-				if (envelope.payload._tag === 'DueTimeReached') {
-					expect(envelope.payload.tenantId).toBe('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
-					expect(envelope.payload.serviceCallId).toBe('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
+				expect(envelope.payload._tag).toBe(Tag.Timer.Events.DueTimeReached)
+				if (envelope.payload._tag === Tag.Timer.Events.DueTimeReached) {
+					expect(envelope.payload.tenantId).toBe(tenantId)
+					expect(envelope.payload.serviceCallId).toBe(serviceCallId)
 
 					// ✅ CORRECT: Test domain type (DateTime.Utc), not encoded format
-					const { reachedAt } = envelope.payload
-					expect(reachedAt).toBeDefined()
-					if (reachedAt) {
-						expect(DateTime.isDateTime(reachedAt)).toBe(true)
-						expect(DateTime.isUtc(reachedAt)).toBe(true)
-					}
+					const { reachedAt: reachedAtField } = envelope.payload
+					assert(reachedAtField)
+
+					expect(DateTime.isDateTime(reachedAtField)).toBe(true)
+					expect(DateTime.isUtc(reachedAtField)).toBe(true)
 				}
 			}),
 		)
@@ -57,15 +64,15 @@ describe('MessageEnvelopeSchema', () => {
 				// Arrange: Minimal valid envelope
 				const json = JSON.stringify({
 					_tag: 'MessageEnvelope',
-					id: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2',
+					id: envelopeId,
 					payload: {
-						_tag: 'DueTimeReached',
-						serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-						tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
+						_tag: Tag.Timer.Events.DueTimeReached,
+						serviceCallId,
+						tenantId,
 					},
-					tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-					timestampMs: 1730030400000,
-					type: 'DueTimeReached',
+					tenantId,
+					timestampMs,
+					type: Tag.Timer.Events.DueTimeReached,
 				})
 
 				// Act: Decode from JSON
@@ -75,7 +82,7 @@ describe('MessageEnvelopeSchema', () => {
 				expect(envelope.aggregateId).toBeUndefined()
 				expect(envelope.causationId).toBeUndefined()
 				expect(envelope.correlationId).toBeUndefined()
-				expect(envelope.payload._tag).toBe('DueTimeReached')
+				expect(envelope.payload._tag).toBe(Tag.Timer.Events.DueTimeReached)
 			}),
 		)
 
@@ -96,7 +103,7 @@ describe('MessageEnvelopeSchema', () => {
 			Effect.gen(function* () {
 				// Arrange: Missing required fields
 				const json = JSON.stringify({
-					type: 'DueTimeReached',
+					type: Tag.Timer.Events.DueTimeReached,
 					// Missing id, tenantId, payload, timestampMs
 				})
 
@@ -113,13 +120,13 @@ describe('MessageEnvelopeSchema', () => {
 				// Arrange: Unknown payload type
 				const json = JSON.stringify({
 					_tag: 'MessageEnvelope',
-					id: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2',
+					id: envelopeId,
 					payload: {
 						_tag: 'UnknownEvent',
 						data: 'something',
 					},
-					tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-					timestampMs: 1730030400000,
+					tenantId,
+					timestampMs,
 					type: 'UnknownEvent',
 				})
 
@@ -136,71 +143,66 @@ describe('MessageEnvelopeSchema', () => {
 		it.effect('encodes envelope to JSON string', () =>
 			Effect.gen(function* () {
 				// Arrange: Create envelope with properly typed DueTimeReached (DateTime.Utc)
-				const reachedAt = yield* DateTime.make('2025-10-27T12:00:00.000Z')
-				const dueTimeReached = new DueTimeReached({
-					reachedAt,
-					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
-					tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
+				const reachedAtField = DateTime.unsafeMake(reachedAt)
+				const dueTimeReached = new Messages.Timer.Events.DueTimeReached({
+					reachedAt: reachedAtField,
+					serviceCallId: ServiceCallId.make(serviceCallId),
+					tenantId: TenantId.make(tenantId),
 				})
 
 				const envelope = new MessageEnvelopeSchema({
-					id: EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2'),
+					id: EnvelopeId.make(envelopeId),
 					payload: dueTimeReached,
-					tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
-					timestampMs: 1730030400000,
-					type: 'DueTimeReached',
+					tenantId: TenantId.make(tenantId),
+					timestampMs,
+					type: Tag.Timer.Events.DueTimeReached,
 				})
 
 				// Act: Encode to JSON (DateTime → ISO8601 string)
-				const json = yield* MessageEnvelopeSchema.encodeJson(envelope)
+				const json: string = yield* MessageEnvelopeSchema.encodeJson(envelope)
 
 				// Assert: Valid JSON string
-				expect(typeof json).toBe('string')
+				expect(json).toBeTypeOf('string')
 				const parsed = JSON.parse(json) as {
 					type: string
 					tenantId: string
 					payload: { _tag: string }
 				}
-				expect(parsed.type).toBe('DueTimeReached')
-				expect(parsed.tenantId).toBe('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
-				expect(parsed.payload._tag).toBe('DueTimeReached')
+				expect(parsed.type).toBe(Tag.Timer.Events.DueTimeReached)
+				expect(parsed.tenantId).toBe(tenantId)
+				expect(parsed.payload._tag).toBe(Tag.Timer.Events.DueTimeReached)
 			}),
 		)
 
 		it.effect('round-trips correctly', () =>
 			Effect.gen(function* () {
 				// Arrange: Create envelope with properly typed DueTimeReached (DateTime.Utc)
-				const reachedAt = yield* DateTime.make('2025-10-27T12:00:00.000Z')
-				const dueTimeReached = new DueTimeReached({
-					reachedAt,
-					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
-					tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
+				const reachedAtField = DateTime.unsafeMake(reachedAt)
+				const dueTimeReached: Messages.Timer.Events.DueTimeReached.Type = new Messages.Timer.Events.DueTimeReached({
+					reachedAt: reachedAtField,
+					serviceCallId: ServiceCallId.make(serviceCallId),
+					tenantId: TenantId.make(tenantId),
 				})
 
 				const original = new MessageEnvelopeSchema({
-					aggregateId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-					id: EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2'),
+					aggregateId: serviceCallId,
+					id: EnvelopeId.make(envelopeId),
 					payload: dueTimeReached,
-					tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
-					timestampMs: 1730030400000,
-					type: 'DueTimeReached',
+					tenantId: TenantId.make(tenantId),
+					timestampMs,
+					type: Tag.Timer.Events.DueTimeReached,
 				})
 
 				// Act: Encode then decode
-				const json = yield* MessageEnvelopeSchema.encodeJson(original)
-				const decoded = yield* MessageEnvelopeSchema.decodeJson(json)
+				const json: string = yield* MessageEnvelopeSchema.encodeJson(original)
+				const decoded: MessageEnvelopeSchema.Type = yield* MessageEnvelopeSchema.decodeJson(json)
 
 				// Assert: Round-trip preserves data
-				// biome-ignore lint/suspicious/noExplicitAny: Schema.Class properties exist at runtime but not in type
-				expect((decoded as any).type).toBe((original as any).type)
-				// biome-ignore lint/suspicious/noExplicitAny: Schema.Class properties exist at runtime but not in type
-				expect((decoded as any).tenantId).toBe((original as any).tenantId)
-				// biome-ignore lint/suspicious/noExplicitAny: Schema.Class properties exist at runtime but not in type
-				expect((decoded as any).timestampMs).toBe((original as any).timestampMs)
-				// biome-ignore lint/suspicious/noExplicitAny: Schema.Class properties exist at runtime but not in type
-				expect((decoded as any).aggregateId).toBe((original as any).aggregateId)
-				// biome-ignore lint/suspicious/noExplicitAny: Schema.Class properties exist at runtime but not in type
-				expect((decoded as any).payload._tag).toBe((original as any).payload._tag)
+				expect(decoded.type).toBe(original.type)
+				expect(decoded.tenantId).toBe(original.tenantId)
+				expect(decoded.timestampMs).toBe(original.timestampMs)
+				expect(decoded.aggregateId).toBe(original.aggregateId)
+				expect(decoded.payload._tag).toBe(original.payload._tag)
 			}),
 		)
 	})
