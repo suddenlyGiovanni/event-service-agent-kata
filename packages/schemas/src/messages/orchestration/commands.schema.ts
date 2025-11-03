@@ -2,7 +2,6 @@ import * as Schema from 'effect/Schema'
 
 import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
 import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
-import { Tag } from '../tag.ts'
 
 /**
  * Orchestration Commands
@@ -54,7 +53,7 @@ import { Tag } from '../tag.ts'
  * const dto = yield* ScheduleTimer.encode(command)
  * ```
  */
-export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()(Tag.Orchestration.Commands.ScheduleTimer, {
+export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()('ScheduleTimer', {
 	...ServiceCallEventBase.fields,
 
 	dueAt: Schema.DateTimeUtc,
@@ -77,6 +76,9 @@ export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()(Tag.Orche
 	 * - Ready for JSON serialization
 	 */
 	static readonly encode = Schema.encode(ScheduleTimer)
+
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	static readonly Tag = ScheduleTimer._tag
 }
 
 export declare namespace ScheduleTimer {
@@ -94,7 +96,7 @@ export declare namespace ScheduleTimer {
  * is stored separately in persistent storage (see storage contract definition) and retrieved by the Execution module using
  * the serviceCallId. This avoids transmitting large payloads in commands/events.
  */
-export class StartExecution extends Schema.TaggedClass<StartExecution>()(Tag.Orchestration.Commands.StartExecution, {
+export class StartExecution extends Schema.TaggedClass<StartExecution>()('StartExecution', {
 	...ServiceCallEventBase.fields,
 
 	/**
@@ -107,6 +109,9 @@ export class StartExecution extends Schema.TaggedClass<StartExecution>()(Tag.Orc
 }) {
 	static readonly decode = Schema.decode(StartExecution)
 	static readonly encode = Schema.encode(StartExecution)
+
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	static readonly Tag = StartExecution._tag
 }
 
 export declare namespace StartExecution {

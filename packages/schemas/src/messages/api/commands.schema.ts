@@ -2,7 +2,6 @@ import * as Schema from 'effect/Schema'
 
 import { TenantId } from '../../shared/index.ts'
 import { RequestSpec } from '../http/request-spec.schema.ts'
-import { Tag } from '../tag.ts'
 
 /**
  * SubmitServiceCall - Create and schedule a new ServiceCall
@@ -10,9 +9,13 @@ import { Tag } from '../tag.ts'
  * Produced by: API
  * Consumed by: Orchestration
  */
-export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()(Tag.Api.Commands.SubmitServiceCall, {
-	/** Timestamp when execution should start (ISO8601) */
+export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('SubmitServiceCall', {
+	/**
+	 * Timestamp when execution should start (ISO8601)
+	 */
+
 	dueAt: Schema.DateTimeUtc,
+
 	/**
 	 * Optional idempotency key for duplicate detection
 	 *
@@ -32,7 +35,9 @@ export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()(T
 	 */
 	requestSpec: RequestSpec,
 
-	/** Optional tags for categorization and filtering */
+	/**
+	 * Optional tags for categorization and filtering
+	 */
 	tags: Schema.optional(Schema.Array(Schema.String)),
 
 	tenantId: TenantId,
@@ -40,6 +45,9 @@ export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()(T
 	static readonly decode = Schema.decode(SubmitServiceCall)
 
 	static readonly encode = Schema.encode(SubmitServiceCall)
+
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	static readonly Tag = SubmitServiceCall._tag
 }
 
 export declare namespace SubmitServiceCall {
