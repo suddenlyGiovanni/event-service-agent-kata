@@ -59,13 +59,32 @@ export declare namespace DomainMessage {
 }
 
 export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('MessageEnvelope')({
-	/** Ordering key for per-aggregate ordering (e.g., serviceCallId) */
+	/**
+	 * Ordering key for per-aggregate ordering (e.g., serviceCallId)
+	 *
+	 * Wire format: optional/missing field
+	 * Domain type: Option<string> (explicit Option.none() or Option.some(id))
+	 */
 	aggregateId: Schema.optionalWith(Schema.String, { as: 'Option', exact: true }),
 
-	/** Causation ID linking this message to its cause (optional) */
+	/**
+	 * Causation ID linking this message to its cause
+	 *
+	 * Wire format: optional/missing field
+	 * Domain type: Option<string> (explicit Option.none() or Option.some(id))
+	 *
+	 * Used for tracking causal relationships between messages in event chains.
+	 */
 	causationId: Schema.optionalWith(Schema.String, { as: 'Option', exact: true }),
 
-	/** Correlation ID for distributed tracing (optional) */
+	/**
+	 * Correlation ID for distributed tracing
+	 *
+	 * Wire format: optional/missing field
+	 * Domain type: Option<CorrelationId> (explicit Option.none() or Option.some(id))
+	 *
+	 * Used for tracing requests across module boundaries and service calls.
+	 */
 	correlationId: Schema.optionalWith(CorrelationId, { as: 'Option', exact: true }),
 
 	/** Unique identifier for this envelope (UUID v7) */
@@ -134,6 +153,11 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * Performs single-phase decoding: JSON.parse + Schema validation + payload discrimination.
 	 * The resulting envelope.payload is a discriminated union typed by `_tag`.
 	 *
+	 * **Decoded Types**:
+	 * - Optional fields become `Option<T>` (`Option.none()` for missing, `Option.some(value)` for present)
+	 * - `timestampMs` becomes `DateTime.Utc` (from epoch milliseconds)
+	 * - Branded types validated (TenantId, ServiceCallId, EnvelopeId, etc.)
+	 *
 	 * **Error Handling**: Returns `ParseResult.ParseError` in error channel if:
 	 * - JSON parsing fails (invalid JSON syntax)
 	 * - Envelope structure validation fails (missing/invalid fields)
@@ -146,13 +170,28 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 *
 	 * @example
 	 * ```typescript
-	 * // In workflow/adapter
+	 * // In workflow/adapter with pattern matching
+	 * import { Match, Option } from 'effect'
+	 * import { Messages } from '@event-service-agent/schemas'
+	 *
 	 * const program = Effect.gen(function* () {
 	 *   const envelope = yield* MessageEnvelopeSchema.decodeJson(jsonFromNats)
 	 *
-	 *   // Type-safe pattern matching on payload
+	 *   // Type-safe pattern matching on payload using matchPayload helper
+	 *   yield* MessageEnvelopeSchema.matchPayload(envelope).pipe(
+	 *     Match.tag(Messages.Timer.Events.DueTimeReached.Tag, (payload) =>
+	 *       handleDueTimeReached(payload, envelope.correlationId)
+	 *     ),
+	 *     Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, (payload) =>
+	 *       handleScheduleTimer(payload, envelope.correlationId)
+	 *     ),
+	 *     Match.orElse(() => Effect.logWarning('Unhandled message type', envelope.type))
+	 *   )
+	 *
+	 *   // Or use traditional if/else for simple cases
 	 *   if (envelope.payload._tag === 'DueTimeReached') {
-	 *     yield* handleDueTimeReached(envelope.payload)
+	 *     const correlationId = Option.getOrUndefined(envelope.correlationId)
+	 *     yield* handleDueTimeReached(envelope.payload, correlationId)
 	 *   }
 	 * })
 	 * ```
@@ -187,13 +226,21 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * @example
 	 * ```typescript
 	 * // In event bus adapter
+	 * import { DateTime, Option } from 'effect'
+	 *
 	 * const program = Effect.gen(function* () {
+	 *   const clock = yield* ClockPort
+	 *   const timestamp = yield* clock.now()
+	 *
 	 *   const envelope = new MessageEnvelopeSchema({
+	 *     aggregateId: Option.none(),
+	 *     causationId: Option.none(),
+	 *     correlationId: Option.some(correlationId),
 	 *     id: envelopeId,
-	 *     type: 'DueTimeReached',
+	 *     payload: dueTimeReachedEvent,
 	 *     tenantId,
-	 *     timestampMs: Date.now(),
-	 *     payload: dueTimeReachedDto,
+	 *     timestampMs: timestamp, // DateTime.Utc (encodes to epoch milliseconds)
+	 *     type: Messages.Timer.Events.DueTimeReached.Tag,
 	 *   })
 	 *
 	 *   const jsonString = yield* MessageEnvelopeSchema.encodeJson(envelope)
@@ -232,11 +279,9 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 *
 	 * @example
 	 * ```typescript
-	 * import { Tag } from '@event-service-agent/schemas/messages'
-	 *
 	 * // Test: Partial matching (only care about specific tags)
 	 * const result = MessageEnvelopeSchema.matchPayload(envelope).pipe(
-	 *   Match.tag(Tag.Timer.Events.DueTimeReached, (payload) => {
+	 *   Match.tag(Timer.Events.DueTimeReached.Tag, (payload) => {
 	 *     expect(payload.tenantId).toBe(expectedTenantId)
 	 *     expect(payload.serviceCallId).toBe(expectedServiceCallId)
 	 *     return 'timer-handled'
@@ -247,13 +292,11 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 *
 	 * @example
 	 * ```typescript
-	 * import { Tag } from '@event-service-agent/schemas/messages'
-	 *
 	 * // Workflow: Exhaustive matching (handle all cases)
 	 * const result = MessageEnvelopeSchema.matchPayload(envelope).pipe(
-	 *   Match.tag(Tag.Timer.Events.DueTimeReached, handleTimer),
-	 *   Match.tag(Tag.Orchestration.Events.ServiceCallScheduled, handleSchedule),
-	 *   Match.tag(Tag.Orchestration.Events.ServiceCallSucceeded, handleCompletion),
+	 *   Match.tag(Timer.Events.DueTimeReached.Tag, handleTimer),
+	 *   Match.tag(Orchestration.Events.ServiceCallScheduled.Tag, handleSchedule),
+	 *   Match.tag(Orchestration.Events.ServiceCallSucceeded.Tag, handleCompletion),
 	 *   Match.exhaustive // TypeScript error if any tag is missing
 	 * )
 	 * ```
