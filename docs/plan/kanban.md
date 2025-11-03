@@ -40,13 +40,6 @@ Prioritized queue.
 
 ## Doing (WIP ≤ 2)
 
-- (PL-15) Migrate to Schema.DateTimeUtc [schemas, timer, platform]
-    Replace custom Iso8601DateTime (branded string) with Effect's built-in Schema.DateTimeUtc.
-    Impact: 20 occurrences, 5 phases, ~90 lines removed.
-    Benefits: Better type safety (DateTime.Utc vs string), richer API, standard Effect patterns.
-    Wire format compatible.
-    See docs/plan/datetime-schema-migration.md
-
 <!-- Only what you're actively working on. Move one item at a time. -->
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
@@ -59,6 +52,7 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-15) Migrate to Schema.DateTimeUtc [schemas, timer, platform] — PR #34 (draft): Completed all 5 migrations (DateTime.Utc, Option<T>, branded types, cross-field validation, naming consistency). 282 tests passing, backward compatible wire format, comprehensive documentation updates.
 - (PL-14.2) Migrate platform message interfaces → `@event-service-agent/schemas` [schemas]
 - (PL-14.5) Update documentation (ADRs, design docs) [docs] — COMPLETE: Updated ports.md reference to schemas package
 - (PL-14.4) Update module dependencies + imports [all modules] — COMPLETE: All active modules (timer, schemas) updated; placeholder modules have no code yet
@@ -79,11 +73,12 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: Schema migration (PL-14) ✅ COMPLETE + DateTime migration plan (PL-15) documented
-- PL-14: All 5 phases complete, branch ready to merge
-- PL-15: Migration plan created (docs/plan/datetime-schema-migration.md), tracked in Ready queue
-- Next: Merge PL-14, then execute PL-15 in new feature branch, or proceed with Orchestration (PL-2)
-- Branch: `contracts/pl-14-schema-migration` (ready to merge)
+- Focus: PL-15 DateTime.Utc migration ✅ COMPLETE — PR #34 created (draft)
+- PL-15: All 5 improvements complete (DateTime.Utc, Option<T>, branded types, cross-field validation, naming)
+- Key achievement: Added Schema.filter for type/payload._tag validation (closes critical validation gap)
+- Tests: 282 passing (up from 281), all backward compatible
+- Branch: `contracts/pl-15-migration-iso-string-to-date-time` (ready for review)
+- Next: Review PR #34, then proceed with Orchestration (PL-2) or Timer SQLite adapter (PL-4.6)
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
