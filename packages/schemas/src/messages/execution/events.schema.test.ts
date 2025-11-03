@@ -4,8 +4,7 @@ import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Schema from 'effect/Schema'
 
-import { Tag } from '../tag.ts'
-import * as Events from './events.schema.ts'
+import * as Execution from './index.ts'
 
 describe('Execution Events Schema', () => {
 	// Extract common test data
@@ -22,15 +21,15 @@ describe('Execution Events Schema', () => {
 		it.effect('decodes valid event with all required fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Execution.Events.ExecutionStarted,
+					_tag: Execution.Events.ExecutionStarted.Tag,
 					serviceCallId,
 					startedAt,
 					tenantId,
-				} satisfies Events.ExecutionStarted.Dto
+				} satisfies Execution.Events.ExecutionStarted.Dto
 
-				const event: Events.ExecutionStarted.Type = yield* Events.ExecutionStarted.decode(dto)
+				const event: Execution.Events.ExecutionStarted.Type = yield* Execution.Events.ExecutionStarted.decode(dto)
 
-				expect(event._tag).toBe(Tag.Execution.Events.ExecutionStarted)
+				expect(event._tag).toBe(Execution.Events.ExecutionStarted.Tag)
 				expect(event.tenantId).toBe(dto.tenantId)
 				expect(event.serviceCallId).toBe(dto.serviceCallId)
 
@@ -43,13 +42,13 @@ describe('Execution Events Schema', () => {
 		it.effect('rejects invalid tenantId', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Execution.Events.ExecutionStarted,
+					_tag: Execution.Events.ExecutionStarted.Tag,
 					serviceCallId,
 					startedAt,
 					tenantId: 'not-a-uuid',
-				} as Events.ExecutionStarted.Dto
+				} as Execution.Events.ExecutionStarted.Dto
 
-				const exit = yield* Effect.exit(Events.ExecutionStarted.decode(dto))
+				const exit = yield* Effect.exit(Execution.Events.ExecutionStarted.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
 			}),
 		)
@@ -57,29 +56,29 @@ describe('Execution Events Schema', () => {
 		it.effect('rejects invalid startedAt timestamp', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Execution.Events.ExecutionStarted,
+					_tag: Execution.Events.ExecutionStarted.Tag,
 					serviceCallId,
 					startedAt: 'not-a-date',
 					tenantId,
-				} as Events.ExecutionStarted.Dto
+				} as Execution.Events.ExecutionStarted.Dto
 
-				const exit = yield* Effect.exit(Events.ExecutionStarted.decode(dto))
+				const exit = yield* Effect.exit(Execution.Events.ExecutionStarted.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
 			}),
 		)
 
 		it.effect('encodes domain instance to DTO', () =>
 			Effect.gen(function* () {
-				const domainEvent: Events.ExecutionStarted.Type = yield* Events.ExecutionStarted.decode({
-					_tag: Tag.Execution.Events.ExecutionStarted,
+				const domainEvent: Execution.Events.ExecutionStarted.Type = yield* Execution.Events.ExecutionStarted.decode({
+					_tag: Execution.Events.ExecutionStarted.Tag,
 					serviceCallId,
 					startedAt,
 					tenantId,
-				} satisfies Events.ExecutionStarted.Dto)
+				} satisfies Execution.Events.ExecutionStarted.Dto)
 
-				const dto: Events.ExecutionStarted.Dto = yield* Events.ExecutionStarted.encode(domainEvent)
+				const dto: Execution.Events.ExecutionStarted.Dto = yield* Execution.Events.ExecutionStarted.encode(domainEvent)
 
-				expect(dto._tag).toBe(Tag.Execution.Events.ExecutionStarted)
+				expect(dto._tag).toBe(Execution.Events.ExecutionStarted.Tag)
 				expect(dto.tenantId).toBe(tenantId)
 			}),
 		)
@@ -89,16 +88,16 @@ describe('Execution Events Schema', () => {
 		it.effect('decodes valid event with all required fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Execution.Events.ExecutionSucceeded,
+					_tag: Execution.Events.ExecutionSucceeded.Tag,
 					finishedAt,
 					responseMeta,
 					serviceCallId,
 					tenantId,
-				} satisfies Events.ExecutionSucceeded.Dto
+				} satisfies Execution.Events.ExecutionSucceeded.Dto
 
-				const event: Events.ExecutionSucceeded.Type = yield* Events.ExecutionSucceeded.decode(dto)
+				const event: Execution.Events.ExecutionSucceeded.Type = yield* Execution.Events.ExecutionSucceeded.decode(dto)
 
-				expect(event._tag).toBe(Tag.Execution.Events.ExecutionSucceeded)
+				expect(event._tag).toBe(Execution.Events.ExecutionSucceeded.Tag)
 				expect(event.responseMeta.status).toBe(200)
 				expect(event.responseMeta.latencyMs).toBe(1500)
 			}),
@@ -107,7 +106,7 @@ describe('Execution Events Schema', () => {
 		it.effect('decodes event with optional responseMeta fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Execution.Events.ExecutionSucceeded,
+					_tag: Execution.Events.ExecutionSucceeded.Tag,
 					finishedAt,
 					responseMeta: {
 						bodySnippet: 'Success response body...',
@@ -117,9 +116,9 @@ describe('Execution Events Schema', () => {
 					},
 					serviceCallId,
 					tenantId,
-				} satisfies Events.ExecutionSucceeded.Dto
+				} satisfies Execution.Events.ExecutionSucceeded.Dto
 
-				const event: Events.ExecutionSucceeded.Type = yield* Events.ExecutionSucceeded.decode(dto)
+				const event: Execution.Events.ExecutionSucceeded.Type = yield* Execution.Events.ExecutionSucceeded.decode(dto)
 
 				expect(event.responseMeta.bodySnippet).toBe('Success response body...')
 				expect(event.responseMeta.headers).toEqual({ 'Content-Type': 'application/json' })
@@ -129,7 +128,7 @@ describe('Execution Events Schema', () => {
 		it.effect('rejects invalid status code', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Execution.Events.ExecutionSucceeded,
+					_tag: Execution.Events.ExecutionSucceeded.Tag,
 					finishedAt,
 					responseMeta: {
 						status: 'not-a-number' as unknown as number,
@@ -138,26 +137,29 @@ describe('Execution Events Schema', () => {
 					tenantId,
 				}
 
-				const exit = yield* Effect.exit(Events.ExecutionSucceeded.decode(dto))
+				const exit = yield* Effect.exit(Execution.Events.ExecutionSucceeded.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
 			}),
 		)
 
 		it.effect('encodes domain instance to DTO', () =>
 			Effect.gen(function* () {
-				const domainEvent: Events.ExecutionSucceeded.Type = yield* Events.ExecutionSucceeded.decode({
-					_tag: Tag.Execution.Events.ExecutionSucceeded,
-					finishedAt,
-					responseMeta: {
-						status: 200,
-					},
-					serviceCallId,
-					tenantId,
-				} satisfies Events.ExecutionSucceeded.Dto)
+				const domainEvent: Execution.Events.ExecutionSucceeded.Type = yield* Execution.Events.ExecutionSucceeded.decode(
+					{
+						_tag: Execution.Events.ExecutionSucceeded.Tag,
+						finishedAt,
+						responseMeta: {
+							status: 200,
+						},
+						serviceCallId,
+						tenantId,
+					} satisfies Execution.Events.ExecutionSucceeded.Dto,
+				)
 
-				const dto: Events.ExecutionSucceeded.Dto = yield* Events.ExecutionSucceeded.encode(domainEvent)
+				const dto: Execution.Events.ExecutionSucceeded.Dto =
+					yield* Execution.Events.ExecutionSucceeded.encode(domainEvent)
 
-				expect(dto._tag).toBe(Tag.Execution.Events.ExecutionSucceeded)
+				expect(dto._tag).toBe(Execution.Events.ExecutionSucceeded.Tag)
 				expect(dto.responseMeta.status).toBe(200)
 			}),
 		)
@@ -167,7 +169,7 @@ describe('Execution Events Schema', () => {
 		it.effect('decodes valid event with all required fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Execution.Events.ExecutionFailed,
+					_tag: Execution.Events.ExecutionFailed.Tag,
 					errorMeta: {
 						kind: 'NetworkError' as const,
 						message: 'Connection timeout',
@@ -175,11 +177,11 @@ describe('Execution Events Schema', () => {
 					finishedAt,
 					serviceCallId,
 					tenantId,
-				} satisfies Events.ExecutionFailed.Dto
+				} satisfies Execution.Events.ExecutionFailed.Dto
 
-				const event: Events.ExecutionFailed.Type = yield* Events.ExecutionFailed.decode(dto)
+				const event: Execution.Events.ExecutionFailed.Type = yield* Execution.Events.ExecutionFailed.decode(dto)
 
-				expect(event._tag).toBe(Tag.Execution.Events.ExecutionFailed)
+				expect(event._tag).toBe(Execution.Events.ExecutionFailed.Tag)
 				expect(event.errorMeta.kind).toBe('NetworkError')
 				expect(event.errorMeta.message).toBe('Connection timeout')
 			}),
@@ -188,7 +190,7 @@ describe('Execution Events Schema', () => {
 		it.effect('decodes event with optional errorMeta fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Execution.Events.ExecutionFailed,
+					_tag: Execution.Events.ExecutionFailed.Tag,
 					errorMeta: {
 						details: { retry: false, statusCode: 500 },
 						kind: 'HttpError' as const,
@@ -198,9 +200,9 @@ describe('Execution Events Schema', () => {
 					finishedAt,
 					serviceCallId,
 					tenantId,
-				} satisfies Events.ExecutionFailed.Dto
+				} satisfies Execution.Events.ExecutionFailed.Dto
 
-				const event: Events.ExecutionFailed.Type = yield* Events.ExecutionFailed.decode(dto)
+				const event: Execution.Events.ExecutionFailed.Type = yield* Execution.Events.ExecutionFailed.decode(dto)
 
 				expect(event.errorMeta.details).toEqual({ retry: false, statusCode: 500 })
 				expect(event.errorMeta.latencyMs).toBe(5000)
@@ -210,22 +212,22 @@ describe('Execution Events Schema', () => {
 		it.effect('rejects missing required errorMeta fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Execution.Events.ExecutionFailed,
+					_tag: Execution.Events.ExecutionFailed.Tag,
 					errorMeta: {} as { kind: string; message?: string },
 					finishedAt,
 					serviceCallId,
 					tenantId,
 				}
 
-				const exit = yield* Effect.exit(Events.ExecutionFailed.decode(dto))
+				const exit = yield* Effect.exit(Execution.Events.ExecutionFailed.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
 			}),
 		)
 
 		it.effect('encodes domain instance to DTO', () =>
 			Effect.gen(function* () {
-				const domainEvent: Events.ExecutionFailed.Type = yield* Events.ExecutionFailed.decode({
-					_tag: Tag.Execution.Events.ExecutionFailed,
+				const domainEvent: Execution.Events.ExecutionFailed.Type = yield* Execution.Events.ExecutionFailed.decode({
+					_tag: Execution.Events.ExecutionFailed.Tag,
 					errorMeta: {
 						kind: 'NetworkError' as const,
 						message: 'Connection refused',
@@ -233,11 +235,11 @@ describe('Execution Events Schema', () => {
 					finishedAt,
 					serviceCallId,
 					tenantId,
-				} satisfies Events.ExecutionFailed.Dto)
+				} satisfies Execution.Events.ExecutionFailed.Dto)
 
-				const dto: Events.ExecutionFailed.Dto = yield* Events.ExecutionFailed.encode(domainEvent)
+				const dto: Execution.Events.ExecutionFailed.Dto = yield* Execution.Events.ExecutionFailed.encode(domainEvent)
 
-				expect(dto._tag).toBe(Tag.Execution.Events.ExecutionFailed)
+				expect(dto._tag).toBe(Execution.Events.ExecutionFailed.Tag)
 				expect(dto.errorMeta.kind).toBe('NetworkError')
 			}),
 		)
@@ -247,44 +249,44 @@ describe('Execution Events Schema', () => {
 		it.effect('accepts ExecutionStarted', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Execution.Events.ExecutionStarted,
+					_tag: Execution.Events.ExecutionStarted.Tag,
 					serviceCallId,
 					startedAt,
 					tenantId,
-				} satisfies Events.ExecutionStarted.Dto
+				} satisfies Execution.Events.ExecutionStarted.Dto
 
-				const event = yield* Schema.decode(Events.Events)(dto)
-				expect(event._tag).toBe(Tag.Execution.Events.ExecutionStarted)
+				const event = yield* Schema.decode(Execution.Events.Events)(dto)
+				expect(event._tag).toBe(Execution.Events.ExecutionStarted.Tag)
 			}),
 		)
 
 		it.effect('accepts ExecutionSucceeded', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Execution.Events.ExecutionSucceeded,
+					_tag: Execution.Events.ExecutionSucceeded.Tag,
 					finishedAt,
 					responseMeta: { status: 200 },
 					serviceCallId,
 					tenantId,
-				} satisfies Events.ExecutionSucceeded.Dto
+				} satisfies Execution.Events.ExecutionSucceeded.Dto
 
-				const event = yield* Schema.decode(Events.Events)(dto)
-				expect(event._tag).toBe(Tag.Execution.Events.ExecutionSucceeded)
+				const event = yield* Schema.decode(Execution.Events.Events)(dto)
+				expect(event._tag).toBe(Execution.Events.ExecutionSucceeded.Tag)
 			}),
 		)
 
 		it.effect('accepts ExecutionFailed', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Execution.Events.ExecutionFailed,
+					_tag: Execution.Events.ExecutionFailed.Tag,
 					errorMeta: { kind: 'NetworkError' as const, message: 'Timeout' },
 					finishedAt,
 					serviceCallId,
 					tenantId,
-				} satisfies Events.ExecutionFailed.Dto
+				} satisfies Execution.Events.ExecutionFailed.Dto
 
-				const event = yield* Schema.decode(Events.Events)(dto)
-				expect(event._tag).toBe(Tag.Execution.Events.ExecutionFailed)
+				const event = yield* Schema.decode(Execution.Events.Events)(dto)
+				expect(event._tag).toBe(Execution.Events.ExecutionFailed.Tag)
 			}),
 		)
 
@@ -300,7 +302,7 @@ describe('Execution Events Schema', () => {
 				}
 
 				// @ts-expect-error Testing invalid _tag
-				const exit = yield* Effect.exit(Schema.decode(Events.Events)(dto))
+				const exit = yield* Effect.exit(Schema.decode(Execution.Events.Events)(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
 			}),
 		)
