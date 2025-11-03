@@ -5,7 +5,7 @@
  * Provides:
  * - JSON serialization/deserialization (parseJson/encodeJson)
  * - Envelope structure validation (id, type, tenantId, timestamps)
- * - Typed payload using DomainMessage union
+ * - Typed payload using discriminated union of all domain messages
  *
  * Based on docs/design/ports.md and ADR-0011.
  * Migrated to schemas package per ADR-0012.
@@ -20,7 +20,43 @@ import type * as SchemaAst from 'effect/SchemaAST'
 
 import * as Messages from '../messages/index.ts'
 import { CorrelationId, EnvelopeId, TenantId } from '../shared/index.ts'
-import { DomainMessage } from './domain-message.schema.ts'
+
+/**
+ * DomainMessage - Union of all domain messages (events + commands)
+ *
+ * This centralized union avoids circular dependencies by having all schemas
+ * in a single package. The envelope payload has full Effect Schema type power:
+ * branded types, pattern matching, and single-phase decode.
+ *
+ * Uses actual Effect Schemas (not DTO shapes), preserving full type power.
+ * After decode, envelope.payload will have branded types and pattern matching support.
+ *
+ * @see ADR-0012 for rationale
+ */
+export const DomainMessage = Schema.Union(
+	Messages.Timer.Events.Events,
+	Messages.Orchestration.Commands.Commands,
+	Messages.Orchestration.Events.Events,
+	Messages.Execution.Events.Events,
+	Messages.Api.Commands.Commands,
+)
+
+export declare namespace DomainMessage {
+	/**
+	 * Type - Union of all domain message types
+	 */
+	type Type = Schema.Schema.Type<typeof DomainMessage>
+
+	/**
+	 * Encoded - Union of all domain message DTOs
+	 */
+	type Encoded = Schema.Schema.Encoded<typeof DomainMessage>
+
+	/**
+	 * Tag - Union of all message tag literals
+	 */
+	type Tag = DomainMessage.Type['_tag']
+}
 
 export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('MessageEnvelope')({
 	/** Ordering key for per-aggregate ordering (e.g., serviceCallId) */
@@ -35,7 +71,14 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	/** Unique identifier for this envelope (UUID v7) */
 	id: EnvelopeId,
 
-	/** The actual message payload - union of all domain messages */
+	/**
+	 * The actual message payload - union of all domain messages (events + commands)
+	 *
+	 * Uses DomainMessage union which preserves full Effect Schema type power:
+	 * - Branded types (TenantId, ServiceCallId, etc.)
+	 * - Pattern matching via _tag discriminator
+	 * - Single-phase decode from JSON → typed message
+	 */
 	payload: DomainMessage,
 
 	/** Tenant identifier for multi-tenancy and routing */
@@ -83,7 +126,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * **Error Handling**: Returns `ParseResult.ParseError` in error channel if:
 	 * - JSON parsing fails (invalid JSON syntax)
 	 * - Envelope structure validation fails (missing/invalid fields)
-	 * - Payload doesn't match any DomainMessage union member
+	 * - Payload doesn't match any domain message union member
 	 * - Branded type validation fails (invalid UUID format, etc.)
 	 *
 	 * @param jsonString - JSON string from NATS/wire (e.g., `'{"id":"...","type":"DueTimeReached",...}'`)
