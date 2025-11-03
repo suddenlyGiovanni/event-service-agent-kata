@@ -2,17 +2,17 @@ import { assert, describe, expect, it } from '@effect/vitest'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
+import * as Match from 'effect/Match'
 
 import * as Messages from '../messages/index.ts'
-import { Tag } from '../messages/tag.ts'
 import { EnvelopeId, ServiceCallId, TenantId } from '../shared/index.ts'
 import { MessageEnvelopeSchema } from './message-envelope.schema.ts'
 
 describe('MessageEnvelopeSchema', () => {
 	// Extract common test data
-	const tenantId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'
-	const serviceCallId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'
-	const envelopeId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2'
+	const tenantId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0' as const
+	const serviceCallId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1' as const
+	const envelopeId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2' as const
 	const reachedAt = '2025-10-27T12:00:00.000Z'
 	const timestampMs = 1730030400000
 
@@ -21,41 +21,42 @@ describe('MessageEnvelopeSchema', () => {
 			Effect.gen(function* () {
 				// Arrange: Valid JSON envelope with Timer event
 				const json = JSON.stringify({
-					_tag: 'MessageEnvelope',
+					// _tag: 'MessageEnvelope' as const, // FIXME: make MessageEnvelopeSchema a Schema.TaggedClass
 					aggregateId: serviceCallId,
 					id: envelopeId,
 					payload: {
-						_tag: Tag.Timer.Events.DueTimeReached,
+						_tag: Messages.Tag.Timer.Events.DueTimeReached,
 						reachedAt,
 						serviceCallId,
 						tenantId,
-					},
+					} satisfies Messages.Timer.Events.DueTimeReached.Dto,
 					tenantId,
 					timestampMs,
-					type: Tag.Timer.Events.DueTimeReached,
-				})
+					type: Messages.Tag.Timer.Events.DueTimeReached,
+				} satisfies MessageEnvelopeSchema.Dto)
 
 				// Act: Decode from JSON
 				const envelope = yield* MessageEnvelopeSchema.decodeJson(json)
 
 				// Assert: Envelope structure validated
-				expect(envelope.type).toBe(Tag.Timer.Events.DueTimeReached)
+				expect(envelope.type).toBe(Messages.Tag.Timer.Events.DueTimeReached)
 				expect(envelope.tenantId).toBe(tenantId)
 				expect(envelope.timestampMs).toBe(timestampMs)
 
 				// Assert: Payload is DueTimeReached with correct structure
-				expect(envelope.payload._tag).toBe(Tag.Timer.Events.DueTimeReached)
-				if (envelope.payload._tag === Tag.Timer.Events.DueTimeReached) {
-					expect(envelope.payload.tenantId).toBe(tenantId)
-					expect(envelope.payload.serviceCallId).toBe(serviceCallId)
+				MessageEnvelopeSchema.matchPayload(envelope).pipe(
+					Match.tag(Messages.Tag.Timer.Events.DueTimeReached, payload => {
+						expect(payload.tenantId).toBe(tenantId)
+						expect(payload.serviceCallId).toBe(serviceCallId)
 
-					// ✅ CORRECT: Test domain type (DateTime.Utc), not encoded format
-					const { reachedAt: reachedAtField } = envelope.payload
-					assert(reachedAtField)
+						const { reachedAt: reachedAtField } = payload
+						assert(reachedAtField)
 
-					expect(DateTime.isDateTime(reachedAtField)).toBe(true)
-					expect(DateTime.isUtc(reachedAtField)).toBe(true)
-				}
+						expect(DateTime.isDateTime(reachedAtField)).toBe(true)
+						expect(DateTime.isUtc(reachedAtField)).toBe(true)
+					}),
+					Match.orElseAbsurd,
+				)
 			}),
 		)
 
@@ -66,13 +67,13 @@ describe('MessageEnvelopeSchema', () => {
 					_tag: 'MessageEnvelope',
 					id: envelopeId,
 					payload: {
-						_tag: Tag.Timer.Events.DueTimeReached,
+						_tag: Messages.Tag.Timer.Events.DueTimeReached,
 						serviceCallId,
 						tenantId,
 					},
 					tenantId,
 					timestampMs,
-					type: Tag.Timer.Events.DueTimeReached,
+					type: Messages.Tag.Timer.Events.DueTimeReached,
 				})
 
 				// Act: Decode from JSON
@@ -82,7 +83,14 @@ describe('MessageEnvelopeSchema', () => {
 				expect(envelope.aggregateId).toBeUndefined()
 				expect(envelope.causationId).toBeUndefined()
 				expect(envelope.correlationId).toBeUndefined()
-				expect(envelope.payload._tag).toBe(Tag.Timer.Events.DueTimeReached)
+
+				// Assert: Payload tag
+				MessageEnvelopeSchema.matchPayload(envelope).pipe(
+					Match.tag(Messages.Tag.Timer.Events.DueTimeReached, payload => {
+						expect(payload._tag).toBe(Messages.Tag.Timer.Events.DueTimeReached)
+					}),
+					Match.orElseAbsurd,
+				)
 			}),
 		)
 
@@ -103,7 +111,7 @@ describe('MessageEnvelopeSchema', () => {
 			Effect.gen(function* () {
 				// Arrange: Missing required fields
 				const json = JSON.stringify({
-					type: Tag.Timer.Events.DueTimeReached,
+					type: Messages.Tag.Timer.Events.DueTimeReached,
 					// Missing id, tenantId, payload, timestampMs
 				})
 
@@ -155,7 +163,7 @@ describe('MessageEnvelopeSchema', () => {
 					payload: dueTimeReached,
 					tenantId: TenantId.make(tenantId),
 					timestampMs,
-					type: Tag.Timer.Events.DueTimeReached,
+					type: Messages.Tag.Timer.Events.DueTimeReached,
 				})
 
 				// Act: Encode to JSON (DateTime → ISO8601 string)
@@ -163,14 +171,13 @@ describe('MessageEnvelopeSchema', () => {
 
 				// Assert: Valid JSON string
 				expect(json).toBeTypeOf('string')
-				const parsed = JSON.parse(json) as {
-					type: string
-					tenantId: string
-					payload: { _tag: string }
-				}
-				expect(parsed.type).toBe(Tag.Timer.Events.DueTimeReached)
-				expect(parsed.tenantId).toBe(tenantId)
-				expect(parsed.payload._tag).toBe(Tag.Timer.Events.DueTimeReached)
+				const parsed = JSON.parse(json) as Record<string, unknown>
+				expect(parsed['type']).toBe(Messages.Tag.Timer.Events.DueTimeReached)
+				expect(parsed['tenantId']).toBe(tenantId)
+
+				// Validate payload structure (untyped JSON)
+				const payload = parsed['payload'] as { _tag: string }
+				expect(payload._tag).toBe(Messages.Tag.Timer.Events.DueTimeReached)
 			}),
 		)
 
@@ -190,7 +197,7 @@ describe('MessageEnvelopeSchema', () => {
 					payload: dueTimeReached,
 					tenantId: TenantId.make(tenantId),
 					timestampMs,
-					type: Tag.Timer.Events.DueTimeReached,
+					type: Messages.Tag.Timer.Events.DueTimeReached,
 				})
 
 				// Act: Encode then decode
@@ -202,7 +209,14 @@ describe('MessageEnvelopeSchema', () => {
 				expect(decoded.tenantId).toBe(original.tenantId)
 				expect(decoded.timestampMs).toBe(original.timestampMs)
 				expect(decoded.aggregateId).toBe(original.aggregateId)
-				expect(decoded.payload._tag).toBe(original.payload._tag)
+
+				// Assert: Payload matches using matchPayload
+				MessageEnvelopeSchema.matchPayload(decoded).pipe(
+					Match.tag(Messages.Tag.Timer.Events.DueTimeReached, payload => {
+						expect(payload._tag).toBe(original.payload._tag)
+					}),
+					Match.orElseAbsurd,
+				)
 			}),
 		)
 	})
