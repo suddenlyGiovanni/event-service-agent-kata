@@ -60,45 +60,206 @@ export declare namespace DomainMessage {
 
 export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('MessageEnvelope')({
 	/**
-	 * Aggregate identifier for per-aggregate message ordering
+	 * **Aggregate Identifier** — Per-aggregate message ordering key
 	 *
-	 * Wire format: optional/missing field (UUID v7 string)
-	 * Domain type: Option<ServiceCallId> (explicit Option.none() or Option.some(id))
+	 * **Purpose**: Enables strict message ordering for a specific aggregate instance.
+	 * When present, ensures all messages for the same aggregate (ServiceCall) are
+	 * processed in the order they were published.
 	 *
-	 * Used for:
-	 * - Message ordering: Broker partition key `${tenantId}.${serviceCallId}` ensures
-	 *   all messages for same ServiceCall are processed in order
-	 * - Aggregate identity: ServiceCall is the only aggregate in MVP
+	 * **Semantics**:
+	 * - **Present** (`Option.some(serviceCallId)`): Message belongs to a specific
+	 *   ServiceCall aggregate. Broker uses `${tenantId}.${serviceCallId}` as partition
+	 *   key to guarantee ordering within that aggregate.
+	 * - **Absent** (`Option.none()`): Message is autonomous (not tied to an aggregate)
+	 *   or doesn't require ordering guarantees. Examples: system events, broadcasts.
 	 *
-	 * Always corresponds to ServiceCallId when present (ServiceCall is the domain aggregate).
+	 * **Domain Model**: ServiceCall is the only aggregate in the MVP system. All
+	 * domain events and commands that manipulate ServiceCall state should include
+	 * this field for consistency and ordering.
 	 *
-	 * @see docs/design/messages.md for ordering semantics
-	 * @see ADR-0010 for ServiceCallId generation strategy
+	 * **Wire format**: optional/missing field (UUID v7 string when present)
+	 * **Domain type**: `Option<ServiceCallId>` (branded UUID v7)
+	 *
+	 * @example
+	 * ```typescript
+	 * // Command targeting specific ServiceCall (requires ordering)
+	 * aggregateId: Option.some(ServiceCallId.make(serviceCallId))
+	 *
+	 * // System event (no aggregate, no ordering needed)
+	 * aggregateId: Option.none()
+	 * ```
+	 *
+	 * @see docs/design/messages.md — Per-aggregate ordering semantics
+	 * @see ADR-0010 — ServiceCallId generation strategy
+	 * @see ADR-0002 — Broker partitioning strategy
 	 */
 	aggregateId: Schema.optionalWith(ServiceCallId, { as: 'Option', exact: true }),
 
 	/**
-	 * Causation ID linking this message to its cause
+	 * **Causation Identifier** — Links this message to its immediate cause
 	 *
-	 * Wire format: optional/missing field
-	 * Domain type: Option<string> (explicit Option.none() or Option.some(id))
+	 * **Purpose**: Establishes parent-child relationships in message chains for
+	 * debugging, observability, and understanding system behavior. Forms a causal
+	 * graph: Message A causes Message B causes Message C.
 	 *
-	 * Used for tracking causal relationships between messages in event chains.
-	 * Points to the message ID that caused this message to be created.
+	 * **Semantics**:
+	 * - **Present** (`Option.some(envelopeId)`): This message was created as a direct
+	 *   result of processing another message. Points to the `EnvelopeId` of the
+	 *   causing message.
+	 * - **Absent** (`Option.none()`): This message originates from external input
+	 *   (user request, timer, external system) rather than from another message.
+	 *
+	 * **Use Cases**:
+	 * - **Debugging**: Trace backwards through message chain to find root cause
+	 * - **Observability**: Visualize message flow and dependencies
+	 * - **Auditing**: Understand why a message was created
+	 *
+	 * **Difference from correlationId**:
+	 * - `causationId`: Points to the **immediate parent** message (changes at each hop)
+	 * - `correlationId`: Identifies the **entire request/conversation** (same across all messages)
+	 *
+	 * **Wire format**: optional/missing field (UUID v7 string when present)
+	 * **Domain type**: `Option<EnvelopeId>` (branded UUID v7)
+	 *
+	 * @example
+	 * ```typescript
+	 * // 1. User submits request → SubmitServiceCall command (no cause, external origin)
+	 * const submitCmd = new MessageEnvelopeSchema({
+	 *   id: EnvelopeId.make('envelope-001'),
+	 *   causationId: Option.none(), // External trigger
+	 *   correlationId: Option.some(CorrelationId.make('request-xyz')),
+	 *   // ...
+	 * })
+	 *
+	 * // 2. Orchestration processes command → publishes ScheduleTimer command
+	 * const scheduleCmd = new MessageEnvelopeSchema({
+	 *   id: EnvelopeId.make('envelope-002'),
+	 *   causationId: Option.some(EnvelopeId.make('envelope-001')), // Caused by SubmitServiceCall
+	 *   correlationId: Option.some(CorrelationId.make('request-xyz')), // Same conversation
+	 *   // ...
+	 * })
+	 *
+	 * // 3. Timer fires → publishes DueTimeReached event
+	 * const timerEvent = new MessageEnvelopeSchema({
+	 *   id: EnvelopeId.make('envelope-003'),
+	 *   causationId: Option.some(EnvelopeId.make('envelope-002')), // Caused by ScheduleTimer
+	 *   correlationId: Option.some(CorrelationId.make('request-xyz')), // Same conversation
+	 *   // ...
+	 * })
+	 * ```
+	 *
+	 * **Current State**: MVP does not populate this field (always `Option.none()`).
+	 * Type is specified for future observability improvements.
+	 *
+	 * @see docs/design/messages.md — Message semantics and identity
+	 * @see ADR-0009 — Observability baseline (structured logging)
 	 */
-	causationId: Schema.optionalWith(Schema.String, { as: 'Option', exact: true }),
+	causationId: Schema.optionalWith(EnvelopeId, { as: 'Option', exact: true }),
 
 	/**
-	 * Correlation ID for distributed tracing
+	 * **Correlation Identifier** — Request/conversation trace ID
 	 *
-	 * Wire format: optional/missing field
-	 * Domain type: Option<CorrelationId> (explicit Option.none() or Option.some(id))
+	 * **Purpose**: Links all messages (commands + events) that belong to the same
+	 * logical request or business transaction. Enables distributed tracing across
+	 * module boundaries and asynchronous processing.
 	 *
-	 * Used for tracing requests across module boundaries and service calls.
+	 * **Semantics**:
+	 * - **Present** (`Option.some(correlationId)`): Message is part of a traced
+	 *   request flow. All related messages share the same correlationId.
+	 * - **Absent** (`Option.none()`): Message is autonomous (system-initiated,
+	 *   background job) with no user request context.
+	 *
+	 * **Lifecycle**:
+	 * 1. **Generated once**: API module creates correlationId when request enters system
+	 * 2. **Propagated**: All downstream commands/events inherit the same correlationId
+	 * 3. **Never changes**: Unlike causationId, correlationId remains constant across entire flow
+	 *
+	 * **Use Cases**:
+	 * - **Distributed tracing**: Group all logs/events for a single user request
+	 * - **Debugging**: Filter logs by correlationId to see complete request timeline
+	 * - **SLO monitoring**: Track end-to-end latency from request to final outcome
+	 * - **Auditing**: Link all state changes to originating request
+	 *
+	 * **Difference from causationId**:
+	 * - `correlationId`: Identifies the **entire conversation** (same for all related messages)
+	 * - `causationId`: Points to the **immediate parent** (different at each hop)
+	 *
+	 * **Wire format**: optional/missing field (UUID v7 string when present)
+	 * **Domain type**: `Option<CorrelationId>` (branded UUID v7)
+	 *
+	 * @example
+	 * ```typescript
+	 * // User submits ServiceCall → API generates correlationId
+	 * const correlationId = CorrelationId.make('request-abc-123')
+	 *
+	 * // All messages in this flow share the same correlationId:
+	 * SubmitServiceCall.correlationId    = Option.some('request-abc-123')
+	 * ScheduleTimer.correlationId        = Option.some('request-abc-123')
+	 * DueTimeReached.correlationId       = Option.some('request-abc-123')
+	 * StartExecution.correlationId       = Option.some('request-abc-123')
+	 * ExecutionSucceeded.correlationId   = Option.some('request-abc-123')
+	 * ServiceCallSucceeded.correlationId = Option.some('request-abc-123')
+	 *
+	 * // Log query: "Show me all events for request-abc-123"
+	 * // Result: Complete timeline from submission to completion
+	 * ```
+	 *
+	 * @see docs/design/messages.md — Message metadata conventions
+	 * @see ADR-0009 — Observability baseline (correlation logging)
+	 * @see ADR-0010 — Identity generation (correlationId generated at API entry)
 	 */
 	correlationId: Schema.optionalWith(CorrelationId, { as: 'Option', exact: true }),
 
-	/** Unique identifier for this envelope (UUID v7) */
+	/**
+	 * **Envelope Identifier** — Unique message instance ID
+	 *
+	 * **Purpose**: Uniquely identifies this specific envelope/message instance for
+	 * deduplication, acknowledgment tracking, and idempotent processing.
+	 *
+	 * **Semantics**:
+	 * - **Always present** (required field)
+	 * - **Generated once**: Created when publishing a message (never reused)
+	 * - **UUID v7 format**: Time-ordered for natural sorting and debugging
+	 *
+	 * **Use Cases**:
+	 * - **Deduplication**: Broker/consumer can detect and skip duplicate deliveries
+	 * - **Causation tracking**: Other messages reference this ID via `causationId`
+	 * - **Acknowledgment**: Track which messages have been processed
+	 * - **Debugging**: Unique identifier for log correlation and message tracing
+	 *
+	 * **Generation**: Created by publisher just before sending message to broker.
+	 * Uses UUID v7 for monotonic ordering properties (timestamp-based prefix).
+	 *
+	 * **Difference from other IDs**:
+	 * - `id` (EnvelopeId): Identifies **this message instance** (unique per message)
+	 * - `aggregateId` (ServiceCallId): Identifies **aggregate** (same for all messages about that ServiceCall)
+	 * - `correlationId`: Identifies **request flow** (same for all messages in conversation)
+	 * - `causationId`: References **parent message's EnvelopeId** (forms causal chain)
+	 *
+	 * **Wire format**: required field (UUID v7 string)
+	 * **Domain type**: `EnvelopeId` (branded UUID v7, extends UUID7)
+	 *
+	 * @example
+	 * ```typescript
+	 * // Generate unique envelope ID when publishing
+	 * const envelopeId = yield* EnvelopeId.makeUUID7()
+	 *
+	 * const envelope = new MessageEnvelopeSchema({
+	 *   id: envelopeId, // e.g., "018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0"
+	 *   // ... other fields
+	 * })
+	 *
+	 * // Later, another message can reference this as its cause
+	 * const childEnvelope = new MessageEnvelopeSchema({
+	 *   id: yield* EnvelopeId.makeUUID7(), // New unique ID
+	 *   causationId: Option.some(envelopeId), // Parent's ID
+	 *   // ...
+	 * })
+	 * ```
+	 *
+	 * @see ADR-0010 — Identity generation (EnvelopeId generated at publish time)
+	 * @see ADR-0006 — Idempotency (envelope ID used for deduplication)
+	 */
 	id: EnvelopeId,
 
 	/**
