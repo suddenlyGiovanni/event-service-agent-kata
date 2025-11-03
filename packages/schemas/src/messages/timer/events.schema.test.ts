@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@effect/vitest'
+import { assert, describe, expect, it } from '@effect/vitest'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
@@ -31,12 +31,12 @@ describe('Timer Domain Events', () => {
 					expect(event._tag).toBe(Tag.Timer.Events.DueTimeReached)
 					expect(event.tenantId).toBe(dto.tenantId)
 					expect(event.serviceCallId).toBe(dto.serviceCallId)
-					// reachedAt is now DateTime.Utc, compare by formatting back to ISO string
-					if (event.reachedAt) {
-						expect(DateTime.formatIso(event.reachedAt)).toBe(dto.reachedAt)
-					} else {
-						throw new Error('Expected reachedAt to be defined')
-					}
+
+					// ✅ CORRECT: Test domain type (DateTime.Utc), not encoded format
+					assert(event.reachedAt)
+					expect(DateTime.isDateTime(event.reachedAt)).toBe(true)
+					expect(DateTime.isUtc(event.reachedAt)).toBe(true)
+					expect(DateTime.Equivalence(event.reachedAt, DateTime.unsafeMake(dto.reachedAt))).toBe(true)
 				}),
 			)
 
@@ -203,12 +203,10 @@ describe('Timer Domain Events', () => {
 					expect(decoded._tag).toBe(original._tag)
 					expect(decoded.tenantId).toBe(original.tenantId)
 					expect(decoded.serviceCallId).toBe(original.serviceCallId)
-					// Compare DateTime objects by ISO format
-					if (original.reachedAt && decoded.reachedAt) {
-						expect(DateTime.formatIso(decoded.reachedAt)).toBe(DateTime.formatIso(original.reachedAt))
-					} else {
-						throw new Error('Expected both reachedAt values to be defined')
-					}
+					// ✅ CORRECT: Use DateTime.Equivalence for domain type equality
+					assert(original.reachedAt)
+					assert(decoded.reachedAt)
+					expect(DateTime.Equivalence(decoded.reachedAt, original.reachedAt)).toBe(true)
 				}),
 			)
 
@@ -253,7 +251,7 @@ describe('Timer Domain Events', () => {
 					expect(dto.tenantId).toBeTypeOf('string')
 					expect(dto.serviceCallId).toBeTypeOf('string')
 					expect(dto.reachedAt).toBeTypeOf('string')
-					expect(dto._tag).toBe(Tag)
+					expect(dto._tag).toBe(Tag.Timer.Events.DueTimeReached)
 
 					// DTO should be JSON-serializable
 					const json = JSON.stringify(dto)
