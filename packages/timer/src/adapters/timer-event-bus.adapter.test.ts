@@ -65,9 +65,8 @@ describe('TimerEventBus', () => {
 					expect(envelope.type).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 					expect(envelope.tenantId).toBe(tenantId)
 					expect(envelope.correlationId).toBe(correlationId)
-					expect(envelope.timestampMs).toBe(now.epochMillis)
-
-					// Verify payload
+					// timestampMs is now DateTime.Utc (compare via DateTime.Equivalence)
+					expect(DateTime.Equivalence(envelope.timestampMs, now)).toBe(true) // Verify payload
 					const payload = envelope.payload
 					assert(payload._tag === Messages.Timer.Events.DueTimeReached.Tag)
 					expectTypeOf(payload).toEqualTypeOf<Messages.Timer.Events.DueTimeReached.Type>()
@@ -197,7 +196,8 @@ describe('TimerEventBus', () => {
 					// Assert
 					const envelope = publishedEnvelopes[0]
 					assert(envelope !== undefined)
-					expect(envelope.timestampMs).toBe(firedAt.epochMillis)
+					// timestampMs is now DateTime.Utc (compare via DateTime.Equivalence)
+					expect(DateTime.Equivalence(envelope.timestampMs, firedAt)).toBe(true)
 
 					const payload = envelope.payload
 					assert(payload._tag === Messages.Timer.Events.DueTimeReached.Tag)
@@ -292,7 +292,7 @@ describe('TimerEventBus', () => {
 						tenantId,
 					},
 					tenantId,
-					timestampMs: now.epochMillis,
+					timestampMs: now, // Domain type: DateTime.Utc
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
@@ -346,7 +346,7 @@ describe('TimerEventBus', () => {
 						tenantId,
 					},
 					tenantId,
-					timestampMs: now.epochMillis,
+					timestampMs: now, // Domain type: DateTime.Utc
 					type: Messages.Timer.Events.DueTimeReached.Tag,
 				}
 
@@ -392,7 +392,7 @@ describe('TimerEventBus', () => {
 						tenantId,
 					},
 					tenantId,
-					timestampMs: now.epochMillis,
+					timestampMs: now,
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
@@ -437,7 +437,7 @@ describe('TimerEventBus', () => {
 						tenantId,
 					},
 					tenantId,
-					timestampMs: now.epochMillis,
+					timestampMs: now,
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
@@ -479,7 +479,7 @@ describe('TimerEventBus', () => {
 						// Missing dueAt, tenantId, serviceCallId
 					},
 					tenantId,
-					timestampMs: now.epochMillis,
+					timestampMs: now,
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				} as MessageEnvelopeSchema.Type
 

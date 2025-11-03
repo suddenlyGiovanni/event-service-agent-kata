@@ -65,7 +65,7 @@ export class TimerEventBus {
 					 * - tenantId: For multi-tenancy and routing (required)
 					 * - correlationId: For distributed tracing (optional - autonomous events may lack this)
 					 * - aggregateId: Would be serviceCallId if we needed per-aggregate ordering
-					 * - timestampMs: Event occurrence time
+					 * - timestampMs: Event occurrence time (DateTime.Utc, encodes to epoch milliseconds)
 					 */
 					const envelope = new MessageEnvelopeSchema({
 						...Option.match(correlationId, {
@@ -75,7 +75,7 @@ export class TimerEventBus {
 						id: envelopeId,
 						payload: dueTimeReached,
 						tenantId,
-						timestampMs: firedAt.epochMillis,
+						timestampMs: firedAt,
 						type: 'DueTimeReached',
 					})
 

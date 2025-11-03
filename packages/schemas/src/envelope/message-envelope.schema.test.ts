@@ -41,7 +41,10 @@ describe('MessageEnvelopeSchema', () => {
 				// Assert: Envelope structure validated
 				expect(envelope.type).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 				expect(envelope.tenantId).toBe(tenantId)
-				expect(envelope.timestampMs).toBe(timestampMs)
+				// timestampMs decoded as DateTime.Utc (Schema.DateTimeUtcFromNumber)
+				expect(DateTime.isDateTime(envelope.timestampMs)).toBe(true)
+				expect(DateTime.isUtc(envelope.timestampMs)).toBe(true)
+				expect(envelope.timestampMs.epochMillis).toBe(timestampMs)
 
 				// Assert: Payload is DueTimeReached with correct structure
 				MessageEnvelopeSchema.matchPayload(envelope).pipe(
@@ -152,6 +155,7 @@ describe('MessageEnvelopeSchema', () => {
 			Effect.gen(function* () {
 				// Arrange: Create envelope with properly typed DueTimeReached (DateTime.Utc)
 				const reachedAtField = DateTime.unsafeMake(reachedAt)
+				const timestampUtc = DateTime.unsafeMake(timestampMs) // Convert number to DateTime.Utc
 				const dueTimeReached = new Messages.Timer.Events.DueTimeReached({
 					reachedAt: reachedAtField,
 					serviceCallId: ServiceCallId.make(serviceCallId),
@@ -162,7 +166,7 @@ describe('MessageEnvelopeSchema', () => {
 					id: EnvelopeId.make(envelopeId),
 					payload: dueTimeReached,
 					tenantId: TenantId.make(tenantId),
-					timestampMs,
+					timestampMs: timestampUtc, // DateTime.Utc (will encode to number)
 					type: Messages.Timer.Events.DueTimeReached.Tag,
 				})
 
@@ -185,6 +189,7 @@ describe('MessageEnvelopeSchema', () => {
 			Effect.gen(function* () {
 				// Arrange: Create envelope with properly typed DueTimeReached (DateTime.Utc)
 				const reachedAtField = DateTime.unsafeMake(reachedAt)
+				const timestampUtc = DateTime.unsafeMake(timestampMs) // Convert number to DateTime.Utc
 				const dueTimeReached: Messages.Timer.Events.DueTimeReached.Type = new Messages.Timer.Events.DueTimeReached({
 					reachedAt: reachedAtField,
 					serviceCallId: ServiceCallId.make(serviceCallId),
@@ -196,7 +201,7 @@ describe('MessageEnvelopeSchema', () => {
 					id: EnvelopeId.make(envelopeId),
 					payload: dueTimeReached,
 					tenantId: TenantId.make(tenantId),
-					timestampMs,
+					timestampMs: timestampUtc, // DateTime.Utc (will encode to number)
 					type: Messages.Timer.Events.DueTimeReached.Tag,
 				})
 
@@ -207,9 +212,9 @@ describe('MessageEnvelopeSchema', () => {
 				// Assert: Round-trip preserves data
 				expect(decoded.type).toBe(original.type)
 				expect(decoded.tenantId).toBe(original.tenantId)
-				expect(decoded.timestampMs).toBe(original.timestampMs)
+				// timestampMs: DateTime.Utc instances (compare via DateTime.Equivalence)
+				expect(DateTime.Equivalence(decoded.timestampMs, original.timestampMs)).toBe(true)
 				expect(decoded.aggregateId).toBe(original.aggregateId)
-
 				// Assert: Payload matches using matchPayload
 				MessageEnvelopeSchema.matchPayload(decoded).pipe(
 					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {

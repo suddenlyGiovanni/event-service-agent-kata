@@ -84,8 +84,19 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	/** Tenant identifier for multi-tenancy and routing */
 	tenantId: TenantId,
 
-	/** Producer timestamp in epoch milliseconds */
-	timestampMs: Schema.Number,
+	/**
+	 * Producer timestamp (transformed: number ↔ DateTime.Utc)
+	 *
+	 * Wire format: epoch milliseconds (number)
+	 * Domain type: DateTime.Utc (immutable, rich API)
+	 *
+	 * Used for:
+	 * - Event occurrence tracking
+	 * - Distributed tracing
+	 * - Message ordering hints
+	 * - Observability/log correlation
+	 */
+	timestampMs: Schema.DateTimeUtcFromNumber,
 
 	/**
 	 * Message type discriminator (matches payload._tag)
