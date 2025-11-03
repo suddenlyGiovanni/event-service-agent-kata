@@ -4,7 +4,6 @@ import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 
 import { ServiceCallId, TenantId } from '../../shared/index.ts'
-import { Tag } from '../tag.ts'
 import * as Timer from '../timer/index.ts'
 
 describe('Timer Domain Events', () => {
@@ -18,7 +17,7 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Valid wire format DTO
 					const dto = {
-						_tag: Tag.Timer.Events.DueTimeReached,
+						_tag: Timer.Events.DueTimeReached.Tag,
 						reachedAt,
 						serviceCallId,
 						tenantId,
@@ -28,11 +27,10 @@ describe('Timer Domain Events', () => {
 					const event: Timer.Events.DueTimeReached.Type = yield* Timer.Events.DueTimeReached.decode(dto)
 
 					// Assert: All fields validated and branded
-					expect(event._tag).toBe(Tag.Timer.Events.DueTimeReached)
+					expect(event._tag).toBe(Timer.Events.DueTimeReached.Tag)
 					expect(event.tenantId).toBe(dto.tenantId)
 					expect(event.serviceCallId).toBe(dto.serviceCallId)
 
-					// ✅ CORRECT: Test domain type (DateTime.Utc), not encoded format
 					assert(event.reachedAt)
 					expect(DateTime.isDateTime(event.reachedAt)).toBe(true)
 					expect(DateTime.isUtc(event.reachedAt)).toBe(true)
@@ -44,7 +42,7 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Valid wire format DTO (no reachedAt - fast-path case)
 					const dto = {
-						_tag: Tag.Timer.Events.DueTimeReached,
+						_tag: Timer.Events.DueTimeReached.Tag,
 						serviceCallId,
 						tenantId,
 					} satisfies Timer.Events.DueTimeReached.Dto
@@ -53,7 +51,7 @@ describe('Timer Domain Events', () => {
 					const event: Timer.Events.DueTimeReached.Type = yield* Timer.Events.DueTimeReached.decode(dto)
 
 					// Assert: Optional field is undefined
-					expect(event._tag).toBe(Tag.Timer.Events.DueTimeReached)
+					expect(event._tag).toBe(Timer.Events.DueTimeReached.Tag)
 					expect(event.tenantId).toBe(dto.tenantId)
 					expect(event.serviceCallId).toBe(dto.serviceCallId)
 					expect(event.reachedAt).toBeUndefined()
@@ -74,7 +72,7 @@ describe('Timer Domain Events', () => {
 				})
 
 				// Assert: Instance created with correct fields
-				expect(event._tag).toBe(Tag.Timer.Events.DueTimeReached)
+				expect(event._tag).toBe(Timer.Events.DueTimeReached.Tag)
 				expect(event.tenantId).toBe(tenantId)
 				expect(event.serviceCallId).toBe(serviceCallId)
 				expect(event.reachedAt).toBe(reachedAt)
@@ -86,7 +84,7 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Invalid UUID format for tenantId
 					const dto = {
-						_tag: Tag.Timer.Events.DueTimeReached,
+						_tag: Timer.Events.DueTimeReached.Tag,
 						reachedAt,
 						serviceCallId,
 						tenantId: 'not-a-uuid',
@@ -104,7 +102,7 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Invalid UUID format for serviceCallId
 					const dto = {
-						_tag: Tag.Timer.Events.DueTimeReached,
+						_tag: Timer.Events.DueTimeReached.Tag,
 						reachedAt,
 						serviceCallId: 'invalid-uuid',
 						tenantId,
@@ -122,7 +120,7 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Invalid ISO8601 format
 					const dto = {
-						_tag: Tag.Timer.Events.DueTimeReached,
+						_tag: Timer.Events.DueTimeReached.Tag,
 						reachedAt: 'not-a-date',
 						serviceCallId,
 						tenantId,
@@ -140,7 +138,7 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Missing serviceCallId (note: _tag must be correct, just missing field)
 					const dto = {
-						_tag: Tag.Timer.Events.DueTimeReached,
+						_tag: Timer.Events.DueTimeReached.Tag,
 						reachedAt,
 						tenantId,
 						// serviceCallId intentionally omitted
@@ -251,7 +249,7 @@ describe('Timer Domain Events', () => {
 					expect(dto.tenantId).toBeTypeOf('string')
 					expect(dto.serviceCallId).toBeTypeOf('string')
 					expect(dto.reachedAt).toBeTypeOf('string')
-					expect(dto._tag).toBe(Tag.Timer.Events.DueTimeReached)
+					expect(dto._tag).toBe(Timer.Events.DueTimeReached.Tag)
 
 					// DTO should be JSON-serializable
 					const json = JSON.stringify(dto)

@@ -4,8 +4,7 @@ import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Schema from 'effect/Schema'
 
-import { Tag } from '../tag.ts'
-import * as Commands from './commands.schema.ts'
+import * as Api from './index.ts'
 
 describe('SubmitServiceCall Command Schema', () => {
 	// Extract test data constants
@@ -24,19 +23,19 @@ describe('SubmitServiceCall Command Schema', () => {
 			Effect.gen(function* () {
 				// Arrange: Valid wire format DTO
 				const dto = {
-					_tag: Tag.Api.Commands.SubmitServiceCall,
+					_tag: Api.Commands.SubmitServiceCall.Tag,
 					dueAt,
 					name,
 					requestSpec,
 					tenantId,
-				} satisfies Commands.SubmitServiceCall.Dto
+				} satisfies Api.Commands.SubmitServiceCall.Dto
 
 				// Act: Decode from wire format
-				const command: Commands.SubmitServiceCall.Type = yield* Commands.SubmitServiceCall.decode(dto)
+				const command: Api.Commands.SubmitServiceCall.Type = yield* Api.Commands.SubmitServiceCall.decode(dto)
 
 				// Assert: All fields validated (dueAt is now DateTime.Utc)
-				expectTypeOf(command).toEqualTypeOf<Commands.SubmitServiceCall.Type>()
-				expect(command._tag).toBe(Tag.Api.Commands.SubmitServiceCall)
+				expectTypeOf(command).toEqualTypeOf<Api.Commands.SubmitServiceCall.Type>()
+				expect(command._tag).toBe(Api.Commands.SubmitServiceCall.Tag)
 				expect(command.tenantId).toBe(dto.tenantId)
 				expect(command.name).toBe(dto.name)
 
@@ -56,18 +55,18 @@ describe('SubmitServiceCall Command Schema', () => {
 
 				// Arrange: Valid DTO with optional fields
 				const dto = {
-					_tag: Tag.Api.Commands.SubmitServiceCall,
+					_tag: Api.Commands.SubmitServiceCall.Tag,
 					dueAt,
 					idempotencyKey,
 					name,
 					requestSpec,
 					tags,
 					tenantId,
-				} satisfies Commands.SubmitServiceCall.Dto
+				} satisfies Api.Commands.SubmitServiceCall.Dto
 
-				const command: Commands.SubmitServiceCall.Type = yield* Commands.SubmitServiceCall.decode(dto)
+				const command: Api.Commands.SubmitServiceCall.Type = yield* Api.Commands.SubmitServiceCall.decode(dto)
 
-				expectTypeOf(command).toEqualTypeOf<Commands.SubmitServiceCall.Type>()
+				expectTypeOf(command).toEqualTypeOf<Api.Commands.SubmitServiceCall.Type>()
 				expect(command.idempotencyKey).toBe(idempotencyKey)
 				expect(command.tags).toEqual(tags)
 			}),
@@ -76,16 +75,16 @@ describe('SubmitServiceCall Command Schema', () => {
 		it.effect('decodes command without optional fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Api.Commands.SubmitServiceCall,
+					_tag: Api.Commands.SubmitServiceCall.Tag,
 					dueAt,
 					name,
 					requestSpec,
 					tenantId,
-				} satisfies Commands.SubmitServiceCall.Dto
+				} satisfies Api.Commands.SubmitServiceCall.Dto
 
-				const command: Commands.SubmitServiceCall.Type = yield* Commands.SubmitServiceCall.decode(dto)
+				const command: Api.Commands.SubmitServiceCall.Type = yield* Api.Commands.SubmitServiceCall.decode(dto)
 
-				expectTypeOf(command).toEqualTypeOf<Commands.SubmitServiceCall.Type>()
+				expectTypeOf(command).toEqualTypeOf<Api.Commands.SubmitServiceCall.Type>()
 				expect(command.idempotencyKey).toBeUndefined()
 				expect(command.tags).toBeUndefined()
 			}),
@@ -94,7 +93,7 @@ describe('SubmitServiceCall Command Schema', () => {
 		it.effect('rejects invalid tenantId format', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Api.Commands.SubmitServiceCall,
+					_tag: Api.Commands.SubmitServiceCall.Tag,
 					dueAt,
 					name: 'Test',
 					requestSpec: {
@@ -103,9 +102,9 @@ describe('SubmitServiceCall Command Schema', () => {
 						url: 'https://api.example.com',
 					},
 					tenantId: 'not-a-uuid',
-				} as Commands.SubmitServiceCall.Dto
+				} as Api.Commands.SubmitServiceCall.Dto
 
-				const exit = yield* Effect.exit(Commands.SubmitServiceCall.decode(dto))
+				const exit = yield* Effect.exit(Api.Commands.SubmitServiceCall.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
 			}),
 		)
@@ -113,7 +112,7 @@ describe('SubmitServiceCall Command Schema', () => {
 		it.effect('rejects invalid dueAt format', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Api.Commands.SubmitServiceCall,
+					_tag: Api.Commands.SubmitServiceCall.Tag,
 					dueAt: 'not-a-date',
 					name: 'Test',
 					requestSpec: {
@@ -122,9 +121,9 @@ describe('SubmitServiceCall Command Schema', () => {
 						url: 'https://api.example.com',
 					},
 					tenantId,
-				} as Commands.SubmitServiceCall.Dto
+				} as Api.Commands.SubmitServiceCall.Dto
 
-				const exit = yield* Effect.exit(Commands.SubmitServiceCall.decode(dto))
+				const exit = yield* Effect.exit(Api.Commands.SubmitServiceCall.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
 			}),
 		)
@@ -132,12 +131,12 @@ describe('SubmitServiceCall Command Schema', () => {
 		it.effect('rejects missing required fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Api.Commands.SubmitServiceCall,
+					_tag: Api.Commands.SubmitServiceCall.Tag,
 					tenantId,
 				}
 
 				const exit = yield* Effect.exit(
-					Commands.SubmitServiceCall.decode(
+					Api.Commands.SubmitServiceCall.decode(
 						// @ts-expect-error Testing missing fields
 						dto,
 					),
@@ -149,7 +148,7 @@ describe('SubmitServiceCall Command Schema', () => {
 		it.effect('rejects invalid requestSpec (missing required fields)', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Api.Commands.SubmitServiceCall,
+					_tag: Api.Commands.SubmitServiceCall.Tag,
 					dueAt,
 					name: 'Test',
 					requestSpec: {
@@ -160,7 +159,7 @@ describe('SubmitServiceCall Command Schema', () => {
 				}
 
 				const exit = yield* Effect.exit(
-					Commands.SubmitServiceCall.decode(
+					Api.Commands.SubmitServiceCall.decode(
 						// @ts-expect-error Testing invalid requestSpec
 						dto,
 					),
@@ -174,20 +173,20 @@ describe('SubmitServiceCall Command Schema', () => {
 		it.effect('encodes domain instance to DTO', () =>
 			Effect.gen(function* () {
 				// Arrange: Create domain instance via decode
-				const domainCommand: Commands.SubmitServiceCall.Type = yield* Commands.SubmitServiceCall.decode({
-					_tag: Tag.Api.Commands.SubmitServiceCall,
+				const domainCommand: Api.Commands.SubmitServiceCall.Type = yield* Api.Commands.SubmitServiceCall.decode({
+					_tag: Api.Commands.SubmitServiceCall.Tag,
 					dueAt,
 					name,
 					requestSpec,
 					tenantId,
-				} satisfies Commands.SubmitServiceCall.Dto)
+				} satisfies Api.Commands.SubmitServiceCall.Dto)
 
 				// Act: Encode back to DTO
-				const dto: Commands.SubmitServiceCall.Dto = yield* Commands.SubmitServiceCall.encode(domainCommand)
+				const dto: Api.Commands.SubmitServiceCall.Dto = yield* Api.Commands.SubmitServiceCall.encode(domainCommand)
 
 				// Assert: DTO matches original structure
-				expectTypeOf(dto).toEqualTypeOf<Commands.SubmitServiceCall.Dto>()
-				expect(dto._tag).toBe(Tag.Api.Commands.SubmitServiceCall)
+				expectTypeOf(dto).toEqualTypeOf<Api.Commands.SubmitServiceCall.Dto>()
+				expect(dto._tag).toBe(Api.Commands.SubmitServiceCall.Tag)
 				expect(dto.tenantId).toBe(tenantId)
 				expect(dto.name).toBe(name)
 			}),
@@ -198,7 +197,7 @@ describe('SubmitServiceCall Command Schema', () => {
 		it.effect('Commands union accepts SubmitServiceCall', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Api.Commands.SubmitServiceCall,
+					_tag: Api.Commands.SubmitServiceCall.Tag,
 					dueAt,
 					name: 'Test',
 					requestSpec: {
@@ -207,10 +206,10 @@ describe('SubmitServiceCall Command Schema', () => {
 						url: 'https://api.example.com',
 					},
 					tenantId,
-				} satisfies Commands.SubmitServiceCall.Dto
+				} satisfies Api.Commands.SubmitServiceCall.Dto
 
-				const command = yield* Schema.decode(Commands.Commands)(dto)
-				expect(command._tag).toBe(Tag.Api.Commands.SubmitServiceCall)
+				const command = yield* Schema.decode(Api.Commands.Commands)(dto)
+				expect(command._tag).toBe(Api.Commands.SubmitServiceCall.Tag)
 			}),
 		)
 	})
