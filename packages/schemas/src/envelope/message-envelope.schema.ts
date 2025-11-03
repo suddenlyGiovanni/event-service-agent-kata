@@ -19,7 +19,7 @@ import * as Schema from 'effect/Schema'
 import type * as SchemaAst from 'effect/SchemaAST'
 
 import * as Messages from '../messages/index.ts'
-import { CorrelationId, EnvelopeId, TenantId } from '../shared/index.ts'
+import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '../shared/index.ts'
 
 /**
  * DomainMessage - Union of all domain messages (events + commands)
@@ -60,12 +60,22 @@ export declare namespace DomainMessage {
 
 export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('MessageEnvelope')({
 	/**
-	 * Ordering key for per-aggregate ordering (e.g., serviceCallId)
+	 * Aggregate identifier for per-aggregate message ordering
 	 *
-	 * Wire format: optional/missing field
-	 * Domain type: Option<string> (explicit Option.none() or Option.some(id))
+	 * Wire format: optional/missing field (UUID v7 string)
+	 * Domain type: Option<ServiceCallId> (explicit Option.none() or Option.some(id))
+	 *
+	 * Used for:
+	 * - Message ordering: Broker partition key `${tenantId}.${serviceCallId}` ensures
+	 *   all messages for same ServiceCall are processed in order
+	 * - Aggregate identity: ServiceCall is the only aggregate in MVP
+	 *
+	 * Always corresponds to ServiceCallId when present (ServiceCall is the domain aggregate).
+	 *
+	 * @see docs/design/messages.md for ordering semantics
+	 * @see ADR-0010 for ServiceCallId generation strategy
 	 */
-	aggregateId: Schema.optionalWith(Schema.String, { as: 'Option', exact: true }),
+	aggregateId: Schema.optionalWith(ServiceCallId, { as: 'Option', exact: true }),
 
 	/**
 	 * Causation ID linking this message to its cause
@@ -74,6 +84,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * Domain type: Option<string> (explicit Option.none() or Option.some(id))
 	 *
 	 * Used for tracking causal relationships between messages in event chains.
+	 * Points to the message ID that caused this message to be created.
 	 */
 	causationId: Schema.optionalWith(Schema.String, { as: 'Option', exact: true }),
 

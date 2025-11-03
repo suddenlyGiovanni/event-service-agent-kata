@@ -202,7 +202,7 @@ describe('MessageEnvelopeSchema', () => {
 				})
 
 				const original = new MessageEnvelopeSchema({
-					aggregateId: Option.some(serviceCallId),
+					aggregateId: Option.some(ServiceCallId.make(serviceCallId)),
 					causationId: Option.none(),
 					correlationId: Option.none(),
 					id: EnvelopeId.make(envelopeId),
@@ -211,7 +211,6 @@ describe('MessageEnvelopeSchema', () => {
 					timestampMs: timestampUtc, // DateTime.Utc (will encode to number)
 					type: Messages.Timer.Events.DueTimeReached.Tag,
 				})
-
 				// Act: Encode then decode
 				const json: string = yield* MessageEnvelopeSchema.encodeJson(original)
 				const decoded: MessageEnvelopeSchema.Type = yield* MessageEnvelopeSchema.decodeJson(json)
