@@ -6,6 +6,8 @@
  */
 import type { ReadonlyRecord } from 'effect/Record'
 
+import { DueTimeReached } from './timer/events.schema.ts'
+
 export const Tag = {
 	Api: {
 		Commands: {
@@ -34,7 +36,7 @@ export const Tag = {
 	},
 	Timer: {
 		Events: {
-			DueTimeReached: 'DueTimeReached',
+			DueTimeReached: DueTimeReached.Tag,
 		},
 	},
 } as const satisfies Modules

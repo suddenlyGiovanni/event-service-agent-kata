@@ -1,7 +1,6 @@
 import * as Schema from 'effect/Schema'
 
 import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
-import { Tag } from '../tag.ts'
 
 /**
  * Timer Domain Events
@@ -53,7 +52,7 @@ import { Tag } from '../tag.ts'
  * const dto = yield* DueTimeReached.encode(event)
  * ```
  */
-export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(Tag.Timer.Events.DueTimeReached, {
+export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTimeReached', {
 	...ServiceCallEventBase.fields,
 
 	/**
@@ -102,6 +101,9 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(Tag.Tim
 	 * ```
 	 */
 	static readonly encode = Schema.encode(DueTimeReached)
+
+	// biome-ignore lint/style/useNamingConvention: <explanation>
+	static readonly Tag = DueTimeReached._tag
 }
 
 export declare namespace DueTimeReached {

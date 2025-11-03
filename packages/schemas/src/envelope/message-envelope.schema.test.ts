@@ -25,7 +25,7 @@ describe('MessageEnvelopeSchema', () => {
 					aggregateId: serviceCallId,
 					id: envelopeId,
 					payload: {
-						_tag: Messages.Tag.Timer.Events.DueTimeReached,
+						_tag: Messages.Timer.Events.DueTimeReached.Tag,
 						reachedAt,
 						serviceCallId,
 						tenantId,
