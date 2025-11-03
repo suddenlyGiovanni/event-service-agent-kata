@@ -95,3 +95,5 @@ export declare namespace ExecutionFailed {
 export const Events = Schema.Union(ExecutionStarted, ExecutionSucceeded, ExecutionFailed)
 
 export type Events = Schema.Schema.Type<typeof Events>
+
+export type Tag = Events['_tag']

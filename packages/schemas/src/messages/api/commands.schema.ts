@@ -58,3 +58,5 @@ export declare namespace SubmitServiceCall {
 export const Commands = Schema.Union(SubmitServiceCall)
 
 export type Commands = Schema.Schema.Type<typeof Commands>
+
+export type Tag = Commands['_tag']

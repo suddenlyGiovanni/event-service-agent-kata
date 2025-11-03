@@ -122,3 +122,5 @@ export declare namespace StartExecution {
 export const Commands = Schema.Union(StartExecution, ScheduleTimer)
 
 export type Commands = Schema.Schema.Type<typeof Commands>
+
+export type Tag = Commands['_tag']

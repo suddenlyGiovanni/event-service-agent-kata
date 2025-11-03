@@ -36,4 +36,6 @@ export declare namespace DomainMessage {
 	 * Encoded - Union of all domain message DTOs
 	 */
 	type Encoded = Schema.Schema.Encoded<typeof DomainMessage>
+
+	type Tag = DomainMessage.Type['_tag']
 }

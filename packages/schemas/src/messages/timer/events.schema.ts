@@ -132,3 +132,5 @@ export const Events = Schema.Union(DueTimeReached)
  * Union type of all Timer events (extensible for future events)
  */
 export type Events = Schema.Schema.Type<typeof Events>
+
+export type Tag = typeof Events.Tag

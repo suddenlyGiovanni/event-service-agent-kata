@@ -170,3 +170,5 @@ export const Events = Schema.Union(
 )
 
 export type Events = Schema.Schema.Type<typeof Events>
+
+export type Tag = Events['_tag']
