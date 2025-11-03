@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from '@effect/vitest'
+import { describe, expect, it } from '@effect/vitest'
 import { assertEquals, assertNone } from '@effect/vitest/utils'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
@@ -53,9 +53,9 @@ describe('MessageEnvelope', () => {
 						expect(payload.tenantId).toBe(tenantId)
 						expect(payload.serviceCallId).toBe(serviceCallId)
 
-						const { reachedAt: reachedAtField } = payload
-						assert(reachedAtField)
-
+						// reachedAt is Option<DateTime.Utc>
+						expect(Option.isSome(payload.reachedAt)).toBe(true)
+						const reachedAtField = Option.getOrThrow(payload.reachedAt)
 						expect(DateTime.isDateTime(reachedAtField)).toBe(true)
 						expect(DateTime.isUtc(reachedAtField)).toBe(true)
 					}),
@@ -190,7 +190,7 @@ describe('MessageEnvelope', () => {
 				const reachedAtField = DateTime.unsafeMake(reachedAt)
 				const timestampUtc = DateTime.unsafeMake(timestampMs) // Convert number to DateTime.Utc
 				const dueTimeReached = new Messages.Timer.Events.DueTimeReached({
-					reachedAt: reachedAtField,
+					reachedAt: Option.some(reachedAtField),
 					serviceCallId: ServiceCallId.make(serviceCallId),
 					tenantId: TenantId.make(tenantId),
 				})
@@ -227,7 +227,7 @@ describe('MessageEnvelope', () => {
 				const reachedAtField = DateTime.unsafeMake(reachedAt)
 				const timestampUtc = DateTime.unsafeMake(timestampMs) // Convert number to DateTime.Utc
 				const dueTimeReached: Messages.Timer.Events.DueTimeReached.Type = new Messages.Timer.Events.DueTimeReached({
-					reachedAt: reachedAtField,
+					reachedAt: Option.some(reachedAtField),
 					serviceCallId: ServiceCallId.make(serviceCallId),
 					tenantId: TenantId.make(tenantId),
 				})

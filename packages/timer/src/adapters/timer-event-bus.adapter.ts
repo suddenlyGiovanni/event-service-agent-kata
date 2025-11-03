@@ -40,12 +40,10 @@ export class TimerEventBus {
 					 * Schema will handle DateTime → ISO8601 string transformation during encoding
 					 */
 					const dueTimeReached = new Messages.Timer.Events.DueTimeReached({
-						reachedAt: firedAt, // Already DateTime.Utc
+						reachedAt: Option.some(firedAt), // Wrap in Option for proper semantics
 						serviceCallId,
 						tenantId,
-					})
-
-					/**
+					}) /**
 					 * Build envelope with generated EnvelopeId
 					 * Provide UUID7 service locally to eliminate from requirements
 					 */

@@ -202,8 +202,9 @@ describe('TimerEventBus', () => {
 
 					const payload = envelope.payload
 					assert(payload._tag === Messages.Timer.Events.DueTimeReached.Tag)
-					assert(payload.reachedAt !== undefined)
-					expect(DateTime.Equivalence(payload.reachedAt, firedAt)).toBe(true)
+					expect(Option.isSome(payload.reachedAt)).toBe(true)
+					const reachedAtValue = Option.getOrThrow(payload.reachedAt)
+					expect(DateTime.Equivalence(reachedAtValue, firedAt)).toBe(true)
 				}).pipe(Effect.provide(TestLayers))
 			})
 		})
@@ -347,7 +348,7 @@ describe('TimerEventBus', () => {
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
 					payload: {
 						_tag: Messages.Timer.Events.DueTimeReached.Tag, // Wrong type
-						reachedAt: now,
+						reachedAt: Option.some(now),
 						serviceCallId,
 						tenantId,
 					},
