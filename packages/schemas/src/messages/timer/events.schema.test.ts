@@ -1,33 +1,42 @@
 import { describe, expect, it } from '@effect/vitest'
+import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
+import * as Option from 'effect/Option'
 
-import { Iso8601DateTime } from '../../shared/iso8601-datetime.schema.ts'
-import { ServiceCallId } from '../../shared/service-call-id.schema.ts'
-import { TenantId } from '../../shared/tenant-id.schema.ts'
-import * as Events from './events.schema.ts'
+import { ServiceCallId, TenantId } from '../../shared/index.ts'
+import * as Timer from '../timer/index.ts'
 
 describe('Timer Domain Events', () => {
+	const reachedAt = '2025-10-27T12:00:00.000Z'
+	const serviceCallId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1' as const
+	const tenantId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0' as const
+
 	describe('DueTimeReached', () => {
 		describe('Schema Validation', () => {
 			it.effect('decodes valid event with all fields', () =>
 				Effect.gen(function* () {
 					// Arrange: Valid wire format DTO
 					const dto = {
-						_tag: 'DueTimeReached' as const,
-						reachedAt: '2025-10-27T12:00:00.000Z',
-						serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-						tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-					}
+						_tag: Timer.Events.DueTimeReached.Tag,
+						reachedAt,
+						serviceCallId,
+						tenantId,
+					} satisfies Timer.Events.DueTimeReached.Dto
 
-					// Act: Decode from wire format
-					const event = yield* Events.DueTimeReached.decode(dto)
+					// Act: Decode from wire format (string → DateTime.Utc transformation)
+					const event: Timer.Events.DueTimeReached.Type = yield* Timer.Events.DueTimeReached.decode(dto)
 
 					// Assert: All fields validated and branded
-					expect(event._tag).toBe('DueTimeReached')
+					expect(event._tag).toBe(Timer.Events.DueTimeReached.Tag)
 					expect(event.tenantId).toBe(dto.tenantId)
 					expect(event.serviceCallId).toBe(dto.serviceCallId)
-					expect(event.reachedAt).toBe(dto.reachedAt)
+
+					expect(Option.isSome(event.reachedAt)).toBe(true)
+					const reachedAtValue = Option.getOrThrow(event.reachedAt)
+					expect(DateTime.isDateTime(reachedAtValue)).toBe(true)
+					expect(DateTime.isUtc(reachedAtValue)).toBe(true)
+					expect(DateTime.Equivalence(reachedAtValue, DateTime.unsafeMake(dto.reachedAt))).toBe(true)
 				}),
 			)
 
@@ -35,40 +44,42 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Valid wire format DTO (no reachedAt - fast-path case)
 					const dto = {
-						_tag: 'DueTimeReached' as const,
-						serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-						tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-					}
+						_tag: Timer.Events.DueTimeReached.Tag,
+						serviceCallId,
+						tenantId,
+					} satisfies Timer.Events.DueTimeReached.Dto
 
 					// Act: Decode from wire format
-					const event = yield* Events.DueTimeReached.decode(dto)
+					const event: Timer.Events.DueTimeReached.Type = yield* Timer.Events.DueTimeReached.decode(dto)
 
-					// Assert: Optional field is undefined
-					expect(event._tag).toBe('DueTimeReached')
+					// Assert: Optional field is None
+					expect(event._tag).toBe(Timer.Events.DueTimeReached.Tag)
 					expect(event.tenantId).toBe(dto.tenantId)
 					expect(event.serviceCallId).toBe(dto.serviceCallId)
-					expect(event.reachedAt).toBeUndefined()
+					expect(Option.isNone(event.reachedAt)).toBe(true)
 				}),
 			)
 
 			it('constructs event directly with validated types', () => {
-				// Arrange: Validated domain types
+				// Arrange: Validated domain types (DateTime.Utc from string)
 				const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
 				const serviceCallId = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
-				const reachedAt = Iso8601DateTime.make('2025-10-27T12:00:00.000Z')
+				const reachedAt = DateTime.unsafeMake('2025-10-27T12:00:00.000Z')
 
 				// Act: Direct construction (no validation needed - types already validated)
-				const event = new Events.DueTimeReached({
-					reachedAt,
+				const event: Timer.Events.DueTimeReached.Type = new Timer.Events.DueTimeReached({
+					reachedAt: Option.some(reachedAt),
 					serviceCallId,
 					tenantId,
 				})
 
 				// Assert: Instance created with correct fields
-				expect(event._tag).toBe('DueTimeReached')
+				expect(event._tag).toBe(Timer.Events.DueTimeReached.Tag)
 				expect(event.tenantId).toBe(tenantId)
 				expect(event.serviceCallId).toBe(serviceCallId)
-				expect(event.reachedAt).toBe(reachedAt)
+				expect(Option.isSome(event.reachedAt)).toBe(true)
+				const reachedAtValue = Option.getOrThrow(event.reachedAt)
+				expect(DateTime.Equivalence(reachedAtValue, reachedAt)).toBe(true)
 			})
 		})
 
@@ -77,14 +88,14 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Invalid UUID format for tenantId
 					const dto = {
-						_tag: 'DueTimeReached' as const,
-						reachedAt: '2025-10-27T12:00:00.000Z',
-						serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
+						_tag: Timer.Events.DueTimeReached.Tag,
+						reachedAt,
+						serviceCallId,
 						tenantId: 'not-a-uuid',
-					}
+					} satisfies Timer.Events.DueTimeReached.Dto
 
 					// Act: Attempt decode
-					const result = yield* Effect.exit(Events.DueTimeReached.decode(dto))
+					const result = yield* Effect.exit(Timer.Events.DueTimeReached.decode(dto))
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
@@ -95,14 +106,14 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Invalid UUID format for serviceCallId
 					const dto = {
-						_tag: 'DueTimeReached' as const,
-						reachedAt: '2025-10-27T12:00:00.000Z',
+						_tag: Timer.Events.DueTimeReached.Tag,
+						reachedAt,
 						serviceCallId: 'invalid-uuid',
-						tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-					}
+						tenantId,
+					} satisfies Timer.Events.DueTimeReached.Dto
 
 					// Act: Attempt decode
-					const result = yield* Effect.exit(Events.DueTimeReached.decode(dto))
+					const result = yield* Effect.exit(Timer.Events.DueTimeReached.decode(dto))
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
@@ -113,14 +124,14 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Invalid ISO8601 format
 					const dto = {
-						_tag: 'DueTimeReached' as const,
+						_tag: Timer.Events.DueTimeReached.Tag,
 						reachedAt: 'not-a-date',
-						serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-						tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-					}
+						serviceCallId,
+						tenantId,
+					} satisfies Timer.Events.DueTimeReached.Dto
 
 					// Act: Attempt decode
-					const result = yield* Effect.exit(Events.DueTimeReached.decode(dto))
+					const result = yield* Effect.exit(Timer.Events.DueTimeReached.decode(dto))
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
@@ -131,15 +142,20 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Missing serviceCallId (note: _tag must be correct, just missing field)
 					const dto = {
-						_tag: 'DueTimeReached' as const,
-						reachedAt: '2025-10-27T12:00:00.000Z',
-						tenantId: '018f6b8a-5c5d-7b32-8c6d8e6f9a0',
+						_tag: Timer.Events.DueTimeReached.Tag,
+						reachedAt,
+						tenantId,
 						// serviceCallId intentionally omitted
-						// biome-ignore lint/suspicious/noExplicitAny: Test requires invalid DTO shape
-					} as any
+						// @ts-expect-error Testing missing field
+					} satisfies Timer.Events.DueTimeReached.Dto
 
 					// Act: Attempt decode
-					const result = yield* Effect.exit(Events.DueTimeReached.decode(dto))
+					const result = yield* Effect.exit(
+						Timer.Events.DueTimeReached.decode(
+							// @ts-expect-error Testing missing field
+							dto,
+						),
+					)
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
@@ -150,15 +166,20 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Wrong _tag value
 					const dto = {
+						// @ts-expect-error Testing wrong _tag
 						_tag: 'WrongType' as const,
-						reachedAt: '2025-10-27T12:00:00.000Z',
-						serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-						tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-						// biome-ignore lint/suspicious/noExplicitAny: Test requires invalid DTO shape
-					} as any
+						reachedAt,
+						serviceCallId,
+						tenantId,
+					} satisfies Timer.Events.DueTimeReached.Dto
 
 					// Act: Attempt decode
-					const result = yield* Effect.exit(Events.DueTimeReached.decode(dto))
+					const result = yield* Effect.exit(
+						Timer.Events.DueTimeReached.decode(
+							// @ts-expect-error Testing wrong _tag
+							dto,
+						),
+					)
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
@@ -169,42 +190,48 @@ describe('Timer Domain Events', () => {
 		describe('Encode/Decode Round-Trip', () => {
 			it.effect('round-trips correctly with all fields', () =>
 				Effect.gen(function* () {
-					// Arrange: Create domain event
-					const original = new Events.DueTimeReached({
-						reachedAt: Iso8601DateTime.make('2025-10-27T12:00:00.000Z'),
+					// Arrange: Create domain event with DateTime.Utc
+					const original: Timer.Events.DueTimeReached.Type = new Timer.Events.DueTimeReached({
+						reachedAt: Option.some(DateTime.unsafeMake('2025-10-27T12:00:00.000Z')),
 						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 					})
 
-					// Act: Encode to wire format, then decode back
-					const dto = yield* Events.DueTimeReached.encode(original)
-					const decoded = yield* Events.DueTimeReached.decode(dto)
+					// Act: Encode to wire format (DateTime → string), then decode back (string → DateTime)
+					const dto: Timer.Events.DueTimeReached.Dto = yield* Timer.Events.DueTimeReached.encode(original)
+					const decoded: Timer.Events.DueTimeReached.Type = yield* Timer.Events.DueTimeReached.decode(dto)
 
 					// Assert: Round-trip preserves all data
 					expect(decoded._tag).toBe(original._tag)
 					expect(decoded.tenantId).toBe(original.tenantId)
 					expect(decoded.serviceCallId).toBe(original.serviceCallId)
-					expect(decoded.reachedAt).toBe(original.reachedAt)
+					// ✅ CORRECT: Use DateTime.Equivalence for domain type equality
+					expect(Option.isSome(original.reachedAt)).toBe(true)
+					expect(Option.isSome(decoded.reachedAt)).toBe(true)
+					const originalValue = Option.getOrThrow(original.reachedAt)
+					const decodedValue = Option.getOrThrow(decoded.reachedAt)
+					expect(DateTime.Equivalence(decodedValue, originalValue)).toBe(true)
 				}),
 			)
 
 			it.effect('round-trips correctly without optional field', () =>
 				Effect.gen(function* () {
 					// Arrange: Create domain event without optional field
-					const original = new Events.DueTimeReached({
+					const original: Timer.Events.DueTimeReached.Type = new Timer.Events.DueTimeReached({
+						reachedAt: Option.none(),
 						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 					})
 
 					// Act: Encode to wire format, then decode back
-					const dto = yield* Events.DueTimeReached.encode(original)
-					const decoded = yield* Events.DueTimeReached.decode(dto)
+					const dto: Timer.Events.DueTimeReached.Dto = yield* Timer.Events.DueTimeReached.encode(original)
+					const decoded: Timer.Events.DueTimeReached.Type = yield* Timer.Events.DueTimeReached.decode(dto)
 
 					// Assert: Round-trip preserves all data
 					expect(decoded._tag).toBe(original._tag)
 					expect(decoded.tenantId).toBe(original.tenantId)
 					expect(decoded.serviceCallId).toBe(original.serviceCallId)
-					expect(decoded.reachedAt).toBeUndefined()
+					expect(Option.isNone(decoded.reachedAt)).toBe(true)
 				}),
 			)
 		})
@@ -212,24 +239,22 @@ describe('Timer Domain Events', () => {
 		describe('DTO Type Safety', () => {
 			it.effect('encodes to unbranded DTO type', () =>
 				Effect.gen(function* () {
-					// Arrange: Domain event with branded types
-					const event = new Events.DueTimeReached({
-						reachedAt: Iso8601DateTime.make('2025-10-27T12:00:00.000Z'),
+					// Arrange: Domain event with branded types (DateTime.Utc in domain)
+					const event: Timer.Events.DueTimeReached.Type = new Timer.Events.DueTimeReached({
+						reachedAt: Option.some(DateTime.unsafeMake('2025-10-27T12:00:00.000Z')),
 						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
-					})
-
-					// Act: Encode to wire format
-					const dto = yield* Events.DueTimeReached.encode(event)
+					}) // Act: Encode to wire format (DateTime.Utc → ISO8601 string)
+					const dto: Timer.Events.DueTimeReached.Dto = yield* Timer.Events.DueTimeReached.encode(event)
 
 					// Assert: DTO has unbranded string types (safe for JSON)
 					// Type-level assertion ensures DTO type is correct
-					const dtoTypeCheck: Events.DueTimeReached.Dto = dto
+					const dtoTypeCheck: Timer.Events.DueTimeReached.Dto = dto
 					void dtoTypeCheck // Type assertion only, value unused
-					expect(typeof dto.tenantId).toBe('string')
-					expect(typeof dto.serviceCallId).toBe('string')
-					expect(typeof dto.reachedAt).toBe('string')
-					expect(dto._tag).toBe('DueTimeReached')
+					expect(dto.tenantId).toBeTypeOf('string')
+					expect(dto.serviceCallId).toBeTypeOf('string')
+					expect(dto.reachedAt).toBeTypeOf('string')
+					expect(dto._tag).toBe(Timer.Events.DueTimeReached.Tag)
 
 					// DTO should be JSON-serializable
 					const json = JSON.stringify(dto)

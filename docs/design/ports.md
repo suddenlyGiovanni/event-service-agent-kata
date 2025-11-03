@@ -22,7 +22,7 @@ Minimal envelope shared by publishers/consumers. See [Semantics](./messages.md#s
 **Note**: MessageEnvelope exists as both:
 
 - **TypeScript interface** (type-level documentation, below)
-- **Effect Schema** (`MessageEnvelopeSchema` in `@event-service-agent/schemas`) for runtime validation
+- **Effect Schema** (`MessageEnvelope` in `@event-service-agent/schemas`) for runtime validation
 
 The schema provides JSON serialization (`parseJson`/`encodeJson`) and validation at infrastructure boundaries.
 

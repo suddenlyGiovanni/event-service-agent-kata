@@ -4,13 +4,12 @@ import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Either from 'effect/Either'
-import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
 import type * as Messages from '@event-service-agent/schemas/messages'
-import { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
+import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import * as Adapters from '../adapters/index.ts'
 import * as Domain from '../domain/timer-entry.domain.ts'
@@ -32,22 +31,16 @@ describe('scheduleTimerWorkflow', () => {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
 
-				const dueAt: Iso8601DateTime.Type = pipe(
-					now,
-					DateTime.add({ minutes: 5 }),
-					DateTime.formatIso,
-					Iso8601DateTime.make,
-				)
+				// DateTime.Utc is now the domain type (no string conversion needed)
+				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				// TODO: the construction of the command as a object literal is not ideal.
-				// 			I should consider adding a schema validation step here to ensure the command is well-formed.
-				// 			If the command is valid, then the domain layer should be able to handle it without having to do any validation.
-				const command = {
+				// Create command with DateTime.Utc (domain type)
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
 					_tag: 'ScheduleTimer',
 					dueAt,
 					serviceCallId,
 					tenantId,
-				} satisfies Messages.Orchestration.Commands.ScheduleTimer
+				}
 
 				// Arrange: Mock dependencies (ClockPort, TimerPersistencePort)
 				// 	- ClockPort.now() returns fixed time
@@ -78,20 +71,15 @@ describe('scheduleTimerWorkflow', () => {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
 
-				// dueAt is 5 minutes from now
-				const dueAt: Iso8601DateTime.Type = pipe(
-					now,
-					DateTime.add({ minutes: 5 }),
-					DateTime.formatIso,
-					Iso8601DateTime.make,
-				)
+				// dueAt is 5 minutes from now (DateTime.Utc is the domain type)
+				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const command = {
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
 					_tag: 'ScheduleTimer',
 					dueAt,
 					serviceCallId,
 					tenantId,
-				} satisfies Messages.Orchestration.Commands.ScheduleTimer
+				}
 
 				const persistence = yield* Ports.TimerPersistencePort
 
@@ -112,19 +100,14 @@ describe('scheduleTimerWorkflow', () => {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
 
-				const dueAt: Iso8601DateTime.Type = pipe(
-					now,
-					DateTime.add({ minutes: 5 }),
-					DateTime.formatIso,
-					Iso8601DateTime.make,
-				)
+				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const command = {
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
 					_tag: 'ScheduleTimer',
 					dueAt,
 					serviceCallId,
 					tenantId,
-				} satisfies Messages.Orchestration.Commands.ScheduleTimer
+				}
 
 				const persistence = yield* Ports.TimerPersistencePort
 
@@ -152,19 +135,14 @@ describe('scheduleTimerWorkflow', () => {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
 
-				const dueAt: Iso8601DateTime.Type = pipe(
-					now,
-					DateTime.add({ minutes: 5 }),
-					DateTime.formatIso,
-					Iso8601DateTime.make,
-				)
+				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const command = {
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
 					_tag: 'ScheduleTimer',
 					dueAt,
 					serviceCallId,
 					tenantId,
-				} satisfies Messages.Orchestration.Commands.ScheduleTimer
+				}
 
 				const persistence = yield* Ports.TimerPersistencePort
 
@@ -186,19 +164,14 @@ describe('scheduleTimerWorkflow', () => {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
 
-				const dueAt: Iso8601DateTime.Type = pipe(
-					now,
-					DateTime.add({ minutes: 5 }),
-					DateTime.formatIso,
-					Iso8601DateTime.make,
-				)
+				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const command = {
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
 					_tag: 'ScheduleTimer',
 					dueAt,
 					serviceCallId,
 					tenantId,
-				} satisfies Messages.Orchestration.Commands.ScheduleTimer
+				}
 
 				const persistence = yield* Ports.TimerPersistencePort
 
@@ -227,20 +200,15 @@ describe('scheduleTimerWorkflow', () => {
 				const now = yield* clock.now()
 
 				// Set dueAt to 5 minutes in the PAST
-				const dueAt: Iso8601DateTime.Type = pipe(
-					now,
-					DateTime.subtract({ minutes: 5 }),
-					DateTime.formatIso,
-					Iso8601DateTime.make,
-				)
+				const dueAt = DateTime.subtract(now, { minutes: 5 })
 
 				// Act:
-				const command = {
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
 					_tag: 'ScheduleTimer',
 					dueAt,
 					serviceCallId,
 					tenantId,
-				} satisfies Messages.Orchestration.Commands.ScheduleTimer
+				}
 				yield* scheduleTimerWorkflow({ command })
 
 				// Assert: Timer should still be persisted (no fast-path optimization)
@@ -259,24 +227,19 @@ describe('scheduleTimerWorkflow', () => {
 		// When: Both workflow invocations run
 		// Then: Both succeed (port handles upsert)
 
-		it.effect('should succeed when called multiple times', () =>
+		it.effect('should succeed when called multiple times (idempotency)', () =>
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
 
-				const dueAt: Iso8601DateTime.Type = pipe(
-					now,
-					DateTime.add({ minutes: 5 }),
-					DateTime.formatIso,
-					Iso8601DateTime.make,
-				)
+				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const command = {
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
 					_tag: 'ScheduleTimer',
 					dueAt,
 					serviceCallId,
 					tenantId,
-				} satisfies Messages.Orchestration.Commands.ScheduleTimer
+				}
 
 				const persistence = yield* Ports.TimerPersistencePort
 
@@ -303,24 +266,19 @@ describe('scheduleTimerWorkflow', () => {
 		// Given: Ports.TimerPersistencePort throws PersistenceError
 		// When: Workflow executes
 		// Then: Error propagates to caller
-		it.effect('should propagate persistence errors', () =>
+		it.effect('should persist timer even if already due', () =>
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
 
-				const dueAt: Iso8601DateTime.Type = pipe(
-					now,
-					DateTime.add({ minutes: 5 }),
-					DateTime.formatIso,
-					Iso8601DateTime.make,
-				)
+				const dueAt = DateTime.add(now, { minutes: -5 })
 
-				const command = {
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
 					_tag: 'ScheduleTimer',
 					dueAt,
 					serviceCallId,
 					tenantId,
-				} satisfies Messages.Orchestration.Commands.ScheduleTimer
+				}
 
 				// Act & Assert: Workflow should fail with PersistenceError
 				const result = yield* Effect.either(scheduleTimerWorkflow({ command }))

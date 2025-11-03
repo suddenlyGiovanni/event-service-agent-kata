@@ -58,7 +58,7 @@ Messages traverse four architectural layers from domain to wire:
 **Consuming (reverse flow)**:
 
 1. NATS receives JSON bytes
-2. `MessageEnvelopeSchema.parseJson` validates envelope structure
+2. `MessageEnvelope.parseJson` validates envelope structure
 3. Route based on `envelope.type` discriminator
 4. `DomainEventSchema.decode(envelope.payload)` validates payload
 5. Workflow receives validated domain event

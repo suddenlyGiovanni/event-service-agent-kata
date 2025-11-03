@@ -52,11 +52,11 @@
 	"name": "event-service-agent",
 	"private": true,
 	"scripts": {
-		"check": "bun --bun --workspaces check",
+		"check": "biome check --write .",
 		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
-		"format": "bun --bun --workspaces format",
-		"lint": "bun --bun --workspaces lint",
-		"test": "bun --bun --workspaces run test",
+		"format": "biome format --write .",
+		"lint": "biome lint --write .",
+		"test": "bun --bun vitest",
 		"type-check": "bun --bun --workspaces type-check"
 	},
 	"type": "module",

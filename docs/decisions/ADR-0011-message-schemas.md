@@ -333,7 +333,7 @@ Layer 4: NATS adapter JSON serialization
   ↓ JSON.stringify(envelope) → wire bytes
 ```
 
-#### Solution: MessageEnvelopeSchema with Union
+#### Solution: MessageEnvelope with Union
 
 Create Effect Schema for envelope structure validation with union of all domain messages:
 
@@ -342,7 +342,7 @@ Create Effect Schema for envelope structure validation with union of all domain 
 import * as Schema from 'effect/Schema'
 
 /**
- * MessageEnvelopeSchema - Validates envelope structure with typed payload
+ * MessageEnvelope - Validates envelope structure with typed payload
  * 
  * Payload uses DomainMessage union (all events + commands).
  * Effect Schema automatically validates against all union members.
@@ -351,7 +351,7 @@ import * as Schema from 'effect/Schema'
  * 1. Parse JSON → validate envelope + payload in one step
  * 2. Pattern match on payload._tag for type-safe routing
  */
-export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>(
+export class MessageEnvelope extends Schema.Class<MessageEnvelope>(
   'MessageEnvelope'
 )({
   id: EnvelopeId,
@@ -364,16 +364,16 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>(
   payload: DomainMessage,  // ← Union of all messages!
 }) {
   /** Parse from JSON wire format (string → validated envelope with typed payload) */
-  static readonly parseJson = Schema.parseJson(MessageEnvelopeSchema)
+  static readonly parseJson = Schema.parseJson(MessageEnvelope)
   
   /** Encode to JSON wire format (envelope → string) */
-  static readonly encodeJson = Schema.encodeJson(MessageEnvelopeSchema)
+  static readonly encodeJson = Schema.encodeJson(MessageEnvelope)
 }
 
 // Type helper for envelope with typed payload
-export declare namespace MessageEnvelopeSchema {
-  type Type = Schema.Schema.Type<typeof MessageEnvelopeSchema>
-  type Encoded = Schema.Schema.Encoded<typeof MessageEnvelopeSchema>
+export declare namespace MessageEnvelope {
+  type Type = Schema.Schema.Type<typeof MessageEnvelope>
+  type Encoded = Schema.Schema.Encoded<typeof MessageEnvelope>
 }
 ```
 
@@ -408,7 +408,7 @@ import * as Effect from 'effect/Effect'
  * Responsibilities:
  * 1. Generate EnvelopeId (UUID v7)
  * 2. Wrap DTO in envelope structure
- * 3. Validate envelope + payload via MessageEnvelopeSchema
+ * 3. Validate envelope + payload via MessageEnvelope
  * 
  * @example
  * ```typescript
@@ -431,12 +431,12 @@ export const makeEnvelope = <T extends DomainMessage.Encoded>(
     aggregateId?: string
     causationId?: string
   }
-): Effect.Effect<MessageEnvelopeSchema.Type, ParseError, UUID7> =>
+): Effect.Effect<MessageEnvelope.Type, ParseError, UUID7> =>
   Effect.gen(function* () {
     const id = yield* EnvelopeId.makeUUID7()
     
     // Validate envelope structure + payload via schema
-    return yield* Schema.decode(MessageEnvelopeSchema)({
+    return yield* Schema.decode(MessageEnvelope)({
       id,
       type,
       payload,
@@ -492,7 +492,7 @@ publishDueTimeReached: Effect.fn('publishDueTimeReached')(function* (
 // In NATS adapter or consumer handler
 function* handleMessage(jsonString: string) {
   // 1. Parse JSON → validate envelope structure + payload (single step!)
-  const envelope = yield* MessageEnvelopeSchema.parseJson(jsonString)
+  const envelope = yield* MessageEnvelope.parseJson(jsonString)
   // envelope.payload is DomainMessage union (validated!)
   
   // 2. Pattern match on discriminator for type-safe routing
@@ -516,7 +516,7 @@ function* handleMessage(jsonString: string) {
 
 ```typescript
 // If not using match helper
-const envelope = yield* MessageEnvelopeSchema.parseJson(jsonString)
+const envelope = yield* MessageEnvelope.parseJson(jsonString)
 
 switch (envelope.payload._tag) {
   case 'DueTimeReached':
@@ -557,7 +557,7 @@ switch (envelope.payload._tag) {
 **Phase 2** (PL-14): Envelope infrastructure
 
 - Create `DomainMessage` union in `contracts/src/messages/schemas.ts`
-- Create `MessageEnvelopeSchema` with `payload: DomainMessage` in `contracts/src/types/`
+- Create `MessageEnvelope` with `payload: DomainMessage` in `contracts/src/types/`
 - Create `makeEnvelope` helper constrained to `DomainMessage.Encoded`
 - Update Timer adapter to use `makeEnvelope`
 - **Validates envelope wrapping + union discrimination pattern**
@@ -608,7 +608,7 @@ switch (envelope.payload._tag) {
 1. **Domain Layer**: Validated events with branded types (e.g., `TenantId.Type`)
 2. **Adapter Layer**: `Schema.encode` transforms to DTOs + `makeEnvelope` wraps with metadata
 3. **EventBusPort**: Type-erased abstraction (`payload: unknown`)
-4. **NATS Adapter**: `JSON.stringify`/`JSON.parse` + `MessageEnvelopeSchema.parseJson`
+4. **NATS Adapter**: `JSON.stringify`/`JSON.parse` + `MessageEnvelope.parseJson`
 
 **Key Insight**: `Schema.encode/decode` handle **type transformation** (branded → string), while `parseJson/encodeJson` handle **JSON serialization** (object → string). These are separate concerns at different boundaries.
 
@@ -631,7 +631,7 @@ When consuming messages from the wire (NATS), we need to:
 payload: DomainMessage  // Union of all message schemas
 
 // Consuming:
-const envelope = yield* MessageEnvelopeSchema.parseJson(jsonString)
+const envelope = yield* MessageEnvelope.parseJson(jsonString)
 // envelope.payload: DomainEvent | DomainCommand (typed!)
 
 match(envelope.payload, {
@@ -648,7 +648,7 @@ match(envelope.payload, {
 payload: Schema.Unknown
 
 // Consuming:
-const envelope = yield* MessageEnvelopeSchema.parseJson(jsonString)
+const envelope = yield* MessageEnvelope.parseJson(jsonString)
 // envelope.payload: unknown (no type info!)
 
 // ❌ Can't pattern match on unknown
@@ -661,13 +661,13 @@ const envelope = yield* MessageEnvelopeSchema.parseJson(jsonString)
 
 ```typescript
 // Alternative: Generic schema constructor
-const MessageEnvelopeSchema = <M extends Schema.Schema.All>(
+const MessageEnvelope = <M extends Schema.Schema.All>(
   messageSchema: M
 ) => Schema.Struct({ payload: messageSchema, ... })
 
 // Problem at decode time:
-const envelope = yield* MessageEnvelopeSchema(???).parseJson(jsonString)
-//                                           ^^^
+const envelope = yield* MessageEnvelope(???).parseJson(jsonString)
+//                                      ^^^
 //                          Which schema? We don't know until we decode!
 ```
 

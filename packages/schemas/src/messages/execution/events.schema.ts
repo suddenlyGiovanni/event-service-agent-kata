@@ -1,8 +1,7 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime, ServiceCallId, TenantId } from '../../shared/index.ts'
 import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'
-import { Tag } from '../tag.ts'
+import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
 
 /**
  * ExecutionStarted - Execution attempt started
@@ -10,15 +9,18 @@ import { Tag } from '../tag.ts'
  * Produced by: Execution
  * Consumed by: Orchestration
  */
-export class ExecutionStarted extends Schema.TaggedClass<ExecutionStarted>()(Tag.Execution.Events.ExecutionStarted, {
-	serviceCallId: ServiceCallId,
+export class ExecutionStarted extends Schema.TaggedClass<ExecutionStarted>()('ExecutionStarted', {
+	...ServiceCallEventBase.fields,
+
 	/** Timestamp when HTTP request execution began (ISO8601) */
-	startedAt: Iso8601DateTime,
-	tenantId: TenantId,
+	startedAt: Schema.DateTimeUtc,
 }) {
 	static readonly decode = Schema.decode(ExecutionStarted)
 
 	static readonly encode = Schema.encode(ExecutionStarted)
+
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	static readonly Tag = ExecutionStarted._tag
 }
 
 export declare namespace ExecutionStarted {
@@ -32,20 +34,25 @@ export declare namespace ExecutionStarted {
  * Produced by: Execution
  * Consumed by: Orchestration
  */
-export class ExecutionSucceeded extends Schema.TaggedClass<ExecutionSucceeded>()(
-	Tag.Execution.Events.ExecutionSucceeded,
-	{
-		/** Timestamp when HTTP request completed successfully (ISO8601) */
-		finishedAt: Iso8601DateTime,
-		/** HTTP response metadata (status, headers, latency, body snippet) */
-		responseMeta: ResponseMeta,
-		serviceCallId: ServiceCallId,
-		tenantId: TenantId,
-	},
-) {
+export class ExecutionSucceeded extends Schema.TaggedClass<ExecutionSucceeded>()('ExecutionSucceeded', {
+	...ServiceCallEventBase.fields,
+
+	/**
+	 * Timestamp when HTTP request completed successfully (ISO8601)
+	 */
+	finishedAt: Schema.DateTimeUtc,
+
+	/**
+	 * HTTP response metadata (status, headers, latency, body snippet)
+	 */
+	responseMeta: ResponseMeta,
+}) {
 	static readonly decode = Schema.decode(ExecutionSucceeded)
 
 	static readonly encode = Schema.encode(ExecutionSucceeded)
+
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	static readonly Tag = ExecutionSucceeded._tag
 }
 
 export declare namespace ExecutionSucceeded {
@@ -59,17 +66,25 @@ export declare namespace ExecutionSucceeded {
  * Produced by: Execution
  * Consumed by: Orchestration
  */
-export class ExecutionFailed extends Schema.TaggedClass<ExecutionFailed>()(Tag.Execution.Events.ExecutionFailed, {
-	/** Error details (kind, message, latency, additional context) */
+export class ExecutionFailed extends Schema.TaggedClass<ExecutionFailed>()('ExecutionFailed', {
+	...ServiceCallEventBase.fields,
+
+	/**
+	 * Error details (kind, message, latency, additional context)
+	 */
 	errorMeta: ErrorMeta,
-	/** Timestamp when HTTP request failed (ISO8601) */
-	finishedAt: Iso8601DateTime,
-	serviceCallId: ServiceCallId,
-	tenantId: TenantId,
+
+	/**
+	 * Timestamp when HTTP request failed (ISO8601)
+	 */
+	finishedAt: Schema.DateTimeUtc,
 }) {
 	static readonly decode = Schema.decode(ExecutionFailed)
 
 	static readonly encode = Schema.encode(ExecutionFailed)
+
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	static readonly Tag = ExecutionFailed._tag
 }
 
 export declare namespace ExecutionFailed {
@@ -80,3 +95,5 @@ export declare namespace ExecutionFailed {
 export const Events = Schema.Union(ExecutionStarted, ExecutionSucceeded, ExecutionFailed)
 
 export type Events = Schema.Schema.Type<typeof Events>
+
+export type Tag = Events['_tag']

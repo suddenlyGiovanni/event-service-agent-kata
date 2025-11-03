@@ -1,49 +1,66 @@
 import { describe, expect, it } from '@effect/vitest'
+import { assertEquals, assertNone } from '@effect/vitest/utils'
+import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
+import * as Match from 'effect/Match'
+import * as Option from 'effect/Option'
 
-import { DueTimeReached } from '../messages/timer/events.schema.ts'
-import { EnvelopeId } from '../shared/envelope-id.schema.ts'
-import { Iso8601DateTime } from '../shared/iso8601-datetime.schema.ts'
-import { ServiceCallId } from '../shared/service-call-id.schema.ts'
-import { TenantId } from '../shared/tenant-id.schema.ts'
-import { MessageEnvelopeSchema } from './message-envelope.schema.ts'
+import * as Messages from '../messages/index.ts'
+import { EnvelopeId, ServiceCallId, TenantId } from '../shared/index.ts'
+import { MessageEnvelope } from './message-envelope.schema.ts'
 
-describe('MessageEnvelopeSchema', () => {
+describe('MessageEnvelope', () => {
+	// Extract common test data
+	const tenantId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0' as const
+	const serviceCallId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1' as const
+	const envelopeId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2' as const
+	const reachedAt = '2025-10-27T12:00:00.000Z'
+	const timestampMs = 1730030400000
+
 	describe('decodeJson', () => {
 		it.effect('decodes valid envelope with DueTimeReached payload', () =>
 			Effect.gen(function* () {
 				// Arrange: Valid JSON envelope with Timer event
 				const json = JSON.stringify({
-					_tag: 'MessageEnvelope',
-					aggregateId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-					id: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2',
+					aggregateId: serviceCallId,
+					id: envelopeId,
 					payload: {
-						_tag: 'DueTimeReached',
-						reachedAt: '2025-10-27T12:00:00.000Z',
-						serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-						tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-					},
-					tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-					timestampMs: 1730030400000,
-					type: 'DueTimeReached',
-				})
+						_tag: Messages.Timer.Events.DueTimeReached.Tag,
+						reachedAt,
+						serviceCallId,
+						tenantId,
+					} satisfies Messages.Timer.Events.DueTimeReached.Dto,
+					tenantId,
+					timestampMs,
+					type: Messages.Timer.Events.DueTimeReached.Tag,
+				} satisfies MessageEnvelope.Dto)
 
 				// Act: Decode from JSON
-				const envelope = yield* MessageEnvelopeSchema.decodeJson(json)
+				const envelope = yield* MessageEnvelope.decodeJson(json)
 
 				// Assert: Envelope structure validated
-				expect(envelope.type).toBe('DueTimeReached')
-				expect(envelope.tenantId).toBe('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
-				expect(envelope.timestampMs).toBe(1730030400000)
+				expect(envelope.type).toBe(Messages.Timer.Events.DueTimeReached.Tag)
+				expect(envelope.tenantId).toBe(tenantId)
+				// timestampMs decoded as DateTime.Utc (Schema.DateTimeUtcFromNumber)
+				expect(DateTime.isDateTime(envelope.timestampMs)).toBe(true)
+				expect(DateTime.isUtc(envelope.timestampMs)).toBe(true)
+				expect(envelope.timestampMs.epochMillis).toBe(timestampMs)
 
 				// Assert: Payload is DueTimeReached with correct structure
-				expect(envelope.payload._tag).toBe('DueTimeReached')
-				if (envelope.payload._tag === 'DueTimeReached') {
-					expect(envelope.payload.tenantId).toBe('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
-					expect(envelope.payload.serviceCallId).toBe('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
-					expect(envelope.payload.reachedAt).toBe('2025-10-27T12:00:00.000Z')
-				}
+				MessageEnvelope.matchPayload(envelope).pipe(
+					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
+						expect(payload.tenantId).toBe(tenantId)
+						expect(payload.serviceCallId).toBe(serviceCallId)
+
+						// reachedAt is Option<DateTime.Utc>
+						expect(Option.isSome(payload.reachedAt)).toBe(true)
+						const reachedAtField = Option.getOrThrow(payload.reachedAt)
+						expect(DateTime.isDateTime(reachedAtField)).toBe(true)
+						expect(DateTime.isUtc(reachedAtField)).toBe(true)
+					}),
+					Match.orElseAbsurd,
+				)
 			}),
 		)
 
@@ -52,25 +69,32 @@ describe('MessageEnvelopeSchema', () => {
 				// Arrange: Minimal valid envelope
 				const json = JSON.stringify({
 					_tag: 'MessageEnvelope',
-					id: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2',
+					id: envelopeId,
 					payload: {
-						_tag: 'DueTimeReached',
-						serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-						tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
+						_tag: Messages.Timer.Events.DueTimeReached.Tag,
+						serviceCallId,
+						tenantId,
 					},
-					tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-					timestampMs: 1730030400000,
-					type: 'DueTimeReached',
+					tenantId,
+					timestampMs,
+					type: Messages.Timer.Events.DueTimeReached.Tag,
 				})
 
 				// Act: Decode from JSON
-				const envelope = yield* MessageEnvelopeSchema.decodeJson(json)
+				const envelope = yield* MessageEnvelope.decodeJson(json)
 
 				// Assert: Optional fields are undefined
-				expect(envelope.aggregateId).toBeUndefined()
-				expect(envelope.causationId).toBeUndefined()
-				expect(envelope.correlationId).toBeUndefined()
-				expect(envelope.payload._tag).toBe('DueTimeReached')
+				assertNone(envelope.aggregateId)
+				assertNone(envelope.causationId)
+				assertNone(envelope.correlationId)
+
+				// Assert: Payload tag
+				MessageEnvelope.matchPayload(envelope).pipe(
+					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
+						expect(payload._tag).toBe(Messages.Timer.Events.DueTimeReached.Tag)
+					}),
+					Match.orElseAbsurd,
+				)
 			}),
 		)
 
@@ -80,7 +104,7 @@ describe('MessageEnvelopeSchema', () => {
 				const invalidJson = '{ invalid json }'
 
 				// Act: Attempt decode
-				const result = yield* Effect.exit(MessageEnvelopeSchema.decodeJson(invalidJson))
+				const result = yield* Effect.exit(MessageEnvelope.decodeJson(invalidJson))
 
 				// Assert: Fails with parse error
 				expect(Exit.isFailure(result)).toBe(true)
@@ -91,12 +115,12 @@ describe('MessageEnvelopeSchema', () => {
 			Effect.gen(function* () {
 				// Arrange: Missing required fields
 				const json = JSON.stringify({
-					type: 'DueTimeReached',
+					type: Messages.Timer.Events.DueTimeReached.Tag,
 					// Missing id, tenantId, payload, timestampMs
 				})
 
 				// Act: Attempt decode
-				const result = yield* Effect.exit(MessageEnvelopeSchema.decodeJson(json))
+				const result = yield* Effect.exit(MessageEnvelope.decodeJson(json))
 
 				// Assert: Fails with validation error
 				expect(Exit.isFailure(result)).toBe(true)
@@ -108,21 +132,53 @@ describe('MessageEnvelopeSchema', () => {
 				// Arrange: Unknown payload type
 				const json = JSON.stringify({
 					_tag: 'MessageEnvelope',
-					id: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2',
+					id: envelopeId,
 					payload: {
 						_tag: 'UnknownEvent',
 						data: 'something',
 					},
-					tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-					timestampMs: 1730030400000,
+					tenantId,
+					timestampMs,
 					type: 'UnknownEvent',
 				})
 
 				// Act: Attempt decode
-				const result = yield* Effect.exit(MessageEnvelopeSchema.decodeJson(json))
+				const result = yield* Effect.exit(MessageEnvelope.decodeJson(json))
 
 				// Assert: Fails with validation error (payload not in union)
 				expect(Exit.isFailure(result)).toBe(true)
+			}),
+		)
+
+		it.effect('fails when type does not match payload._tag', () =>
+			Effect.gen(function* () {
+				// Arrange: type and payload._tag mismatch
+				const json = JSON.stringify({
+					id: envelopeId,
+					payload: {
+						_tag: Messages.Timer.Events.DueTimeReached.Tag,
+						serviceCallId,
+						tenantId,
+					},
+					tenantId,
+					timestampMs,
+					// ❌ Mismatch: type says ScheduleTimer but payload is DueTimeReached
+					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
+				})
+
+				// Act: Attempt decode
+				const result = yield* Effect.exit(MessageEnvelope.decodeJson(json))
+
+				// Assert: Fails with filter validation error
+				expect(Exit.isFailure(result)).toBe(true)
+
+				// Assert: Error message explains the mismatch
+				if (Exit.isFailure(result)) {
+					const message = result.cause.toString()
+					expect(message).toContain('type must match payload._tag')
+					expect(message).toContain('DueTimeReached')
+					expect(message).toContain('ScheduleTimer')
+				}
 			}),
 		)
 	})
@@ -130,70 +186,80 @@ describe('MessageEnvelopeSchema', () => {
 	describe('encodeJson', () => {
 		it.effect('encodes envelope to JSON string', () =>
 			Effect.gen(function* () {
-				// Arrange: Create envelope with properly typed DueTimeReached
-				const dueTimeReached = new DueTimeReached({
-					reachedAt: Iso8601DateTime.make('2025-10-27T12:00:00.000Z'),
-					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
-					tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
+				// Arrange: Create envelope with properly typed DueTimeReached (DateTime.Utc)
+				const reachedAtField = DateTime.unsafeMake(reachedAt)
+				const timestampUtc = DateTime.unsafeMake(timestampMs) // Convert number to DateTime.Utc
+				const dueTimeReached = new Messages.Timer.Events.DueTimeReached({
+					reachedAt: Option.some(reachedAtField),
+					serviceCallId: ServiceCallId.make(serviceCallId),
+					tenantId: TenantId.make(tenantId),
 				})
 
-				const envelope = new MessageEnvelopeSchema({
-					id: EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2'),
+				const envelope = new MessageEnvelope({
+					aggregateId: Option.none(),
+					causationId: Option.none(),
+					correlationId: Option.none(),
+					id: EnvelopeId.make(envelopeId),
 					payload: dueTimeReached,
-					tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
-					timestampMs: 1730030400000,
-					type: 'DueTimeReached',
+					tenantId: TenantId.make(tenantId),
+					timestampMs: timestampUtc, // DateTime.Utc (will encode to number)
+					type: Messages.Timer.Events.DueTimeReached.Tag,
 				})
 
-				// Act: Encode to JSON
-				const json = yield* MessageEnvelopeSchema.encodeJson(envelope)
+				// Act: Encode to JSON (DateTime → ISO8601 string)
+				const json: string = yield* MessageEnvelope.encodeJson(envelope)
 
 				// Assert: Valid JSON string
-				expect(typeof json).toBe('string')
-				const parsed = JSON.parse(json) as {
-					type: string
-					tenantId: string
-					payload: { _tag: string }
-				}
-				expect(parsed.type).toBe('DueTimeReached')
-				expect(parsed.tenantId).toBe('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
-				expect(parsed.payload._tag).toBe('DueTimeReached')
+				expect(json).toBeTypeOf('string')
+				const parsed = JSON.parse(json) as Record<string, unknown>
+				expect(parsed['type']).toBe(Messages.Timer.Events.DueTimeReached.Tag)
+				expect(parsed['tenantId']).toBe(tenantId)
+
+				// Validate payload structure (untyped JSON)
+				const payload = parsed['payload'] as { _tag: string }
+				expect(payload._tag).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 			}),
 		)
 
 		it.effect('round-trips correctly', () =>
 			Effect.gen(function* () {
-				// Arrange: Create envelope with properly typed DueTimeReached
-				const dueTimeReached = new DueTimeReached({
-					reachedAt: Iso8601DateTime.make('2025-10-27T12:00:00.000Z'),
-					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
-					tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
+				// Arrange: Create envelope with properly typed DueTimeReached (DateTime.Utc)
+				const reachedAtField = DateTime.unsafeMake(reachedAt)
+				const timestampUtc = DateTime.unsafeMake(timestampMs) // Convert number to DateTime.Utc
+				const dueTimeReached: Messages.Timer.Events.DueTimeReached.Type = new Messages.Timer.Events.DueTimeReached({
+					reachedAt: Option.some(reachedAtField),
+					serviceCallId: ServiceCallId.make(serviceCallId),
+					tenantId: TenantId.make(tenantId),
 				})
 
-				const original = new MessageEnvelopeSchema({
-					aggregateId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-					id: EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2'),
+				const original = new MessageEnvelope({
+					aggregateId: Option.some(ServiceCallId.make(serviceCallId)),
+					causationId: Option.none(),
+					correlationId: Option.none(),
+					id: EnvelopeId.make(envelopeId),
 					payload: dueTimeReached,
-					tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
-					timestampMs: 1730030400000,
-					type: 'DueTimeReached',
+					tenantId: TenantId.make(tenantId),
+					timestampMs: timestampUtc, // DateTime.Utc (will encode to number)
+					type: Messages.Timer.Events.DueTimeReached.Tag,
 				})
-
 				// Act: Encode then decode
-				const json = yield* MessageEnvelopeSchema.encodeJson(original)
-				const decoded = yield* MessageEnvelopeSchema.decodeJson(json)
+				const json: string = yield* MessageEnvelope.encodeJson(original)
+				const decoded: MessageEnvelope.Type = yield* MessageEnvelope.decodeJson(json)
 
 				// Assert: Round-trip preserves data
-				// biome-ignore lint/suspicious/noExplicitAny: Schema.Class properties exist at runtime but not in type
-				expect((decoded as any).type).toBe((original as any).type)
-				// biome-ignore lint/suspicious/noExplicitAny: Schema.Class properties exist at runtime but not in type
-				expect((decoded as any).tenantId).toBe((original as any).tenantId)
-				// biome-ignore lint/suspicious/noExplicitAny: Schema.Class properties exist at runtime but not in type
-				expect((decoded as any).timestampMs).toBe((original as any).timestampMs)
-				// biome-ignore lint/suspicious/noExplicitAny: Schema.Class properties exist at runtime but not in type
-				expect((decoded as any).aggregateId).toBe((original as any).aggregateId)
-				// biome-ignore lint/suspicious/noExplicitAny: Schema.Class properties exist at runtime but not in type
-				expect((decoded as any).payload._tag).toBe((original as any).payload._tag)
+				expect(decoded.type).toBe(original.type)
+				expect(decoded.tenantId).toBe(original.tenantId)
+				// timestampMs: DateTime.Utc instances (compare via DateTime.Equivalence)
+				expect(DateTime.Equivalence(decoded.timestampMs, original.timestampMs)).toBe(true)
+				assertEquals(decoded.aggregateId, original.aggregateId)
+
+				// Assert: Payload matches using matchPayload
+				MessageEnvelope.matchPayload(decoded).pipe(
+					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
+						expect(payload._tag).toBe(original.payload._tag)
+					}),
+					Match.orElseAbsurd,
+				)
 			}),
 		)
 	})

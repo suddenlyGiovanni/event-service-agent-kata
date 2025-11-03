@@ -1,7 +1,6 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime, ServiceCallId, TenantId } from '../../shared/index.ts'
-import { Tag } from '../tag.ts'
+import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
 
 /**
  * Timer Domain Events
@@ -46,38 +45,26 @@ import { Tag } from '../tag.ts'
  * const event = new DueTimeReached({
  *   tenantId,
  *   serviceCallId,
- *   reachedAt: Iso8601DateTime.make(DateTime.formatIso(firedAt)),
+ *   reachedAt: Option.some(firedAt), // Option<DateTime.Utc>
  * })
  *
  * // Encode to wire format (validated domain → JSON DTO)
  * const dto = yield* DueTimeReached.encode(event)
  * ```
  */
-export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(Tag.Timer.Events.DueTimeReached, {
+export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTimeReached', {
+	...ServiceCallEventBase.fields,
+
 	/**
-	 * Optional timestamp when the due time was detected (ISO8601)
+	 * Optional timestamp when the due time was detected
 	 *
 	 * - **Present**: Indicates polling worker detected the timer was due
 	 * - **Absent**: May indicate fast-path (timer was immediately eligible)
 	 *
-	 * Validated as ISO8601 DateTime string at runtime.
+	 * Domain type: `Option<DateTime.Utc>` (Effect's immutable datetime)
+	 * Wire format: ISO8601 string (e.g., "2025-10-27T12:00:00.000Z") or missing
 	 */
-	reachedAt: Schema.optional(Iso8601DateTime),
-
-	/**
-	 * Aggregate root identifier for the service call
-	 *
-	 * Links this event to a specific service call instance.
-	 * Validated as UUID7 format at runtime.
-	 */
-	serviceCallId: ServiceCallId,
-	/**
-	 * Multi-tenancy identifier for data isolation
-	 *
-	 * All events must include tenantId for proper routing and data isolation.
-	 * Validated as UUID7 format at runtime.
-	 */
-	tenantId: TenantId,
+	reachedAt: Schema.optionalWith(Schema.DateTimeUtc, { as: 'Option', exact: true }),
 }) {
 	/**
 	 * Decode from unknown/wire format to validated domain event
@@ -114,6 +101,9 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(Tag.Tim
 	 * ```
 	 */
 	static readonly encode = Schema.encode(DueTimeReached)
+
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	static readonly Tag = DueTimeReached._tag
 }
 
 export declare namespace DueTimeReached {
@@ -142,3 +132,5 @@ export const Events = Schema.Union(DueTimeReached)
  * Union type of all Timer events (extensible for future events)
  */
 export type Events = Schema.Schema.Type<typeof Events>
+
+export type Tag = typeof Events.Tag

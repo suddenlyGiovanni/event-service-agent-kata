@@ -1,10 +1,9 @@
 import * as DateTime from 'effect/DateTime'
 import * as Option from 'effect/Option'
-import * as Schema from 'effect/Schema'
 import { describe, expect, it } from 'vitest'
 
 import type * as Message from '@event-service-agent/schemas/messages'
-import { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
+import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import { ScheduledTimer, TimerEntry } from './timer-entry.domain.ts'
 
@@ -13,12 +12,10 @@ describe('TimerEntry', () => {
 	const serviceCallId = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
 	const correlationId = CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
 
-	/** Helper to create command with ISO8601 string (simulating external message) */
-	const makeScheduleTimerCommand = (
-		dueAtIso: Iso8601DateTime.Type,
-	): Message.Orchestration.Commands.ScheduleTimer.Type => ({
+	/** Helper to create command with DateTime.Utc (domain type after decoding) */
+	const makeScheduleTimerCommand = (dueAt: DateTime.Utc): Message.Orchestration.Commands.ScheduleTimer.Type => ({
 		_tag: 'ScheduleTimer',
-		dueAt: dueAtIso,
+		dueAt,
 		serviceCallId,
 		tenantId,
 	})
@@ -26,18 +23,16 @@ describe('TimerEntry', () => {
 	describe('Schema.decode(ScheduledTimer)', () => {
 		const now = DateTime.unsafeNow()
 		const dueAt = DateTime.add(now, { minutes: 1 })
-		const dueAtIso = Iso8601DateTime.make(DateTime.formatIso(dueAt))
-		const nowIso = DateTime.formatIso(now)
 
 		it('creates a new schedule from ScheduleTimer command', () => {
 			// Arrange
-			const scheduleTimerCommand = makeScheduleTimerCommand(dueAtIso)
+			const scheduleTimerCommand = makeScheduleTimerCommand(dueAt)
 
-			// Act: Use Schema.decode directly
-			const scheduledTimer = Schema.decodeSync(ScheduledTimer)({
-				_tag: 'Scheduled' as const,
+			// Act: Direct construction with DateTime.Utc types (TaggedClass auto-adds _tag)
+			const scheduledTimer = new ScheduledTimer({
+				correlationId: Option.none(), // No correlationId in this test
 				dueAt: scheduleTimerCommand.dueAt,
-				registeredAt: nowIso,
+				registeredAt: now,
 				serviceCallId: scheduleTimerCommand.serviceCallId,
 				tenantId: scheduleTimerCommand.tenantId,
 			})
@@ -54,14 +49,13 @@ describe('TimerEntry', () => {
 
 		it('preserves correlationId when provided', () => {
 			// Arrange
-			const scheduleTimerCommand = makeScheduleTimerCommand(dueAtIso)
+			const scheduleTimerCommand = makeScheduleTimerCommand(dueAt)
 
-			// Act: Use Schema.decode with correlationId
-			const scheduledTimer = Schema.decodeSync(ScheduledTimer)({
-				_tag: 'Scheduled' as const,
-				correlationId,
+			// Act: Direct construction with DateTime.Utc types
+			const scheduledTimer = new ScheduledTimer({
+				correlationId: Option.some(correlationId),
 				dueAt: scheduleTimerCommand.dueAt,
-				registeredAt: nowIso,
+				registeredAt: now,
 				serviceCallId: scheduleTimerCommand.serviceCallId,
 				tenantId: scheduleTimerCommand.tenantId,
 			})
@@ -74,18 +68,16 @@ describe('TimerEntry', () => {
 
 	describe('markReached', () => {
 		const scheduledNow = DateTime.unsafeNow()
-		const scheduledNowIso = DateTime.formatIso(scheduledNow)
 		const dueAt = DateTime.add(scheduledNow, { minutes: 1 })
-		const dueAtIso = Iso8601DateTime.make(DateTime.formatIso(dueAt))
 		const reachedNow = DateTime.add(scheduledNow, { minutes: 1 })
 
 		it('transitions ScheduledTimer to ReachedTimer', () => {
 			// Arrange
-			const scheduledTimerCommand = makeScheduleTimerCommand(dueAtIso)
-			const scheduledTimer = Schema.decodeSync(ScheduledTimer)({
-				_tag: 'Scheduled' as const,
+			const scheduledTimerCommand = makeScheduleTimerCommand(dueAt)
+			const scheduledTimer = new ScheduledTimer({
+				correlationId: Option.none(),
 				dueAt: scheduledTimerCommand.dueAt,
-				registeredAt: scheduledNowIso,
+				registeredAt: scheduledNow,
 				serviceCallId: scheduledTimerCommand.serviceCallId,
 				tenantId: scheduledTimerCommand.tenantId,
 			})
@@ -100,14 +92,13 @@ describe('TimerEntry', () => {
 
 		it('preserves all original timer fields', () => {
 			// Arrange
-			const scheduleTimerCommand = makeScheduleTimerCommand(dueAtIso)
-			const scheduledTimer = Schema.decodeSync(ScheduledTimer)({
-				_tag: 'Scheduled' as const,
-				correlationId,
-				dueAt: scheduleTimerCommand.dueAt,
-				registeredAt: scheduledNowIso,
-				serviceCallId: scheduleTimerCommand.serviceCallId,
-				tenantId: scheduleTimerCommand.tenantId,
+			const scheduledTimerCommand = makeScheduleTimerCommand(dueAt)
+			const scheduledTimer = new ScheduledTimer({
+				correlationId: Option.some(correlationId),
+				dueAt: scheduledTimerCommand.dueAt,
+				registeredAt: scheduledNow,
+				serviceCallId: scheduledTimerCommand.serviceCallId,
+				tenantId: scheduledTimerCommand.tenantId,
 			})
 
 			// Act
@@ -124,13 +115,13 @@ describe('TimerEntry', () => {
 
 		it('returns a new immutable object', () => {
 			// Arrange
-			const scheduleTimerCommand = makeScheduleTimerCommand(dueAtIso)
-			const scheduledTimer = Schema.decodeSync(ScheduledTimer)({
-				_tag: 'Scheduled' as const,
-				dueAt: scheduleTimerCommand.dueAt,
-				registeredAt: scheduledNowIso,
-				serviceCallId: scheduleTimerCommand.serviceCallId,
-				tenantId: scheduleTimerCommand.tenantId,
+			const scheduledTimerCommand = makeScheduleTimerCommand(dueAt)
+			const scheduledTimer = new ScheduledTimer({
+				correlationId: Option.none(),
+				dueAt: scheduledTimerCommand.dueAt,
+				registeredAt: scheduledNow,
+				serviceCallId: scheduledTimerCommand.serviceCallId,
+				tenantId: scheduledTimerCommand.tenantId,
 			})
 
 			// Act
@@ -143,14 +134,12 @@ describe('TimerEntry', () => {
 
 	describe('isDue', () => {
 		const scheduledNow = DateTime.unsafeNow()
-		const scheduledNowIso = DateTime.formatIso(scheduledNow)
 		const dueAt = DateTime.add(scheduledNow, { minutes: 1 })
-		const dueAtIso = Iso8601DateTime.make(DateTime.formatIso(dueAt))
-		const scheduleTimerCommand = makeScheduleTimerCommand(dueAtIso)
-		const scheduledTimer = Schema.decodeSync(ScheduledTimer)({
-			_tag: 'Scheduled' as const,
+		const scheduleTimerCommand = makeScheduleTimerCommand(dueAt)
+		const scheduledTimer = new ScheduledTimer({
+			correlationId: Option.none(),
 			dueAt: scheduleTimerCommand.dueAt,
-			registeredAt: scheduledNowIso,
+			registeredAt: scheduledNow,
 			serviceCallId: scheduleTimerCommand.serviceCallId,
 			tenantId: scheduleTimerCommand.tenantId,
 		})

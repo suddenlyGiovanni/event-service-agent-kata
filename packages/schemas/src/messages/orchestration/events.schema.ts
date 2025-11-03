@@ -1,33 +1,43 @@
 import * as Schema from 'effect/Schema'
 
-import { Iso8601DateTime, ServiceCallId, TenantId } from '../../shared/index.ts'
 import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'
+import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
 import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
-import { Tag } from '../tag.ts'
 
 /**
  * ServiceCallSubmitted - Submission accepted
  *
  * Produced by: Orchestration
  */
-export class ServiceCallSubmitted extends Schema.TaggedClass<ServiceCallSubmitted>()(
-	Tag.Orchestration.Events.ServiceCallSubmitted,
-	{
-		/** Human-readable name for the service call */
-		name: Schema.String,
-		/** HTTP request specification (body excluded - stored separately) */
-		requestSpec: RequestSpecWithoutBody,
-		serviceCallId: ServiceCallId,
-		/** Timestamp when the service call was submitted (ISO8601) */
-		submittedAt: Iso8601DateTime,
-		/** Optional tags for categorization and filtering */
-		tags: Schema.optional(Schema.Array(Schema.String)),
-		tenantId: TenantId,
-	},
-) {
+export class ServiceCallSubmitted extends Schema.TaggedClass<ServiceCallSubmitted>()('ServiceCallSubmitted', {
+	...ServiceCallEventBase.fields,
+
+	/**
+	 * Human-readable name for the service call
+	 */
+	name: Schema.String,
+
+	/**
+	 * HTTP request specification (body excluded - stored separately)
+	 */
+	requestSpec: RequestSpecWithoutBody,
+
+	/**
+	 * Timestamp when the service call was submitted (ISO8601)
+	 */
+	submittedAt: Schema.DateTimeUtc,
+
+	/**
+	 * Optional tags for categorization and filtering
+	 */
+	tags: Schema.optional(Schema.Array(Schema.String)),
+}) {
 	static readonly decode = Schema.decode(ServiceCallSubmitted)
 
 	static readonly encode = Schema.encode(ServiceCallSubmitted)
+
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	static readonly Tag = ServiceCallSubmitted._tag
 }
 
 export declare namespace ServiceCallSubmitted {
@@ -40,18 +50,20 @@ export declare namespace ServiceCallSubmitted {
  *
  * Produced by: Orchestration
  */
-export class ServiceCallScheduled extends Schema.TaggedClass<ServiceCallScheduled>()(
-	Tag.Orchestration.Events.ServiceCallScheduled,
-	{
-		/** Timestamp when execution should start (ISO8601) */
-		dueAt: Iso8601DateTime,
-		serviceCallId: ServiceCallId,
-		tenantId: TenantId,
-	},
-) {
+export class ServiceCallScheduled extends Schema.TaggedClass<ServiceCallScheduled>()('ServiceCallScheduled', {
+	...ServiceCallEventBase.fields,
+
+	/**
+	 * Timestamp when execution should start (ISO8601)
+	 */
+	dueAt: Schema.DateTimeUtc,
+}) {
 	static readonly decode = Schema.decode(ServiceCallScheduled)
 
 	static readonly encode = Schema.encode(ServiceCallScheduled)
+
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	static readonly Tag = ServiceCallScheduled._tag
 }
 
 export declare namespace ServiceCallScheduled {
@@ -64,18 +76,20 @@ export declare namespace ServiceCallScheduled {
  *
  * Produced by: Orchestration
  */
-export class ServiceCallRunning extends Schema.TaggedClass<ServiceCallRunning>()(
-	Tag.Orchestration.Events.ServiceCallRunning,
-	{
-		serviceCallId: ServiceCallId,
-		/** Timestamp when execution began (ISO8601) */
-		startedAt: Iso8601DateTime,
-		tenantId: TenantId,
-	},
-) {
+export class ServiceCallRunning extends Schema.TaggedClass<ServiceCallRunning>()('ServiceCallRunning', {
+	...ServiceCallEventBase.fields,
+
+	/**
+	 * Timestamp when execution began (ISO8601)
+	 */
+	startedAt: Schema.DateTimeUtc,
+}) {
 	static readonly decode = Schema.decode(ServiceCallRunning)
 
 	static readonly encode = Schema.encode(ServiceCallRunning)
+
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	static readonly Tag = ServiceCallRunning._tag
 }
 
 export declare namespace ServiceCallRunning {
@@ -88,20 +102,27 @@ export declare namespace ServiceCallRunning {
  *
  * Produced by: Orchestration
  */
-export class ServiceCallSucceeded extends Schema.TaggedClass<ServiceCallSucceeded>()(
-	Tag.Orchestration.Events.ServiceCallSucceeded,
-	{
-		/** Timestamp when execution completed successfully (ISO8601) */
-		finishedAt: Iso8601DateTime,
-		/** HTTP response metadata (status, headers, latency, body snippet) */
-		responseMeta: ResponseMeta,
-		serviceCallId: ServiceCallId,
-		tenantId: TenantId,
-	},
-) {
+export class ServiceCallSucceeded extends Schema.TaggedClass<ServiceCallSucceeded>()('ServiceCallSucceeded', {
+	...ServiceCallEventBase.fields,
+
+	/**
+	 * Timestamp when execution completed successfully (ISO8601)
+	 */
+
+	finishedAt: Schema.DateTimeUtc,
+
+	/**
+	 * HTTP response metadata (status, headers, latency, body snippet)
+	 */
+
+	responseMeta: ResponseMeta,
+}) {
 	static readonly decode = Schema.decode(ServiceCallSucceeded)
 
 	static readonly encode = Schema.encode(ServiceCallSucceeded)
+
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	static readonly Tag = ServiceCallSucceeded._tag
 }
 
 export declare namespace ServiceCallSucceeded {
@@ -114,20 +135,25 @@ export declare namespace ServiceCallSucceeded {
  *
  * Produced by: Orchestration
  */
-export class ServiceCallFailed extends Schema.TaggedClass<ServiceCallFailed>()(
-	Tag.Orchestration.Events.ServiceCallFailed,
-	{
-		/** Error details (kind, message, latency, additional context) */
-		errorMeta: ErrorMeta,
-		/** Timestamp when execution failed (ISO8601) */
-		finishedAt: Iso8601DateTime,
-		serviceCallId: ServiceCallId,
-		tenantId: TenantId,
-	},
-) {
+export class ServiceCallFailed extends Schema.TaggedClass<ServiceCallFailed>()('ServiceCallFailed', {
+	...ServiceCallEventBase.fields,
+
+	/**
+	 *  Error details (kind, message, latency, additional context)
+	 */
+	errorMeta: ErrorMeta,
+
+	/**
+	 * Timestamp when execution failed (ISO8601)
+	 */
+	finishedAt: Schema.DateTimeUtc,
+}) {
 	static readonly decode = Schema.decode(ServiceCallFailed)
 
 	static readonly encode = Schema.encode(ServiceCallFailed)
+
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	static readonly Tag = ServiceCallFailed._tag
 }
 
 export declare namespace ServiceCallFailed {
@@ -144,3 +170,5 @@ export const Events = Schema.Union(
 )
 
 export type Events = Schema.Schema.Type<typeof Events>
+
+export type Tag = Events['_tag']
