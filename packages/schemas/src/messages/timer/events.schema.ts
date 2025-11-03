@@ -102,7 +102,7 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 */
 	static readonly encode = Schema.encode(DueTimeReached)
 
-	// biome-ignore lint/style/useNamingConvention: <explanation>
+	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
 	static readonly Tag = DueTimeReached._tag
 }
 
