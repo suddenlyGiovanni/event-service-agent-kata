@@ -68,18 +68,15 @@ export class TimerEventBus {
 					 * - timestampMs: Event occurrence time (DateTime.Utc, encodes to epoch milliseconds)
 					 */
 					const envelope = new MessageEnvelopeSchema({
-						...Option.match(correlationId, {
-							onNone: () => ({}),
-							onSome: correlationId => ({ correlationId }),
-						}),
+						aggregateId: Option.none(), // Timer events don't use per-aggregate ordering
+						causationId: Option.none(), // No causation tracking for autonomous timer events
+						correlationId, // Already Option<CorrelationId> from scheduledTimer
 						id: envelopeId,
 						payload: dueTimeReached,
 						tenantId,
 						timestampMs: firedAt,
 						type: 'DueTimeReached',
-					})
-
-					// Delegate to shared bus - envelope is self-contained!
+					}) // Delegate to shared bus - envelope is self-contained!
 					yield* sharedBus.publish([envelope])
 				}),
 
@@ -105,7 +102,9 @@ export class TimerEventBus {
 							const command = envelope.payload as Messages.Orchestration.Commands.ScheduleTimer.Type
 
 							// 3. Delegate to handler
-							yield* handler(command, envelope.correlationId)
+							// Extract correlationId from Option (undefined if None)
+							const correlationId = Option.getOrUndefined(envelope.correlationId)
+							yield* handler(command, correlationId)
 						}),
 					)
 				}),

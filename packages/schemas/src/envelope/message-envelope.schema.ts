@@ -60,13 +60,13 @@ export declare namespace DomainMessage {
 
 export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('MessageEnvelope')({
 	/** Ordering key for per-aggregate ordering (e.g., serviceCallId) */
-	aggregateId: Schema.optional(Schema.String),
+	aggregateId: Schema.optionalWith(Schema.String, { as: 'Option', exact: true }),
 
 	/** Causation ID linking this message to its cause (optional) */
-	causationId: Schema.optional(Schema.String),
+	causationId: Schema.optionalWith(Schema.String, { as: 'Option', exact: true }),
 
 	/** Correlation ID for distributed tracing (optional) */
-	correlationId: Schema.optional(CorrelationId),
+	correlationId: Schema.optionalWith(CorrelationId, { as: 'Option', exact: true }),
 
 	/** Unique identifier for this envelope (UUID v7) */
 	id: EnvelopeId,

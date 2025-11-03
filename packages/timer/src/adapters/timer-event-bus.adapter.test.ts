@@ -1,4 +1,5 @@
 import { assert, describe, expect, expectTypeOf, it } from '@effect/vitest'
+import { assertEquals, assertNone } from '@effect/vitest/utils'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Either from 'effect/Either'
@@ -64,7 +65,7 @@ describe('TimerEventBus', () => {
 
 					expect(envelope.type).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 					expect(envelope.tenantId).toBe(tenantId)
-					expect(envelope.correlationId).toBe(correlationId)
+					assertEquals(envelope.correlationId, Option.some(correlationId))
 					// timestampMs is now DateTime.Utc (compare via DateTime.Equivalence)
 					expect(DateTime.Equivalence(envelope.timestampMs, now)).toBe(true) // Verify payload
 					const payload = envelope.payload
@@ -113,7 +114,7 @@ describe('TimerEventBus', () => {
 
 					const envelope = publishedEnvelopes[0]
 					assert(envelope !== undefined)
-					expect(envelope.correlationId).toBeUndefined()
+					assertNone(envelope.correlationId)
 				}).pipe(Effect.provide(TestLayers))
 			})
 
@@ -283,7 +284,9 @@ describe('TimerEventBus', () => {
 
 				// Create envelope (already decoded, domain types)
 				const envelope: MessageEnvelopeSchema.Type = {
-					correlationId,
+					aggregateId: Option.none(),
+					causationId: Option.none(),
+					correlationId: Option.some(correlationId),
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
 					payload: {
 						_tag: Messages.Orchestration.Commands.ScheduleTimer.Tag,
@@ -338,6 +341,9 @@ describe('TimerEventBus', () => {
 
 				// Wrong message type
 				const envelope: MessageEnvelopeSchema.Type = {
+					aggregateId: Option.none(),
+					causationId: Option.none(),
+					correlationId: Option.none(),
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
 					payload: {
 						_tag: Messages.Timer.Events.DueTimeReached.Tag, // Wrong type
@@ -383,6 +389,9 @@ describe('TimerEventBus', () => {
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
 				const envelope: MessageEnvelopeSchema.Type = {
+					aggregateId: Option.none(),
+					causationId: Option.none(),
+					correlationId: Option.none(),
 					// No correlationId
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
 					payload: {
@@ -429,6 +438,9 @@ describe('TimerEventBus', () => {
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
 				const envelope: MessageEnvelopeSchema.Type = {
+					aggregateId: Option.none(),
+					causationId: Option.none(),
+					correlationId: Option.none(),
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
 					payload: {
 						_tag: Messages.Orchestration.Commands.ScheduleTimer.Tag,

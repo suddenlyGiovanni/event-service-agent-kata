@@ -1,8 +1,10 @@
 import { assert, describe, expect, it } from '@effect/vitest'
+import { assertEquals, assertNone } from '@effect/vitest/utils'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Match from 'effect/Match'
+import * as Option from 'effect/Option'
 
 import * as Messages from '../messages/index.ts'
 import { EnvelopeId, ServiceCallId, TenantId } from '../shared/index.ts'
@@ -83,9 +85,9 @@ describe('MessageEnvelopeSchema', () => {
 				const envelope = yield* MessageEnvelopeSchema.decodeJson(json)
 
 				// Assert: Optional fields are undefined
-				expect(envelope.aggregateId).toBeUndefined()
-				expect(envelope.causationId).toBeUndefined()
-				expect(envelope.correlationId).toBeUndefined()
+				assertNone(envelope.aggregateId)
+				assertNone(envelope.causationId)
+				assertNone(envelope.correlationId)
 
 				// Assert: Payload tag
 				MessageEnvelopeSchema.matchPayload(envelope).pipe(
@@ -163,6 +165,9 @@ describe('MessageEnvelopeSchema', () => {
 				})
 
 				const envelope = new MessageEnvelopeSchema({
+					aggregateId: Option.none(),
+					causationId: Option.none(),
+					correlationId: Option.none(),
 					id: EnvelopeId.make(envelopeId),
 					payload: dueTimeReached,
 					tenantId: TenantId.make(tenantId),
@@ -197,7 +202,9 @@ describe('MessageEnvelopeSchema', () => {
 				})
 
 				const original = new MessageEnvelopeSchema({
-					aggregateId: serviceCallId,
+					aggregateId: Option.some(serviceCallId),
+					causationId: Option.none(),
+					correlationId: Option.none(),
 					id: EnvelopeId.make(envelopeId),
 					payload: dueTimeReached,
 					tenantId: TenantId.make(tenantId),
@@ -214,7 +221,8 @@ describe('MessageEnvelopeSchema', () => {
 				expect(decoded.tenantId).toBe(original.tenantId)
 				// timestampMs: DateTime.Utc instances (compare via DateTime.Equivalence)
 				expect(DateTime.Equivalence(decoded.timestampMs, original.timestampMs)).toBe(true)
-				expect(decoded.aggregateId).toBe(original.aggregateId)
+				assertEquals(decoded.aggregateId, original.aggregateId)
+
 				// Assert: Payload matches using matchPayload
 				MessageEnvelopeSchema.matchPayload(decoded).pipe(
 					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
