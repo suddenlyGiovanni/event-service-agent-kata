@@ -13,6 +13,7 @@
 
 import * as Effect from 'effect/Effect'
 import { pipe } from 'effect/Function'
+import * as Match from 'effect/Match'
 import type * as ParseResult from 'effect/ParseResult'
 import * as Schema from 'effect/Schema'
 import type * as SchemaAst from 'effect/SchemaAST'
@@ -126,6 +127,62 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 		options?: SchemaAst.ParseOptions,
 	): Effect.Effect<string, ParseResult.ParseError, never> =>
 		pipe(envelope, Schema.encode(MessageEnvelopeSchema, options), Effect.map(JSON.stringify))
+
+	/**
+	 * Creates a matcher for the envelope's payload discriminated union.
+	 *
+	 * This method provides ergonomic access to Effect's pattern matching API for the
+	 * envelope payload. It allows partial matching on specific message tags without
+	 * requiring exhaustive handlers.
+	 *
+	 * **Why This Helper?**
+	 * - Eliminates boilerplate: `Match.value(envelope.payload)` → `MessageEnvelopeSchema.matchPayload(envelope)`
+	 * - Improves discoverability: developers see matcher as part of schema API
+	 * - Enables fluent composition with all Match operators (tag, when, not, orElse, exhaustive)
+	 *
+	 * **Pattern Matching Flow**:
+	 * 1. Create matcher from envelope: `matchPayload(envelope)`
+	 * 2. Chain handlers: `.pipe(Match.tag(...), Match.tag(...), ...)`
+	 * 3. Finalize: `.pipe(..., Match.orElse(...))` or `Match.exhaustive`
+	 *
+	 * @param envelope - Validated MessageEnvelope with typed payload
+	 * @returns Value matcher for the payload discriminated union
+	 *
+	 * @example
+	 * ```typescript
+	 * import { Tag } from '@event-service-agent/schemas/messages'
+	 *
+	 * // Test: Partial matching (only care about specific tags)
+	 * const result = MessageEnvelopeSchema.matchPayload(envelope).pipe(
+	 *   Match.tag(Tag.Timer.Events.DueTimeReached, (payload) => {
+	 *     expect(payload.tenantId).toBe(expectedTenantId)
+	 *     expect(payload.serviceCallId).toBe(expectedServiceCallId)
+	 *     return 'timer-handled'
+	 *   }),
+	 *   Match.orElse(() => 'other-message')
+	 * )
+	 * ```
+	 *
+	 * @example
+	 * ```typescript
+	 * import { Tag } from '@event-service-agent/schemas/messages'
+	 *
+	 * // Workflow: Exhaustive matching (handle all cases)
+	 * const result = MessageEnvelopeSchema.matchPayload(envelope).pipe(
+	 *   Match.tag(Tag.Timer.Events.DueTimeReached, handleTimer),
+	 *   Match.tag(Tag.Orchestration.Events.ServiceCallScheduled, handleSchedule),
+	 *   Match.tag(Tag.Orchestration.Events.ServiceCallSucceeded, handleCompletion),
+	 *   Match.exhaustive // TypeScript error if any tag is missing
+	 * )
+	 * ```
+	 *
+	 * @see https://effect.website/docs/data-types/match for Match API documentation
+	 * @see ADR-0011 for envelope schema design
+	 */
+	static readonly matchPayload: <T extends MessageEnvelopeSchema.Type>(
+		envelope: T,
+	) => Match.Matcher<T['payload'], Match.Types.Without<never>, T['payload'], never, T['payload']> = envelope =>
+		Match.value(envelope.payload)
 }
 
 export declare namespace MessageEnvelopeSchema {
