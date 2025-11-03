@@ -67,6 +67,8 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  *
  * @example
  * ```typescript
+ * import { Option } from 'effect'
+ *
  * // Publishing events (Orchestration, Execution, Timer)
  * const publishEvents = Effect.gen(function* () {
  *   const bus = yield* EventBusPort
@@ -76,9 +78,10 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  *     id: envelopeId,
  *     type: 'ServiceCallScheduled',
  *     tenantId,
- *     correlationId,  // Optional
- *     aggregateId: serviceCallId,
- *     timestampMs: now.epochMillis,
+ *     correlationId: Option.some(correlationId),  // Option<CorrelationId>
+ *     aggregateId: Option.some(serviceCallId),    // Option<ServiceCallId>
+ *     causationId: Option.none(),                 // Option<EnvelopeId>
+ *     timestampMs: now,                           // DateTime.Utc (not .epochMillis)
  *     payload: { ... }
  *   }
  *
@@ -121,13 +124,16 @@ export interface EventBusPort {
 	 *
 	 * @example
 	 * ```typescript
+	 * import { Option } from 'effect'
+	 *
 	 * const envelope: MessageEnvelope.Type = {
 	 *   id: envelopeId,
 	 *   type: 'ServiceCallScheduled',
 	 *   tenantId,
-	 *   correlationId,  // Optional
-	 *   aggregateId: serviceCallId,
-	 *   timestampMs: now.epochMillis,
+	 *   correlationId: Option.some(correlationId),  // Option<CorrelationId>
+	 *   aggregateId: Option.some(serviceCallId),    // Option<ServiceCallId>
+	 *   causationId: Option.none(),                 // Option<EnvelopeId>
+	 *   timestampMs: now,                           // DateTime.Utc (not .epochMillis)
 	 *   payload: { ... }
 	 * }
 	 *
