@@ -12,7 +12,7 @@
 			"type": "shell"
 		},
 		{
-			"command": "bun --bun --workspaces run test",
+			"command": "bun run test",
 			"group": "test",
 			"isBackground": true,
 			"label": "test: watch",
