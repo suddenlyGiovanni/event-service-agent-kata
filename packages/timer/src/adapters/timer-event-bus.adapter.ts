@@ -63,11 +63,11 @@ export class TimerEventBus {
 					 * No separate context needed - envelope contains:
 					 * - tenantId: For multi-tenancy and routing (required)
 					 * - correlationId: For distributed tracing (optional - autonomous events may lack this)
-					 * - aggregateId: Would be serviceCallId if we needed per-aggregate ordering
+					 * - aggregateId: ServiceCallId for per-aggregate ordering (preserves partition key)
 					 * - timestampMs: Event occurrence time (DateTime.Utc, encodes to epoch milliseconds)
 					 */
 					const envelope = new MessageEnvelope({
-						aggregateId: Option.none(), // Timer events don't use per-aggregate ordering
+						aggregateId: Option.some(serviceCallId), // Preserve tenant+serviceCall partition key for ordering
 						causationId: Option.none(), // No causation tracking for autonomous timer events
 						correlationId, // Already Option<CorrelationId> from scheduledTimer
 						id: envelopeId,
