@@ -60,8 +60,17 @@ type Modules = ReadonlyRecord<
 	| ReadonlyRecord<Command, Dictionary<string>>
 	| ReadonlyRecord<Event | Command, Dictionary<string>>
 >
-type ExtractTags<K extends Event | Command, M> = M extends ReadonlyRecord<K, Dictionary<infer T>> ? T : never
-type ExtractModuleTags<M> = ExtractTags<Event, M> | ExtractTags<Command, M>
-type ExtractModule<M extends Modules> = M[keyof M]
 
-export type Tag = ExtractModuleTags<ExtractModule<typeof Tag>>
+export type Tag =
+	| typeof ServiceCallFailed.Tag
+	| typeof ServiceCallRunning.Tag
+	| typeof ServiceCallScheduled.Tag
+	| typeof ServiceCallSubmitted.Tag
+	| typeof ServiceCallSucceeded.Tag
+	| typeof DueTimeReached.Tag
+	| typeof ScheduleTimer.Tag
+	| typeof StartExecution.Tag
+	| typeof ExecutionFailed.Tag
+	| typeof ExecutionStarted.Tag
+	| typeof ExecutionSucceeded.Tag
+	| typeof SubmitServiceCall.Tag
