@@ -4,8 +4,7 @@ import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 
 import { ServiceCallId, TenantId } from '../../shared/index.ts'
-import * as Orchestration from '../orchestration/index.ts'
-import { Tag } from '../tag.ts'
+import * as Orchestration from './index.ts'
 
 describe('ScheduleTimer Command Schema', () => {
 	const serviceCallId = '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b' as const
@@ -17,7 +16,7 @@ describe('ScheduleTimer Command Schema', () => {
 			Effect.gen(function* () {
 				// Arrange: Valid wire format DTO
 				const dto = {
-					_tag: Tag.Orchestration.Commands.ScheduleTimer,
+					_tag: Orchestration.Commands.ScheduleTimer.Tag,
 					dueAt,
 					serviceCallId,
 					tenantId,
@@ -27,7 +26,7 @@ describe('ScheduleTimer Command Schema', () => {
 				const command = yield* Orchestration.Commands.ScheduleTimer.decode(dto)
 
 				// Assert: All fields validated and branded (dueAt is now DateTime.Utc)
-				expect(command._tag).toBe(Tag.Orchestration.Commands.ScheduleTimer)
+				expect(command._tag).toBe(Orchestration.Commands.ScheduleTimer.Tag)
 
 				expect(command.tenantId).toBe(dto.tenantId)
 				expect(command.serviceCallId).toBe(dto.serviceCallId)
@@ -41,7 +40,7 @@ describe('ScheduleTimer Command Schema', () => {
 		it.effect('rejects invalid tenantId format', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Orchestration.Commands.ScheduleTimer,
+					_tag: Orchestration.Commands.ScheduleTimer.Tag,
 					dueAt,
 					serviceCallId,
 					tenantId: 'not-a-uuid',
@@ -55,7 +54,7 @@ describe('ScheduleTimer Command Schema', () => {
 		it.effect('rejects invalid serviceCallId format', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Orchestration.Commands.ScheduleTimer,
+					_tag: Orchestration.Commands.ScheduleTimer.Tag,
 					dueAt,
 					serviceCallId: 'not-a-uuid',
 					tenantId,
@@ -69,7 +68,7 @@ describe('ScheduleTimer Command Schema', () => {
 		it.effect('rejects invalid dueAt format', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: Tag.Orchestration.Commands.ScheduleTimer,
+					_tag: Orchestration.Commands.ScheduleTimer.Tag,
 					dueAt: 'not-a-date',
 					serviceCallId,
 					tenantId,
