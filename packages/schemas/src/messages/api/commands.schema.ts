@@ -11,9 +11,11 @@ import { RequestSpec } from '../http/request-spec.schema.ts'
  */
 export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('SubmitServiceCall', {
 	/**
-	 * Timestamp when execution should start (ISO8601)
+	 * Timestamp when execution should start
+	 *
+	 * Domain type: DateTime.Utc
+	 * Wire format: epoch milliseconds
 	 */
-
 	dueAt: Schema.DateTimeUtc,
 
 	/**
