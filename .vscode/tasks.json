@@ -24,7 +24,7 @@
 			"type": "shell"
 		},
 		{
-			"command": "bun --bun --workspaces format",
+			"command": "bun run format",
 			"group": "none",
 			"label": "format: all",
 			"presentation": {
@@ -35,7 +35,7 @@
 			"type": "shell"
 		},
 		{
-			"command": "bun --bun --workspaces lint",
+			"command": "bun run lint",
 			"group": "none",
 			"label": "lint: all",
 			"presentation": {
@@ -46,7 +46,7 @@
 			"type": "shell"
 		},
 		{
-			"command": "bun --bun --workspaces check",
+			"command": "bun run check",
 			"group": {
 				"isDefault": true,
 				"kind": "build"
