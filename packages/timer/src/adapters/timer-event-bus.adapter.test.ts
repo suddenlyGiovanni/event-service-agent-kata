@@ -62,16 +62,16 @@ describe('TimerEventBus', () => {
 
 					assert(envelope !== undefined)
 
-					expect(envelope.type).toBe(Messages.Tag.Timer.Events.DueTimeReached)
+					expect(envelope.type).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 					expect(envelope.tenantId).toBe(tenantId)
 					expect(envelope.correlationId).toBe(correlationId)
 					expect(envelope.timestampMs).toBe(now.epochMillis)
 
 					// Verify payload
 					const payload = envelope.payload
-					assert(payload._tag === Messages.Tag.Timer.Events.DueTimeReached)
+					assert(payload._tag === Messages.Timer.Events.DueTimeReached.Tag)
 					expectTypeOf(payload).toEqualTypeOf<Messages.Timer.Events.DueTimeReached.Type>()
-					expect(payload._tag).toBe(Messages.Tag.Timer.Events.DueTimeReached)
+					expect(payload._tag).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 					expect(payload.tenantId).toBe(tenantId)
 					expect(payload.serviceCallId).toBe(serviceCallId)
 				}).pipe(Effect.provide(TestLayers))
@@ -200,7 +200,7 @@ describe('TimerEventBus', () => {
 					expect(envelope.timestampMs).toBe(firedAt.epochMillis)
 
 					const payload = envelope.payload
-					assert(payload._tag === Messages.Tag.Timer.Events.DueTimeReached)
+					assert(payload._tag === Messages.Timer.Events.DueTimeReached.Tag)
 					assert(payload.reachedAt !== undefined)
 					expect(DateTime.Equivalence(payload.reachedAt, firedAt)).toBe(true)
 				}).pipe(Effect.provide(TestLayers))
@@ -286,14 +286,14 @@ describe('TimerEventBus', () => {
 					correlationId,
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
 					payload: {
-						_tag: Messages.Tag.Orchestration.Commands.ScheduleTimer,
+						_tag: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 						dueAt, // Domain type: DateTime.Utc
 						serviceCallId,
 						tenantId,
 					},
 					tenantId,
 					timestampMs: now.epochMillis,
-					type: Messages.Tag.Orchestration.Commands.ScheduleTimer,
+					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
@@ -340,14 +340,14 @@ describe('TimerEventBus', () => {
 				const envelope: MessageEnvelopeSchema.Type = {
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
 					payload: {
-						_tag: Messages.Tag.Timer.Events.DueTimeReached, // Wrong type
+						_tag: Messages.Timer.Events.DueTimeReached.Tag, // Wrong type
 						reachedAt: now,
 						serviceCallId,
 						tenantId,
 					},
 					tenantId,
 					timestampMs: now.epochMillis,
-					type: Messages.Tag.Timer.Events.DueTimeReached,
+					type: Messages.Timer.Events.DueTimeReached.Tag,
 				}
 
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
@@ -386,14 +386,14 @@ describe('TimerEventBus', () => {
 					// No correlationId
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
 					payload: {
-						_tag: Messages.Tag.Orchestration.Commands.ScheduleTimer,
+						_tag: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 						dueAt,
 						serviceCallId,
 						tenantId,
 					},
 					tenantId,
 					timestampMs: now.epochMillis,
-					type: Messages.Tag.Orchestration.Commands.ScheduleTimer,
+					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
@@ -431,14 +431,14 @@ describe('TimerEventBus', () => {
 				const envelope: MessageEnvelopeSchema.Type = {
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
 					payload: {
-						_tag: Messages.Tag.Orchestration.Commands.ScheduleTimer,
+						_tag: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 						dueAt,
 						serviceCallId,
 						tenantId,
 					},
 					tenantId,
 					timestampMs: now.epochMillis,
-					type: Messages.Tag.Orchestration.Commands.ScheduleTimer,
+					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
@@ -475,12 +475,12 @@ describe('TimerEventBus', () => {
 				const envelope = {
 					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
 					payload: {
-						_tag: Messages.Tag.Orchestration.Commands.ScheduleTimer,
+						_tag: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 						// Missing dueAt, tenantId, serviceCallId
 					},
 					tenantId,
 					timestampMs: now.epochMillis,
-					type: Messages.Tag.Orchestration.Commands.ScheduleTimer,
+					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				} as MessageEnvelopeSchema.Type
 
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
