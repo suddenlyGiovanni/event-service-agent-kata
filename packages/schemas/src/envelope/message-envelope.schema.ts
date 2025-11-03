@@ -18,6 +18,7 @@ import type * as ParseResult from 'effect/ParseResult'
 import * as Schema from 'effect/Schema'
 import type * as SchemaAst from 'effect/SchemaAST'
 
+import * as Messages from '../messages/index.ts'
 import { CorrelationId, EnvelopeId, TenantId } from '../shared/index.ts'
 import { DomainMessage } from './domain-message.schema.ts'
 
@@ -43,8 +44,35 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	/** Producer timestamp in epoch milliseconds */
 	timestampMs: Schema.Number,
 
-	/** Message type discriminator (matches payload._tag) */
-	type: Schema.String, // TODO: derive from payload._tag
+	/**
+	 * Message type discriminator (matches payload._tag)
+	 *
+	 * Constrained to valid message tags for type safety.
+	 * This ensures only known message types can be in envelopes.
+	 */
+	type: Schema.Literal(
+		// Timer Events
+		Messages.Timer.Events.DueTimeReached.Tag,
+
+		// Orchestration Commands
+		Messages.Orchestration.Commands.ScheduleTimer.Tag,
+		Messages.Orchestration.Commands.StartExecution.Tag,
+
+		// Orchestration Events
+		Messages.Orchestration.Events.ServiceCallSubmitted.Tag,
+		Messages.Orchestration.Events.ServiceCallScheduled.Tag,
+		Messages.Orchestration.Events.ServiceCallRunning.Tag,
+		Messages.Orchestration.Events.ServiceCallSucceeded.Tag,
+		Messages.Orchestration.Events.ServiceCallFailed.Tag,
+
+		// Execution Events
+		Messages.Execution.Events.ExecutionStarted.Tag,
+		Messages.Execution.Events.ExecutionSucceeded.Tag,
+		Messages.Execution.Events.ExecutionFailed.Tag,
+
+		// API Commands
+		Messages.Api.Commands.SubmitServiceCall.Tag,
+	),
 }) {
 	/**
 	 * Decode a JSON string into a validated MessageEnvelope with typed payload.
