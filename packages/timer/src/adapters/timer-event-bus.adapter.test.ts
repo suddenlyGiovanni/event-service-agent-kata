@@ -8,7 +8,7 @@ import * as Option from 'effect/Option'
 
 import * as PortsPlatform from '@event-service-agent/platform/ports'
 import { Topics } from '@event-service-agent/platform/routing'
-import type { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
+import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
@@ -25,7 +25,7 @@ describe('TimerEventBus', () => {
 	describe('publishDueTimeReached', () => {
 		describe('Happy Path', () => {
 			it.effect('should publish DueTimeReached event with correlation ID', () => {
-				const publishedEnvelopes: MessageEnvelopeSchema.Type[] = []
+				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 				const EventBusTest: Layer.Layer<PortsPlatform.EventBusPort, never, never> = Layer.mock(
 					PortsPlatform.EventBusPort,
@@ -78,7 +78,7 @@ describe('TimerEventBus', () => {
 			})
 
 			it.effect('should publish DueTimeReached event without correlation ID', () => {
-				const publishedEnvelopes: MessageEnvelopeSchema.Type[] = []
+				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 				const EventBusTest: Layer.Layer<PortsPlatform.EventBusPort, never, never> = Layer.mock(
 					PortsPlatform.EventBusPort,
@@ -119,7 +119,7 @@ describe('TimerEventBus', () => {
 			})
 
 			it.effect('should generate unique envelope IDs for each publish', () => {
-				const publishedEnvelopes: MessageEnvelopeSchema.Type[] = []
+				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 				const EventBusTest: Layer.Layer<PortsPlatform.EventBusPort, never, never> = Layer.mock(
 					PortsPlatform.EventBusPort,
@@ -162,7 +162,7 @@ describe('TimerEventBus', () => {
 			})
 
 			it.effect('should use provided firedAt timestamp', () => {
-				const publishedEnvelopes: MessageEnvelopeSchema.Type[] = []
+				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 				const EventBusTest: Layer.Layer<PortsPlatform.EventBusPort, never, never> = Layer.mock(
 					PortsPlatform.EventBusPort,
@@ -283,7 +283,7 @@ describe('TimerEventBus', () => {
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
 				// Create envelope (already decoded, domain types)
-				const envelope: MessageEnvelopeSchema.Type = {
+				const envelope: MessageEnvelope.Type = {
 					aggregateId: Option.none(),
 					causationId: Option.none(),
 					correlationId: Option.some(correlationId),
@@ -302,7 +302,7 @@ describe('TimerEventBus', () => {
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E, R>,
+						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
 					) =>
 						Effect.gen(function* () {
 							yield* handler(envelope)
@@ -340,7 +340,7 @@ describe('TimerEventBus', () => {
 				const now = DateTime.unsafeNow()
 
 				// Wrong message type
-				const envelope: MessageEnvelopeSchema.Type = {
+				const envelope: MessageEnvelope.Type = {
 					aggregateId: Option.none(),
 					causationId: Option.none(),
 					correlationId: Option.none(),
@@ -359,7 +359,7 @@ describe('TimerEventBus', () => {
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E, R>,
+						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
 					) =>
 						Effect.gen(function* () {
 							yield* handler(envelope)
@@ -388,7 +388,7 @@ describe('TimerEventBus', () => {
 				const now = DateTime.unsafeNow()
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const envelope: MessageEnvelopeSchema.Type = {
+				const envelope: MessageEnvelope.Type = {
 					aggregateId: Option.none(),
 					causationId: Option.none(),
 					correlationId: Option.none(),
@@ -408,7 +408,7 @@ describe('TimerEventBus', () => {
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E, R>,
+						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
 					) =>
 						Effect.gen(function* () {
 							yield* handler(envelope)
@@ -437,7 +437,7 @@ describe('TimerEventBus', () => {
 				const now = DateTime.unsafeNow()
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const envelope: MessageEnvelopeSchema.Type = {
+				const envelope: MessageEnvelope.Type = {
 					aggregateId: Option.none(),
 					causationId: Option.none(),
 					correlationId: Option.none(),
@@ -456,7 +456,7 @@ describe('TimerEventBus', () => {
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E, R>,
+						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
 					) =>
 						Effect.gen(function* () {
 							yield* handler(envelope)
@@ -493,12 +493,12 @@ describe('TimerEventBus', () => {
 					tenantId,
 					timestampMs: now,
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
-				} as MessageEnvelopeSchema.Type
+				} as MessageEnvelope.Type
 
 				const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E, R>,
+						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
 					) =>
 						Effect.gen(function* () {
 							yield* handler(envelope)
@@ -565,7 +565,7 @@ describe('TimerEventBus', () => {
 		})
 
 		it.effect('should integrate with UUID7 service', () => {
-			const publishedEnvelopes: MessageEnvelopeSchema.Type[] = []
+			const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 			const mockEventBus = Layer.mock(PortsPlatform.EventBusPort, {
 				publish: envelopes =>

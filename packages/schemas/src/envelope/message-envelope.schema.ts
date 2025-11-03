@@ -58,7 +58,7 @@ export declare namespace DomainMessage {
 	type Tag = DomainMessage.Type['_tag']
 }
 
-export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('MessageEnvelope')({
+export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvelope')({
 	/**
 	 * **Aggregate Identifier** — Per-aggregate message ordering key
 	 *
@@ -124,7 +124,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * @example
 	 * ```typescript
 	 * // 1. User submits request → SubmitServiceCall command (no cause, external origin)
-	 * const submitCmd = new MessageEnvelopeSchema({
+	 * const submitCmd = new MessageEnvelope({
 	 *   id: EnvelopeId.make('envelope-001'),
 	 *   causationId: Option.none(), // External trigger
 	 *   correlationId: Option.some(CorrelationId.make('request-xyz')),
@@ -132,7 +132,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * })
 	 *
 	 * // 2. Orchestration processes command → publishes ScheduleTimer command
-	 * const scheduleCmd = new MessageEnvelopeSchema({
+	 * const scheduleCmd = new MessageEnvelope({
 	 *   id: EnvelopeId.make('envelope-002'),
 	 *   causationId: Option.some(EnvelopeId.make('envelope-001')), // Caused by SubmitServiceCall
 	 *   correlationId: Option.some(CorrelationId.make('request-xyz')), // Same conversation
@@ -140,7 +140,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * })
 	 *
 	 * // 3. Timer fires → publishes DueTimeReached event
-	 * const timerEvent = new MessageEnvelopeSchema({
+	 * const timerEvent = new MessageEnvelope({
 	 *   id: EnvelopeId.make('envelope-003'),
 	 *   causationId: Option.some(EnvelopeId.make('envelope-002')), // Caused by ScheduleTimer
 	 *   correlationId: Option.some(CorrelationId.make('request-xyz')), // Same conversation
@@ -244,13 +244,13 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * // Generate unique envelope ID when publishing
 	 * const envelopeId = yield* EnvelopeId.makeUUID7()
 	 *
-	 * const envelope = new MessageEnvelopeSchema({
+	 * const envelope = new MessageEnvelope({
 	 *   id: envelopeId, // e.g., "018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0"
 	 *   // ... other fields
 	 * })
 	 *
 	 * // Later, another message can reference this as its cause
-	 * const childEnvelope = new MessageEnvelopeSchema({
+	 * const childEnvelope = new MessageEnvelope({
 	 *   id: yield* EnvelopeId.makeUUID7(), // New unique ID
 	 *   causationId: Option.some(envelopeId), // Parent's ID
 	 *   // ...
@@ -347,10 +347,10 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * import { Messages } from '@event-service-agent/schemas'
 	 *
 	 * const program = Effect.gen(function* () {
-	 *   const envelope = yield* MessageEnvelopeSchema.decodeJson(jsonFromNats)
+	 *   const envelope = yield* MessageEnvelope.decodeJson(jsonFromNats)
 	 *
 	 *   // Type-safe pattern matching on payload using matchPayload helper
-	 *   yield* MessageEnvelopeSchema.matchPayload(envelope).pipe(
+	 *   yield* MessageEnvelope.matchPayload(envelope).pipe(
 	 *     Match.tag(Messages.Timer.Events.DueTimeReached.Tag, (payload) =>
 	 *       handleDueTimeReached(payload, envelope.correlationId)
 	 *     ),
@@ -374,9 +374,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	static readonly decodeJson: (
 		jsonString: string,
 		options?: SchemaAst.ParseOptions,
-	) => Effect.Effect<MessageEnvelopeSchema.Type, ParseResult.ParseError> = Schema.decode(
-		Schema.parseJson(MessageEnvelopeSchema),
-	)
+	) => Effect.Effect<MessageEnvelope.Type, ParseResult.ParseError> = Schema.decode(Schema.parseJson(MessageEnvelope))
 
 	/**
 	 * Encode a MessageEnvelope to a JSON string for wire transmission.
@@ -404,7 +402,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 *   const clock = yield* ClockPort
 	 *   const timestamp = yield* clock.now()
 	 *
-	 *   const envelope = new MessageEnvelopeSchema({
+	 *   const envelope = new MessageEnvelope({
 	 *     aggregateId: Option.none(),
 	 *     causationId: Option.none(),
 	 *     correlationId: Option.some(correlationId),
@@ -415,7 +413,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 *     type: Messages.Timer.Events.DueTimeReached.Tag,
 	 *   })
 	 *
-	 *   const jsonString = yield* MessageEnvelopeSchema.encodeJson(envelope)
+	 *   const jsonString = yield* MessageEnvelope.encodeJson(envelope)
 	 *   yield* natsClient.publish(subject, jsonString)
 	 * })
 	 * ```
@@ -424,10 +422,10 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * @see ADR-0012 for package structure (schemas package)
 	 */
 	static readonly encodeJson = (
-		envelope: MessageEnvelopeSchema.Type,
+		envelope: MessageEnvelope.Type,
 		options?: SchemaAst.ParseOptions,
 	): Effect.Effect<string, ParseResult.ParseError, never> =>
-		pipe(envelope, Schema.encode(MessageEnvelopeSchema, options), Effect.map(JSON.stringify))
+		pipe(envelope, Schema.encode(MessageEnvelope, options), Effect.map(JSON.stringify))
 
 	/**
 	 * Creates a matcher for the envelope's payload discriminated union.
@@ -437,7 +435,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * requiring exhaustive handlers.
 	 *
 	 * **Why This Helper?**
-	 * - Eliminates boilerplate: `Match.value(envelope.payload)` → `MessageEnvelopeSchema.matchPayload(envelope)`
+	 * - Eliminates boilerplate: `Match.value(envelope.payload)` → `MessageEnvelope.matchPayload(envelope)`
 	 * - Improves discoverability: developers see matcher as part of schema API
 	 * - Enables fluent composition with all Match operators (tag, when, not, orElse, exhaustive)
 	 *
@@ -452,7 +450,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * @example
 	 * ```typescript
 	 * // Test: Partial matching (only care about specific tags)
-	 * const result = MessageEnvelopeSchema.matchPayload(envelope).pipe(
+	 * const result = MessageEnvelope.matchPayload(envelope).pipe(
 	 *   Match.tag(Timer.Events.DueTimeReached.Tag, (payload) => {
 	 *     expect(payload.tenantId).toBe(expectedTenantId)
 	 *     expect(payload.serviceCallId).toBe(expectedServiceCallId)
@@ -465,7 +463,7 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * @example
 	 * ```typescript
 	 * // Workflow: Exhaustive matching (handle all cases)
-	 * const result = MessageEnvelopeSchema.matchPayload(envelope).pipe(
+	 * const result = MessageEnvelope.matchPayload(envelope).pipe(
 	 *   Match.tag(Timer.Events.DueTimeReached.Tag, handleTimer),
 	 *   Match.tag(Orchestration.Events.ServiceCallScheduled.Tag, handleSchedule),
 	 *   Match.tag(Orchestration.Events.ServiceCallSucceeded.Tag, handleCompletion),
@@ -476,20 +474,20 @@ export class MessageEnvelopeSchema extends Schema.Class<MessageEnvelopeSchema>('
 	 * @see https://effect.website/docs/data-types/match for Match API documentation
 	 * @see ADR-0011 for envelope schema design
 	 */
-	static readonly matchPayload: <T extends MessageEnvelopeSchema.Type>(
+	static readonly matchPayload: <T extends MessageEnvelope.Type>(
 		envelope: T,
 	) => Match.Matcher<T['payload'], Match.Types.Without<never>, T['payload'], never, T['payload']> = envelope =>
 		Match.value(envelope.payload)
 }
 
-export declare namespace MessageEnvelopeSchema {
+export declare namespace MessageEnvelope {
 	/**
 	 * Type - Validated envelope with typed payload
 	 */
-	type Type = Schema.Schema.Type<typeof MessageEnvelopeSchema>
+	type Type = Schema.Schema.Type<typeof MessageEnvelope>
 
 	/**
 	 * Encoded - DTO envelope (unbranded types, JSON-serializable)
 	 */
-	type Dto = Schema.Schema.Encoded<typeof MessageEnvelopeSchema>
+	type Dto = Schema.Schema.Encoded<typeof MessageEnvelope>
 }

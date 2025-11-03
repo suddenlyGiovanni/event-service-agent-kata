@@ -17,7 +17,7 @@ During PL-14 schema migration, we discovered that the `@event-service-agent/cont
 4. **Routing configuration** (Topics) - Broker subject naming
 5. **Shared services** (UUID7 implementation)
 
-**Core Issue**: Attempting to define `MessageEnvelopeSchema` with typed `DomainMessage` union exposed architectural problems:
+**Core Issue**: Attempting to define `MessageEnvelope` with typed `DomainMessage` union exposed architectural problems:
 
 ### Option 1: Define DTO shapes in contracts (REJECTED)
 
@@ -31,7 +31,7 @@ export const DomainMessage = Schema.Union(
 )
 
 // Consumer can't use decoded payload:
-const envelope = yield* MessageEnvelopeSchema.decodeJson(json)
+const envelope = yield* MessageEnvelope.decodeJson(json)
 yield* workflow.handle(envelope.payload)  
 //                     ^^^^^^^^^^^^^^^^
 // ❌ TYPE MISMATCH: plain object vs branded types
@@ -64,7 +64,7 @@ import { DueTimeReached } from '@event-service-agent/timer/domain'
 
 - Foundational schemas: `TenantId`, `ServiceCallId`, `CorrelationId`, `EnvelopeId`, `Iso8601DateTime`, `UUID7`
 - Domain message schemas: `DueTimeReached`, `ServiceCallScheduled`, `StartExecution`, etc.
-- Envelope schema: `MessageEnvelopeSchema` with typed `DomainMessage` union
+- Envelope schema: `MessageEnvelope` with typed `DomainMessage` union
 - HTTP schemas: `RequestSpec`
 - Schema utilities: `UUID7.makeUUID7()`, `TenantId.makeUUID7()`
 - Schema-coupled services: `UUID7` service implementation
@@ -228,7 +228,7 @@ import { Topics } from '@event-service-agent/contracts/routing'
 ```typescript
 import { TenantId } from '@event-service-agent/schemas/shared'
 import { DueTimeReached } from '@event-service-agent/schemas/messages/timer'
-import { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
+import { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 import { EventBusPort } from '@event-service-agent/platform/ports'
 import { Topics } from '@event-service-agent/platform/routing'
 ```

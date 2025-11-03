@@ -17,7 +17,7 @@ messages/
   orchestration/     (coming soon)
   execution/         (coming soon)
   api/               (coming soon)
-envelope/            MessageEnvelopeSchema, DomainMessage union
+envelope/            MessageEnvelope, DomainMessage union
 http/                RequestSpec
 ```
 
@@ -46,9 +46,9 @@ const event = new DueTimeReached({
 ### Decode from JSON (e.g., NATS message)
 
 ```typescript
-import { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
+import { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 
-const envelope = yield* MessageEnvelopeSchema.decodeJson(jsonString)
+const envelope = yield* MessageEnvelope.decodeJson(jsonString)
 
 // Pattern match on typed payload
 if (envelope.payload._tag === 'DueTimeReached') {

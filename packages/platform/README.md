@@ -74,10 +74,10 @@ Shared HTTP type definitions for request specifications:
 **Note**: For message envelope types, import from `@event-service-agent/schemas/envelope`:
 
 ```typescript
-import type { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
+import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 
 // Use the schema-derived type
-const envelope: MessageEnvelopeSchema.Type = {
+const envelope: MessageEnvelope.Type = {
   id, type, tenantId, payload, timestampMs
 }
 ```

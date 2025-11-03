@@ -7,7 +7,7 @@ import * as Option from 'effect/Option'
 import { PublishError } from '@event-service-agent/platform/ports'
 import { Topics } from '@event-service-agent/platform/routing'
 import { UUID7 } from '@event-service-agent/platform/uuid7'
-import { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
+import { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { type CorrelationId, EnvelopeId } from '@event-service-agent/schemas/shared'
 
@@ -67,7 +67,7 @@ export class TimerEventBus {
 					 * - aggregateId: Would be serviceCallId if we needed per-aggregate ordering
 					 * - timestampMs: Event occurrence time (DateTime.Utc, encodes to epoch milliseconds)
 					 */
-					const envelope = new MessageEnvelopeSchema({
+					const envelope = new MessageEnvelope({
 						aggregateId: Option.none(), // Timer events don't use per-aggregate ordering
 						causationId: Option.none(), // No causation tracking for autonomous timer events
 						correlationId, // Already Option<CorrelationId> from scheduledTimer

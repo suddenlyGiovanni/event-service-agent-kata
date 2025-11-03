@@ -8,9 +8,9 @@ import * as Option from 'effect/Option'
 
 import * as Messages from '../messages/index.ts'
 import { EnvelopeId, ServiceCallId, TenantId } from '../shared/index.ts'
-import { MessageEnvelopeSchema } from './message-envelope.schema.ts'
+import { MessageEnvelope } from './message-envelope.schema.ts'
 
-describe('MessageEnvelopeSchema', () => {
+describe('MessageEnvelope', () => {
 	// Extract common test data
 	const tenantId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0' as const
 	const serviceCallId = '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1' as const
@@ -23,7 +23,6 @@ describe('MessageEnvelopeSchema', () => {
 			Effect.gen(function* () {
 				// Arrange: Valid JSON envelope with Timer event
 				const json = JSON.stringify({
-					// _tag: 'MessageEnvelope' as const, // FIXME: make MessageEnvelopeSchema a Schema.TaggedClass
 					aggregateId: serviceCallId,
 					id: envelopeId,
 					payload: {
@@ -35,10 +34,10 @@ describe('MessageEnvelopeSchema', () => {
 					tenantId,
 					timestampMs,
 					type: Messages.Timer.Events.DueTimeReached.Tag,
-				} satisfies MessageEnvelopeSchema.Dto)
+				} satisfies MessageEnvelope.Dto)
 
 				// Act: Decode from JSON
-				const envelope = yield* MessageEnvelopeSchema.decodeJson(json)
+				const envelope = yield* MessageEnvelope.decodeJson(json)
 
 				// Assert: Envelope structure validated
 				expect(envelope.type).toBe(Messages.Timer.Events.DueTimeReached.Tag)
@@ -49,7 +48,7 @@ describe('MessageEnvelopeSchema', () => {
 				expect(envelope.timestampMs.epochMillis).toBe(timestampMs)
 
 				// Assert: Payload is DueTimeReached with correct structure
-				MessageEnvelopeSchema.matchPayload(envelope).pipe(
+				MessageEnvelope.matchPayload(envelope).pipe(
 					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
 						expect(payload.tenantId).toBe(tenantId)
 						expect(payload.serviceCallId).toBe(serviceCallId)
@@ -82,7 +81,7 @@ describe('MessageEnvelopeSchema', () => {
 				})
 
 				// Act: Decode from JSON
-				const envelope = yield* MessageEnvelopeSchema.decodeJson(json)
+				const envelope = yield* MessageEnvelope.decodeJson(json)
 
 				// Assert: Optional fields are undefined
 				assertNone(envelope.aggregateId)
@@ -90,7 +89,7 @@ describe('MessageEnvelopeSchema', () => {
 				assertNone(envelope.correlationId)
 
 				// Assert: Payload tag
-				MessageEnvelopeSchema.matchPayload(envelope).pipe(
+				MessageEnvelope.matchPayload(envelope).pipe(
 					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
 						expect(payload._tag).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 					}),
@@ -105,7 +104,7 @@ describe('MessageEnvelopeSchema', () => {
 				const invalidJson = '{ invalid json }'
 
 				// Act: Attempt decode
-				const result = yield* Effect.exit(MessageEnvelopeSchema.decodeJson(invalidJson))
+				const result = yield* Effect.exit(MessageEnvelope.decodeJson(invalidJson))
 
 				// Assert: Fails with parse error
 				expect(Exit.isFailure(result)).toBe(true)
@@ -121,7 +120,7 @@ describe('MessageEnvelopeSchema', () => {
 				})
 
 				// Act: Attempt decode
-				const result = yield* Effect.exit(MessageEnvelopeSchema.decodeJson(json))
+				const result = yield* Effect.exit(MessageEnvelope.decodeJson(json))
 
 				// Assert: Fails with validation error
 				expect(Exit.isFailure(result)).toBe(true)
@@ -144,7 +143,7 @@ describe('MessageEnvelopeSchema', () => {
 				})
 
 				// Act: Attempt decode
-				const result = yield* Effect.exit(MessageEnvelopeSchema.decodeJson(json))
+				const result = yield* Effect.exit(MessageEnvelope.decodeJson(json))
 
 				// Assert: Fails with validation error (payload not in union)
 				expect(Exit.isFailure(result)).toBe(true)
@@ -164,7 +163,7 @@ describe('MessageEnvelopeSchema', () => {
 					tenantId: TenantId.make(tenantId),
 				})
 
-				const envelope = new MessageEnvelopeSchema({
+				const envelope = new MessageEnvelope({
 					aggregateId: Option.none(),
 					causationId: Option.none(),
 					correlationId: Option.none(),
@@ -176,7 +175,7 @@ describe('MessageEnvelopeSchema', () => {
 				})
 
 				// Act: Encode to JSON (DateTime → ISO8601 string)
-				const json: string = yield* MessageEnvelopeSchema.encodeJson(envelope)
+				const json: string = yield* MessageEnvelope.encodeJson(envelope)
 
 				// Assert: Valid JSON string
 				expect(json).toBeTypeOf('string')
@@ -201,7 +200,7 @@ describe('MessageEnvelopeSchema', () => {
 					tenantId: TenantId.make(tenantId),
 				})
 
-				const original = new MessageEnvelopeSchema({
+				const original = new MessageEnvelope({
 					aggregateId: Option.some(ServiceCallId.make(serviceCallId)),
 					causationId: Option.none(),
 					correlationId: Option.none(),
@@ -212,8 +211,8 @@ describe('MessageEnvelopeSchema', () => {
 					type: Messages.Timer.Events.DueTimeReached.Tag,
 				})
 				// Act: Encode then decode
-				const json: string = yield* MessageEnvelopeSchema.encodeJson(original)
-				const decoded: MessageEnvelopeSchema.Type = yield* MessageEnvelopeSchema.decodeJson(json)
+				const json: string = yield* MessageEnvelope.encodeJson(original)
+				const decoded: MessageEnvelope.Type = yield* MessageEnvelope.decodeJson(json)
 
 				// Assert: Round-trip preserves data
 				expect(decoded.type).toBe(original.type)
@@ -223,7 +222,7 @@ describe('MessageEnvelopeSchema', () => {
 				assertEquals(decoded.aggregateId, original.aggregateId)
 
 				// Assert: Payload matches using matchPayload
-				MessageEnvelopeSchema.matchPayload(decoded).pipe(
+				MessageEnvelope.matchPayload(decoded).pipe(
 					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
 						expect(payload._tag).toBe(original.payload._tag)
 					}),

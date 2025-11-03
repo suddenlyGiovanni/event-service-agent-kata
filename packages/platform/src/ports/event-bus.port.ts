@@ -21,7 +21,7 @@ import * as Context from 'effect/Context'
 import * as Data from 'effect/Data'
 import type * as Effect from 'effect/Effect'
 
-import type { MessageEnvelopeSchema } from '@event-service-agent/schemas/envelope'
+import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 
 import type { Topics } from '../routing/topics.ts'
 
@@ -72,7 +72,7 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  *   const bus = yield* EventBusPort
  *
  *   // Build self-contained envelope with all routing metadata
- *   const envelope: MessageEnvelopeSchema.Type = {
+ *   const envelope: MessageEnvelope.Type = {
  *     id: envelopeId,
  *     type: 'ServiceCallScheduled',
  *     tenantId,
@@ -121,7 +121,7 @@ export interface EventBusPort {
 	 *
 	 * @example
 	 * ```typescript
-	 * const envelope: MessageEnvelopeSchema.Type = {
+	 * const envelope: MessageEnvelope.Type = {
 	 *   id: envelopeId,
 	 *   type: 'ServiceCallScheduled',
 	 *   tenantId,
@@ -134,7 +134,7 @@ export interface EventBusPort {
 	 * yield* bus.publish([envelope])  // All metadata in envelope!
 	 * ```
 	 */
-	readonly publish: (envelopes: NonEmptyReadonlyArray<MessageEnvelopeSchema.Type>) => Effect.Effect<void, PublishError>
+	readonly publish: (envelopes: NonEmptyReadonlyArray<MessageEnvelope.Type>) => Effect.Effect<void, PublishError>
 
 	/**
 	 * Subscribe to topics and process messages
@@ -187,7 +187,7 @@ export interface EventBusPort {
 	 */
 	readonly subscribe: <E, R>(
 		topics: NonEmptyReadonlyArray<Topics.Type>,
-		handler: (envelope: MessageEnvelopeSchema.Type) => Effect.Effect<void, E, R>,
+		handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
 	) => Effect.Effect<void, SubscribeError | E, R>
 }
 
@@ -201,7 +201,7 @@ export interface EventBusPort {
  * const program = Effect.gen(function* () {
  *   const bus = yield* EventBusPort
  *
- *   const envelope: MessageEnvelopeSchema.Type = {
+ *   const envelope: MessageEnvelope.Type = {
  *     id, type, tenantId, payload, timestampMs
  *   }
  *
