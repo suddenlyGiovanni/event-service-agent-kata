@@ -149,6 +149,38 @@ describe('MessageEnvelope', () => {
 				expect(Exit.isFailure(result)).toBe(true)
 			}),
 		)
+
+		it.effect('fails when type does not match payload._tag', () =>
+			Effect.gen(function* () {
+				// Arrange: type and payload._tag mismatch
+				const json = JSON.stringify({
+					id: envelopeId,
+					payload: {
+						_tag: Messages.Timer.Events.DueTimeReached.Tag,
+						serviceCallId,
+						tenantId,
+					},
+					tenantId,
+					timestampMs,
+					// ❌ Mismatch: type says ScheduleTimer but payload is DueTimeReached
+					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
+				})
+
+				// Act: Attempt decode
+				const result = yield* Effect.exit(MessageEnvelope.decodeJson(json))
+
+				// Assert: Fails with filter validation error
+				expect(Exit.isFailure(result)).toBe(true)
+
+				// Assert: Error message explains the mismatch
+				if (Exit.isFailure(result)) {
+					const message = result.cause.toString()
+					expect(message).toContain('type must match payload._tag')
+					expect(message).toContain('DueTimeReached')
+					expect(message).toContain('ScheduleTimer')
+				}
+			}),
+		)
 	})
 
 	describe('encodeJson', () => {
