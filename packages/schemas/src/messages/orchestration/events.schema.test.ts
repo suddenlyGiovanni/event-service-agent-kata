@@ -178,37 +178,40 @@ describe('Orchestration Events Schema', () => {
 		it.effect('decodes valid event with all required fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ServiceCallSucceeded' as const,
-					finishedAt: '2025-10-28T12:06:00.000Z',
+					_tag: Tag.Orchestration.Events.ServiceCallSucceeded,
+					finishedAt,
 					responseMeta: {
 						status: 200,
 					},
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+					serviceCallId,
+					tenantId,
+				} satisfies Events.ServiceCallSucceeded.Dto
 
 				const event = yield* Events.ServiceCallSucceeded.decode(dto)
 
 				expectTypeOf(event).toEqualTypeOf<Events.ServiceCallSucceeded.Type>()
-				expect(event._tag).toBe('ServiceCallSucceeded')
+				expect(event._tag).toBe(Tag.Orchestration.Events.ServiceCallSucceeded)
 				expect(event.responseMeta.status).toBe(200)
+
+				expect(DateTime.isDateTime(event.finishedAt)).toBe(true)
+				expect(DateTime.isUtc(event.finishedAt)).toBe(true)
 			}),
 		)
 
 		it.effect('decodes event with optional responseMeta fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ServiceCallSucceeded' as const,
-					finishedAt: '2025-10-28T12:06:00.000Z',
+					_tag: Tag.Orchestration.Events.ServiceCallSucceeded,
+					finishedAt,
 					responseMeta: {
 						bodySnippet: 'Success response...',
 						headers: { 'Content-Type': 'application/json' },
 						latencyMs: 1500,
 						status: 200,
 					},
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+					serviceCallId,
+					tenantId,
+				} satisfies Events.ServiceCallSucceeded.Dto
 
 				const event = yield* Events.ServiceCallSucceeded.decode(dto)
 
@@ -221,14 +224,14 @@ describe('Orchestration Events Schema', () => {
 		it.effect('rejects invalid status code type', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ServiceCallSucceeded' as const,
-					finishedAt: '2025-10-28T12:06:00.000Z',
+					_tag: Tag.Orchestration.Events.ServiceCallSucceeded,
+					finishedAt,
 					responseMeta: {
 						status: 'not-a-number' as unknown as number,
 					},
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+					serviceCallId,
+					tenantId,
+				} satisfies Events.ServiceCallSucceeded.Dto
 
 				const exit = yield* Effect.exit(Events.ServiceCallSucceeded.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
@@ -237,18 +240,18 @@ describe('Orchestration Events Schema', () => {
 
 		it.effect('encodes domain instance to DTO', () =>
 			Effect.gen(function* () {
-				const domainEvent = yield* Events.ServiceCallSucceeded.decode({
-					_tag: 'ServiceCallSucceeded' as const,
-					finishedAt: '2025-10-28T12:06:00.000Z',
+				const domainEvent: Events.ServiceCallSucceeded.Type = yield* Events.ServiceCallSucceeded.decode({
+					_tag: Tag.Orchestration.Events.ServiceCallSucceeded,
+					finishedAt,
 					responseMeta: { status: 200 },
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
+					serviceCallId,
+					tenantId,
 				})
 
-				const dto = yield* Events.ServiceCallSucceeded.encode(domainEvent)
+				const dto: Events.ServiceCallSucceeded.Dto = yield* Events.ServiceCallSucceeded.encode(domainEvent)
 
 				expectTypeOf(dto).toEqualTypeOf<Events.ServiceCallSucceeded.Dto>()
-				expect(dto._tag).toBe('ServiceCallSucceeded')
+				expect(dto._tag).toBe(Tag.Orchestration.Events.ServiceCallSucceeded)
 				expect(dto.responseMeta.status).toBe(200)
 			}),
 		)
@@ -258,39 +261,42 @@ describe('Orchestration Events Schema', () => {
 		it.effect('decodes valid event with all required fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ServiceCallFailed' as const,
+					_tag: Tag.Orchestration.Events.ServiceCallFailed,
 					errorMeta: {
 						kind: 'NetworkError',
 						message: 'Connection refused',
 					},
-					finishedAt: '2025-10-28T12:06:00.000Z',
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+					finishedAt,
+					serviceCallId,
+					tenantId,
+				} satisfies Events.ServiceCallFailed.Dto
 
 				const event = yield* Events.ServiceCallFailed.decode(dto)
 
 				expectTypeOf(event).toEqualTypeOf<Events.ServiceCallFailed.Type>()
-				expect(event._tag).toBe('ServiceCallFailed')
+				expect(event._tag).toBe(Tag.Orchestration.Events.ServiceCallFailed)
 				expect(event.errorMeta.kind).toBe('NetworkError')
 				expect(event.errorMeta.message).toBe('Connection refused')
+
+				expect(DateTime.isDateTime(event.finishedAt)).toBe(true)
+				expect(DateTime.isUtc(event.finishedAt)).toBe(true)
 			}),
 		)
 
 		it.effect('decodes event with optional errorMeta fields', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ServiceCallFailed' as const,
+					_tag: Tag.Orchestration.Events.ServiceCallFailed,
 					errorMeta: {
 						details: { retryable: false, statusCode: 500 },
 						kind: 'HttpError',
 						latencyMs: 5000,
 						message: 'Internal Server Error',
 					},
-					finishedAt: '2025-10-28T12:06:00.000Z',
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+					finishedAt,
+					serviceCallId,
+					tenantId,
+				} satisfies Events.ServiceCallFailed.Dto
 
 				const event = yield* Events.ServiceCallFailed.decode(dto)
 
@@ -303,14 +309,14 @@ describe('Orchestration Events Schema', () => {
 		it.effect('rejects missing required errorMeta.kind', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ServiceCallFailed' as const,
+					_tag: Tag.Orchestration.Events.ServiceCallFailed,
 					errorMeta: {
 						message: 'Some error',
 					} as { kind: string; message?: string },
-					finishedAt: '2025-10-28T12:06:00.000Z',
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+					finishedAt,
+					serviceCallId,
+					tenantId,
+				} satisfies Events.ServiceCallFailed.Dto
 
 				const exit = yield* Effect.exit(Events.ServiceCallFailed.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
@@ -319,21 +325,21 @@ describe('Orchestration Events Schema', () => {
 
 		it.effect('encodes domain instance to DTO', () =>
 			Effect.gen(function* () {
-				const domainEvent = yield* Events.ServiceCallFailed.decode({
-					_tag: 'ServiceCallFailed' as const,
+				const domainEvent: Events.ServiceCallFailed.Type = yield* Events.ServiceCallFailed.decode({
+					_tag: Tag.Orchestration.Events.ServiceCallFailed,
 					errorMeta: {
 						kind: 'Timeout',
 						message: 'Request timeout',
 					},
-					finishedAt: '2025-10-28T12:06:00.000Z',
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
+					finishedAt,
+					serviceCallId,
+					tenantId,
 				})
 
-				const dto = yield* Events.ServiceCallFailed.encode(domainEvent)
+				const dto: Events.ServiceCallFailed.Dto = yield* Events.ServiceCallFailed.encode(domainEvent)
 
 				expectTypeOf(dto).toEqualTypeOf<Events.ServiceCallFailed.Dto>()
-				expect(dto._tag).toBe('ServiceCallFailed')
+				expect(dto._tag).toBe(Tag.Orchestration.Events.ServiceCallFailed)
 				expect(dto.errorMeta.kind).toBe('Timeout')
 			}),
 		)
@@ -343,74 +349,74 @@ describe('Orchestration Events Schema', () => {
 		it.effect('accepts ServiceCallSubmitted', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ServiceCallSubmitted' as const,
+					_tag: Tag.Orchestration.Events.ServiceCallSubmitted,
 					name: 'Test',
 					requestSpec: { method: 'POST', url: 'https://example.com' },
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					submittedAt: '2025-10-28T12:00:00.000Z',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+					serviceCallId,
+					submittedAt,
+					tenantId,
+				} satisfies Events.ServiceCallSubmitted.Dto
 
 				const event = yield* Schema.decode(Events.Events)(dto)
-				expect(event._tag).toBe('ServiceCallSubmitted')
+				expect(event._tag).toBe(Tag.Orchestration.Events.ServiceCallSubmitted)
 			}),
 		)
 
 		it.effect('accepts ServiceCallScheduled', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ServiceCallScheduled' as const,
-					dueAt: '2025-10-28T12:05:00.000Z',
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+					_tag: Tag.Orchestration.Events.ServiceCallScheduled,
+					dueAt,
+					serviceCallId,
+					tenantId,
+				} satisfies Events.ServiceCallScheduled.Dto
 
 				const event = yield* Schema.decode(Events.Events)(dto)
-				expect(event._tag).toBe('ServiceCallScheduled')
+				expect(event._tag).toBe(Tag.Orchestration.Events.ServiceCallScheduled)
 			}),
 		)
 
 		it.effect('accepts ServiceCallRunning', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ServiceCallRunning' as const,
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					startedAt: '2025-10-28T12:05:00.000Z',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+					_tag: Tag.Orchestration.Events.ServiceCallRunning,
+					serviceCallId,
+					startedAt,
+					tenantId,
+				} satisfies Events.ServiceCallRunning.Dto
 
 				const event = yield* Schema.decode(Events.Events)(dto)
-				expect(event._tag).toBe('ServiceCallRunning')
+				expect(event._tag).toBe(Tag.Orchestration.Events.ServiceCallRunning)
 			}),
 		)
 
 		it.effect('accepts ServiceCallSucceeded', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ServiceCallSucceeded' as const,
-					finishedAt: '2025-10-28T12:06:00.000Z',
+					_tag: Tag.Orchestration.Events.ServiceCallSucceeded,
+					finishedAt,
 					responseMeta: { status: 200 },
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+					serviceCallId,
+					tenantId,
+				} satisfies Events.ServiceCallSucceeded.Dto
 
 				const event = yield* Schema.decode(Events.Events)(dto)
-				expect(event._tag).toBe('ServiceCallSucceeded')
+				expect(event._tag).toBe(Tag.Orchestration.Events.ServiceCallSucceeded)
 			}),
 		)
 
 		it.effect('accepts ServiceCallFailed', () =>
 			Effect.gen(function* () {
 				const dto = {
-					_tag: 'ServiceCallFailed' as const,
+					_tag: Tag.Orchestration.Events.ServiceCallFailed,
 					errorMeta: { kind: 'NetworkError', message: 'Timeout' },
-					finishedAt: '2025-10-28T12:06:00.000Z',
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
-				}
+					finishedAt,
+					serviceCallId,
+					tenantId,
+				} satisfies Events.ServiceCallFailed.Dto
 
 				const event = yield* Schema.decode(Events.Events)(dto)
-				expect(event._tag).toBe('ServiceCallFailed')
+				expect(event._tag).toBe(Tag.Orchestration.Events.ServiceCallFailed)
 			}),
 		)
 
@@ -418,8 +424,8 @@ describe('Orchestration Events Schema', () => {
 			Effect.gen(function* () {
 				const dto = {
 					_tag: 'InvalidEvent' as const,
-					serviceCallId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6b',
-					tenantId: '01931b66-7d50-7c8a-b762-9d2d3e4e5f6a',
+					serviceCallId,
+					tenantId,
 				}
 
 				// @ts-expect-error Testing invalid _tag
