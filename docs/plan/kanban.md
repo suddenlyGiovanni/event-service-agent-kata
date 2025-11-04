@@ -18,7 +18,6 @@ Raw ideas/tasks.
     Keep this short.
 -->
 
-- (PL-23) Refactor EventBusPort to use pure domain types (not DTOs) [Timer] [architecture] — Port should accept/return domain events (DueTimeReached, ScheduleTimer), adapter handles encoding/decoding. Creates symmetric boundary per hexagonal architecture. Deferred until PL-14 schema migration complete.
 - (PL-13) Choose broker adapter details for dev/prod parity [adr: [ADR-0002]]
 - (PL-20) Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001]]
 - (PL-9) Observability baseline [adr: [ADR-0009]] [infra] — blocked by [adr: [ADR-0002]]
@@ -41,6 +40,8 @@ Prioritized queue.
 ## Doing (WIP ≤ 2)
 
 <!-- Only what you're actively working on. Move one item at a time. -->
+
+- (PL-23) Refactor EventBusPort to use pure domain types [Timer] [architecture] — **Option B2**: Port accepts `DueTimeReached` domain event, adapter wraps in `MessageEnvelope`. Hybrid approach: domain purity at port boundary + transactional publishing (outbox deferred to ADR-0008). CorrelationId passed as PublishContext parameter. **Branch**: `timer/pl-23-pure-domain-events-at-port`
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
@@ -73,12 +74,10 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: PL-15 DateTime.Utc migration ✅ COMPLETE — PR #34 created (draft)
-- PL-15: All 5 improvements complete (DateTime.Utc, Option<T>, branded types, cross-field validation, naming)
-- Key achievement: Added Schema.filter for type/payload._tag validation (closes critical validation gap)
-- Tests: 282 passing (up from 281), all backward compatible
-- Branch: `contracts/pl-15-migration-iso-string-to-date-time` (ready for review)
-- Next: Review PR #34, then proceed with Orchestration (PL-2) or Timer SQLite adapter (PL-4.6)
+- Focus: PL-23 Pure domain events at port boundary (Option B2) — Branch `timer/pl-23-pure-domain-events-at-port` created
+- Approach: Hybrid architecture - domain events at port (`TimerEventBusPort.publishDueTimeReached(event)`), adapter handles envelope wrapping
+- Strategy: Documentation-first → TDD RED-GREEN-REFACTOR → Atomic commits at each stage
+- Risk: CorrelationId metadata must be passed separately (not in DueTimeReached domain event) — using PublishContext parameter pattern
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
