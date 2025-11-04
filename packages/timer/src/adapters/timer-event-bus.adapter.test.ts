@@ -150,7 +150,15 @@ describe('TimerEventBus', () => {
 				}).pipe(Effect.provide(TestLayers))
 			})
 
-			it.effect('should use provided firedAt timestamp', () => {
+			it.effect('should distinguish envelope timestamp (now) from domain timestamp (reachedAt)', () => {
+				/**
+				 * This test verifies the semantic difference between:
+				 * - envelope.timestampMs: Infrastructure time (when message was published)
+				 * - payload.reachedAt: Domain time (when timer became due)
+				 *
+				 * Scenario: Timer reached at T+0, but published at T+10
+				 * The gap reveals publishing latency for observability.
+				 */
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
@@ -164,11 +172,14 @@ describe('TimerEventBus', () => {
 
 				return Effect.gen(function* () {
 					const clock = yield* Ports.ClockPort
-					const now = yield* clock.now()
-					const reachedAt = DateTime.add(now, { minutes: 10 })
+					const initialTime = yield* clock.now()
 
+					// Domain event: timer reached at initial time
+					const reachedAt = initialTime
+
+					// Simulate 10-minute delay before publishing
 					yield* TestClock.adjust('10 minutes')
-					const firedAt = yield* clock.now()
+					const publishedAt = yield* clock.now()
 
 					const dueTimeReachedEvent = new Messages.Timer.Events.DueTimeReached({
 						reachedAt,
@@ -180,15 +191,20 @@ describe('TimerEventBus', () => {
 					const timerEventBus = yield* Ports.TimerEventBusPort
 					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
 
-					// Assert
+					// Assert: envelope timestamp reflects publishing time (T+10)
 					const envelope = publishedEnvelopes[0]
 					assert(envelope !== undefined)
 
-					expect(DateTime.Equivalence(envelope.timestampMs, firedAt)).toBe(true)
+					expect(DateTime.Equivalence(envelope.timestampMs, publishedAt)).toBe(true)
 
+					// Assert: payload timestamp preserves domain time (T+0)
 					const payload = envelope.payload
 					assert(payload._tag === Messages.Timer.Events.DueTimeReached.Tag)
 					expect(DateTime.Equivalence(payload.reachedAt, reachedAt)).toBe(true)
+
+					// Assert: timestamps are different (10-minute gap reveals latency)
+					expect(DateTime.Equivalence(envelope.timestampMs, payload.reachedAt)).toBe(false)
+					expect(DateTime.greaterThan(envelope.timestampMs, payload.reachedAt)).toBe(true)
 				}).pipe(Effect.provide(TestLayers))
 			})
 		})
