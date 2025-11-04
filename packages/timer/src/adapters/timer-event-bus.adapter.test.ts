@@ -1,4 +1,4 @@
-import { assert, describe, expect, expectTypeOf, it } from '@effect/vitest'
+import { assert, describe, expect, expectTypeOf, it, layer } from '@effect/vitest'
 import { assertEquals, assertNone } from '@effect/vitest/utils'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
@@ -11,7 +11,7 @@ import { Topics } from '@event-service-agent/platform/routing'
 import { UUID7 } from '@event-service-agent/platform/uuid7'
 import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 import * as Messages from '@event-service-agent/schemas/messages'
-import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
+import { CorrelationId, EnvelopeId, ServiceCallId, TenantId, UUID7Regex } from '@event-service-agent/schemas/shared'
 
 import * as Ports from '../ports/index.ts'
 import * as AdaptersTimer from './index.ts'
@@ -22,11 +22,10 @@ describe('TimerEventBus', () => {
 	const serviceCallId = ServiceCallId.make('fedcba98-7654-7321-8fed-cba987654321')
 	const correlationId = CorrelationId.make('aaaabbbb-cccc-7ddd-8eee-ffffffffffff')
 
-	// Base reusable layers (UUID7 + ClockPort)
-	// These are shared across all tests - they don't change per test
+	// These are shared across all tests via @effect/vitest layer()
 	const BaseTestLayers = Layer.merge(UUID7.Default, AdaptersTimer.ClockPortTest)
 
-	describe('publishDueTimeReached', () => {
+	layer(BaseTestLayers)('publishDueTimeReached', it => {
 		describe('Happy Path', () => {
 			it.effect('should publish DueTimeReached event with correlation ID', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
@@ -39,8 +38,6 @@ describe('TimerEventBus', () => {
 					AdaptersTimer.TimerEventBus.Live,
 					Layer.merge(EventBusTest, BaseTestLayers),
 				)
-
-				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					const clock = yield* Ports.ClockPort
@@ -76,7 +73,7 @@ describe('TimerEventBus', () => {
 					expect(payload._tag).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 					expect(payload.tenantId).toBe(tenantId)
 					expect(payload.serviceCallId).toBe(serviceCallId)
-				}).pipe(Effect.provide(TestLayers))
+				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 
 			it.effect('should publish DueTimeReached event without correlation ID', () => {
@@ -90,8 +87,6 @@ describe('TimerEventBus', () => {
 					AdaptersTimer.TimerEventBus.Live,
 					Layer.merge(EventBusTest, BaseTestLayers),
 				)
-
-				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					const clock = yield* Ports.ClockPort
@@ -118,7 +113,7 @@ describe('TimerEventBus', () => {
 					expect(envelope.type).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 					expect(envelope.tenantId).toBe(tenantId)
 					expect(envelope.payload).toEqual(dueTimeReachedEvent)
-				}).pipe(Effect.provide(TestLayers))
+				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 
 			it.effect('should generate unique envelope IDs for each publish', () => {
@@ -132,8 +127,6 @@ describe('TimerEventBus', () => {
 					AdaptersTimer.TimerEventBus.Live,
 					Layer.merge(EventBusTest, BaseTestLayers),
 				)
-
-				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					const clock = yield* Ports.ClockPort
@@ -158,7 +151,7 @@ describe('TimerEventBus', () => {
 					assert(firstEnvelope !== undefined)
 					assert(secondEnvelope !== undefined)
 					expect(firstEnvelope.id).not.toBe(secondEnvelope.id)
-				}).pipe(Effect.provide(TestLayers))
+				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 
 			it.effect('should distinguish envelope timestamp (now) from domain timestamp (reachedAt)', () => {
@@ -180,8 +173,6 @@ describe('TimerEventBus', () => {
 					AdaptersTimer.TimerEventBus.Live,
 					Layer.merge(EventBusTest, BaseTestLayers),
 				)
-
-				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					const clock = yield* Ports.ClockPort
@@ -218,7 +209,7 @@ describe('TimerEventBus', () => {
 					// Assert: timestamps are different (10-minute gap reveals latency)
 					expect(DateTime.Equivalence(envelope.timestampMs, payload.reachedAt)).toBe(false)
 					expect(DateTime.greaterThan(envelope.timestampMs, payload.reachedAt)).toBe(true)
-				}).pipe(Effect.provide(TestLayers))
+				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 		})
 
@@ -232,8 +223,6 @@ describe('TimerEventBus', () => {
 					AdaptersTimer.TimerEventBus.Live,
 					Layer.merge(EventBusTest, BaseTestLayers),
 				)
-
-				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					const clock = yield* Ports.ClockPort
@@ -255,12 +244,12 @@ describe('TimerEventBus', () => {
 					if (Either.isLeft(result)) {
 						expect(result.left._tag).toBe('PublishError')
 					}
-				}).pipe(Effect.provide(TestLayers))
+				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 		})
 	})
 
-	describe('subscribeToScheduleTimerCommands', () => {
+	layer(BaseTestLayers)('subscribeToScheduleTimerCommands', it => {
 		describe('Happy Path', () => {
 			it.effect('should subscribe to Timer.Commands topic', () => {
 				let subscribedTopics: readonly Topics.Type[] = []
@@ -277,8 +266,6 @@ describe('TimerEventBus', () => {
 					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
-				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
-
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
@@ -286,7 +273,7 @@ describe('TimerEventBus', () => {
 
 					// Assert
 					expect(subscribedTopics).toContain(Topics.Timer.Commands)
-				}).pipe(Effect.provide(TestLayers))
+				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 
 			it.effect('should call handler with decoded ScheduleTimer command', () => {
@@ -329,8 +316,6 @@ describe('TimerEventBus', () => {
 					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
-				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
-
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
@@ -351,7 +336,7 @@ describe('TimerEventBus', () => {
 						expect(receivedCommand.serviceCallId).toBe(serviceCallId)
 					}
 					expect(receivedCorrelationId).toBe(correlationId)
-				}).pipe(Effect.provide(TestLayers))
+				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 
 			it.effect('should ignore non-ScheduleTimer messages', () => {
@@ -391,8 +376,6 @@ describe('TimerEventBus', () => {
 					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
-				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
-
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
@@ -404,7 +387,7 @@ describe('TimerEventBus', () => {
 
 					// Assert - handler should NOT be called for wrong message type
 					expect(handlerCalled).toBe(false)
-				}).pipe(Effect.provide(TestLayers))
+				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 
 			it.effect('should pass correlationId undefined when not present', () => {
@@ -445,8 +428,6 @@ describe('TimerEventBus', () => {
 					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
-				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
-
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
@@ -458,7 +439,7 @@ describe('TimerEventBus', () => {
 
 					// Assert
 					expect(receivedCorrelationId).toBeUndefined()
-				}).pipe(Effect.provide(TestLayers))
+				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 		})
 
@@ -498,8 +479,6 @@ describe('TimerEventBus', () => {
 					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
-				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
-
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
@@ -509,7 +488,7 @@ describe('TimerEventBus', () => {
 
 					// Assert
 					expect(Either.isLeft(result)).toBe(true)
-				}).pipe(Effect.provide(TestLayers))
+				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 
 			// TODO: This test is no longer relevant after removing decode logic from adapter
@@ -545,8 +524,6 @@ describe('TimerEventBus', () => {
 					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
-				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
-
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
@@ -557,7 +534,7 @@ describe('TimerEventBus', () => {
 					if (Either.isLeft(result)) {
 						expect(result.left._tag).toBe('SubscribeError')
 					}
-				}).pipe(Effect.provide(TestLayers))
+				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 
 			it.effect('should propagate SubscribeError from EventBusPort', () => {
@@ -570,8 +547,6 @@ describe('TimerEventBus', () => {
 					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
-				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
-
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
@@ -582,7 +557,7 @@ describe('TimerEventBus', () => {
 					if (Either.isLeft(result)) {
 						expect(result.left._tag).toBe('SubscribeError')
 					}
-				}).pipe(Effect.provide(TestLayers))
+				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 		})
 	})
@@ -603,15 +578,13 @@ describe('TimerEventBus', () => {
 				Layer.merge(EventBusTest, BaseTestLayers),
 			)
 
-			const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
-
 			return Effect.gen(function* () {
 				const timerEventBus = yield* Ports.TimerEventBusPort
 
 				expect(timerEventBus).toBeDefined()
 				expect(timerEventBus.publishDueTimeReached).toBeDefined()
 				expect(timerEventBus.subscribeToScheduleTimerCommands).toBeDefined()
-			}).pipe(Effect.provide(TestLayers))
+			}).pipe(Effect.provide(TimerEventBusLive))
 		})
 
 		it.effect('should integrate with UUID7 service', () => {
@@ -630,8 +603,6 @@ describe('TimerEventBus', () => {
 				Layer.merge(EventBusTest, BaseTestLayers),
 			)
 
-			const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
-
 			return Effect.gen(function* () {
 				const now = DateTime.unsafeNow()
 
@@ -649,8 +620,8 @@ describe('TimerEventBus', () => {
 				expect(publishedEnvelopes).toHaveLength(1)
 				const envelopeId = publishedEnvelopes[0]?.id
 				assert(envelopeId !== undefined)
-				expect(envelopeId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
-			}).pipe(Effect.provide(TestLayers))
+				expect(envelopeId).toMatch(UUID7Regex)
+			}).pipe(Effect.provide(TimerEventBusLive))
 		})
 	})
 })
