@@ -41,8 +41,6 @@ Prioritized queue.
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
-- (PL-23) Refactor EventBusPort to use pure domain types [Timer] [architecture] — **Option B2**: Port accepts `DueTimeReached` domain event, adapter wraps in `MessageEnvelope`. Hybrid approach: domain purity at port boundary + transactional publishing (outbox deferred to ADR-0008). CorrelationId passed as PublishContext parameter. **Branch**: `timer/pl-23-pure-domain-events-at-port`
-
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
 ## Blocked
@@ -53,6 +51,7 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-23) Refactor EventBusPort to use pure domain types [Timer] [architecture] — **COMPLETE**: Option B2 implementation with 15 commits across 4 phases. Port accepts pure domain events (`DueTimeReached`), adapter wraps in `MessageEnvelope`. Test layer refactoring (Phase 1-3): fixed composition → extracted base layers → migrated to `@effect/vitest layer()`. Workflow updated (TDD RED-GREEN): construct domain events before publishing. Final REFACTOR phase: extracted BaseTestLayers (10/13 tests simplified, 3 kept explicit for test isolation). All 282 tests passing. **Branch**: `timer/pl-23-pure-domain-events-at-port` (ready for merge).
 - (PL-15) Migrate to Schema.DateTimeUtc [schemas, timer, platform] — PR #34 (draft): Completed all 5 migrations (DateTime.Utc, Option<T>, branded types, cross-field validation, naming consistency). 282 tests passing, backward compatible wire format, comprehensive documentation updates.
 - (PL-14.2) Migrate platform message interfaces → `@event-service-agent/schemas` [schemas]
 - (PL-14.5) Update documentation (ADRs, design docs) [docs] — COMPLETE: Updated ports.md reference to schemas package
@@ -74,10 +73,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: PL-23 Pure domain events at port boundary (Option B2) — Branch `timer/pl-23-pure-domain-events-at-port` created
-- Approach: Hybrid architecture - domain events at port (`TimerEventBusPort.publishDueTimeReached(event)`), adapter handles envelope wrapping
-- Strategy: Documentation-first → TDD RED-GREEN-REFACTOR → Atomic commits at each stage
-- Risk: CorrelationId metadata must be passed separately (not in DueTimeReached domain event) — using PublishContext parameter pattern
+- **PL-23 Complete**: Option B2 implementation finished with 15 atomic commits (documentation → adapter → test refactoring → workflow update → test DRY refactoring). Branch `timer/pl-23-pure-domain-events-at-port` ready for merge.
+- **Next**: Pull top item from Ready queue. Consider PL-4.6 (SQLite persistence), PL-2 (Orchestration domain), or PL-3 (Broker adapter).
+- **Achievement**: Clean hexagonal architecture - domain events at ports, infrastructure wrapping in adapters. Learned layer memoization patterns. All 282 tests passing with idiomatic Effect patterns.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
