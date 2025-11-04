@@ -30,9 +30,9 @@ describe('TimerEventBus', () => {
 					publish: envelopes => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
 				})
 
-				const TestLayers = Layer.merge(
-					Layer.provide(AdaptersTimer.TimerEventBus.Live, EventBusTest),
-					AdaptersTimer.ClockPortLive,
+				const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+					Layer.provide(EventBusTest),
+					Layer.provideMerge(AdaptersTimer.ClockPortTest),
 				)
 
 				return Effect.gen(function* () {
@@ -48,9 +48,7 @@ describe('TimerEventBus', () => {
 
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus
-						.publishDueTimeReached(dueTimeReachedEvent)
-						.pipe(Effect.provide(AdaptersTimer.ClockPortLive))
+					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
 
 					// Assert
 					expect(publishedEnvelopes).toHaveLength(1)
@@ -81,9 +79,9 @@ describe('TimerEventBus', () => {
 					publish: envelopes => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
 				})
 
-				const TestLayers = Layer.merge(
-					Layer.provide(AdaptersTimer.TimerEventBus.Live, EventBusTest),
-					AdaptersTimer.ClockPortLive,
+				const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+					Layer.provide(EventBusTest),
+					Layer.provideMerge(AdaptersTimer.ClockPortTest),
 				)
 
 				return Effect.gen(function* () {
@@ -121,9 +119,9 @@ describe('TimerEventBus', () => {
 					publish: envelopes => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
 				})
 
-				const TestLayers = Layer.merge(
-					Layer.provide(AdaptersTimer.TimerEventBus.Live, EventBusTest),
-					AdaptersTimer.ClockPortLive,
+				const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+					Layer.provide(EventBusTest),
+					Layer.provideMerge(AdaptersTimer.ClockPortTest),
 				)
 
 				return Effect.gen(function* () {
@@ -167,9 +165,9 @@ describe('TimerEventBus', () => {
 					publish: envelopes => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
 				})
 
-				const TestLayers = Layer.merge(
-					Layer.provide(AdaptersTimer.TimerEventBus.Live, EventBusTest),
-					AdaptersTimer.ClockPortLive,
+				const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+					Layer.provide(EventBusTest),
+					Layer.provideMerge(AdaptersTimer.ClockPortTest),
 				)
 
 				return Effect.gen(function* () {
@@ -217,9 +215,9 @@ describe('TimerEventBus', () => {
 					publish: () => Effect.fail(new Ports.PublishError({ cause: 'Connection failed' })),
 				})
 
-				const TestLayers = Layer.merge(
-					Layer.provide(AdaptersTimer.TimerEventBus.Live, EventBusTest),
-					AdaptersTimer.ClockPortLive,
+				const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+					Layer.provide(EventBusTest),
+					Layer.provideMerge(AdaptersTimer.ClockPortTest),
 				)
 
 				return Effect.gen(function* () {
@@ -252,14 +250,17 @@ describe('TimerEventBus', () => {
 			it.effect('should subscribe to Timer.Commands topic', () => {
 				let subscribedTopics: readonly Topics.Type[] = []
 
-				const mockEventBus = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(Ports.EventBusPort, {
 					subscribe: (topics, _handler) =>
 						Effect.sync(() => {
 							subscribedTopics = topics
 						}),
 				})
 
-				const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
+				const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+					Layer.provide(EventBusTest),
+					Layer.provideMerge(AdaptersTimer.ClockPortTest),
+				)
 
 				return Effect.gen(function* () {
 					// Act
@@ -268,7 +269,7 @@ describe('TimerEventBus', () => {
 
 					// Assert
 					expect(subscribedTopics).toContain(Topics.Timer.Commands)
-				}).pipe(Effect.provide(TestLayer))
+				}).pipe(Effect.provide(TestLayers))
 			})
 
 			it.effect('should call handler with decoded ScheduleTimer command', () => {
@@ -296,7 +297,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
-				const mockEventBus = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(Ports.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -306,7 +307,10 @@ describe('TimerEventBus', () => {
 						}) as Effect.Effect<void, E, R>,
 				})
 
-				const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
+				const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+					Layer.provide(EventBusTest),
+					Layer.provideMerge(AdaptersTimer.ClockPortTest),
+				)
 
 				return Effect.gen(function* () {
 					// Act
@@ -328,7 +332,7 @@ describe('TimerEventBus', () => {
 						expect(receivedCommand.serviceCallId).toBe(serviceCallId)
 					}
 					expect(receivedCorrelationId).toBe(correlationId)
-				}).pipe(Effect.provide(TestLayer))
+				}).pipe(Effect.provide(TestLayers))
 			})
 
 			it.effect('should ignore non-ScheduleTimer messages', () => {
@@ -353,7 +357,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Timer.Events.DueTimeReached.Tag,
 				}
 
-				const mockEventBus = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(Ports.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -363,7 +367,10 @@ describe('TimerEventBus', () => {
 						}) as Effect.Effect<void, E, R>,
 				})
 
-				const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
+				const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+					Layer.provide(EventBusTest),
+					Layer.provideMerge(AdaptersTimer.ClockPortTest),
+				)
 
 				return Effect.gen(function* () {
 					// Act
@@ -376,7 +383,7 @@ describe('TimerEventBus', () => {
 
 					// Assert - handler should NOT be called for wrong message type
 					expect(handlerCalled).toBe(false)
-				}).pipe(Effect.provide(TestLayer))
+				}).pipe(Effect.provide(TestLayers))
 			})
 
 			it.effect('should pass correlationId undefined when not present', () => {
@@ -402,7 +409,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
-				const mockEventBus = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(Ports.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -412,7 +419,10 @@ describe('TimerEventBus', () => {
 						}) as Effect.Effect<void, E, R>,
 				})
 
-				const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
+				const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+					Layer.provide(EventBusTest),
+					Layer.provideMerge(AdaptersTimer.ClockPortTest),
+				)
 
 				return Effect.gen(function* () {
 					// Act
@@ -425,7 +435,7 @@ describe('TimerEventBus', () => {
 
 					// Assert
 					expect(receivedCorrelationId).toBeUndefined()
-				}).pipe(Effect.provide(TestLayer))
+				}).pipe(Effect.provide(TestLayers))
 			})
 		})
 
@@ -450,7 +460,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
-				const mockEventBus = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(Ports.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -460,7 +470,10 @@ describe('TimerEventBus', () => {
 						}) as Effect.Effect<void, E, R>,
 				})
 
-				const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
+				const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+					Layer.provide(EventBusTest),
+					Layer.provideMerge(AdaptersTimer.ClockPortTest),
+				)
 
 				return Effect.gen(function* () {
 					// Act
@@ -471,7 +484,7 @@ describe('TimerEventBus', () => {
 
 					// Assert
 					expect(Either.isLeft(result)).toBe(true)
-				}).pipe(Effect.provide(TestLayer))
+				}).pipe(Effect.provide(TestLayers))
 			})
 
 			// TODO: This test is no longer relevant after removing decode logic from adapter
@@ -518,11 +531,14 @@ describe('TimerEventBus', () => {
 			})
 
 			it.effect('should propagate SubscribeError from EventBusPort', () => {
-				const mockEventBus = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(Ports.EventBusPort, {
 					subscribe: () => Effect.fail(new Ports.SubscribeError({ cause: 'Consumer creation failed' })),
 				})
 
-				const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
+				const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+					Layer.provide(EventBusTest),
+					Layer.provideMerge(AdaptersTimer.ClockPortTest),
+				)
 
 				return Effect.gen(function* () {
 					// Act
@@ -534,7 +550,7 @@ describe('TimerEventBus', () => {
 					if (Either.isLeft(result)) {
 						expect(result.left._tag).toBe('SubscribeError')
 					}
-				}).pipe(Effect.provide(TestLayer))
+				}).pipe(Effect.provide(TestLayers))
 			})
 		})
 	})
@@ -545,12 +561,15 @@ describe('TimerEventBus', () => {
 			// If we try to use it without providing EventBusPort, it should fail at compile time
 			// At runtime, we verify it works when EventBusPort is provided
 
-			const mockEventBus = Layer.mock(Ports.EventBusPort, {
+			const EventBusTest = Layer.mock(Ports.EventBusPort, {
 				publish: () => Effect.void,
 				subscribe: () => Effect.never,
 			})
 
-			const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
+			const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+				Layer.provide(EventBusTest),
+				Layer.provideMerge(AdaptersTimer.ClockPortTest),
+			)
 
 			return Effect.gen(function* () {
 				const timerEventBus = yield* Ports.TimerEventBusPort
@@ -558,13 +577,13 @@ describe('TimerEventBus', () => {
 				expect(timerEventBus).toBeDefined()
 				expect(timerEventBus.publishDueTimeReached).toBeDefined()
 				expect(timerEventBus.subscribeToScheduleTimerCommands).toBeDefined()
-			}).pipe(Effect.provide(TestLayer))
+			}).pipe(Effect.provide(TestLayers))
 		})
 
 		it.effect('should integrate with UUID7 service', () => {
 			const publishedEnvelopes: MessageEnvelope.Type[] = []
 
-			const mockEventBus = Layer.mock(Ports.EventBusPort, {
+			const EventBusTest = Layer.mock(Ports.EventBusPort, {
 				publish: envelopes =>
 					Effect.sync(() => {
 						publishedEnvelopes.push(...envelopes)
@@ -572,7 +591,10 @@ describe('TimerEventBus', () => {
 				subscribe: () => Effect.never,
 			})
 
-			const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
+			const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
+				Layer.provide(EventBusTest),
+				Layer.provideMerge(AdaptersTimer.ClockPortTest),
+			)
 
 			return Effect.gen(function* () {
 				const now = DateTime.unsafeNow()
@@ -585,16 +607,14 @@ describe('TimerEventBus', () => {
 
 				// Act
 				const timerEventBus = yield* Ports.TimerEventBusPort
-				yield* timerEventBus
-					.publishDueTimeReached(dueTimeReachedEvent)
-					.pipe(Effect.provide(AdaptersTimer.ClockPortLive))
+				yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
 
 				// Assert - envelope ID should be valid UUID7
 				expect(publishedEnvelopes).toHaveLength(1)
 				const envelopeId = publishedEnvelopes[0]?.id
 				assert(envelopeId !== undefined)
 				expect(envelopeId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
-			}).pipe(Effect.provide(TestLayer))
+			}).pipe(Effect.provide(TestLayers))
 		})
 	})
 })

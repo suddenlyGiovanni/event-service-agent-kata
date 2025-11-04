@@ -7,8 +7,6 @@ import type * as Ports from '@event-service-agent/platform/ports'
 import type * as Messages from '@event-service-agent/schemas/messages'
 import type { CorrelationId } from '@event-service-agent/schemas/shared'
 
-import type { ClockPort } from './clock.port.ts'
-
 /**
  * TimerEventBusPort - Timer module's complete EventBus contract
  *
@@ -45,7 +43,7 @@ export interface TimerEventBusPort {
 	 */
 	readonly publishDueTimeReached: (
 		event: Messages.Timer.Events.DueTimeReached.Type,
-	) => Effect.Effect<void, Ports.PublishError, ClockPort>
+	) => Effect.Effect<void, Ports.PublishError>
 
 	/**
 	 * Subscribe to ScheduleTimer commands from Orchestration

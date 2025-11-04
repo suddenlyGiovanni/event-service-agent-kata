@@ -21,83 +21,83 @@ export class TimerEventBus {
 	 * - EventBusPort: Shared broker abstraction
 	 * - UUID7: Service for generating validated EnvelopeId
 	 */
-	static readonly Live: Layer.Layer<Ports.TimerEventBusPort, never, Ports.EventBusPort> = Layer.effect(
-		Ports.TimerEventBusPort,
-		Effect.gen(function* () {
-			const eventBus = yield* Ports.EventBusPort
+	static readonly Live: Layer.Layer<Ports.TimerEventBusPort, never, Ports.EventBusPort | Ports.ClockPort> =
+		Layer.effect(
+			Ports.TimerEventBusPort,
+			Effect.gen(function* () {
+				const eventBus = yield* Ports.EventBusPort
+				const clock = yield* Ports.ClockPort
 
-			return Ports.TimerEventBusPort.of({
-				publishDueTimeReached: Effect.fn('Timer.publishDueTimeReached')(function* (
-					dueTimeReached: Messages.Timer.Events.DueTimeReached.Type,
-				) {
-					const envelopeId: EnvelopeId.Type = yield* EnvelopeId.makeUUID7().pipe(
-						// FIXME: move the UUID7 requirement to another layer?
-						Effect.provide(UUID7.Default),
-						Effect.mapError(
-							parseError =>
-								new Ports.PublishError({
-									cause: `Failed to generate EnvelopeId: ${parseError}`,
-								}),
-						),
-					)
-
-					const clock = yield* Ports.ClockPort
-
-					const envelope = new MessageEnvelope({
-						/**
-						 * Preserve tenant+serviceCall partition key for ordering
-						 */
-						aggregateId: Option.some(dueTimeReached.serviceCallId),
-
-						/**
-						 * No causation tracking for autonomous timer events
-						 */
-						causationId: Option.none(),
-
-						/**
-						 * Extract correlationId from...
-						 * TODO: need to investigate where this comes from in pure domain event pattern
-						 * 		 For now, we'll use Option.none() as the event doesn't carry correlationId
-						 */
-						correlationId: Option.none<CorrelationId.Type>(),
-						id: envelopeId,
-						payload: dueTimeReached,
-						tenantId: dueTimeReached.tenantId,
-
-						/**
-						 * Get current time for envelope timestamp (infrastructure timing)
-						 * Distinct from payload.reachedAt (domain timing):
-						 * - timestampMs: When message was created/published (now)
-						 * - reachedAt: When timer became due (domain event time)
-						 * Gap between them reveals publishing latency for observability.
-						 */
-						timestampMs: yield* clock.now(),
-						type: dueTimeReached._tag,
-					})
-
-					yield* eventBus.publish([envelope])
-				}),
-
-				subscribeToScheduleTimerCommands: Effect.fn('Timer.subscribeToScheduleTimerCommands')(function* <E, R>(
-					handler: (
-						command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-						correlationId?: CorrelationId.Type,
-					) => Effect.Effect<void, E, R>,
-				) {
-					yield* eventBus.subscribe([Topics.Timer.Commands], envelope =>
-						MessageEnvelope.matchPayload(envelope).pipe(
-							Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, command =>
-								handler(command, Option.getOrUndefined(envelope.correlationId)),
+				return Ports.TimerEventBusPort.of({
+					publishDueTimeReached: Effect.fn('Timer.publishDueTimeReached')(function* (
+						dueTimeReached: Messages.Timer.Events.DueTimeReached.Type,
+					) {
+						const envelopeId: EnvelopeId.Type = yield* EnvelopeId.makeUUID7().pipe(
+							// FIXME: move the UUID7 requirement to another layer?
+							Effect.provide(UUID7.Default),
+							Effect.mapError(
+								parseError =>
+									new Ports.PublishError({
+										cause: `Failed to generate EnvelopeId: ${parseError}`,
+									}),
 							),
-							Match.orElse(() =>
-								Effect.logDebug('Ignoring non-ScheduleTimer message', {
-									receivedType: envelope.type,
-								}),
+						)
+
+						const envelope = new MessageEnvelope({
+							/**
+							 * Preserve tenant+serviceCall partition key for ordering
+							 */
+							aggregateId: Option.some(dueTimeReached.serviceCallId),
+
+							/**
+							 * No causation tracking for autonomous timer events
+							 */
+							causationId: Option.none(),
+
+							/**
+							 * Extract correlationId from...
+							 * TODO: need to investigate where this comes from in pure domain event pattern
+							 * 		 For now, we'll use Option.none() as the event doesn't carry correlationId
+							 */
+							correlationId: Option.none<CorrelationId.Type>(),
+							id: envelopeId,
+							payload: dueTimeReached,
+							tenantId: dueTimeReached.tenantId,
+
+							/**
+							 * Get current time for envelope timestamp (infrastructure timing)
+							 * Distinct from payload.reachedAt (domain timing):
+							 * - timestampMs: When message was created/published (now)
+							 * - reachedAt: When timer became due (domain event time)
+							 * Gap between them reveals publishing latency for observability.
+							 */
+							timestampMs: yield* clock.now(),
+							type: dueTimeReached._tag,
+						})
+
+						yield* eventBus.publish([envelope])
+					}),
+
+					subscribeToScheduleTimerCommands: Effect.fn('Timer.subscribeToScheduleTimerCommands')(function* <E, R>(
+						handler: (
+							command: Messages.Orchestration.Commands.ScheduleTimer.Type,
+							correlationId?: CorrelationId.Type,
+						) => Effect.Effect<void, E, R>,
+					) {
+						yield* eventBus.subscribe([Topics.Timer.Commands], envelope =>
+							MessageEnvelope.matchPayload(envelope).pipe(
+								Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, command =>
+									handler(command, Option.getOrUndefined(envelope.correlationId)),
+								),
+								Match.orElse(() =>
+									Effect.logDebug('Ignoring non-ScheduleTimer message', {
+										receivedType: envelope.type,
+									}),
+								),
 							),
-						),
-					)
-				}),
-			})
-		}),
-	)
+						)
+					}),
+				})
+			}),
+		)
 }
