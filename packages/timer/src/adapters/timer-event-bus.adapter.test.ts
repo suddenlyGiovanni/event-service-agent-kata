@@ -48,7 +48,9 @@ describe('TimerEventBus', () => {
 
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
+					yield* timerEventBus
+						.publishDueTimeReached(dueTimeReachedEvent)
+						.pipe(Effect.provide(AdaptersTimer.ClockPortLive))
 
 					// Assert
 					expect(publishedEnvelopes).toHaveLength(1)
@@ -583,7 +585,9 @@ describe('TimerEventBus', () => {
 
 				// Act
 				const timerEventBus = yield* Ports.TimerEventBusPort
-				yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
+				yield* timerEventBus
+					.publishDueTimeReached(dueTimeReachedEvent)
+					.pipe(Effect.provide(AdaptersTimer.ClockPortLive))
 
 				// Assert - envelope ID should be valid UUID7
 				expect(publishedEnvelopes).toHaveLength(1)

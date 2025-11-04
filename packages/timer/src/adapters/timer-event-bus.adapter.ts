@@ -1,6 +1,5 @@
 /** biome-ignore-all lint/style/useNamingConvention: Effect Layer pattern uses PascalCase for static layer properties */
 
-import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as Match from 'effect/Match'
@@ -42,16 +41,7 @@ export class TimerEventBus {
 						),
 					)
 
-					/**
-					 * Get current time for envelope timestamp (infrastructure timing)
-					 * Distinct from payload.reachedAt (domain timing):
-					 * - timestampMs: When message was created/published (now)
-					 * - reachedAt: When timer became due (domain event time)
-					 * Gap between them reveals publishing latency for observability.
-					 */
-					const now = yield* Effect.clockWith(_ => _.currentTimeMillis).pipe(
-						Effect.map(millis => DateTime.unsafeMake(millis)),
-					)
+					const clock = yield* Ports.ClockPort
 
 					const envelope = new MessageEnvelope({
 						/**
@@ -75,10 +65,13 @@ export class TimerEventBus {
 						tenantId: dueTimeReached.tenantId,
 
 						/**
-						 * Infrastructure timestamp: when message was created/published
-						 * NOT domain timestamp (that's payload.reachedAt)
+						 * Get current time for envelope timestamp (infrastructure timing)
+						 * Distinct from payload.reachedAt (domain timing):
+						 * - timestampMs: When message was created/published (now)
+						 * - reachedAt: When timer became due (domain event time)
+						 * Gap between them reveals publishing latency for observability.
 						 */
-						timestampMs: now,
+						timestampMs: yield* clock.now(),
 						type: dueTimeReached._tag,
 					})
 
