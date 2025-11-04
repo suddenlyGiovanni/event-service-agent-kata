@@ -8,6 +8,7 @@ import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
 import { Topics } from '@event-service-agent/platform/routing'
+import { UUID7 } from '@event-service-agent/platform/uuid7'
 import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
@@ -33,6 +34,7 @@ describe('TimerEventBus', () => {
 				const TestLayers = AdaptersTimer.TimerEventBus.Live.pipe(
 					Layer.provide(EventBusTest),
 					Layer.provideMerge(AdaptersTimer.ClockPortTest),
+					Layer.provide(UUID7.Default),
 				)
 
 				return Effect.gen(function* () {

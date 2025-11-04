@@ -21,26 +21,23 @@ export class TimerEventBus {
 	 * - EventBusPort: Shared broker abstraction
 	 * - UUID7: Service for generating validated EnvelopeId
 	 */
-	static readonly Live: Layer.Layer<Ports.TimerEventBusPort, never, Ports.EventBusPort | Ports.ClockPort> =
+	static readonly Live: Layer.Layer<Ports.TimerEventBusPort, never, Ports.EventBusPort | Ports.ClockPort | UUID7> =
 		Layer.effect(
 			Ports.TimerEventBusPort,
 			Effect.gen(function* () {
 				const eventBus = yield* Ports.EventBusPort
 				const clock = yield* Ports.ClockPort
+				const uuid = yield* UUID7
 
 				return Ports.TimerEventBusPort.of({
 					publishDueTimeReached: Effect.fn('Timer.publishDueTimeReached')(function* (
 						dueTimeReached: Messages.Timer.Events.DueTimeReached.Type,
 					) {
 						const envelopeId: EnvelopeId.Type = yield* EnvelopeId.makeUUID7().pipe(
-							// FIXME: move the UUID7 requirement to another layer?
-							Effect.provide(UUID7.Default),
 							Effect.mapError(
-								parseError =>
-									new Ports.PublishError({
-										cause: `Failed to generate EnvelopeId: ${parseError}`,
-									}),
+								parseError => new Ports.PublishError({ cause: `Failed to generate EnvelopeId: ${parseError}` }),
 							),
+							Effect.provideService(UUID7, uuid),
 						)
 
 						const envelope = new MessageEnvelope({
