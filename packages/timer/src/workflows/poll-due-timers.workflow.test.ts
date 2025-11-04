@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from '@effect/vitest'
+import { assert, describe, expect, layer } from '@effect/vitest'
 import * as Cause from 'effect/Cause'
 import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
@@ -19,6 +19,16 @@ import * as Ports from '../ports/index.ts'
 import * as Workflows from './poll-due-timers.workflow.ts'
 
 /**
+ * Base test layers - static resources shared across most tests:
+ * - ClockPortTest: TestClock for time manipulation
+ * - UUID7.Default: Deterministic UUID generation
+ * - TimerPersistence.inMemory: In-memory persistence adapter
+ *
+ * Tests add dynamic resources (custom EventBus mocks) via Layer.mergeAll
+ */
+const BaseTestLayers = Layer.mergeAll(Adapters.ClockPortTest, UUID7.Default, Adapters.TimerPersistence.inMemory)
+
+/**
  * Test suite for pollDueTimersWorkflow
  *
  * Covers:
@@ -29,12 +39,12 @@ import * as Workflows from './poll-due-timers.workflow.ts'
  * - Idempotency (duplicate processing attempts)
  * - Observability (spans, logs, context propagation)
  */
-describe('pollDueTimersWorkflow', () => {
+layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 	describe('Happy Path', () => {
 		it.effect('processes due timers successfully', () => {
 			// Mock EventBus to track published events
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
-			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: event =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
@@ -67,6 +77,7 @@ describe('pollDueTimersWorkflow', () => {
 					serviceCallId,
 					tenantId,
 				}) // Get persistence and save timer
+
 				const persistence = yield* Ports.TimerPersistencePort
 				yield* persistence.save(scheduledTimer)
 
@@ -97,11 +108,7 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Timer should no longer appear in findDue
 				const afterFired = yield* persistence.findDue(yield* clock.now())
 				expect(Chunk.isEmpty(afterFired)).toBe(true)
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
-				),
-			)
+			}).pipe(Effect.provide(TimerEventBusTest))
 		})
 
 		it.effect('processes multiple due timers sequentially', () => {
@@ -117,7 +124,7 @@ describe('pollDueTimersWorkflow', () => {
 			const operations: string[] = []
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 
-			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: event =>
 					Effect.sync(() => {
 						operations.push(`publish:${event.serviceCallId}`)
@@ -182,7 +189,7 @@ describe('pollDueTimersWorkflow', () => {
 				expect(operations.filter(op => op.startsWith('publish:'))).toHaveLength(serviceCallIds.length)
 			}).pipe(
 				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
 				),
 			)
 		})
@@ -198,7 +205,7 @@ describe('pollDueTimersWorkflow', () => {
 
 			const operations: string[] = []
 
-			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: timer =>
 					Effect.sync(() => {
 						operations.push(`publish:${timer.serviceCallId}`)
@@ -252,7 +259,7 @@ describe('pollDueTimersWorkflow', () => {
 				expect(operations[1]).toBe(`markFired:${serviceCallId}`)
 			}).pipe(
 				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
 				),
 			)
 		})
@@ -267,7 +274,7 @@ describe('pollDueTimersWorkflow', () => {
 
 			let publishedEvent: Messages.Timer.Events.DueTimeReached.Type | undefined
 
-			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: event =>
 					Effect.sync(() => {
 						publishedEvent = event
@@ -310,7 +317,7 @@ describe('pollDueTimersWorkflow', () => {
 				// expect(Option.getOrThrow(publishedEvent.correlationId)).toBe(correlationId)
 			}).pipe(
 				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
 				),
 			)
 		})
@@ -327,7 +334,7 @@ describe('pollDueTimersWorkflow', () => {
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
-			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: event =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
@@ -377,7 +384,7 @@ describe('pollDueTimersWorkflow', () => {
 				// (implicit - if we reach here, no exceptions were thrown)
 			}).pipe(
 				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
 				),
 			)
 		})
