@@ -38,10 +38,11 @@ bun run type-check
 
 ### Root `tsconfig.json`
 
-Contains references to all packages:
+Contains references to all packages and an empty `files` array to indicate this config is an orchestrator (doesn't compile any files itself):
 
 ```json
 {
+  "files": [],
   "references": [
     { "path": "./packages/adapters" },
     { "path": "./packages/api" },
@@ -49,6 +50,8 @@ Contains references to all packages:
   ]
 }
 ```
+
+**Note**: The `files: []` is required. Without it, TypeScript would try to compile files in the root directory, which would conflict with the project references pattern.
 
 ### Package `tsconfig.json`
 
