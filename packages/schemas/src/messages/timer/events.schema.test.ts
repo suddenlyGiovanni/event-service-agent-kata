@@ -2,7 +2,6 @@ import { describe, expect, it } from '@effect/vitest'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
-import * as Option from 'effect/Option'
 
 import { ServiceCallId, TenantId } from '../../shared/index.ts'
 import * as Timer from '../timer/index.ts'
