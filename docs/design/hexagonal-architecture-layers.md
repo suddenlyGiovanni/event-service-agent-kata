@@ -449,6 +449,132 @@ const program = submitServiceCall(request).pipe(
 
 ---
 
+## Event Publishing Pattern: Domain Events at Port Boundary
+
+### **The Pattern (Option B2): Pure Domain Events**
+
+Port interfaces accept/return pure domain event objects. Adapters handle infrastructure concerns (envelope wrapping, JSON encoding, broker routing).
+
+**Design principle**: The domain should work with **domain types** (`DueTimeReached`), not infrastructure DTOs (`MessageEnvelope<DueTimeReached>`).
+
+### **Why This Approach?**
+
+1. **Domain purity**: Workflows construct and publish domain events without knowing about envelopes, topics, or wire formats
+2. **Symmetric boundary**: Port interface mirrors domain semantics (publish event / receive event), not infrastructure primitives (publish bytes / receive bytes)
+3. **Hexagonal alignment**: Domain defines port contract (what it needs), adapter fulfills it (how it's done)
+4. **Testability**: Test workflows with domain events, no envelope mocking required
+
+### **Architecture Flow**
+
+```typescript
+// Layer 1: Domain Core
+// Workflow constructs pure domain event
+Effect.gen(function* () {
+  const timer = yield* findScheduledTimer()
+  const now = yield* clock.now()
+
+  // Construct pure domain event (no envelope, no infrastructure metadata)
+  const event = new DueTimeReached({
+    tenantId: timer.tenantId,
+    serviceCallId: timer.serviceCallId,
+    reachedAt: now, // DateTime.Utc (domain type, not string)
+  })
+
+  // Layer 2: Port (Domain-defined contract)
+  const eventBus = yield* TimerEventBusPort
+  // Port accepts domain event (not envelope!)
+  yield* eventBus.publishDueTimeReached(event)
+})
+
+// Layer 3: Adapter (Infrastructure implementation)
+class TimerEventBusAdapter {
+  publishDueTimeReached(event: DueTimeReached.Type) {
+    return Effect.gen(function* () {
+      // Adapter responsibility: Wrap domain event in infrastructure envelope
+      const envelope = new MessageEnvelope({
+        id: yield* EnvelopeId.makeUUID7(),
+        type: 'DueTimeReached',
+        payload: event, // Domain event becomes payload
+        // Infrastructure metadata from event fields:
+        tenantId: event.tenantId,
+        aggregateId: event.serviceCallId,
+        timestampMs: DateTime.toEpochMillis(event.reachedAt),
+        correlationId: Option.none(), // Infrastructure metadata (not in domain event)
+      })
+
+      // Delegate to shared EventBusPort (accepts envelopes)
+      const broker = yield* EventBusPort
+      yield* broker.publish([envelope])
+    })
+  }
+}
+```
+
+### **Key Decision: CorrelationId Placement**
+
+**Problem**: `correlationId` is **infrastructure metadata** (tracing/observability), NOT domain data. Where should it come from?
+
+**Solution**: Extract from domain aggregate (timer stores correlationId from original command).
+
+```typescript
+// Workflow: Extract correlationId from timer (stored during schedule command)
+const event = new DueTimeReached({
+  tenantId: timer.tenantId,
+  serviceCallId: timer.serviceCallId,
+  reachedAt: now,
+  // No correlationId field in DueTimeReached (pure domain event)
+})
+
+// Adapter: Extract correlationId from timer's stored context
+const envelope = new MessageEnvelope({
+  id: yield* EnvelopeId.makeUUID7(),
+  payload: event,
+  correlationId: timer.correlationId, // Retrieved from timer aggregate
+  // ... other metadata
+})
+```
+
+**Why not pass correlationId separately?**
+
+- **Design smell**: Passing infrastructure metadata alongside domain events breaks layer separation
+- **Current approach**: Timer aggregate stores correlationId from ScheduleTimer command, adapter extracts it when publishing
+- **Alternative (deferred)**: Introduce `PublishContext` parameter if needed for cross-cutting concerns (YAGNI for now)
+
+### **Benefits**
+
+| Aspect | Before (Timer, firedAt params) | After (Pure Domain Events) |
+|--------|--------------------------------|----------------------------|
+| **Port signature** | `publishDueTimeReached(timer: ScheduledTimer, firedAt: DateTime.Utc)` | `publishDueTimeReached(event: DueTimeReached.Type)` |
+| **Workflow concern** | Pass timer aggregate + timestamp | Construct domain event |
+| **Testability** | Mock expects timer+timestamp | Mock expects domain event |
+| **Domain purity** | ❌ Workflow knows about port's implementation detail (needs timer aggregate) | ✅ Workflow works with pure domain concept (event) |
+| **Symmetry** | ❌ Asymmetric: publish (timer) vs subscribe (event) | ✅ Symmetric: publish (event) / subscribe (event) |
+
+### **Comparison with Alternatives**
+
+**Option A (status quo)**: Pass timer aggregate + timestamp to port
+
+- ❌ Port signature leaks implementation detail (adapter needs timer metadata)
+- ❌ Workflow provides raw data instead of domain semantics
+
+**Option B1 (pure functional)**: Workflow returns events, outer layer publishes
+
+- ❌ Breaks transactional guarantees (can't use outbox pattern)
+- ❌ Complicates orchestration (who handles publishing failures?)
+
+**Option B2 (hybrid - THIS APPROACH)**: Domain events at port, adapter wraps
+
+- ✅ Domain purity (workflow constructs events)
+- ✅ Transactional publishing (adapter can use outbox pattern)
+- ✅ Symmetric boundary (publish event / subscribe event)
+
+**Option B3 (generic port)**: Shared `EventBusPort<T>` for all modules
+
+- ❌ Loses module-specific semantics (generic publish/subscribe)
+- ❌ Less discoverable (IntelliSense shows generic methods)
+
+---
+
 ## Your Project's Stack
 
 For `event-service-agent-kata`:
