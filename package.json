@@ -6,11 +6,11 @@
 	},
 	"catalogs": {
 		"effect": {
-			"@effect/language-service": "0.53.2",
-			"effect": "3.18.4"
+			"@effect/language-service": "0.55.0",
+			"effect": "3.19.0"
 		},
 		"lint": {
-			"@biomejs/biome": "2.3.2"
+			"@biomejs/biome": "2.3.3"
 		},
 		"test": {
 			"@effect/vitest": "latest",
