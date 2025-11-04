@@ -14,7 +14,7 @@ import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/sch
 import * as Adapters from '../adapters/index.ts'
 import * as Domain from '../domain/timer-entry.domain.ts'
 import * as Ports from '../ports/index.ts'
-import { scheduleTimerWorkflow } from './schedule-timer.workflow.ts'
+import * as Workflows from './schedule-timer.workflow.ts'
 
 describe('scheduleTimerWorkflow', () => {
 	const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
@@ -47,7 +47,7 @@ describe('scheduleTimerWorkflow', () => {
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act: Execute workflow with sample command
-				yield* scheduleTimerWorkflow({ command })
+				yield* Workflows.scheduleTimerWorkflow({ command })
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: TimerEntry persisted with correct values
@@ -84,7 +84,7 @@ describe('scheduleTimerWorkflow', () => {
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act
-				yield* scheduleTimerWorkflow({ command })
+				yield* Workflows.scheduleTimerWorkflow({ command })
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: registeredAt should equal clock.now()
@@ -112,7 +112,7 @@ describe('scheduleTimerWorkflow', () => {
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act
-				yield* scheduleTimerWorkflow({ command })
+				yield* Workflows.scheduleTimerWorkflow({ command })
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: status should be 'Scheduled'
@@ -147,7 +147,7 @@ describe('scheduleTimerWorkflow', () => {
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act: Pass correlationId to workflow
-				yield* scheduleTimerWorkflow({ command, correlationId })
+				yield* Workflows.scheduleTimerWorkflow({ command, correlationId })
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: correlationId should be Some(correlationId)
@@ -176,7 +176,7 @@ describe('scheduleTimerWorkflow', () => {
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act: Don't pass correlationId
-				yield* scheduleTimerWorkflow({ command })
+				yield* Workflows.scheduleTimerWorkflow({ command })
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: correlationId should be None
@@ -209,7 +209,7 @@ describe('scheduleTimerWorkflow', () => {
 					serviceCallId,
 					tenantId,
 				}
-				yield* scheduleTimerWorkflow({ command })
+				yield* Workflows.scheduleTimerWorkflow({ command })
 
 				// Assert: Timer should still be persisted (no fast-path optimization)
 				const maybeScheduledTimer = yield* persistence.find(tenantId, serviceCallId)
@@ -244,9 +244,9 @@ describe('scheduleTimerWorkflow', () => {
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act: Execute workflow TWICE with same command
-				yield* scheduleTimerWorkflow({ command, correlationId })
+				yield* Workflows.scheduleTimerWorkflow({ command, correlationId })
 				yield* TestClock.adjust('1 second')
-				yield* scheduleTimerWorkflow({ command }) // Should not fail (upsert semantics)
+				yield* Workflows.scheduleTimerWorkflow({ command }) // Should not fail (upsert semantics)
 
 				// Assert: Timer exists (second call didn't error)
 				const maybeScheduledTimer = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
@@ -281,7 +281,7 @@ describe('scheduleTimerWorkflow', () => {
 				}
 
 				// Act & Assert: Workflow should fail with PersistenceError
-				const result = yield* Effect.either(scheduleTimerWorkflow({ command }))
+				const result = yield* Effect.either(Workflows.scheduleTimerWorkflow({ command }))
 
 				expect(Either.isLeft(result)).toBe(true)
 				if (Either.isLeft(result)) {

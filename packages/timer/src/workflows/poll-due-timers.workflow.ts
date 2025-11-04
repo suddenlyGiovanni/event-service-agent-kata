@@ -4,8 +4,8 @@ import * as Effect from 'effect/Effect'
 import { round } from 'effect/Number'
 import * as Schema from 'effect/Schema'
 
-import type { ScheduledTimer } from '../domain/timer-entry.domain.ts'
-import { ClockPort, type PersistenceError, TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
+import type * as Domain from '../domain/timer-entry.domain.ts'
+import * as Ports from '../ports/index.ts'
 
 /**
  * Error representing batch processing failures during timer polling.
@@ -34,10 +34,10 @@ export class BatchProcessingError extends Schema.TaggedError<BatchProcessingErro
  * @param timer - The scheduled timer to process
  * @returns Effect that succeeds when the timer is processed, or fails with PublishError or PersistenceError
  */
-const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (timer: ScheduledTimer) {
-	const eventBus = yield* TimerEventBusPort
-	const persistence = yield* TimerPersistencePort
-	const clock = yield* ClockPort
+const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (timer: Domain.ScheduledTimer) {
+	const eventBus = yield* Ports.TimerEventBusPort
+	const persistence = yield* Ports.TimerPersistencePort
+	const clock = yield* Ports.ClockPort
 
 	const now = yield* clock.now()
 
@@ -73,11 +73,11 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
  */
 export const pollDueTimersWorkflow: () => Effect.Effect<
 	undefined,
-	PersistenceError | BatchProcessingError,
-	TimerEventBusPort | TimerPersistencePort | ClockPort
+	Ports.PersistenceError | BatchProcessingError,
+	Ports.TimerEventBusPort | Ports.TimerPersistencePort | Ports.ClockPort
 > = Effect.fn('Timer.PollDueTimersWorkflow')(function* () {
-	const persistence = yield* TimerPersistencePort
-	const clock = yield* ClockPort
+	const persistence = yield* Ports.TimerPersistencePort
+	const clock = yield* Ports.ClockPort
 
 	const now = yield* clock.now()
 	const dueTimers = yield* persistence.findDue(now)

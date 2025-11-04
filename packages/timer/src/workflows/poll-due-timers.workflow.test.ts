@@ -12,11 +12,10 @@ import * as TestClock from 'effect/TestClock'
 import { UUID7 } from '@event-service-agent/platform/uuid7'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
-import { ClockPortTest } from '../adapters/clock.adapter.ts'
-import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
-import { ScheduledTimer, TimerEntry } from '../domain/timer-entry.domain.ts'
-import { ClockPort, PersistenceError, PublishError, TimerEventBusPort, TimerPersistencePort } from '../ports/index.ts'
-import { type BatchProcessingError, pollDueTimersWorkflow } from './poll-due-timers.workflow.ts'
+import * as Adapters from '../adapters/index.ts'
+import * as Domain from '../domain/timer-entry.domain.ts'
+import * as Ports from '../ports/index.ts'
+import * as Workflows from './poll-due-timers.workflow.ts'
 
 /**
  * Test suite for pollDueTimersWorkflow
@@ -33,8 +32,8 @@ describe('pollDueTimersWorkflow', () => {
 	describe('Happy Path', () => {
 		it.effect('processes due timers successfully', () => {
 			// Mock EventBus to track published events
-			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
+			const publishedEvents: { firedAt: DateTime.Utc; timer: Domain.ScheduledTimer }[] = []
+			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
 					Effect.sync(() => {
 						publishedEvents.push({ firedAt, timer })
@@ -54,20 +53,20 @@ describe('pollDueTimersWorkflow', () => {
 				 */
 
 				// Arrange: Create a timer that will be due
-				const clock = yield* ClockPort
+				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
 
 				// Timer will be due in 5 minutes
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const scheduledTimer = ScheduledTimer.make({
+				const scheduledTimer = Domain.ScheduledTimer.make({
 					correlationId: Option.none(),
 					dueAt,
 					registeredAt: now,
 					serviceCallId,
 					tenantId,
 				}) // Get persistence and save timer
-				const persistence = yield* TimerPersistencePort
+				const persistence = yield* Ports.TimerPersistencePort
 				yield* persistence.save(scheduledTimer)
 
 				// Verify timer is not due yet
@@ -76,7 +75,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Act: Advance time to make timer due (5 minutes + 1 second)
 				yield* TestClock.adjust('6 minutes') // Execute workflow
-				yield* pollDueTimersWorkflow()
+				yield* Workflows.pollDueTimersWorkflow()
 
 				// Assert: Verify event was published
 				expect(publishedEvents).toHaveLength(1)
@@ -91,7 +90,11 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Timer should no longer appear in findDue
 				const afterFired = yield* persistence.findDue(yield* clock.now())
 				expect(Chunk.isEmpty(afterFired)).toBe(true)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+				),
+			)
 		})
 
 		it.effect('processes multiple due timers sequentially', () => {
@@ -105,9 +108,9 @@ describe('pollDueTimersWorkflow', () => {
 
 			// Track the order of operations to verify sequential processing
 			const operations: string[] = []
-			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			const publishedEvents: { firedAt: DateTime.Utc; timer: Domain.ScheduledTimer }[] = []
 
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
+			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
 					Effect.sync(() => {
 						operations.push(`publish:${timer.serviceCallId}`)
@@ -124,14 +127,14 @@ describe('pollDueTimersWorkflow', () => {
 
 			return Effect.gen(function* () {
 				// Arrange: Create three timers that will be due
-				const clock = yield* ClockPort
-				const persistence = yield* TimerPersistencePort
+				const clock = yield* Ports.ClockPort
+				const persistence = yield* Ports.TimerPersistencePort
 				const registeredAt = yield* clock.now()
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
 				// Create and save timers using iteration
 				const timers = serviceCallIds.map(serviceCallId =>
-					ScheduledTimer.make({
+					Domain.ScheduledTimer.make({
 						correlationId: Option.none(),
 						dueAt,
 						registeredAt,
@@ -146,7 +149,7 @@ describe('pollDueTimersWorkflow', () => {
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow
-				yield* pollDueTimersWorkflow()
+				yield* Workflows.pollDueTimersWorkflow()
 
 				// Assert: All three events should be published
 				expect(publishedEvents).toHaveLength(serviceCallIds.length)
@@ -160,7 +163,7 @@ describe('pollDueTimersWorkflow', () => {
 						Effect.sync(() => {
 							foundTimers.forEach(found => {
 								expect(Option.isSome(found)).toBe(true)
-								expect(found.pipe(Option.exists(TimerEntry.isReached))).toBe(true)
+								expect(found.pipe(Option.exists(Domain.TimerEntry.isReached))).toBe(true)
 							})
 						}),
 					),
@@ -170,7 +173,11 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: All operations should have occurred (3 publishes)
 				expect(operations.filter(op => op.startsWith('publish:'))).toHaveLength(serviceCallIds.length)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+				),
+			)
 		})
 
 		it.effect('publishes event before marking timer as fired', () => {
@@ -184,7 +191,7 @@ describe('pollDueTimersWorkflow', () => {
 
 			const operations: string[] = []
 
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
+			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: timer =>
 					Effect.sync(() => {
 						operations.push(`publish:${timer.serviceCallId}`)
@@ -196,12 +203,12 @@ describe('pollDueTimersWorkflow', () => {
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
 
 				// Arrange: Create a timer that will be due
-				const clock = yield* ClockPort
-				const basePersistence = yield* TimerPersistencePort
+				const clock = yield* Ports.ClockPort
+				const basePersistence = yield* Ports.TimerPersistencePort
 				const registeredAt = yield* clock.now()
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
-				const scheduledTimer = ScheduledTimer.make({
+				const scheduledTimer = Domain.ScheduledTimer.make({
 					correlationId: Option.none(),
 					dueAt,
 					registeredAt,
@@ -213,8 +220,8 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Create wrapped persistence that tracks markFired calls
 				const TestPersistence = Layer.succeed(
-					TimerPersistencePort,
-					TimerPersistencePort.of({
+					Ports.TimerPersistencePort,
+					Ports.TimerPersistencePort.of({
 						...basePersistence,
 						markFired: (tenantId, serviceCallId, reachedAt) =>
 							Effect.gen(function* () {
@@ -228,7 +235,7 @@ describe('pollDueTimersWorkflow', () => {
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow with wrapped persistence
-				yield* pollDueTimersWorkflow().pipe(Effect.provide(TestPersistence))
+				yield* Workflows.pollDueTimersWorkflow().pipe(Effect.provide(TestPersistence))
 
 				// Assert: Should have exactly 2 operations
 				expect(operations).toHaveLength(2)
@@ -236,7 +243,11 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: publish should happen before markFired
 				expect(operations[0]).toBe(`publish:${serviceCallId}`)
 				expect(operations[1]).toBe(`markFired:${serviceCallId}`)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+				),
+			)
 		})
 
 		it.effect('propagates correlationId from timer to event', () => {
@@ -247,9 +258,9 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND the correlationId should match the timer's correlationId
 			 */
 
-			let publishedTimer: ScheduledTimer | undefined
+			let publishedTimer: Domain.ScheduledTimer | undefined
 
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
+			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: timer =>
 					Effect.sync(() => {
 						publishedTimer = timer
@@ -262,12 +273,12 @@ describe('pollDueTimersWorkflow', () => {
 				const correlationId = yield* CorrelationId.makeUUID7()
 
 				// Arrange: Create a timer with a specific correlationId
-				const clock = yield* ClockPort
-				const persistence = yield* TimerPersistencePort
+				const clock = yield* Ports.ClockPort
+				const persistence = yield* Ports.TimerPersistencePort
 				const registeredAt = yield* clock.now()
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
-				const scheduledTimer = ScheduledTimer.make({
+				const scheduledTimer = Domain.ScheduledTimer.make({
 					correlationId: Option.some(correlationId),
 					dueAt,
 					registeredAt,
@@ -281,7 +292,7 @@ describe('pollDueTimersWorkflow', () => {
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow
-				yield* pollDueTimersWorkflow()
+				yield* Workflows.pollDueTimersWorkflow()
 
 				// Assert: Timer should have been published
 				expect(publishedTimer).toBeDefined()
@@ -290,7 +301,11 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Published timer should have the same correlationId
 				expect(Option.isSome(publishedTimer.correlationId)).toBe(true)
 				expect(Option.getOrThrow(publishedTimer.correlationId)).toBe(correlationId)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+				),
+			)
 		})
 	})
 
@@ -304,8 +319,8 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND workflow should complete successfully
 			 */
 
-			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
+			const publishedEvents: { firedAt: DateTime.Utc; timer: Domain.ScheduledTimer }[] = []
+			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
 					Effect.sync(() => {
 						publishedEvents.push({ firedAt, timer })
@@ -317,14 +332,14 @@ describe('pollDueTimersWorkflow', () => {
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
 
 				// Arrange: Create a timer that is NOT due yet (future)
-				const clock = yield* ClockPort
-				const persistence = yield* TimerPersistencePort
+				const clock = yield* Ports.ClockPort
+				const persistence = yield* Ports.TimerPersistencePort
 				const now = yield* clock.now()
 
 				// Timer due in 10 minutes (well into the future)
 				const dueAt = DateTime.add(now, { minutes: 10 })
 
-				const scheduledTimer = ScheduledTimer.make({
+				const scheduledTimer = Domain.ScheduledTimer.make({
 					correlationId: Option.none(),
 					dueAt,
 					registeredAt: now,
@@ -341,7 +356,7 @@ describe('pollDueTimersWorkflow', () => {
 				expect(Chunk.isEmpty(notDueYet)).toBe(true)
 
 				// Act: Execute workflow (should find no due timers)
-				yield* pollDueTimersWorkflow()
+				yield* Workflows.pollDueTimersWorkflow()
 
 				// Assert: No events should be published
 				expect(publishedEvents).toHaveLength(0)
@@ -349,11 +364,15 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Timer should still be in Scheduled state (not processed)
 				const found = yield* persistence.find(tenantId, serviceCallId)
 				expect(Option.isSome(found)).toBe(true)
-				expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
+				expect(Option.exists(found, Domain.TimerEntry.isScheduled)).toBe(true)
 
 				// Assert: Workflow completed successfully (no errors)
 				// (implicit - if we reach here, no exceptions were thrown)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+				),
+			)
 		})
 
 		it.effect('completes successfully when persistence is empty', () => {
@@ -364,8 +383,8 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND workflow should complete successfully
 			 */
 
-			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
+			const publishedEvents: { firedAt: DateTime.Utc; timer: Domain.ScheduledTimer }[] = []
+			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
 					Effect.sync(() => {
 						publishedEvents.push({ firedAt, timer })
@@ -374,22 +393,26 @@ describe('pollDueTimersWorkflow', () => {
 
 			return Effect.gen(function* () {
 				// Arrange: Start with empty persistence (no timers saved)
-				const clock = yield* ClockPort
-				const persistence = yield* TimerPersistencePort
+				const clock = yield* Ports.ClockPort
+				const persistence = yield* Ports.TimerPersistencePort
 
 				// Verify persistence is empty
 				const noDueTimers = yield* persistence.findDue(yield* clock.now())
 				expect(Chunk.isEmpty(noDueTimers)).toBe(true)
 
 				// Act: Execute workflow (should find nothing)
-				yield* pollDueTimersWorkflow()
+				yield* Workflows.pollDueTimersWorkflow()
 
 				// Assert: No events published
 				expect(publishedEvents).toHaveLength(0)
 
 				// Assert: Workflow completed successfully
 				// (implicit - if we reach here, no exceptions were thrown)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+				),
+			)
 		})
 	})
 
@@ -402,8 +425,8 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND should be processed successfully
 			 */
 
-			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
+			const publishedEvents: { firedAt: DateTime.Utc; timer: Domain.ScheduledTimer }[] = []
+			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
 					Effect.sync(() => {
 						publishedEvents.push({ firedAt, timer })
@@ -414,12 +437,12 @@ describe('pollDueTimersWorkflow', () => {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
 				// Arrange: Create a timer where dueAt === now (boundary condition)
-				const clock = yield* ClockPort
-				const persistence = yield* TimerPersistencePort
+				const clock = yield* Ports.ClockPort
+				const persistence = yield* Ports.TimerPersistencePort
 				const now = yield* clock.now()
 
 				// Timer is due right now (no offset)
-				const scheduledTimer = ScheduledTimer.make({
+				const scheduledTimer = Domain.ScheduledTimer.make({
 					correlationId: Option.none(),
 					dueAt: now,
 					registeredAt: now,
@@ -430,7 +453,7 @@ describe('pollDueTimersWorkflow', () => {
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Execute workflow (timer should be due)
-				yield* pollDueTimersWorkflow()
+				yield* Workflows.pollDueTimersWorkflow()
 
 				// Assert: Event should be published (timer is due)
 				expect(publishedEvents).toHaveLength(1)
@@ -441,11 +464,15 @@ describe('pollDueTimersWorkflow', () => {
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
-							expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
+							expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
 						}),
 					),
 				)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+				),
+			)
 		})
 
 		it.effect('does not process timer scheduled in the future', () => {
@@ -456,8 +483,8 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND should NOT be processed
 			 */
 
-			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
+			const publishedEvents: { firedAt: DateTime.Utc; timer: Domain.ScheduledTimer }[] = []
+			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
 					Effect.sync(() => {
 						publishedEvents.push({ firedAt, timer })
@@ -469,14 +496,14 @@ describe('pollDueTimersWorkflow', () => {
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
 
 				// Arrange: Create a timer due in the future
-				const clock = yield* ClockPort
-				const persistence = yield* TimerPersistencePort
+				const clock = yield* Ports.ClockPort
+				const persistence = yield* Ports.TimerPersistencePort
 				const now = yield* clock.now()
 
 				// Timer due 1 second in the future
 				const dueAt = DateTime.add(now, { seconds: 1 })
 
-				const scheduledTimer = ScheduledTimer.make({
+				const scheduledTimer = Domain.ScheduledTimer.make({
 					correlationId: Option.none(),
 					dueAt,
 					registeredAt: now,
@@ -487,7 +514,7 @@ describe('pollDueTimersWorkflow', () => {
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Execute workflow (timer should NOT be due yet)
-				yield* pollDueTimersWorkflow()
+				yield* Workflows.pollDueTimersWorkflow()
 
 				// Assert: No events should be published
 				expect(publishedEvents).toHaveLength(0)
@@ -498,11 +525,15 @@ describe('pollDueTimersWorkflow', () => {
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
-							expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
+							expect(Option.exists(found, Domain.TimerEntry.isScheduled)).toBe(true)
 						}),
 					),
 				)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+				),
+			)
 		})
 
 		it.effect('processes timer that is overdue', () => {
@@ -514,8 +545,8 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND should be processed successfully
 			 */
 
-			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
+			const publishedEvents: { firedAt: DateTime.Utc; timer: Domain.ScheduledTimer }[] = []
+			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
 					Effect.sync(() => {
 						publishedEvents.push({ firedAt, timer })
@@ -527,14 +558,14 @@ describe('pollDueTimersWorkflow', () => {
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
 
 				// Arrange: Schedule a timer for 5 minutes from now
-				const clock = yield* ClockPort
-				const persistence = yield* TimerPersistencePort
+				const clock = yield* Ports.ClockPort
+				const persistence = yield* Ports.TimerPersistencePort
 				const registeredAt = yield* clock.now()
 
 				// Timer due in 5 minutes
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
-				const scheduledTimer = ScheduledTimer.make({
+				const scheduledTimer = Domain.ScheduledTimer.make({
 					correlationId: Option.none(),
 					dueAt,
 					registeredAt,
@@ -548,7 +579,7 @@ describe('pollDueTimersWorkflow', () => {
 				yield* TestClock.adjust('15 minutes')
 
 				// Execute workflow (timer is overdue and should fire)
-				yield* pollDueTimersWorkflow()
+				yield* Workflows.pollDueTimersWorkflow()
 
 				// Assert: Event should be published (timer is overdue)
 				expect(publishedEvents).toHaveLength(1)
@@ -559,31 +590,35 @@ describe('pollDueTimersWorkflow', () => {
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
-							expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
+							expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
 						}),
 					),
 				)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+				),
+			)
 		})
 	})
 
 	describe('Error Handling - Publish Failures', () => {
 		it.effect.fails('propagates batch failure when publish fails', () =>
 			Effect.gen(function* () {
-				const TestEventBus = Layer.mock(TimerEventBusPort, {
-					publishDueTimeReached: () => Effect.fail(new PublishError({ cause: 'Event bus publish failed' })),
+				const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+					publishDueTimeReached: () => Effect.fail(new Ports.PublishError({ cause: 'Event bus publish failed' })),
 				})
 
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
 
 				// Arrange: Create a timer that will be due
-				const clock = yield* ClockPort
-				const persistence = yield* TimerPersistencePort
+				const clock = yield* Ports.ClockPort
+				const persistence = yield* Ports.TimerPersistencePort
 				const registeredAt = yield* clock.now()
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
-				const scheduledTimer = ScheduledTimer.make({
+				const scheduledTimer = Domain.ScheduledTimer.make({
 					correlationId: Option.none(),
 					dueAt,
 					registeredAt,
@@ -597,8 +632,10 @@ describe('pollDueTimersWorkflow', () => {
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow with TestEventBus - should fail with BatchProcessingError
-				yield* pollDueTimersWorkflow().pipe(Effect.provide(TestEventBus))
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, UUID7.Default))),
+				yield* Workflows.pollDueTimersWorkflow().pipe(Effect.provide(TestEventBus))
+			}).pipe(
+				Effect.provide(Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, UUID7.Default)),
+			),
 		)
 
 		it.effect('propagates batch failure when some timers fail', () => {
@@ -619,15 +656,15 @@ describe('pollDueTimersWorkflow', () => {
 			 * - Failed timers remain Scheduled for retry on next poll
 			 */
 
-			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			const publishedEvents: { firedAt: DateTime.Utc; timer: Domain.ScheduledTimer }[] = []
 			let callCount = 0
 
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
+			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) => {
 					callCount++
 					// Fail on second timer (callCount === 2)
 					if (callCount === 2) {
-						return Effect.fail(new PublishError({ cause: 'Event bus publish failed' }))
+						return Effect.fail(new Ports.PublishError({ cause: 'Event bus publish failed' }))
 					}
 					return Effect.sync(() => {
 						publishedEvents.push({ firedAt, timer })
@@ -643,13 +680,13 @@ describe('pollDueTimersWorkflow', () => {
 				const serviceCallIds = [serviceCallId1, serviceCallId2, serviceCallId3]
 
 				// Arrange: Create three timers that will be due
-				const clock = yield* ClockPort
-				const persistence = yield* TimerPersistencePort
+				const clock = yield* Ports.ClockPort
+				const persistence = yield* Ports.TimerPersistencePort
 				const registeredAt = yield* clock.now()
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
 				const timers = serviceCallIds.map(serviceCallId =>
-					ScheduledTimer.make({
+					Domain.ScheduledTimer.make({
 						correlationId: Option.none(),
 						dueAt,
 						registeredAt,
@@ -664,7 +701,7 @@ describe('pollDueTimersWorkflow', () => {
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow (should fail with BatchProcessingError)
-				const result = yield* Effect.exit(pollDueTimersWorkflow())
+				const result = yield* Effect.exit(Workflows.pollDueTimersWorkflow())
 
 				// Assert: Workflow should fail
 				expect(Exit.isFailure(result)).toBe(true)
@@ -674,7 +711,7 @@ describe('pollDueTimersWorkflow', () => {
 					const error = Cause.failureOption(result.cause)
 					expect(Option.isSome(error)).toBe(true)
 					if (Option.isSome(error)) {
-						const batchError = error.value as BatchProcessingError
+						const batchError = error.value as Workflows.BatchProcessingError
 						expect(batchError._tag).toBe('BatchProcessingError')
 						expect(batchError.failedCount).toBe(1)
 						expect(batchError.totalCount).toBe(3)
@@ -688,7 +725,7 @@ describe('pollDueTimersWorkflow', () => {
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
-							expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
+							expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
 						}),
 					),
 				)
@@ -698,7 +735,7 @@ describe('pollDueTimersWorkflow', () => {
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
-							expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
+							expect(Option.exists(found, Domain.TimerEntry.isScheduled)).toBe(true)
 						}),
 					),
 				)
@@ -708,11 +745,15 @@ describe('pollDueTimersWorkflow', () => {
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
-							expect(Option.exists(found, TimerEntry.isReached)).toBe(true)
+							expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
 						}),
 					),
 				)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+				),
+			)
 		})
 	})
 
@@ -732,9 +773,9 @@ describe('pollDueTimersWorkflow', () => {
 			 * Note: Event is published but timer stays Scheduled (Orchestration handles duplicate via state guard)
 			 */
 
-			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
+			const publishedEvents: { firedAt: DateTime.Utc; timer: Domain.ScheduledTimer }[] = []
 
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
+			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
 					Effect.sync(() => {
 						publishedEvents.push({ firedAt, timer })
@@ -746,27 +787,27 @@ describe('pollDueTimersWorkflow', () => {
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
 
 				// Arrange: Create a timer that will be due
-				const clock = yield* ClockPort
+				const clock = yield* Ports.ClockPort
 				const registeredAt = yield* clock.now()
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
-				const scheduledTimer = ScheduledTimer.make({
+				const scheduledTimer = Domain.ScheduledTimer.make({
 					correlationId: Option.none(),
 					dueAt,
 					registeredAt,
 					serviceCallId,
 					tenantId,
 				}) // Use base persistence for save, then provide a mock that fails markFired
-				const basePersistence = yield* TimerPersistencePort
+				const basePersistence = yield* Ports.TimerPersistencePort
 				yield* basePersistence.save(scheduledTimer)
 
 				// Create test layer with failing markFired
 				const TestPersistence = Layer.succeed(
-					TimerPersistencePort,
-					TimerPersistencePort.of({
+					Ports.TimerPersistencePort,
+					Ports.TimerPersistencePort.of({
 						...basePersistence,
 						markFired: () =>
-							Effect.fail(new PersistenceError({ cause: 'Database connection lost', operation: 'markFired' })),
+							Effect.fail(new Ports.PersistenceError({ cause: 'Database connection lost', operation: 'markFired' })),
 					}),
 				)
 
@@ -774,7 +815,7 @@ describe('pollDueTimersWorkflow', () => {
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow with failing markFired - should fail with BatchProcessingError
-				const result = yield* Effect.exit(pollDueTimersWorkflow().pipe(Effect.provide(TestPersistence)))
+				const result = yield* Effect.exit(Workflows.pollDueTimersWorkflow().pipe(Effect.provide(TestPersistence)))
 
 				// Assert: Workflow should fail
 				expect(Exit.isFailure(result)).toBe(true)
@@ -784,7 +825,7 @@ describe('pollDueTimersWorkflow', () => {
 					const error = Cause.failureOption(result.cause)
 					expect(Option.isSome(error)).toBe(true)
 					if (Option.isSome(error)) {
-						const batchError = error.value as BatchProcessingError
+						const batchError = error.value as Workflows.BatchProcessingError
 						expect(batchError._tag).toBe('BatchProcessingError')
 						expect(batchError.failedCount).toBe(1)
 						expect(batchError.totalCount).toBe(1)
@@ -798,11 +839,15 @@ describe('pollDueTimersWorkflow', () => {
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
-							expect(Option.exists(found, TimerEntry.isScheduled)).toBe(true)
+							expect(Option.exists(found, Domain.TimerEntry.isScheduled)).toBe(true)
 						}),
 					),
 				)
-			}).pipe(Effect.provide(Layer.mergeAll(TimerPersistence.inMemory, ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+				),
+			)
 		})
 	})
 
@@ -816,21 +861,22 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND no timers should be marked
 			 */
 
-			const publishedEvents: { firedAt: DateTime.Utc; timer: ScheduledTimer }[] = []
-			const TestEventBus = Layer.mock(TimerEventBusPort, {
+			const publishedEvents: { firedAt: DateTime.Utc; timer: Domain.ScheduledTimer }[] = []
+			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: (timer, firedAt) =>
 					Effect.sync(() => {
 						publishedEvents.push({ firedAt, timer })
 					}),
 			})
 
-			const TestPersistence = Layer.mock(TimerPersistencePort, {
-				findDue: () => Effect.fail(new PersistenceError({ cause: 'Database connection failed', operation: 'findDue' })),
+			const TestPersistence = Layer.mock(Ports.TimerPersistencePort, {
+				findDue: () =>
+					Effect.fail(new Ports.PersistenceError({ cause: 'Database connection failed', operation: 'findDue' })),
 			})
 
 			return Effect.gen(function* () {
 				// Act: Execute workflow with failing findDue
-				const result = yield* Effect.exit(pollDueTimersWorkflow())
+				const result = yield* Effect.exit(Workflows.pollDueTimersWorkflow())
 
 				// Assert: Workflow should have failed with PersistenceError
 				expect(Exit.isFailure(result)).toBe(true)
@@ -838,8 +884,8 @@ describe('pollDueTimersWorkflow', () => {
 					const failure = Cause.failureOption(result.cause)
 					expect(Option.isSome(failure)).toBe(true)
 					if (Option.isSome(failure)) {
-						const error = failure.value as PersistenceError
-						expect(error).toBeInstanceOf(PersistenceError)
+						const error = failure.value as Ports.PersistenceError
+						expect(error).toBeInstanceOf(Ports.PersistenceError)
 						expect(error.operation).toBe('findDue')
 						expect(error.cause).toBe('Database connection failed')
 					}
@@ -847,7 +893,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: No events should have been published
 				expect(publishedEvents).toHaveLength(0)
-			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, Adapters.ClockPortTest, TestEventBus, UUID7.Default)))
 		})
 	})
 })
