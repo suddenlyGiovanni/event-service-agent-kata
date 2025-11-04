@@ -187,11 +187,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 
 				// Assert: All operations should have occurred (3 publishes)
 				expect(operations.filter(op => op.startsWith('publish:'))).toHaveLength(serviceCallIds.length)
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
-				),
-			)
+			}).pipe(Effect.provide(TimerEventBusTest))
 		})
 
 		it.effect('publishes event before marking timer as fired', () => {
@@ -257,11 +253,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				// Assert: publish should happen before markFired
 				expect(operations[0]).toBe(`publish:${serviceCallId}`)
 				expect(operations[1]).toBe(`markFired:${serviceCallId}`)
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
-				),
-			)
+			}).pipe(Effect.provide(TimerEventBusTest))
 		})
 
 		it.effect('propagates correlationId from timer to event', () => {
@@ -315,11 +307,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				// Assert: Published timer should have the same correlationId
 				// expect(Option.isSome(publishedEvent.correlationId)).toBe(true)
 				// expect(Option.getOrThrow(publishedEvent.correlationId)).toBe(correlationId)
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
-				),
-			)
+			}).pipe(Effect.provide(TimerEventBusTest))
 		})
 	})
 
@@ -382,11 +370,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 
 				// Assert: Workflow completed successfully (no errors)
 				// (implicit - if we reach here, no exceptions were thrown)
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
-				),
-			)
+			}).pipe(Effect.provide(TimerEventBusTest))
 		})
 
 		it.effect('completes successfully when persistence is empty', () => {
@@ -398,7 +382,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
-			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: event =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
@@ -422,11 +406,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 
 				// Assert: Workflow completed successfully
 				// (implicit - if we reach here, no exceptions were thrown)
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
-				),
-			)
+			}).pipe(Effect.provide(TimerEventBusTest))
 		})
 	})
 
@@ -440,7 +420,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
-			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: event =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
@@ -482,11 +462,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 						}),
 					),
 				)
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
-				),
-			)
+			}).pipe(Effect.provide(TimerEventBusTest))
 		})
 
 		it.effect('does not process timer scheduled in the future', () => {
@@ -498,7 +474,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
-			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: event =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
@@ -543,11 +519,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 						}),
 					),
 				)
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
-				),
-			)
+			}).pipe(Effect.provide(TimerEventBusTest))
 		})
 
 		it.effect('processes timer that is overdue', () => {
@@ -560,7 +532,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
-			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: event =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
@@ -610,19 +582,19 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				)
 			}).pipe(
 				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
 				),
 			)
 		})
 	})
 
 	describe('Error Handling - Publish Failures', () => {
-		it.effect.fails('propagates batch failure when publish fails', () =>
-			Effect.gen(function* () {
-				const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
-					publishDueTimeReached: () => Effect.fail(new Ports.PublishError({ cause: 'Event bus publish failed' })),
-				})
+		it.effect.fails('propagates batch failure when publish fails', () => {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
+				publishDueTimeReached: () => Effect.fail(new Ports.PublishError({ cause: 'Event bus publish failed' })),
+			})
 
+			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
 
@@ -645,12 +617,10 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				// Act: Advance time to make timer due
 				yield* TestClock.adjust('6 minutes')
 
-				// Execute workflow with TestEventBus - should fail with BatchProcessingError
-				yield* Workflows.pollDueTimersWorkflow().pipe(Effect.provide(TestEventBus))
-			}).pipe(
-				Effect.provide(Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, UUID7.Default)),
-			),
-		)
+				// Execute workflow with TimerEventBusTest - should fail with BatchProcessingError
+				yield* Workflows.pollDueTimersWorkflow().pipe(Effect.provide(TimerEventBusTest))
+			}).pipe(Effect.provide(TimerEventBusTest))
+		})
 
 		it.effect('propagates batch failure when some timers fail', () => {
 			/**
@@ -673,7 +643,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 			let callCount = 0
 
-			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: event => {
 					callCount++
 					// Fail on second timer (callCount === 2)
@@ -763,9 +733,11 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 						}),
 					),
 				)
+
+				// End of test case
 			}).pipe(
 				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
 				),
 			)
 		})
@@ -788,7 +760,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
-			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: event =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
@@ -815,7 +787,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				yield* basePersistence.save(scheduledTimer)
 
 				// Create test layer with failing markFired
-				const TestPersistence = Layer.succeed(
+				const TimerPersistenceTest = Layer.succeed(
 					Ports.TimerPersistencePort,
 					Ports.TimerPersistencePort.of({
 						...basePersistence,
@@ -828,7 +800,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow with failing markFired - should fail with BatchProcessingError
-				const result = yield* Effect.exit(Workflows.pollDueTimersWorkflow().pipe(Effect.provide(TestPersistence)))
+				const result = yield* Effect.exit(Workflows.pollDueTimersWorkflow().pipe(Effect.provide(TimerPersistenceTest)))
 
 				// Assert: Workflow should fail
 				expect(Exit.isFailure(result)).toBe(true)
@@ -858,7 +830,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				)
 			}).pipe(
 				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TestEventBus, UUID7.Default),
+					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
 				),
 			)
 		})
@@ -875,7 +847,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
-			const TestEventBus = Layer.mock(Ports.TimerEventBusPort, {
+			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: event =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
@@ -906,7 +878,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 
 				// Assert: No events should have been published
 				expect(publishedEvents).toHaveLength(0)
-			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, Adapters.ClockPortTest, TestEventBus, UUID7.Default)))
+			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default)))
 		})
 	})
 })
