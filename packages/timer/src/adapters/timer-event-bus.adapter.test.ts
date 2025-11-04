@@ -22,6 +22,10 @@ describe('TimerEventBus', () => {
 	const serviceCallId = ServiceCallId.make('fedcba98-7654-7321-8fed-cba987654321')
 	const correlationId = CorrelationId.make('aaaabbbb-cccc-7ddd-8eee-ffffffffffff')
 
+	// Base reusable layers (UUID7 + ClockPort)
+	// These are shared across all tests - they don't change per test
+	const BaseTestLayers = Layer.merge(UUID7.Default, AdaptersTimer.ClockPortTest)
+
 	describe('publishDueTimeReached', () => {
 		describe('Happy Path', () => {
 			it.effect('should publish DueTimeReached event with correlation ID', () => {
@@ -31,13 +35,12 @@ describe('TimerEventBus', () => {
 					publish: envelopes => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
 				})
 
-				const TestLayers = Layer.mergeAll(
-					Layer.provide(
-						AdaptersTimer.TimerEventBus.Live,
-						Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-					),
-					AdaptersTimer.ClockPortTest,
+				const TimerEventBusLive = Layer.provide(
+					AdaptersTimer.TimerEventBus.Live,
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
+
+				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					const clock = yield* Ports.ClockPort
@@ -83,13 +86,12 @@ describe('TimerEventBus', () => {
 					publish: envelopes => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
 				})
 
-				const TestLayers = Layer.mergeAll(
-					Layer.provide(
-						AdaptersTimer.TimerEventBus.Live,
-						Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-					),
-					AdaptersTimer.ClockPortTest,
+				const TimerEventBusLive = Layer.provide(
+					AdaptersTimer.TimerEventBus.Live,
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
+
+				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					const clock = yield* Ports.ClockPort
@@ -126,13 +128,12 @@ describe('TimerEventBus', () => {
 					publish: envelopes => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
 				})
 
-				const TestLayers = Layer.mergeAll(
-					Layer.provide(
-						AdaptersTimer.TimerEventBus.Live,
-						Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-					),
-					AdaptersTimer.ClockPortTest,
+				const TimerEventBusLive = Layer.provide(
+					AdaptersTimer.TimerEventBus.Live,
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
+
+				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					const clock = yield* Ports.ClockPort
@@ -175,13 +176,12 @@ describe('TimerEventBus', () => {
 					publish: envelopes => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
 				})
 
-				const TestLayers = Layer.mergeAll(
-					Layer.provide(
-						AdaptersTimer.TimerEventBus.Live,
-						Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-					),
-					AdaptersTimer.ClockPortTest,
+				const TimerEventBusLive = Layer.provide(
+					AdaptersTimer.TimerEventBus.Live,
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
+
+				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					const clock = yield* Ports.ClockPort
@@ -228,13 +228,12 @@ describe('TimerEventBus', () => {
 					publish: () => Effect.fail(new Ports.PublishError({ cause: 'Connection failed' })),
 				})
 
-				const TestLayers = Layer.mergeAll(
-					Layer.provide(
-						AdaptersTimer.TimerEventBus.Live,
-						Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-					),
-					AdaptersTimer.ClockPortTest,
+				const TimerEventBusLive = Layer.provide(
+					AdaptersTimer.TimerEventBus.Live,
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
+
+				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					const clock = yield* Ports.ClockPort
@@ -273,13 +272,12 @@ describe('TimerEventBus', () => {
 						}),
 				})
 
-				const TestLayers = Layer.mergeAll(
-					Layer.provide(
-						AdaptersTimer.TimerEventBus.Live,
-						Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-					),
-					AdaptersTimer.ClockPortTest,
+				const TimerEventBusLive = Layer.provide(
+					AdaptersTimer.TimerEventBus.Live,
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
+
+				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					// Act
@@ -326,13 +324,12 @@ describe('TimerEventBus', () => {
 						}) as Effect.Effect<void, E, R>,
 				})
 
-				const TestLayers = Layer.mergeAll(
-					Layer.provide(
-						AdaptersTimer.TimerEventBus.Live,
-						Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-					),
-					AdaptersTimer.ClockPortTest,
+				const TimerEventBusLive = Layer.provide(
+					AdaptersTimer.TimerEventBus.Live,
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
+
+				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					// Act
@@ -389,13 +386,12 @@ describe('TimerEventBus', () => {
 						}) as Effect.Effect<void, E, R>,
 				})
 
-				const TestLayers = Layer.mergeAll(
-					Layer.provide(
-						AdaptersTimer.TimerEventBus.Live,
-						Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-					),
-					AdaptersTimer.ClockPortTest,
+				const TimerEventBusLive = Layer.provide(
+					AdaptersTimer.TimerEventBus.Live,
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
+
+				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					// Act
@@ -444,13 +440,12 @@ describe('TimerEventBus', () => {
 						}) as Effect.Effect<void, E, R>,
 				})
 
-				const TestLayers = Layer.mergeAll(
-					Layer.provide(
-						AdaptersTimer.TimerEventBus.Live,
-						Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-					),
-					AdaptersTimer.ClockPortTest,
+				const TimerEventBusLive = Layer.provide(
+					AdaptersTimer.TimerEventBus.Live,
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
+
+				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					// Act
@@ -498,13 +493,12 @@ describe('TimerEventBus', () => {
 						}) as Effect.Effect<void, E, R>,
 				})
 
-				const TestLayers = Layer.mergeAll(
-					Layer.provide(
-						AdaptersTimer.TimerEventBus.Live,
-						Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-					),
-					AdaptersTimer.ClockPortTest,
+				const TimerEventBusLive = Layer.provide(
+					AdaptersTimer.TimerEventBus.Live,
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
+
+				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					// Act
@@ -536,7 +530,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				} as MessageEnvelope.Type
 
-				const mockEventBus = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(Ports.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -546,7 +540,12 @@ describe('TimerEventBus', () => {
 						}) as Effect.Effect<void, E, R>,
 				})
 
-				const TestLayer = Layer.provide(AdaptersTimer.TimerEventBus.Live, mockEventBus)
+				const TimerEventBusLive = Layer.provide(
+					AdaptersTimer.TimerEventBus.Live,
+					Layer.merge(EventBusTest, BaseTestLayers),
+				)
+
+				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					// Act
@@ -558,7 +557,7 @@ describe('TimerEventBus', () => {
 					if (Either.isLeft(result)) {
 						expect(result.left._tag).toBe('SubscribeError')
 					}
-				}).pipe(Effect.provide(TestLayer))
+				}).pipe(Effect.provide(TestLayers))
 			})
 
 			it.effect('should propagate SubscribeError from EventBusPort', () => {
@@ -566,13 +565,12 @@ describe('TimerEventBus', () => {
 					subscribe: () => Effect.fail(new Ports.SubscribeError({ cause: 'Consumer creation failed' })),
 				})
 
-				const TestLayers = Layer.mergeAll(
-					Layer.provide(
-						AdaptersTimer.TimerEventBus.Live,
-						Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-					),
-					AdaptersTimer.ClockPortTest,
+				const TimerEventBusLive = Layer.provide(
+					AdaptersTimer.TimerEventBus.Live,
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
+
+				const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 				return Effect.gen(function* () {
 					// Act
@@ -600,13 +598,12 @@ describe('TimerEventBus', () => {
 				subscribe: () => Effect.never,
 			})
 
-			const TestLayers = Layer.mergeAll(
-				Layer.provide(
-					AdaptersTimer.TimerEventBus.Live,
-					Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-				),
-				AdaptersTimer.ClockPortTest,
+			const TimerEventBusLive = Layer.provide(
+				AdaptersTimer.TimerEventBus.Live,
+				Layer.merge(EventBusTest, BaseTestLayers),
 			)
+
+			const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 			return Effect.gen(function* () {
 				const timerEventBus = yield* Ports.TimerEventBusPort
@@ -628,13 +625,12 @@ describe('TimerEventBus', () => {
 				subscribe: () => Effect.never,
 			})
 
-			const TestLayers = Layer.mergeAll(
-				Layer.provide(
-					AdaptersTimer.TimerEventBus.Live,
-					Layer.mergeAll(EventBusTest, UUID7.Default, AdaptersTimer.ClockPortTest),
-				),
-				AdaptersTimer.ClockPortTest,
+			const TimerEventBusLive = Layer.provide(
+				AdaptersTimer.TimerEventBus.Live,
+				Layer.merge(EventBusTest, BaseTestLayers),
 			)
+
+			const TestLayers = Layer.mergeAll(TimerEventBusLive, AdaptersTimer.ClockPortTest)
 
 			return Effect.gen(function* () {
 				const now = DateTime.unsafeNow()
