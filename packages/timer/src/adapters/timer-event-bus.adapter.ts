@@ -30,91 +30,91 @@ export class TimerEventBus {
 				const clock = yield* Ports.ClockPort
 				const uuid = yield* UUID7
 
-				return Ports.TimerEventBusPort.of({
-					publishDueTimeReached: Effect.fn('Timer.publishDueTimeReached')(function* (
-						dueTimeReached: Messages.Timer.Events.DueTimeReached.Type,
-					) {
+				const publishDueTimeReached = Effect.fn('Timer.publishDueTimeReached')(function* (
+					dueTimeReached: Messages.Timer.Events.DueTimeReached.Type,
+				) {
+					/**
+					 * Extract observability metadata from Effect Context
+					 *
+					 * MessageMetadata is provisioned by workflow with correlationId/causationId
+					 * extracted from timer aggregate. This enables distributed tracing without
+					 * polluting domain event types.
+					 *
+					 * Type-safe: Port signature requires MessageMetadata in R parameter,
+					 * so missing context at workflow level causes compile error.
+					 */
+					const metadata = yield* MessageMetadata
+
+					const envelopeId: EnvelopeId.Type = yield* EnvelopeId.makeUUID7().pipe(
+						Effect.mapError(
+							parseError => new Ports.PublishError({ cause: `Failed to generate EnvelopeId: ${parseError}` }),
+						),
+						Effect.provideService(UUID7, uuid),
+					)
+
+					const envelope: MessageEnvelope.Type = new MessageEnvelope({
 						/**
-						 * Extract observability metadata from Effect Context
-						 *
-						 * MessageMetadata is provisioned by workflow with correlationId/causationId
-						 * extracted from timer aggregate. This enables distributed tracing without
-						 * polluting domain event types.
-						 *
-						 * Type-safe: Port signature requires MessageMetadata in R parameter,
-						 * so missing context at workflow level causes compile error.
+						 * Preserve tenant+serviceCall partition key for ordering
 						 */
-						const metadata = yield* MessageMetadata
+						aggregateId: Option.some(dueTimeReached.serviceCallId),
 
-						const envelopeId: EnvelopeId.Type = yield* EnvelopeId.makeUUID7().pipe(
-							Effect.mapError(
-								parseError => new Ports.PublishError({ cause: `Failed to generate EnvelopeId: ${parseError}` }),
-							),
-							Effect.provideService(UUID7, uuid),
-						)
+						/**
+						 * Extract causationId from MessageMetadata Context
+						 *
+						 * - Some(id): Event caused by specific parent message (command envelope ID)
+						 * - None: Autonomous event (timer fired, no parent message)
+						 */
+						causationId: metadata.causationId,
 
-						const envelope: MessageEnvelope.Type = new MessageEnvelope({
-							/**
-							 * Preserve tenant+serviceCall partition key for ordering
-							 */
-							aggregateId: Option.some(dueTimeReached.serviceCallId),
+						/**
+						 * Extract correlationId from MessageMetadata Context
+						 *
+						 * Workflow provisions this from timer aggregate:
+						 * - Some(id): Timer scheduled with correlationId (from HTTP request or parent workflow)
+						 * - None: Timer scheduled without correlation context
+						 *
+						 * Enables distributed tracing across service boundaries.
+						 */
+						correlationId: metadata.correlationId,
+						id: envelopeId,
+						payload: dueTimeReached,
+						tenantId: dueTimeReached.tenantId,
 
-							/**
-							 * Extract causationId from MessageMetadata Context
-							 *
-							 * - Some(id): Event caused by specific parent message (command envelope ID)
-							 * - None: Autonomous event (timer fired, no parent message)
-							 */
-							causationId: metadata.causationId,
+						/**
+						 * Get current time for envelope timestamp (infrastructure timing)
+						 * Distinct from payload.reachedAt (domain timing):
+						 * - timestampMs: When message was created/published (now)
+						 * - reachedAt: When timer became due (domain event time)
+						 * Gap between them reveals publishing latency for observability.
+						 */
+						timestampMs: yield* clock.now(),
+						type: dueTimeReached._tag,
+					})
 
-							/**
-							 * Extract correlationId from MessageMetadata Context
-							 *
-							 * Workflow provisions this from timer aggregate:
-							 * - Some(id): Timer scheduled with correlationId (from HTTP request or parent workflow)
-							 * - None: Timer scheduled without correlation context
-							 *
-							 * Enables distributed tracing across service boundaries.
-							 */
-							correlationId: metadata.correlationId,
-							id: envelopeId,
-							payload: dueTimeReached,
-							tenantId: dueTimeReached.tenantId,
-
-							/**
-							 * Get current time for envelope timestamp (infrastructure timing)
-							 * Distinct from payload.reachedAt (domain timing):
-							 * - timestampMs: When message was created/published (now)
-							 * - reachedAt: When timer became due (domain event time)
-							 * Gap between them reveals publishing latency for observability.
-							 */
-							timestampMs: yield* clock.now(),
-							type: dueTimeReached._tag,
-						})
-
-						yield* eventBus.publish([envelope])
-					}),
-
-					subscribeToScheduleTimerCommands: Effect.fn('Timer.subscribeToScheduleTimerCommands')(function* <E, R>(
-						handler: (
-							command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-							correlationId?: CorrelationId.Type,
-						) => Effect.Effect<void, E, R>,
-					) {
-						yield* eventBus.subscribe([Topics.Timer.Commands], envelope =>
-							MessageEnvelope.matchPayload(envelope).pipe(
-								Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, command =>
-									handler(command, Option.getOrUndefined(envelope.correlationId)),
-								),
-								Match.orElse(() =>
-									Effect.logDebug('Ignoring non-ScheduleTimer message', {
-										receivedType: envelope.type,
-									}),
-								),
-							),
-						)
-					}),
+					yield* eventBus.publish([envelope])
 				})
+
+				const subscribeToScheduleTimerCommands = Effect.fn('Timer.subscribeToScheduleTimerCommands')(function* <E, R>(
+					handler: (
+						command: Messages.Orchestration.Commands.ScheduleTimer.Type,
+						correlationId?: CorrelationId.Type,
+					) => Effect.Effect<void, E, R>,
+				) {
+					yield* eventBus.subscribe([Topics.Timer.Commands], envelope =>
+						MessageEnvelope.matchPayload(envelope).pipe(
+							Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, command =>
+								handler(command, Option.getOrUndefined(envelope.correlationId)),
+							),
+							Match.orElse(() =>
+								Effect.logDebug('Ignoring non-ScheduleTimer message', {
+									receivedType: envelope.type,
+								}),
+							),
+						),
+					)
+				})
+
+				return Ports.TimerEventBusPort.of({ publishDueTimeReached, subscribeToScheduleTimerCommands })
 			}),
 		)
 }
