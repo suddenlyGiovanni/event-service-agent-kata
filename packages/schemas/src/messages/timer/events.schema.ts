@@ -45,7 +45,7 @@ import { ServiceCallEventBase } from '../common/service-call-event-base.schema.t
  * const event = new DueTimeReached({
  *   tenantId,
  *   serviceCallId,
- *   reachedAt: Option.some(firedAt), // Option<DateTime.Utc>
+ *   reachedAt: firedAt, // DateTime.Utc
  * })
  *
  * // Encode to wire format (validated domain → JSON DTO)
