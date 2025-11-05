@@ -245,7 +245,7 @@ export interface TimerEventBusPort {
    *
    * @param handler - Command handler (workflow invocation)
    */
-  subscribeScheduleTimer<E, R>(
+  subscribeToScheduleTimerCommands<E, R>(
     handler: (
       cmd: Messages.Orchestration.Commands.ScheduleTimer.Type,
       metadata: MessageMetadata.Type
