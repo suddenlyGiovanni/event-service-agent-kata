@@ -45,7 +45,7 @@ describe('TimerEventBus', () => {
 			 * See: docs/decisions/ADR-0013-correlation-propagation.md
 			 * See: docs/plan/correlation-context-implementation.md (Phase 1-2)
 			 */
-			it.todo('should publish DueTimeReached event with correlationId from MessageMetadata context', () => {
+			it.effect('should publish DueTimeReached event with correlationId from MessageMetadata context', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
@@ -61,7 +61,6 @@ describe('TimerEventBus', () => {
 					const clock = yield* Ports.ClockPort
 					const now = yield* clock.now()
 
-					// Create domain event (pure, no correlationId)
 					const dueTimeReachedEvent = new Messages.Timer.Events.DueTimeReached({
 						reachedAt: now,
 						serviceCallId,
@@ -69,8 +68,13 @@ describe('TimerEventBus', () => {
 					})
 
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					// TODO(PL-24): Wrap with Effect.provideService(MessageMetadata, { correlationId, causationId })
-					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
+
+					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
+						Effect.provideService(MessageMetadata, {
+							causationId: Option.none(),
+							correlationId: Option.some(correlationId),
+						}),
+					)
 
 					// Assert
 					expect(publishedEnvelopes).toHaveLength(1)
@@ -81,9 +85,9 @@ describe('TimerEventBus', () => {
 
 					expect(envelope.type).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 					expect(envelope.tenantId).toBe(tenantId)
-					// TODO(PL-24): Change to Option.some(correlationId) once context provisioning implemented
+					// Verify correlationId from MessageMetadata context propagated to envelope
 					assertEquals(envelope.correlationId, Option.some(correlationId))
-					// timestampMs is now DateTime.Utc (compare via DateTime.Equivalence)
+
 					expect(DateTime.Equivalence(envelope.timestampMs, now)).toBe(true)
 					const payload = envelope.payload
 					assert(payload._tag === Messages.Timer.Events.DueTimeReached.Tag)

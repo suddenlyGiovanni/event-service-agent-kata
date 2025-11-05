@@ -1,4 +1,5 @@
 import { assert, describe, expect, layer } from '@effect/vitest'
+import { assertNone, assertSome } from '@effect/vitest/utils'
 import * as Cause from 'effect/Cause'
 import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
@@ -9,6 +10,7 @@ import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
+import { MessageMetadata } from '@event-service-agent/platform/context'
 import { UUID7 } from '@event-service-agent/platform/uuid7'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
@@ -279,7 +281,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 		 * See: docs/decisions/ADR-0013-correlation-propagation.md
 		 * See: docs/plan/correlation-context-implementation.md (Phase 3: PL-24.7)
 		 */
-		it.todo('propagates correlationId from timer to event via MessageMetadata Context', () => {
+		it.effect('propagates correlationId from timer to event via MessageMetadata Context', () => {
 			/**
 			 * GIVEN a timer with a correlationId
 			 * WHEN pollDueTimersWorkflow executes with MessageMetadata Context provisioning
@@ -287,12 +289,13 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 			 *   AND the correlationId should match the timer's correlationId
 			 */
 
-			let publishedEvent: Messages.Timer.Events.DueTimeReached.Type | undefined
+			let publishedMetadata: MessageMetadata.Type | undefined
 
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: event =>
-					Effect.sync(() => {
-						publishedEvent = event
+				publishDueTimeReached: () =>
+					Effect.gen(function* () {
+						// Capture MessageMetadata from Context
+						publishedMetadata = yield* MessageMetadata
 					}),
 			})
 
@@ -323,14 +326,15 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				// Execute workflow
 				yield* Workflows.pollDueTimersWorkflow()
 
-				// Assert: Timer should have been published
-				expect(publishedEvent).toBeDefined()
-				if (!publishedEvent) throw new Error('Timer was not published')
+				// Assert: Metadata should have been captured
+				expect(publishedMetadata).toBeDefined()
+				if (!publishedMetadata) throw new Error('MessageMetadata was not published')
 
-				// TODO(PL-24.7): Re-enable after implementing MessageMetadata Context provisioning
-				// Assert: Published timer should have the same correlationId
-				// expect(Option.isSome(publishedEvent.correlationId)).toBe(true)
-				// expect(Option.getOrThrow(publishedEvent.correlationId)).toBe(correlationId)
+				// Assert: Published metadata should have the same correlationId from timer
+				assertSome(publishedMetadata.correlationId, correlationId)
+
+				// Assert: causationId should be None (time-triggered, not command-caused)
+				assertNone(publishedMetadata.causationId)
 			}).pipe(Effect.provide(TimerEventBusTest))
 		})
 	})
