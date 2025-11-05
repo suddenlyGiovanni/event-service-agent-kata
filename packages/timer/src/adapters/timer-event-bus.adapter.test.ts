@@ -7,6 +7,7 @@ import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
+import { MessageMetadata } from '@event-service-agent/platform/context'
 import { Topics } from '@event-service-agent/platform/routing'
 import { UUID7 } from '@event-service-agent/platform/uuid7'
 import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
@@ -118,7 +119,9 @@ describe('TimerEventBus', () => {
 
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
+					yield* timerEventBus
+						.publishDueTimeReached(dueTimeReachedEvent)
+						.pipe(Effect.provideService(MessageMetadata, { causationId: Option.none(), correlationId: Option.none() }))
 
 					// Assert
 					expect(publishedEnvelopes).toHaveLength(1)
@@ -156,10 +159,16 @@ describe('TimerEventBus', () => {
 						tenantId,
 					})
 
+					const messageMetadata = MessageMetadata.of({ causationId: Option.none(), correlationId: Option.none() })
+
 					// Act - publish twice
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
-					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
+					yield* timerEventBus
+						.publishDueTimeReached(dueTimeReachedEvent)
+						.pipe(Effect.provideService(MessageMetadata, messageMetadata))
+					yield* timerEventBus
+						.publishDueTimeReached(dueTimeReachedEvent)
+						.pipe(Effect.provideService(MessageMetadata, messageMetadata))
 
 					// Assert
 					expect(publishedEnvelopes).toHaveLength(2)
@@ -336,11 +345,13 @@ describe('TimerEventBus', () => {
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.subscribeToScheduleTimerCommands((command, correlId) =>
-						Effect.sync(() => {
+					yield* timerEventBus.subscribeToScheduleTimerCommands(command =>
+						Effect.gen(function* () {
+							// Extract metadata from context (provisioned by adapter)
+							const metadata = yield* MessageMetadata
 							handlerCalled = true
 							receivedCommand = command
-							receivedCorrelationId = correlId
+							receivedCorrelationId = Option.getOrUndefined(metadata.correlationId)
 						}),
 					)
 
@@ -448,9 +459,11 @@ describe('TimerEventBus', () => {
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.subscribeToScheduleTimerCommands((_command, correlId) =>
-						Effect.sync(() => {
-							receivedCorrelationId = correlId
+					yield* timerEventBus.subscribeToScheduleTimerCommands(_command =>
+						Effect.gen(function* () {
+							// Extract metadata from context (provisioned by adapter)
+							const metadata = yield* MessageMetadata
+							receivedCorrelationId = Option.getOrUndefined(metadata.correlationId)
 						}),
 					)
 
