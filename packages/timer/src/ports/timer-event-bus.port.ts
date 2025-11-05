@@ -6,7 +6,6 @@ import type * as Effect from 'effect/Effect'
 import type { MessageMetadata } from '@event-service-agent/platform/context'
 import type * as Ports from '@event-service-agent/platform/ports'
 import type * as Messages from '@event-service-agent/schemas/messages'
-import type { CorrelationId } from '@event-service-agent/schemas/shared'
 
 /**
  * TimerEventBusPort - Timer module's complete EventBus contract
@@ -39,12 +38,12 @@ export interface TimerEventBusPort {
 	 * - Wrap event in MessageEnvelope with generated EnvelopeId
 	 * - Extract tenantId/serviceCallId/reachedAt for routing/metadata
 	 * - Populate correlationId/causationId from MessageMetadata Context
-	 * - Delegate to EventBusPort.publish([envelope])
+	 * - Delegate to `EventBusPort.publish([envelope])`
 	 *
 	 * **Type Safety**: R parameter requires MessageMetadata, enforcing context
 	 * provisioning at workflow level. Missing context = compile error.
 	 *
-	 * @param event - Pure domain event (DueTimeReached.Type) with all domain fields
+	 * @param event - Pure domain event {@link DueTimeReached.Type} with all domain fields
 	 * @returns Effect that succeeds when event is published
 	 * @throws PublishError - When broker publish fails
 	 * @requires MessageMetadata - Context providing correlationId/causationId
@@ -67,16 +66,30 @@ export interface TimerEventBusPort {
 	/**
 	 * Subscribe to ScheduleTimer commands from Orchestration
 	 *
-	 * Used by: Command Handler (future - not PL-4.4)
+	 * Used by: Command Handler
 	 *
-	 * Handles:
-	 * - Topic subscription ('timer.commands')
-	 * - Envelope parsing and validation
-	 * - Command extraction from payload
-	 * - CorrelationId propagation
-	 * - Error mapping (parse errors, subscription errors)
+	 * **Pattern**: Adapter extracts envelope metadata (correlationId, causationId)
+	 * and provisions MessageMetadata Context for handler. Handler receives pure
+	 * command and extracts metadata from context when needed.
 	 *
-	 * Handler receives parsed, validated command (not raw envelope).
+	 * Adapter responsibilities:
+	 * - Subscribe to timer.commands topic
+	 * - Parse and validate {@link MessageEnvelope}
+	 * - Extract command from payload
+	 * - Provision MessageMetadata Context with envelope metadata:
+	 *   - correlationId: From envelope (upstream correlation)
+	 *   - causationId: envelope.id (this command envelope is the cause)
+	 * - Delegate to handler with pure command
+	 * - Map errors (parse errors, subscription errors)
+	 *
+	 * Handler responsibilities:
+	 * - Receive pure command (no infrastructure metadata in signature)
+	 * - Extract MessageMetadata from context: `yield* MessageMetadata`
+	 * - Use correlationId for timer aggregate
+	 * - Use causationId when publishing events (tracks "which command triggered this")
+	 *
+	 * **Type Safety**: Handler R parameter requires MessageMetadata, but adapter
+	 * provisions it, so handler implementer doesn't manage provisioning.
 	 *
 	 * @param handler - Effect to process each command (invokes scheduleTimerWorkflow)
 	 * @returns Effect that runs indefinitely, processing commands
@@ -85,17 +98,25 @@ export interface TimerEventBusPort {
 	 *
 	 * @example
 	 * ```typescript
-	 * // Command Handler usage (future)
-	 * yield* eventBus.subscribeToScheduleTimerCommands((command, correlationId) =>
-	 *   scheduleTimerWorkflow({ command, correlationId })
+	 * // Command Handler usage
+	 * yield* eventBus.subscribeToScheduleTimerCommands(command =>
+	 *   Effect.gen(function* () {
+	 *     // Extract metadata from context (provisioned by adapter)
+	 *     const metadata = yield* MessageMetadata
+	 *
+	 *     // Use correlationId for timer aggregate
+	 *     yield* scheduleTimerWorkflow({
+	 *       command,
+	 *       correlationId: metadata.correlationId
+	 *     })
+	 *   })
 	 * )
 	 * ```
 	 */
 	readonly subscribeToScheduleTimerCommands: <E, R>(
 		handler: (
 			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-			correlationId?: CorrelationId.Type,
-		) => Effect.Effect<void, E, R>,
+		) => Effect.Effect<void, E, R | MessageMetadata>,
 	) => Effect.Effect<void, Ports.SubscribeError | E, R>
 }
 
