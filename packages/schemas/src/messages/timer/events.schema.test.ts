@@ -2,7 +2,6 @@ import { describe, expect, it } from '@effect/vitest'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
-import * as Option from 'effect/Option'
 
 import { ServiceCallId, TenantId } from '../../shared/index.ts'
 import * as Timer from '../timer/index.ts'
@@ -32,31 +31,9 @@ describe('Timer Domain Events', () => {
 					expect(event.tenantId).toBe(dto.tenantId)
 					expect(event.serviceCallId).toBe(dto.serviceCallId)
 
-					expect(Option.isSome(event.reachedAt)).toBe(true)
-					const reachedAtValue = Option.getOrThrow(event.reachedAt)
-					expect(DateTime.isDateTime(reachedAtValue)).toBe(true)
-					expect(DateTime.isUtc(reachedAtValue)).toBe(true)
-					expect(DateTime.Equivalence(reachedAtValue, DateTime.unsafeMake(dto.reachedAt))).toBe(true)
-				}),
-			)
-
-			it.effect('decodes valid event without optional reachedAt', () =>
-				Effect.gen(function* () {
-					// Arrange: Valid wire format DTO (no reachedAt - fast-path case)
-					const dto = {
-						_tag: Timer.Events.DueTimeReached.Tag,
-						serviceCallId,
-						tenantId,
-					} satisfies Timer.Events.DueTimeReached.Dto
-
-					// Act: Decode from wire format
-					const event: Timer.Events.DueTimeReached.Type = yield* Timer.Events.DueTimeReached.decode(dto)
-
-					// Assert: Optional field is None
-					expect(event._tag).toBe(Timer.Events.DueTimeReached.Tag)
-					expect(event.tenantId).toBe(dto.tenantId)
-					expect(event.serviceCallId).toBe(dto.serviceCallId)
-					expect(Option.isNone(event.reachedAt)).toBe(true)
+					expect(DateTime.isDateTime(event.reachedAt)).toBe(true)
+					expect(DateTime.isUtc(event.reachedAt)).toBe(true)
+					expect(DateTime.Equivalence(event.reachedAt, DateTime.unsafeMake(dto.reachedAt))).toBe(true)
 				}),
 			)
 
@@ -68,7 +45,7 @@ describe('Timer Domain Events', () => {
 
 				// Act: Direct construction (no validation needed - types already validated)
 				const event: Timer.Events.DueTimeReached.Type = new Timer.Events.DueTimeReached({
-					reachedAt: Option.some(reachedAt),
+					reachedAt,
 					serviceCallId,
 					tenantId,
 				})
@@ -77,9 +54,7 @@ describe('Timer Domain Events', () => {
 				expect(event._tag).toBe(Timer.Events.DueTimeReached.Tag)
 				expect(event.tenantId).toBe(tenantId)
 				expect(event.serviceCallId).toBe(serviceCallId)
-				expect(Option.isSome(event.reachedAt)).toBe(true)
-				const reachedAtValue = Option.getOrThrow(event.reachedAt)
-				expect(DateTime.Equivalence(reachedAtValue, reachedAt)).toBe(true)
+				expect(DateTime.Equivalence(event.reachedAt, reachedAt)).toBe(true)
 			})
 		})
 
@@ -192,7 +167,7 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Create domain event with DateTime.Utc
 					const original: Timer.Events.DueTimeReached.Type = new Timer.Events.DueTimeReached({
-						reachedAt: Option.some(DateTime.unsafeMake('2025-10-27T12:00:00.000Z')),
+						reachedAt: DateTime.unsafeMake('2025-10-27T12:00:00.000Z'),
 						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 					})
@@ -205,33 +180,7 @@ describe('Timer Domain Events', () => {
 					expect(decoded._tag).toBe(original._tag)
 					expect(decoded.tenantId).toBe(original.tenantId)
 					expect(decoded.serviceCallId).toBe(original.serviceCallId)
-					// ✅ CORRECT: Use DateTime.Equivalence for domain type equality
-					expect(Option.isSome(original.reachedAt)).toBe(true)
-					expect(Option.isSome(decoded.reachedAt)).toBe(true)
-					const originalValue = Option.getOrThrow(original.reachedAt)
-					const decodedValue = Option.getOrThrow(decoded.reachedAt)
-					expect(DateTime.Equivalence(decodedValue, originalValue)).toBe(true)
-				}),
-			)
-
-			it.effect('round-trips correctly without optional field', () =>
-				Effect.gen(function* () {
-					// Arrange: Create domain event without optional field
-					const original: Timer.Events.DueTimeReached.Type = new Timer.Events.DueTimeReached({
-						reachedAt: Option.none(),
-						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
-						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
-					})
-
-					// Act: Encode to wire format, then decode back
-					const dto: Timer.Events.DueTimeReached.Dto = yield* Timer.Events.DueTimeReached.encode(original)
-					const decoded: Timer.Events.DueTimeReached.Type = yield* Timer.Events.DueTimeReached.decode(dto)
-
-					// Assert: Round-trip preserves all data
-					expect(decoded._tag).toBe(original._tag)
-					expect(decoded.tenantId).toBe(original.tenantId)
-					expect(decoded.serviceCallId).toBe(original.serviceCallId)
-					expect(Option.isNone(decoded.reachedAt)).toBe(true)
+					expect(DateTime.Equivalence(decoded.reachedAt, original.reachedAt)).toBe(true)
 				}),
 			)
 		})
@@ -241,7 +190,7 @@ describe('Timer Domain Events', () => {
 				Effect.gen(function* () {
 					// Arrange: Domain event with branded types (DateTime.Utc in domain)
 					const event: Timer.Events.DueTimeReached.Type = new Timer.Events.DueTimeReached({
-						reachedAt: Option.some(DateTime.unsafeMake('2025-10-27T12:00:00.000Z')),
+						reachedAt: DateTime.unsafeMake('2025-10-27T12:00:00.000Z'),
 						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1'),
 						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
 					}) // Act: Encode to wire format (DateTime.Utc → ISO8601 string)

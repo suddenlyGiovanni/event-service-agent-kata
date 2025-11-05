@@ -1,14 +1,11 @@
 // packages/timer/src/ports/timer-event-bus.port.ts
 
 import * as Context from 'effect/Context'
-import type * as DateTime from 'effect/DateTime'
 import type * as Effect from 'effect/Effect'
 
-import type { PublishError, SubscribeError } from '@event-service-agent/platform/ports'
+import type * as Ports from '@event-service-agent/platform/ports'
 import type * as Messages from '@event-service-agent/schemas/messages'
 import type { CorrelationId } from '@event-service-agent/schemas/shared'
-
-import type { TimerEntry } from '../domain/timer-entry.domain.ts'
 
 /**
  * TimerEventBusPort - Timer module's complete EventBus contract
@@ -20,27 +17,33 @@ import type { TimerEntry } from '../domain/timer-entry.domain.ts'
  * Abstracts Timer-specific concerns (envelopes, topics, parsing)
  * from workflows and handlers. Domain code works with commands/events,
  * not infrastructure primitives.
+ *
+ * **Design Pattern**: Port accepts pure domain events (DueTimeReached.Type),
+ * adapter wraps in MessageEnvelope and delegates to EventBusPort. Enables domain purity
+ * while maintaining transactional publishing (outbox pattern deferred to ADR-0008).
+ *
+ * @see docs/design/hexagonal-architecture-layers.md#event-publishing-pattern
  */
 export interface TimerEventBusPort {
 	/**
-	 * Publish DueTimeReached event when the timer fires
+	 * Publish DueTimeReached domain event when timer fires
 	 *
 	 * Used by: pollDueTimersWorkflow
 	 *
-	 * Handles:
-	 * - Envelope construction with generated EnvelopeId
-	 * - RequestContext building from timer data
-	 * - Single-event publishing via shared EventBusPort
+	 * **Pattern**: Workflow constructs pure domain event, port publishes it.
+	 * Adapter responsibilities:
+	 * - Wrap event in MessageEnvelope with generated EnvelopeId
+	 * - Extract tenantId/serviceCallId/reachedAt for routing/metadata
+	 * - Extract correlationId from timer aggregate (stored during schedule)
+	 * - Delegate to EventBusPort.publish([envelope])
 	 *
-	 * @param timer - The timer that has reached its due time
-	 * @param firedAt - Timestamp when timer fired
+	 * @param event - Pure domain event (DueTimeReached.Type) with all domain fields
 	 * @returns Effect that succeeds when event is published
 	 * @throws PublishError - When broker publish fails
 	 */
 	readonly publishDueTimeReached: (
-		timer: TimerEntry.ScheduledTimer,
-		firedAt: DateTime.Utc,
-	) => Effect.Effect<void, PublishError>
+		event: Messages.Timer.Events.DueTimeReached.Type,
+	) => Effect.Effect<void, Ports.PublishError>
 
 	/**
 	 * Subscribe to ScheduleTimer commands from Orchestration
@@ -74,7 +77,7 @@ export interface TimerEventBusPort {
 			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
 			correlationId?: CorrelationId.Type,
 		) => Effect.Effect<void, E, R>,
-	) => Effect.Effect<void, SubscribeError | E, R>
+	) => Effect.Effect<void, Ports.SubscribeError | E, R>
 }
 
 export const TimerEventBusPort = Context.GenericTag<TimerEventBusPort>('@event-service-agent/timer/TimerEventBusPort')

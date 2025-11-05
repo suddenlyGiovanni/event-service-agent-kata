@@ -52,12 +52,9 @@ describe('MessageEnvelope', () => {
 					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
 						expect(payload.tenantId).toBe(tenantId)
 						expect(payload.serviceCallId).toBe(serviceCallId)
-
-						// reachedAt is Option<DateTime.Utc>
-						expect(Option.isSome(payload.reachedAt)).toBe(true)
-						const reachedAtField = Option.getOrThrow(payload.reachedAt)
-						expect(DateTime.isDateTime(reachedAtField)).toBe(true)
-						expect(DateTime.isUtc(reachedAtField)).toBe(true)
+						expect(DateTime.isDateTime(payload.reachedAt)).toBe(true)
+						expect(DateTime.isUtc(payload.reachedAt)).toBe(true)
+						expect(DateTime.Equivalence(payload.reachedAt, DateTime.unsafeMake(reachedAt))).toBe(true)
 					}),
 					Match.orElseAbsurd,
 				)
@@ -72,6 +69,7 @@ describe('MessageEnvelope', () => {
 					id: envelopeId,
 					payload: {
 						_tag: Messages.Timer.Events.DueTimeReached.Tag,
+						reachedAt,
 						serviceCallId,
 						tenantId,
 					},
@@ -157,6 +155,7 @@ describe('MessageEnvelope', () => {
 					id: envelopeId,
 					payload: {
 						_tag: Messages.Timer.Events.DueTimeReached.Tag,
+						reachedAt,
 						serviceCallId,
 						tenantId,
 					},
@@ -190,7 +189,7 @@ describe('MessageEnvelope', () => {
 				const reachedAtField = DateTime.unsafeMake(reachedAt)
 				const timestampUtc = DateTime.unsafeMake(timestampMs) // Convert number to DateTime.Utc
 				const dueTimeReached = new Messages.Timer.Events.DueTimeReached({
-					reachedAt: Option.some(reachedAtField),
+					reachedAt: reachedAtField,
 					serviceCallId: ServiceCallId.make(serviceCallId),
 					tenantId: TenantId.make(tenantId),
 				})
@@ -227,7 +226,7 @@ describe('MessageEnvelope', () => {
 				const reachedAtField = DateTime.unsafeMake(reachedAt)
 				const timestampUtc = DateTime.unsafeMake(timestampMs) // Convert number to DateTime.Utc
 				const dueTimeReached: Messages.Timer.Events.DueTimeReached.Type = new Messages.Timer.Events.DueTimeReached({
-					reachedAt: Option.some(reachedAtField),
+					reachedAt: reachedAtField,
 					serviceCallId: ServiceCallId.make(serviceCallId),
 					tenantId: TenantId.make(tenantId),
 				})

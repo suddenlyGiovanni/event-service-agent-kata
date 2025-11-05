@@ -4,6 +4,8 @@ import * as Effect from 'effect/Effect'
 import { round } from 'effect/Number'
 import * as Schema from 'effect/Schema'
 
+import * as Messages from '@event-service-agent/schemas/messages'
+
 import type * as Domain from '../domain/timer-entry.domain.ts'
 import * as Ports from '../ports/index.ts'
 
@@ -48,8 +50,15 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
 		'timer.tenantId': timer.tenantId,
 	})
 
+	// Construct domain event
+	const dueTimeReachedEvent = new Messages.Timer.Events.DueTimeReached({
+		reachedAt: now,
+		serviceCallId: timer.serviceCallId,
+		tenantId: timer.tenantId,
+	})
+
 	// Publish event first
-	yield* eventBus.publishDueTimeReached(timer, now)
+	yield* eventBus.publishDueTimeReached(dueTimeReachedEvent)
 
 	// Then mark as fired
 	yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)

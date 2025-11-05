@@ -45,7 +45,7 @@ import { ServiceCallEventBase } from '../common/service-call-event-base.schema.t
  * const event = new DueTimeReached({
  *   tenantId,
  *   serviceCallId,
- *   reachedAt: Option.some(firedAt), // Option<DateTime.Utc>
+ *   reachedAt: firedAt, // DateTime.Utc
  * })
  *
  * // Encode to wire format (validated domain → JSON DTO)
@@ -56,15 +56,12 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	...ServiceCallEventBase.fields,
 
 	/**
-	 * Optional timestamp when the due time was detected
+	 * Timestamp when the due time was detected
 	 *
-	 * - **Present**: Indicates polling worker detected the timer was due
-	 * - **Absent**: May indicate fast-path (timer was immediately eligible)
-	 *
-	 * Domain type: `Option<DateTime.Utc>` (Effect's immutable datetime)
-	 * Wire format: ISO8601 string (e.g., "2025-10-27T12:00:00.000Z") or missing
+	 * Domain type: DateTime.Utc (Effect's immutable datetime)
+	 * Wire format: ISO8601 string (e.g., "2025-10-27T12:00:00.000Z")
 	 */
-	reachedAt: Schema.optionalWith(Schema.DateTimeUtc, { as: 'Option', exact: true }),
+	reachedAt: Schema.DateTimeUtc,
 }) {
 	/**
 	 * Decode from unknown/wire format to validated domain event

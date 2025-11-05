@@ -18,7 +18,6 @@ Raw ideas/tasks.
     Keep this short.
 -->
 
-- (PL-23) Refactor EventBusPort to use pure domain types (not DTOs) [Timer] [architecture] — Port should accept/return domain events (DueTimeReached, ScheduleTimer), adapter handles encoding/decoding. Creates symmetric boundary per hexagonal architecture. Deferred until PL-14 schema migration complete.
 - (PL-13) Choose broker adapter details for dev/prod parity [adr: [ADR-0002]]
 - (PL-20) Confirm monolith boundaries (API inside vs separate; Execution worker split) [adr: [ADR-0001]]
 - (PL-9) Observability baseline [adr: [ADR-0009]] [infra] — blocked by [adr: [ADR-0002]]
@@ -30,13 +29,14 @@ Prioritized queue.
     Pull the top item into Doing. Avoid more than 7 items.
     Link ADRs like [adr: ADR-0001]; add tags like [infra] or [Api].
 -->
+
+- (PL-24) **P0 CRITICAL** — Implement MessageMetadata Context for correlationId propagation [Timer] [platform] [docs] [adr: [ADR-0013]] — **BLOCKS PR#36 MERGE**. See `docs/plan/correlation-context-implementation.md` for 14-task breakdown (~7h). Option E (Ambient Context) accepted. Fixes broken distributed tracing after PL-23 pure domain events refactoring. Updates 6 outdated docs that claim non-existent `makeEnvelope` helper exists.
 - (PL-4.6) SQLite persistence adapter [Timer] — Deferred until after Schema migration (PL-14)
 - (PL-2) Orchestration core domain model and transitions [Orchestration]
 - (PL-3) Broker adapter implementation + local broker setup [infra]
 - (PL-5) Execution module with mock HttpClientPort [Execution]
 - (PL-6) Persistence adapter (SQLite) and migrations [infra]
 - (PL-7) API server with submit/list/detail routes [Api]
-- (PL-8) Redaction & idempotency utilities + tests [platform]
 
 ## Doing (WIP ≤ 2)
 
@@ -52,6 +52,7 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-23) Refactor EventBusPort to use pure domain types [Timer] [architecture] — **COMPLETE**: Option B2 implementation with 15 commits across 4 phases. Port accepts pure domain events (`DueTimeReached`), adapter wraps in `MessageEnvelope`. Test layer refactoring (Phase 1-3): fixed composition → extracted base layers → migrated to `@effect/vitest layer()`. Workflow updated (TDD RED-GREEN): construct domain events before publishing. Final REFACTOR phase: extracted BaseTestLayers (10/13 tests simplified, 3 kept explicit for test isolation). All 282 tests passing. **Branch**: `timer/pl-23-pure-domain-events-at-port` (ready for merge).
 - (PL-15) Migrate to Schema.DateTimeUtc [schemas, timer, platform] — PR #34 (draft): Completed all 5 migrations (DateTime.Utc, Option<T>, branded types, cross-field validation, naming consistency). 282 tests passing, backward compatible wire format, comprehensive documentation updates.
 - (PL-14.2) Migrate platform message interfaces → `@event-service-agent/schemas` [schemas]
 - (PL-14.5) Update documentation (ADRs, design docs) [docs] — COMPLETE: Updated ports.md reference to schemas package
@@ -73,12 +74,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- Focus: PL-15 DateTime.Utc migration ✅ COMPLETE — PR #34 created (draft)
-- PL-15: All 5 improvements complete (DateTime.Utc, Option<T>, branded types, cross-field validation, naming)
-- Key achievement: Added Schema.filter for type/payload._tag validation (closes critical validation gap)
-- Tests: 282 passing (up from 281), all backward compatible
-- Branch: `contracts/pl-15-migration-iso-string-to-date-time` (ready for review)
-- Next: Review PR #34, then proceed with Orchestration (PL-2) or Timer SQLite adapter (PL-4.6)
+- **PL-24 PLANNED**: Comprehensive implementation plan created for Option E (Ambient Context) - 14 tasks across 5 phases (~7h estimate). Discovered documentation lies: ADR-0011 + 3 design docs claim `makeEnvelope` helper exists but it doesn't (checked git log d16df59 + actual code). Reality: Timer manually constructs MessageEnvelope via Schema class. Orchestration/Execution are just TODOs.
+- **Next**: Execute PL-24 (PR#36 P0 blocker) → Day 1: Core infra + test updates (Phases 1-2, ~3h). Day 2: Workflow implementation (Phase 3, ~2h). Day 3: Doc cleanup (Phases 4-5, ~2h). Then merge PR#36.
+- **Context**: PR#36 has 3 NITPICK fixes pushed (ba1458d, fca3e75, 2149de9). P0 (correlationId) and P1 (docs) tracked in PL-24 plan. User chose full Effect solution (Context pattern) over explicit parameters.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
@@ -115,4 +113,4 @@ Minimal legend.
 [ADR-0008]: ../decisions/ADR-0008-outbox.md
 [ADR-0009]: ../decisions/ADR-0009-observability.md
 [ADR-0010]: ../decisions/ADR-0010-identity.md
-[ADR-0011]: ../decisions/ADR-0011-message-schemas.md
+[ADR-0013]: ../decisions/ADR-0013-correlation-propagation.md

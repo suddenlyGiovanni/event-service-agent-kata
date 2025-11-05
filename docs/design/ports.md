@@ -195,6 +195,52 @@ export interface OutboxPublisher {
 }
 ```
 
+## TimerEventBusPort
+
+Role: Domain-specific event publishing/subscribing for Timer module. Accepts/returns pure domain events (`DueTimeReached`), adapter handles envelope wrapping and broker delegation.  
+Used in: [Timer] (workflows publish events, handlers consume commands).
+
+**Design Pattern**: Port accepts **pure domain events**, not infrastructure DTOs. Adapter wraps events in `MessageEnvelope` and delegates to shared `EventBusPort`. See [Hexagonal Architecture: Event Publishing Pattern](./hexagonal-architecture-layers.md#event-publishing-pattern-domain-events-at-port-boundary) for rationale.
+
+```ts
+import type * as Effect from 'effect/Effect'
+import type * as Messages from '@event-service-agent/schemas/messages'
+
+export interface TimerEventBusPort {
+  /**
+   * Publish DueTimeReached domain event
+   *
+   * Workflow constructs pure domain event (no envelope, no infrastructure metadata).
+   * Adapter responsibility:
+   *   - Wrap event in MessageEnvelope with generated EnvelopeId
+   *   - Extract tenantId/serviceCallId for routing key
+   *   - Delegate to EventBusPort.publish([envelope])
+   *
+   * @param event - Pure domain event (DueTimeReached.Type)
+   * @returns Effect that succeeds when event is published
+   */
+  publishDueTimeReached(
+    event: Messages.Timer.Events.DueTimeReached.Type
+  ): Effect.Effect<void, PublishError>;
+  
+  /**
+   * Subscribe to ScheduleTimer commands from Orchestration
+   *
+   * Adapter responsibility:
+   *   - Subscribe to timer.commands topic
+   *   - Parse MessageEnvelope<ScheduleTimer>
+   *   - Invoke handler with extracted command
+   *
+   * @param handler - Command handler (workflow invocation)
+   */
+  subscribeScheduleTimer<E>(
+    handler: (cmd: Messages.Orchestration.Commands.ScheduleTimer.Type) => Effect.Effect<void, E>
+  ): Effect.Effect<void, SubscribeError>;
+}
+```
+
+**CorrelationId Handling**: Infrastructure metadata (correlationId) is extracted from domain aggregate (timer stores correlationId from original ScheduleTimer command). Adapter retrieves it when constructing envelope. Future: Introduce `PublishContext` parameter if cross-cutting concerns require it (YAGNI for now).
+
 Notes
 
 - Message types should align with `design/messages.md`.
