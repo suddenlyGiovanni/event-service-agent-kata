@@ -133,10 +133,56 @@ export class TimerEventBus {
 						correlationId?: CorrelationId.Type,
 					) => Effect.Effect<void, E, R>,
 				) {
+					/**
+					 * Log subscription establishment
+					 *
+					 * One-time log when subscription is set up, showing which topics
+					 * the Timer module is listening to for commands.
+					 */
+					yield* Effect.logInfo('Subscribed to ScheduleTimer commands', {
+						topics: Topics.Timer.Commands,
+					})
+
 					yield* eventBus.subscribe([Topics.Timer.Commands], envelope =>
 						MessageEnvelope.matchPayload(envelope).pipe(
 							Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, command =>
-								handler(command, Option.getOrUndefined(envelope.correlationId)),
+								Effect.gen(function* () {
+									/**
+									 * Annotate span with inbound message metadata
+									 *
+									 * Infrastructure-level annotations for command reception (inbound):
+									 * - Adapter annotates: message.envelope.id, message.correlationId (from upstream)
+									 * - Handler annotates: domain-level command details
+									 *
+									 * Enables span linking: upstream service span → adapter span → handler span
+									 */
+									yield* Effect.annotateCurrentSpan({
+										'message.causationId': Option.getOrUndefined(envelope.causationId),
+										'message.correlationId': Option.getOrUndefined(envelope.correlationId),
+										'message.envelope.id': envelope.id,
+										'message.type': envelope.type,
+									})
+
+									/**
+									 * Log command reception at adapter boundary
+									 *
+									 * Infrastructure-level logging for inbound commands:
+									 * - Adapter logs: "Received ScheduleTimer command" (message arrived)
+									 * - Handler logs: domain-level processing events
+									 *
+									 * Enables debugging: verify command arrived with correct correlationId
+									 */
+									yield* Effect.logDebug('Received ScheduleTimer command', {
+										causationId: Option.getOrUndefined(envelope.causationId),
+										correlationId: Option.getOrUndefined(envelope.correlationId),
+										envelopeId: envelope.id,
+										serviceCallId: command.serviceCallId,
+										tenantId: command.tenantId,
+									})
+
+									// Delegate to domain handler
+									yield* handler(command, Option.getOrUndefined(envelope.correlationId))
+								}),
 							),
 							Match.orElse(() =>
 								Effect.logDebug('Ignoring non-ScheduleTimer message', {
