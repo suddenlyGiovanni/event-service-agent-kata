@@ -2,8 +2,10 @@ import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import { round } from 'effect/Number'
+import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 
+import { MessageMetadata } from '@event-service-agent/platform/context'
 import * as Messages from '@event-service-agent/schemas/messages'
 
 import type * as Domain from '../domain/timer-entry.domain.ts'
@@ -57,8 +59,15 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
 		tenantId: timer.tenantId,
 	})
 
-	// Publish event first
-	yield* eventBus.publishDueTimeReached(dueTimeReachedEvent)
+	// Publish event with MessageMetadata context
+	// correlationId: From timer aggregate (carries original command correlation)
+	// causationId: None (timer firing is not caused by a command, but by time passage)
+	yield* eventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
+		Effect.provideService(MessageMetadata, {
+			causationId: Option.none(),
+			correlationId: timer.correlationId,
+		}),
+	)
 
 	// Then mark as fired
 	yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
