@@ -3,6 +3,7 @@
 import * as Context from 'effect/Context'
 import type * as Effect from 'effect/Effect'
 
+import type { MessageMetadata } from '@event-service-agent/platform/context'
 import type * as Ports from '@event-service-agent/platform/ports'
 import type * as Messages from '@event-service-agent/schemas/messages'
 import type { CorrelationId } from '@event-service-agent/schemas/shared'
@@ -31,19 +32,37 @@ export interface TimerEventBusPort {
 	 * Used by: pollDueTimersWorkflow
 	 *
 	 * **Pattern**: Workflow constructs pure domain event, port publishes it.
+	 * Workflow provisions MessageMetadata Context with correlationId/causationId.
+	 *
 	 * Adapter responsibilities:
+	 * - Extract MessageMetadata from Effect Context (yield* MessageMetadata)
 	 * - Wrap event in MessageEnvelope with generated EnvelopeId
 	 * - Extract tenantId/serviceCallId/reachedAt for routing/metadata
-	 * - Extract correlationId from timer aggregate (stored during schedule)
+	 * - Populate correlationId/causationId from MessageMetadata Context
 	 * - Delegate to EventBusPort.publish([envelope])
+	 *
+	 * **Type Safety**: R parameter requires MessageMetadata, enforcing context
+	 * provisioning at workflow level. Missing context = compile error.
 	 *
 	 * @param event - Pure domain event (DueTimeReached.Type) with all domain fields
 	 * @returns Effect that succeeds when event is published
 	 * @throws PublishError - When broker publish fails
+	 * @requires MessageMetadata - Context providing correlationId/causationId
+	 *
+	 * @example
+	 * ```typescript
+	 * // Workflow provisions context
+	 * yield* eventBus.publishDueTimeReached(event).pipe(
+	 *   Effect.provideService(MessageMetadata, {
+	 *     correlationId: timer.correlationId,
+	 *     causationId: Option.none()
+	 *   })
+	 * )
+	 * ```
 	 */
 	readonly publishDueTimeReached: (
 		event: Messages.Timer.Events.DueTimeReached.Type,
-	) => Effect.Effect<void, Ports.PublishError>
+	) => Effect.Effect<void, Ports.PublishError, MessageMetadata>
 
 	/**
 	 * Subscribe to ScheduleTimer commands from Orchestration
