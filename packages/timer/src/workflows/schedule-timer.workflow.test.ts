@@ -36,23 +36,24 @@ describe('scheduleTimerWorkflow', () => {
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
 				// Create command with DateTime.Utc (domain type)
-				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
-					_tag: 'ScheduleTimer',
-					dueAt,
-					serviceCallId,
-					tenantId,
-				}
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
 
 				// Arrange: Mock dependencies (ClockPort, TimerPersistencePort)
 				const persistence = yield* Ports.TimerPersistencePort
 
-				// Act: Execute workflow with sample command (provide MessageMetadata context)
+				// Act: Execute workflow
 				yield* Workflows.scheduleTimerWorkflow(command).pipe(
 					Effect.provideService(MessageMetadata, {
-						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
-						correlationId: Option.none(), // No correlation for this test
+						causationId: Option.none(),
+						correlationId: Option.none(),
 					}),
 				)
+
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: TimerEntry persisted with correct values
@@ -199,7 +200,7 @@ describe('scheduleTimerWorkflow', () => {
 				yield* Workflows.scheduleTimerWorkflow(command).pipe(
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
-						correlationId: Option.none(), // No correlation
+						correlationId: Option.none(),
 					}),
 				)
 				yield* TestClock.adjust('4 minutes')
@@ -228,12 +229,13 @@ describe('scheduleTimerWorkflow', () => {
 				const dueAt = DateTime.subtract(now, { minutes: 5 })
 
 				// Act:
-				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
-					_tag: 'ScheduleTimer',
-					dueAt,
-					serviceCallId,
-					tenantId,
-				}
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
+
 				yield* Workflows.scheduleTimerWorkflow(command).pipe(
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
@@ -307,7 +309,7 @@ describe('scheduleTimerWorkflow', () => {
 		// Given: Ports.TimerPersistencePort throws PersistenceError
 		// When: Workflow executes
 		// Then: Error propagates to caller
-		it.effect('should persist timer even if already due', () =>
+		it.effect('should propagate PersistenceError when save fails', () =>
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
@@ -342,7 +344,7 @@ describe('scheduleTimerWorkflow', () => {
 				Effect.provide(
 					Layer.merge(
 						// Create a failing persistence layer inline
-						Layer.succeed(
+						Layer.mock(
 							Ports.TimerPersistencePort,
 							Ports.TimerPersistencePort.of({
 								delete: () => Effect.void,
