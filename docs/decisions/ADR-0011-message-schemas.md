@@ -69,7 +69,7 @@ class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
     tenantId: TenantId, // Branded, validated
     serviceCallId: ServiceCallId, // Branded, validated
     reachedAt: Schema.optional(Iso8601DateTime),
-  },
+  }
 ) {}
 
 // At adapter boundary (parse once)
@@ -120,7 +120,7 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
     tenantId: TenantId, // Base field (repeated)
     serviceCallId: ServiceCallId, // Base field (repeated)
     reachedAt: Schema.optional(Iso8601DateTime), // Event-specific
-  },
+  }
 ) {}
 ```
 
@@ -142,7 +142,7 @@ export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()(
     name: Schema.NonEmpty,
     dueAt: Iso8601DateTime,
     requestSpec: RequestSpec,
-  },
+  }
 ) {}
 ```
 
@@ -157,24 +157,24 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
     tenantId: TenantId,
     serviceCallId: ServiceCallId,
     reachedAt: Schema.optional(Iso8601DateTime),
-  },
+  }
 ) {
   /**
    * Decode from DTO shape (Encoded → validated Type)
-   * 
+   *
    * Expects structured DTO with correct field names, not arbitrary unknown.
    * For JSON strings, use Schema.parseJson(DueTimeReached) instead.
-   * 
+   *
    * Returns Effect<DueTimeReached, ParseError>
    */
   static readonly decode = Schema.decode(DueTimeReached);
 
   /**
    * Encode to DTO shape (validated Type → Encoded)
-   * 
+   *
    * Produces JSON-serializable DTO with unbranded types.
    * Example output: { _tag: 'DueTimeReached', tenantId: string, ... }
-   * 
+   *
    * Returns Effect<DueTimeReached.Dto, ParseError>
    */
   static readonly encode = Schema.encode(DueTimeReached);
@@ -257,7 +257,7 @@ import { ServiceCallScheduled } from "@event-service-agent/orchestration/domain"
 
 export const DomainEvent = Schema.Union(
   DueTimeReached,
-  ServiceCallScheduled,
+  ServiceCallScheduled
   // ... all events
 );
 ```
@@ -339,41 +339,41 @@ Create Effect Schema for envelope structure validation with union of all domain 
 
 ```typescript
 // packages/contracts/src/types/message-envelope.schema.ts
-import * as Schema from 'effect/Schema'
+import * as Schema from "effect/Schema";
 
 /**
  * MessageEnvelope - Validates envelope structure with typed payload
- * 
+ *
  * Payload uses DomainMessage union (all events + commands).
  * Effect Schema automatically validates against all union members.
- * 
+ *
  * This enables:
  * 1. Parse JSON → validate envelope + payload in one step
  * 2. Pattern match on payload._tag for type-safe routing
  */
 export class MessageEnvelope extends Schema.Class<MessageEnvelope>(
-  'MessageEnvelope'
+  "MessageEnvelope"
 )({
   id: EnvelopeId,
-  type: Schema.String,  // Message type discriminator
+  type: Schema.String, // Message type discriminator
   tenantId: TenantId,
   aggregateId: Schema.optional(Schema.String),
   timestampMs: Schema.Number,
   correlationId: Schema.optional(CorrelationId),
   causationId: Schema.optional(Schema.String),
-  payload: DomainMessage,  // ← Union of all messages!
+  payload: DomainMessage, // ← Union of all messages!
 }) {
   /** Parse from JSON wire format (string → validated envelope with typed payload) */
-  static readonly parseJson = Schema.parseJson(MessageEnvelope)
-  
+  static readonly parseJson = Schema.parseJson(MessageEnvelope);
+
   /** Encode to JSON wire format (envelope → string) */
-  static readonly encodeJson = Schema.encodeJson(MessageEnvelope)
+  static readonly encodeJson = Schema.encodeJson(MessageEnvelope);
 }
 
 // Type helper for envelope with typed payload
 export declare namespace MessageEnvelope {
-  type Type = Schema.Schema.Type<typeof MessageEnvelope>
-  type Encoded = Schema.Schema.Encoded<typeof MessageEnvelope>
+  type Type = Schema.Schema.Type<typeof MessageEnvelope>;
+  type Encoded = Schema.Schema.Encoded<typeof MessageEnvelope>;
 }
 ```
 
@@ -394,96 +394,74 @@ export declare namespace MessageEnvelope {
 
 The union approach provides both **runtime validation** and **compile-time type safety** in a single decode operation.
 
-#### Helper: makeEnvelope
+#### Envelope Construction Pattern
 
-Construct validated envelopes from domain event DTOs:
+Adapters construct validated envelopes using **direct Schema class instantiation** combined with **MessageMetadata Context**:
 
 ```typescript
-// packages/contracts/src/types/envelope-builder.ts
-import * as Effect from 'effect/Effect'
+// Real implementation from timer-event-bus.adapter.ts
+publishDueTimeReached: Effect.fn("publishDueTimeReached")(function* (
+  dueTimeReached: DueTimeReached.Type
+) {
+  // 1. Extract MessageMetadata from Effect Context
+  //    Workflow provides this via Effect.provideService
+  const metadata = yield* MessageMetadata;
 
-/**
- * Construct a validated envelope from domain event DTO + metadata
- * 
- * Responsibilities:
- * 1. Generate EnvelopeId (UUID v7)
- * 2. Wrap DTO in envelope structure
- * 3. Validate envelope + payload via MessageEnvelope
- * 
- * @example
- * ```typescript
- * const dto = yield* DueTimeReached.encode(event)
- * const envelope = yield* makeEnvelope('DueTimeReached', dto, {
- *   tenantId,
- *   correlationId,
- *   timestampMs: now.epochMillis
- * })
- * // envelope.payload is typed as DomainMessage
- * ```
- */
-export const makeEnvelope = <T extends DomainMessage.Encoded>(
-  type: string,
-  payload: T,
-  metadata: {
-    tenantId: TenantId.Type
-    timestampMs: number
-    correlationId?: CorrelationId.Type
-    aggregateId?: string
-    causationId?: string
-  }
-): Effect.Effect<MessageEnvelope.Type, ParseError, UUID7> =>
-  Effect.gen(function* () {
-    const id = yield* EnvelopeId.makeUUID7()
-    
-    // Validate envelope structure + payload via schema
-    return yield* Schema.decode(MessageEnvelope)({
-      id,
-      type,
-      payload,
-      ...metadata,
-    })
-  })
+  // 2. Generate envelope ID (UUID v7)
+  const envelopeId = yield* EnvelopeId.makeUUID7();
+
+  // 3. Get current timestamp for envelope metadata
+  const timestampMs = yield* clock.now();
+
+  // 4. Construct validated envelope via Schema class
+  //    Schema validates structure + payload in single step
+  const envelope: MessageEnvelope.Type = new MessageEnvelope({
+    id: envelopeId,
+    type: dueTimeReached._tag, // Discriminator ('DueTimeReached')
+    payload: dueTimeReached, // Domain event (already validated)
+    tenantId: dueTimeReached.tenantId,
+    timestampMs,
+
+    // Extract correlation metadata from Context
+    correlationId: metadata.correlationId, // Option<CorrelationId>
+    causationId: metadata.causationId, // Option<EnvelopeId>
+
+    // Preserve aggregate ID for ordering
+    aggregateId: Option.some(dueTimeReached.serviceCallId),
+  });
+
+  // 5. Publish via EventBusPort (JSON serialization at NATS layer)
+  yield* eventBus.publish([envelope]);
+});
 ```
 
-**Note**: `makeEnvelope` constrains `payload` to `DomainMessage.Encoded` (union of all message DTOs). This ensures:
+**Key Aspects**:
 
-- ✅ Only valid domain messages can be enveloped
-- ✅ TypeScript catches invalid payloads at compile time
-- ✅ Effect Schema validates structure at runtime
+- **No helper function**: Direct `MessageEnvelope` class instantiation provides type safety + validation
+- **MessageMetadata Context**: Workflows provide correlation/causation via `Effect.provideService(MessageMetadata, {...})`
+- **Asymmetric pattern**:
+  - **Publishing**: Adapter extracts `MessageMetadata` from Context (DI pattern)
+  - **Subscribing**: Adapter passes `MessageMetadata` as handler parameter (explicit data flow)
+- **Type safety**: Schema class constructor validates all fields, including discriminated union payload
 
-#### Adapter Usage Pattern
-
-**Publishing (Domain → Wire)**:
+**MessageMetadata Context Pattern** (see ADR-0013):
 
 ```typescript
-// In timer-event-bus.adapter.ts
-publishDueTimeReached: Effect.fn('publishDueTimeReached')(function* (
-  scheduledTimer: TimerEntry.ScheduledTimer,
-  firedAt: DateTime.Utc,
-) {
-  const { tenantId, serviceCallId, correlationId } = scheduledTimer
+// Workflow provisions metadata when publishing
+yield *
+  eventBus.publishDueTimeReached(event).pipe(
+    Effect.provideService(MessageMetadata, {
+      correlationId: timer.correlationId, // From aggregate
+      causationId: Option.none(), // Time-triggered
+    })
+  );
 
-  // 1. Create domain event (validated at construction)
-  const event = new DueTimeReached({
-    tenantId,
-    serviceCallId,
-    reachedAt: Iso8601DateTime.make(DateTime.formatIso(firedAt)),
-  })
+// Port signature requires MessageMetadata
+publishDueTimeReached: (event: DueTimeReached.Type) =>
+  Effect<void, PublishError, MessageMetadata>;
 
-  // 2. Encode to DTO (Type → Encoded)
-  const dto = yield* DueTimeReached.encode(event)
-
-  // 3. Wrap in validated envelope
-  const envelope = yield* makeEnvelope('DueTimeReached', dto, {
-    tenantId,
-    correlationId: Option.getOrUndefined(correlationId),
-    timestampMs: firedAt.epochMillis,
-    aggregateId: serviceCallId,  // For per-aggregate ordering
-  })
-
-  // 4. Publish via EventBusPort (JSON serialization at NATS layer)
-  yield* sharedBus.publish([envelope])
-})
+// Adapter extracts from Context
+const metadata = yield * MessageMetadata;
 ```
 
 **Consuming (Wire → Domain)**:
@@ -492,23 +470,32 @@ publishDueTimeReached: Effect.fn('publishDueTimeReached')(function* (
 // In NATS adapter or consumer handler
 function* handleMessage(jsonString: string) {
   // 1. Parse JSON → validate envelope structure + payload (single step!)
-  const envelope = yield* MessageEnvelope.parseJson(jsonString)
+  const envelope = yield* MessageEnvelope.parseJson(jsonString);
   // envelope.payload is DomainMessage union (validated!)
-  
+
   // 2. Pattern match on discriminator for type-safe routing
   const result = yield* match(envelope.payload, {
-    DueTimeReached: (payload) => 
+    DueTimeReached: (payload) => {
       // TypeScript knows payload is DueTimeReached
-      handleDueTimeReached(payload, envelope.correlationId),
-    
-    ServiceCallScheduled: (payload) =>
+      // Pass metadata as parameter (subscribing pattern)
+      return handleDueTimeReached(payload, {
+        correlationId: envelope.correlationId,
+        causationId: Option.some(envelope.id), // Current envelope becomes causation
+      });
+    },
+
+    ServiceCallScheduled: (payload) => {
       // TypeScript knows payload is ServiceCallScheduled
-      handleScheduled(payload, envelope.correlationId),
-    
+      return handleScheduled(payload, {
+        correlationId: envelope.correlationId,
+        causationId: Option.some(envelope.id),
+      });
+    },
+
     // ... exhaustive match for all message types
-  })
-  
-  return result
+  });
+
+  return result;
 }
 ```
 
@@ -516,21 +503,21 @@ function* handleMessage(jsonString: string) {
 
 ```typescript
 // If not using match helper
-const envelope = yield* MessageEnvelope.parseJson(jsonString)
+const envelope = yield * MessageEnvelope.parseJson(jsonString);
 
 switch (envelope.payload._tag) {
-  case 'DueTimeReached':
+  case "DueTimeReached":
     // TypeScript narrows to DueTimeReached
-    return yield* handleDueTimeReached(envelope.payload)
-  
-  case 'ServiceCallScheduled':
+    return yield * handleDueTimeReached(envelope.payload);
+
+  case "ServiceCallScheduled":
     // TypeScript narrows to ServiceCallScheduled
-    return yield* handleScheduled(envelope.payload)
-  
+    return yield * handleScheduled(envelope.payload);
+
   default:
     // TypeScript enforces exhaustiveness checking
-    const _exhaustive: never = envelope.payload
-    return yield* Effect.fail(new UnknownMessageType({ type: envelope.type }))
+    const _exhaustive: never = envelope.payload;
+    return yield * Effect.fail(new UnknownMessageType({ type: envelope.type }));
 }
 ```
 
@@ -543,7 +530,7 @@ switch (envelope.payload._tag) {
 ✅ **No Manual Routing Logic**: Schema handles validation and type narrowing  
 ✅ **Boundary Validation**: JSON → fully validated envelope at infrastructure layer  
 ✅ **Type Safety**: EnvelopeId, TenantId, and payload all validated with branded types  
-✅ **Reusable Helper**: `makeEnvelope` eliminates boilerplate and ensures consistency
+✅ **Direct Schema Construction**: `MessageEnvelope` class provides type safety + validation without helpers
 
 ### 6. Incremental Migration
 
@@ -556,18 +543,27 @@ switch (envelope.payload._tag) {
 
 **Phase 2** (PL-14): Envelope infrastructure
 
-- Create `DomainMessage` union in `contracts/src/messages/schemas.ts`
-- Create `MessageEnvelope` with `payload: DomainMessage` in `contracts/src/types/`
-- Create `makeEnvelope` helper constrained to `DomainMessage.Encoded`
-- Update Timer adapter to use `makeEnvelope`
+- Create `DomainMessage` union in `@event-service-agent/schemas/messages`
+- Create `MessageEnvelope` with `payload: DomainMessage` in `@event-service-agent/schemas/envelope`
+- Use direct Schema class instantiation (no helper needed)
+- Update Timer adapter with `MessageEnvelope` construction
 - **Validates envelope wrapping + union discrimination pattern**
 
-**Phase 3** (PL-14): All modules
+**Phase 3** (PL-24): MessageMetadata Context
+
+- Create `MessageMetadata` Context.Tag in `@event-service-agent/platform/context`
+- Update ports to require `MessageMetadata` in R parameter (publishing)
+- Update adapters to extract from Context / pass as parameter (asymmetric pattern)
+- Update workflows to provide `MessageMetadata` via `Effect.provideService`
+- **Enables correlation/causation tracking without polluting domain types**
+- See ADR-0013 for detailed implementation pattern
+
+**Phase 4** (Future): All modules
 
 - Migrate remaining events/commands to schemas
-- Create `contracts/src/messages/schemas.ts` unions
 - Update broker adapter for type-safe routing
-- Estimated: 2-4 hours
+- Apply MessageMetadata Context pattern to Orchestration/Execution
+- Estimated: 2-4 hours per module
 
 ---
 
@@ -603,14 +599,23 @@ switch (envelope.payload._tag) {
 
 ### Serialization Layer Boundaries
 
-**Clear separation of concerns across four layers**:
+**Clear separation of concerns across layers**:
 
-1. **Domain Layer**: Validated events with branded types (e.g., `TenantId.Type`)
-2. **Adapter Layer**: `Schema.encode` transforms to DTOs + `makeEnvelope` wraps with metadata
-3. **EventBusPort**: Type-erased abstraction (`payload: unknown`)
-4. **NATS Adapter**: `JSON.stringify`/`JSON.parse` + `MessageEnvelope.parseJson`
+1. **Domain Layer**: Pure domain events (e.g., `DueTimeReached.Type`) with Schema validation
+2. **Workflow Layer**: Provides `MessageMetadata` via `Effect.provideService` when publishing
+3. **Adapter Layer**:
+   - Extracts `MessageMetadata` from Context (publishing)
+   - Constructs `MessageEnvelope` via Schema class (type safety + validation)
+   - Passes `MessageMetadata` as parameter to handlers (subscribing)
+4. **EventBusPort**: Type-safe abstraction with `MessageEnvelope.Type` and `MessageMetadata` dependency
+5. **NATS Adapter**: `MessageEnvelope.encodeJson`/`MessageEnvelope.parseJson` for JSON serialization
 
-**Key Insight**: `Schema.encode/decode` handle **type transformation** (branded → string), while `parseJson/encodeJson` handle **JSON serialization** (object → string). These are separate concerns at different boundaries.
+**Key Insights**:
+
+- Schema classes provide construction-time validation (no separate `encode` step needed for envelopes)
+- `MessageMetadata` Context enables correlation tracking without polluting domain types
+- Asymmetric pattern (Context for publishing, parameter for subscribing) aligns with Effect ecosystem
+- `parseJson`/`encodeJson` handle JSON serialization at infrastructure boundary
 
 ### Envelope Payload Design: Union vs Schema.Unknown
 
@@ -628,27 +633,27 @@ When consuming messages from the wire (NATS), we need to:
 
 ```typescript
 // Envelope with union payload
-payload: DomainMessage  // Union of all message schemas
+payload: DomainMessage; // Union of all message schemas
 
 // Consuming:
-const envelope = yield* MessageEnvelope.parseJson(jsonString)
+const envelope = yield * MessageEnvelope.parseJson(jsonString);
 // envelope.payload: DomainEvent | DomainCommand (typed!)
 
 match(envelope.payload, {
-  DueTimeReached: (p) => handle(p),  // TypeScript knows type!
+  DueTimeReached: (p) => handle(p), // TypeScript knows type!
   ServiceCallScheduled: (p) => handle(p),
   // ... exhaustive match
-})
+});
 ```
 
 **Why Schema.Unknown Doesn't Work**:
 
 ```typescript
 // Envelope with unknown payload
-payload: Schema.Unknown
+payload: Schema.Unknown;
 
 // Consuming:
-const envelope = yield* MessageEnvelope.parseJson(jsonString)
+const envelope = yield * MessageEnvelope.parseJson(jsonString);
 // envelope.payload: unknown (no type info!)
 
 // ❌ Can't pattern match on unknown
@@ -701,18 +706,18 @@ export class RequestSpec extends Schema.Class<RequestSpec>("RequestSpec")({
   method: Schema.Literal("GET", "POST", "PUT", "PATCH", "DELETE"),
   url: Schema.String,
   headers: Schema.optional(
-    Schema.Record({ key: Schema.String, value: Schema.String }),
+    Schema.Record({ key: Schema.String, value: Schema.String })
   ),
   body: Schema.optional(Schema.String),
 }) {}
 
 export class RequestSpecWithoutBody extends Schema.Class<RequestSpecWithoutBody>(
-  "RequestSpecWithoutBody",
+  "RequestSpecWithoutBody"
 )({
   method: Schema.Literal("GET", "POST", "PUT", "PATCH", "DELETE"),
   url: Schema.String,
   headers: Schema.optional(
-    Schema.Record({ key: Schema.String, value: Schema.String }),
+    Schema.Record({ key: Schema.String, value: Schema.String })
   ),
   bodySnippet: Schema.optional(Schema.String),
 }) {}
@@ -726,7 +731,7 @@ export class RequestSpecWithoutBody extends Schema.Class<RequestSpecWithoutBody>
 export class ResponseMeta extends Schema.Class<ResponseMeta>("ResponseMeta")({
   status: Schema.Number,
   headers: Schema.optional(
-    Schema.Record({ key: Schema.String, value: Schema.String }),
+    Schema.Record({ key: Schema.String, value: Schema.String })
   ),
   bodySnippet: Schema.optional(Schema.String),
   latencyMs: Schema.optional(Schema.Number),
@@ -736,7 +741,7 @@ export class ErrorMeta extends Schema.Class<ErrorMeta>("ErrorMeta")({
   kind: Schema.String,
   message: Schema.optional(Schema.String),
   details: Schema.optional(
-    Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+    Schema.Record({ key: Schema.String, value: Schema.Unknown })
   ),
   latencyMs: Schema.optional(Schema.Number),
 }) {}
