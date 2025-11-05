@@ -66,7 +66,7 @@ describe('TimerEventBus', () => {
 					// TODO: correlationId extraction from timer aggregate (deferred)
 					assertEquals(envelope.correlationId, Option.none())
 					// timestampMs is now DateTime.Utc (compare via DateTime.Equivalence)
-					expect(DateTime.Equivalence(envelope.timestampMs, now)).toBe(true) /* Line 70 omitted */
+					expect(DateTime.Equivalence(envelope.timestampMs, now)).toBe(true)
 					const payload = envelope.payload
 					assert(payload._tag === Messages.Timer.Events.DueTimeReached.Tag)
 					expectTypeOf(payload).toEqualTypeOf<Messages.Timer.Events.DueTimeReached.Type>()
