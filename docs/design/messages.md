@@ -23,25 +23,37 @@
 
 ## Serialization Flow
 
-Messages traverse four architectural layers from domain to wire:
+Messages traverse architectural layers from domain to wire:
 
 ```txt
 ┌─────────────────────────────────────────────────────────────┐
-│ Layer 1: Domain Events (validated, branded types)          │
-│   new DueTimeReached({ tenantId, serviceCallId, ... })     │
+│ Layer 1: Workflow (domain events + metadata provisioning)    │
+│   event = new DueTimeReached({ tenantId, serviceCallId })   │
+│   yield* eventBus.publish(event).pipe(                      │
+│     Effect.provideService(MessageMetadata, {                │
+│       correlationId, causationId                            │
+│     })                                                      │
+│   )                                                         │
 └─────────────────────────┬───────────────────────────────────┘
-                          │ Schema.encode (Type → DTO)
+                          │ Port requires MessageMetadata in R
 ┌─────────────────────────▼───────────────────────────────────┐
-│ Layer 2: Adapter (DTO + envelope wrapping)                  │
-│   dto = yield* DueTimeReached.encode(event)                 │
-│   envelope = makeEnvelope('DueTimeReached', dto, metadata)  │
+│ Layer 2: Adapter (extract Context + wrap envelope)          │
+│   metadata = yield* MessageMetadata                         │
+│   envelopeId = yield* EnvelopeId.makeUUID7()                │
+│   envelope = new MessageEnvelope({                          │
+│     id: envelopeId,                                         │
+│     payload: event,  // Domain event (validated)            │
+│     correlationId: metadata.correlationId,                  │
+│     causationId: metadata.causationId,                      │
+│     ...                                                     │
+│   })                                                        │
 └─────────────────────────┬───────────────────────────────────┘
                           │ EventBusPort.publish([envelope])
 ┌─────────────────────────▼───────────────────────────────────┐
-│ Layer 3: EventBusPort (payload: unknown abstraction)        │
-│   Type-erased for polymorphism across message types         │
+│ Layer 3: EventBusPort (MessageEnvelope abstraction)         │
+│   publish: (envelopes: MessageEnvelope[]) => Effect<...>    │
 └─────────────────────────┬───────────────────────────────────┘
-                          │ JSON.stringify (NATS adapter)
+                          │ MessageEnvelope.encodeJson (NATS adapter)
 ┌─────────────────────────▼───────────────────────────────────┐
 │ Layer 4: Wire (JSON bytes over NATS)                        │
 │   '{"id":"...","type":"DueTimeReached","payload":{...}}'    │

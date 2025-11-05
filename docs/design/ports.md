@@ -63,27 +63,27 @@ Used in: [Orchestration], [Execution], [Timer], [API] (publish only).
 **Design Note**: The envelope is self-contained with all routing metadata (tenantId, correlationId, aggregateId). No separate context parameter needed - this eliminates duplication and ensures single source of truth.
 
 ```ts
-import * as Data from 'effect/Data'
-import type * as Effect from 'effect/Effect'
-import type { NonEmptyReadonlyArray } from 'effect/Array'
+import * as Data from "effect/Data";
+import type * as Effect from "effect/Effect";
+import type { NonEmptyReadonlyArray } from "effect/Array";
 
 export interface EventBusPort {
   publish(
     envelopes: NonEmptyReadonlyArray<MessageEnvelope>
   ): Effect.Effect<void, PublishError>;
-  
+
   subscribe<E>(
     topics: string[],
-    handler: (env: MessageEnvelope) => Effect.Effect<void, E>,
+    handler: (env: MessageEnvelope) => Effect.Effect<void, E>
   ): Effect.Effect<void, SubscribeError>;
 }
 
-export class PublishError extends Data.TaggedError('PublishError')<{
-  readonly cause: string
+export class PublishError extends Data.TaggedError("PublishError")<{
+  readonly cause: string;
 }> {}
 
-export class SubscribeError extends Data.TaggedError('SubscribeError')<{
-  readonly cause: string
+export class SubscribeError extends Data.TaggedError("SubscribeError")<{
+  readonly cause: string;
 }> {}
 ```
 
@@ -131,7 +131,7 @@ export interface HttpResponse<T = unknown> {
 export interface HttpClientPort {
   request<T = unknown>(
     req: HttpRequest,
-    ctx: RequestContext,
+    ctx: RequestContext
   ): Promise<HttpResponse<T>>;
 }
 ```
@@ -149,13 +149,13 @@ export interface PersistencePort {
   getServiceCall(
     tenantId: string,
     serviceCallId: string,
-    ctx: RequestContext,
+    ctx: RequestContext
   ): Promise<unknown | null>;
   listServiceCalls(
     tenantId: string,
     filters: Record<string, unknown>,
     paging: { limit: number; offset: number },
-    ctx: RequestContext,
+    ctx: RequestContext
   ): Promise<unknown[]>;
 
   // Single-writer transitions (guarded updates)
@@ -164,21 +164,21 @@ export interface PersistencePort {
     tenantId: string,
     serviceCallId: string,
     startedAtMs: number,
-    ctx: RequestContext,
+    ctx: RequestContext
   ): Promise<boolean>; // returns true if updated from Scheduled
   setSucceeded(
     tenantId: string,
     serviceCallId: string,
     finishedAtMs: number,
     responseMeta: unknown,
-    ctx: RequestContext,
+    ctx: RequestContext
   ): Promise<boolean>;
   setFailed(
     tenantId: string,
     serviceCallId: string,
     finishedAtMs: number,
     errorMeta: unknown,
-    ctx: RequestContext,
+    ctx: RequestContext
   ): Promise<boolean>;
 }
 ```
@@ -203,43 +203,63 @@ Used in: [Timer] (workflows publish events, handlers consume commands).
 **Design Pattern**: Port accepts **pure domain events**, not infrastructure DTOs. Adapter wraps events in `MessageEnvelope` and delegates to shared `EventBusPort`. See [Hexagonal Architecture: Event Publishing Pattern](./hexagonal-architecture-layers.md#event-publishing-pattern-domain-events-at-port-boundary) for rationale.
 
 ```ts
-import type * as Effect from 'effect/Effect'
-import type * as Messages from '@event-service-agent/schemas/messages'
+import type * as Effect from "effect/Effect";
+import type * as Messages from "@event-service-agent/schemas/messages";
 
 export interface TimerEventBusPort {
   /**
-   * Publish DueTimeReached domain event
+   * Publish DueTimeReached domain event with MessageMetadata Context
    *
-   * Workflow constructs pure domain event (no envelope, no infrastructure metadata).
+   * Workflow provides MessageMetadata via Effect.provideService:
+   *   - correlationId: From timer aggregate (original ScheduleTimer command)
+   *   - causationId: Option.none() (time-triggered, not command-caused)
+   *
    * Adapter responsibility:
-   *   - Wrap event in MessageEnvelope with generated EnvelopeId
-   *   - Extract tenantId/serviceCallId for routing key
+   *   - Extract MessageMetadata from Context: `yield* MessageMetadata`
+   *   - Generate EnvelopeId (UUID v7)
+   *   - Wrap event in MessageEnvelope with metadata fields
    *   - Delegate to EventBusPort.publish([envelope])
    *
    * @param event - Pure domain event (DueTimeReached.Type)
-   * @returns Effect that succeeds when event is published
+   * @returns Effect requiring MessageMetadata Context
    */
   publishDueTimeReached(
     event: Messages.Timer.Events.DueTimeReached.Type
-  ): Effect.Effect<void, PublishError>;
-  
+  ): Effect.Effect<void, PublishError, MessageMetadata>;
+
   /**
    * Subscribe to ScheduleTimer commands from Orchestration
+   *
+   * Asymmetric pattern: Adapter passes MessageMetadata as handler parameter
+   * (not via Context). This aligns with Effect ecosystem conventions:
+   *   - Publishing: Workflow provides Context (ambient data)
+   *   - Subscribing: Adapter passes parameter (explicit data flow)
    *
    * Adapter responsibility:
    *   - Subscribe to timer.commands topic
    *   - Parse MessageEnvelope<ScheduleTimer>
-   *   - Invoke handler with extracted command
+   *   - Extract MessageMetadata from envelope:
+   *       correlationId: envelope.correlationId
+   *       causationId: Option.some(envelope.id)  // Command envelope becomes causation
+   *   - Invoke handler with command + metadata
    *
    * @param handler - Command handler (workflow invocation)
    */
-  subscribeScheduleTimer<E>(
-    handler: (cmd: Messages.Orchestration.Commands.ScheduleTimer.Type) => Effect.Effect<void, E>
-  ): Effect.Effect<void, SubscribeError>;
+  subscribeScheduleTimer<E, R>(
+    handler: (
+      cmd: Messages.Orchestration.Commands.ScheduleTimer.Type,
+      metadata: MessageMetadata.Type
+    ) => Effect.Effect<void, E, R>
+  ): Effect.Effect<void, SubscribeError | E, R>;
 }
 ```
 
-**CorrelationId Handling**: Infrastructure metadata (correlationId) is extracted from domain aggregate (timer stores correlationId from original ScheduleTimer command). Adapter retrieves it when constructing envelope. Future: Introduce `PublishContext` parameter if cross-cutting concerns require it (YAGNI for now).
+**MessageMetadata Context Pattern** (ADR-0013):
+
+- **Publishing**: Port requires `MessageMetadata` in R parameter. Workflow provides via `Effect.provideService(MessageMetadata, { correlationId, causationId })`. Adapter extracts `yield* MessageMetadata`.
+- **Subscribing**: Adapter passes `MessageMetadata` as handler parameter (not via Context). This asymmetry aligns with Effect ecosystem: Context for ambient cross-cutting concerns, parameters for explicit data flow.
+
+- **Rationale**: Keeps domain events pure (no infrastructure fields). Enables correlation tracking without polluting domain types. Type-safe: compiler enforces metadata provisioning.
 
 Notes
 

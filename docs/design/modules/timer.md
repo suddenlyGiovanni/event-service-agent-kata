@@ -27,34 +27,52 @@ Identity & Context
 
 ```typescript
 // Receive IDs from ScheduleTimer command
-const { tenantId, serviceCallId, correlationId, dueAt } = command;
+const { tenantId, serviceCallId, dueAt } = command;
 
 // Store TimerEntry keyed by (tenantId, serviceCallId)
-await db.upsert({ tenantId, serviceCallId, dueAt, status: "armed" });
+await db.upsert({ tenantId, serviceCallId, dueAt, status: "Scheduled" });
 
-// When firing: construct domain event
+// When firing: construct domain event (validated via Schema)
 const event = new DueTimeReached({
   tenantId,
   serviceCallId,
-  reachedAt: Iso8601DateTime.make(DateTime.formatIso(firedAt)),
+  reachedAt: firedAt,  // DateTime.Utc (not ISO string)
 });
 
-// Encode to DTO
-const dto = yield* DueTimeReached.encode(event);
-
-// Wrap in validated envelope (makeEnvelope generates EnvelopeId)
-const envelope = yield* makeEnvelope('DueTimeReached', dto, {
-  tenantId,
-  correlationId: Option.getOrUndefined(correlationId),
-  timestampMs: firedAt.epochMillis,
-  aggregateId: serviceCallId,  // For per-aggregate ordering
-});
-
-// Publish - envelope contains all metadata, no separate context needed
-yield* bus.publish([envelope]);
+// Publish with MessageMetadata Context (workflow provides)
+yield* eventBus.publishDueTimeReached(event).pipe(
+  Effect.provideService(MessageMetadata, {
+    correlationId: timer.correlationId,  // From timer aggregate
+    causationId: Option.none(),          // Time-triggered
+  })
+);
 ```
 
-**Rationale:** Timer is stateless regarding identity (doesn't own ServiceCall aggregate). All IDs flow through from Orchestration via [ScheduleTimer]. Timer only generates EnvelopeId (via `makeEnvelope` helper) for broker deduplication. Envelope is self-contained with all routing metadata (tenantId, correlationId) - no separate context parameter needed. Domain event is validated via Effect Schema before encoding to DTO. See [ADR-0010][] for identity generation strategy and [ADR-0011][] for schema patterns.
+**Real Implementation** (timer-event-bus.adapter.ts):
+
+```typescript
+// Adapter extracts MessageMetadata from Context
+const metadata = yield* MessageMetadata;
+
+// Generate envelope ID (UUID v7)
+const envelopeId = yield* EnvelopeId.makeUUID7();
+
+// Construct envelope via Schema class (direct instantiation)
+const envelope: MessageEnvelope.Type = new MessageEnvelope({
+  id: envelopeId,
+  type: dueTimeReached._tag,
+  payload: dueTimeReached,  // Domain event (already validated)
+  tenantId: dueTimeReached.tenantId,
+  timestampMs: yield* clock.now(),
+  correlationId: metadata.correlationId,  // From Context
+  causationId: metadata.causationId,      // From Context
+  aggregateId: Option.some(dueTimeReached.serviceCallId),
+});
+
+yield* eventBus.publish([envelope]);
+```
+
+**Rationale:** Timer is stateless regarding identity (doesn't own ServiceCall aggregate). All IDs flow through from Orchestration via [ScheduleTimer]. Timer generates EnvelopeId (UUID v7) in adapter for broker deduplication. Workflow provides `MessageMetadata` Context with correlationId from timer aggregate and `causationId: None` (time-triggered, not command-caused). Adapter extracts metadata and constructs envelope via Schema class (no helper needed). See ADR-0010 for identity generation strategy, ADR-0011 for schema patterns, and ADR-0013 for MessageMetadata Context pattern.
 
 Policies
 
