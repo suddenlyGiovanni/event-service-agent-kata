@@ -91,4 +91,3 @@ Links
 [ADR-0011]: ADR-0011-message-schemas.md
 [ADR-0012]: ADR-0012-package-structure.md
 [ADR-0013]: ADR-0013-correlation-propagation.md
-[ADR-0011]: ADR-0011-message-schemas.md

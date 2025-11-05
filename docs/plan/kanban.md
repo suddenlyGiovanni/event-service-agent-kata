@@ -113,5 +113,4 @@ Minimal legend.
 [ADR-0008]: ../decisions/ADR-0008-outbox.md
 [ADR-0009]: ../decisions/ADR-0009-observability.md
 [ADR-0010]: ../decisions/ADR-0010-identity.md
-[ADR-0011]: ../decisions/ADR-0011-message-schemas.md
 [ADR-0013]: ../decisions/ADR-0013-correlation-propagation.md
