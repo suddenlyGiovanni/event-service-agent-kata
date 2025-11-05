@@ -52,6 +52,22 @@ export class TimerEventBus {
 						Effect.provideService(UUID7, uuid),
 					)
 
+					/**
+					 * Annotate span with message-level metadata for distributed tracing
+					 *
+					 * Infrastructure-level annotations complement workflow's domain-level ones:
+					 * - Workflow annotates: timer.dueAt, timer.serviceCallId, timer.tenantId
+					 * - Adapter annotates: message.envelope.id, message.correlationId, message.causationId
+					 *
+					 * Enables span linking: envelope.id connects workflow span to downstream consumer spans
+					 */
+					yield* Effect.annotateCurrentSpan({
+						'message.causationId': Option.getOrUndefined(metadata.causationId),
+						'message.correlationId': Option.getOrUndefined(metadata.correlationId),
+						'message.envelope.id': envelopeId,
+						'message.type': dueTimeReached._tag,
+					})
+
 					const envelope: MessageEnvelope.Type = new MessageEnvelope({
 						/**
 						 * Preserve tenant+serviceCall partition key for ordering
@@ -92,6 +108,23 @@ export class TimerEventBus {
 					})
 
 					yield* eventBus.publish([envelope])
+
+					/**
+					 * Log successful publish with envelope details
+					 *
+					 * Infrastructure-level logging complements workflow's domain-level logs:
+					 * - Workflow logs: "Timer fired successfully" (business event)
+					 * - Adapter logs: "Published DueTimeReached event" (technical event)
+					 *
+					 * Enables debugging: verify exact metadata used at publish time
+					 */
+					yield* Effect.logDebug('Published DueTimeReached event', {
+						causationId: Option.getOrUndefined(metadata.causationId),
+						correlationId: Option.getOrUndefined(metadata.correlationId),
+						envelopeId,
+						serviceCallId: dueTimeReached.serviceCallId,
+						tenantId: dueTimeReached.tenantId,
+					})
 				})
 
 				const subscribeToScheduleTimerCommands = Effect.fn('Timer.subscribeToScheduleTimerCommands')(function* <E, R>(
