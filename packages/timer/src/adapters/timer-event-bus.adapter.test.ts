@@ -27,7 +27,24 @@ describe('TimerEventBus', () => {
 
 	layer(BaseTestLayers)('publishDueTimeReached', it => {
 		describe('Happy Path', () => {
-			it.effect('should publish DueTimeReached event with correlation ID', () => {
+			/**
+			 * TODO(PL-24): Implement MessageMetadata Context provisioning
+			 *
+			 * This test is currently marked as .todo() because we haven't implemented
+			 * the MessageMetadata Context pattern yet (tracked in ADR-0013, PL-24).
+			 *
+			 * Once PL-24 is complete, this test should:
+			 * 1. Provision MessageMetadata context with correlationId via Effect.provideService
+			 * 2. Verify adapter extracts correlationId from context (not Option.none)
+			 * 3. Assert envelope.correlationId === Option.some(correlationId)
+			 *
+			 * Current blocker: Port signature doesn't require MessageMetadata in R parameter,
+			 * adapter has no mechanism to access correlationId from timer aggregate or context.
+			 *
+			 * See: docs/decisions/ADR-0013-correlation-propagation.md
+			 * See: docs/plan/correlation-context-implementation.md (Phase 1-2)
+			 */
+			it.todo('should publish DueTimeReached event with correlationId from MessageMetadata context', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
@@ -43,15 +60,15 @@ describe('TimerEventBus', () => {
 					const clock = yield* Ports.ClockPort
 					const now = yield* clock.now()
 
-					// Create domain event
+					// Create domain event (pure, no correlationId)
 					const dueTimeReachedEvent = new Messages.Timer.Events.DueTimeReached({
 						reachedAt: now,
 						serviceCallId,
 						tenantId,
 					})
 
-					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
+					// TODO(PL-24): Wrap with Effect.provideService(MessageMetadata, { correlationId, causationId })
 					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
 
 					// Assert
@@ -63,8 +80,8 @@ describe('TimerEventBus', () => {
 
 					expect(envelope.type).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 					expect(envelope.tenantId).toBe(tenantId)
-					// TODO: correlationId extraction from timer aggregate (deferred)
-					assertEquals(envelope.correlationId, Option.none())
+					// TODO(PL-24): Change to Option.some(correlationId) once context provisioning implemented
+					assertEquals(envelope.correlationId, Option.some(correlationId))
 					// timestampMs is now DateTime.Utc (compare via DateTime.Equivalence)
 					expect(DateTime.Equivalence(envelope.timestampMs, now)).toBe(true)
 					const payload = envelope.payload
