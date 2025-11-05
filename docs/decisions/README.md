@@ -39,6 +39,8 @@ Core ADRs (canonical)
 - ADR-0009: [Observability Baseline][ADR-0009]
 - ADR-0010: [Identity Generation Strategy][ADR-0010]
 - ADR-0011: [Message Schema Validation with Effect Schema][ADR-0011]
+- ADR-0012: [Package Structure (schemas/platform split)][ADR-0012]
+- ADR-0013: [CorrelationId Propagation Through Pure Domain Events][ADR-0013]
 
 Gates Index
 
@@ -86,4 +88,7 @@ Links
 [ADR-0008]: ADR-0008-outbox.md
 [ADR-0009]: ADR-0009-observability.md
 [ADR-0010]: ADR-0010-identity.md
+[ADR-0011]: ADR-0011-message-schemas.md
+[ADR-0012]: ADR-0012-package-structure.md
+[ADR-0013]: ADR-0013-correlation-propagation.md
 [ADR-0011]: ADR-0011-message-schemas.md

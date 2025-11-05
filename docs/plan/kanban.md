@@ -29,13 +29,14 @@ Prioritized queue.
     Pull the top item into Doing. Avoid more than 7 items.
     Link ADRs like [adr: ADR-0001]; add tags like [infra] or [Api].
 -->
+
+- (PL-24) **P0 CRITICAL** — Implement MessageMetadata Context for correlationId propagation [Timer] [platform] [docs] [adr: [ADR-0013]] — **BLOCKS PR#36 MERGE**. See `docs/plan/correlation-context-implementation.md` for 14-task breakdown (~7h). Option E (Ambient Context) accepted. Fixes broken distributed tracing after PL-23 pure domain events refactoring. Updates 6 outdated docs that claim non-existent `makeEnvelope` helper exists.
 - (PL-4.6) SQLite persistence adapter [Timer] — Deferred until after Schema migration (PL-14)
 - (PL-2) Orchestration core domain model and transitions [Orchestration]
 - (PL-3) Broker adapter implementation + local broker setup [infra]
 - (PL-5) Execution module with mock HttpClientPort [Execution]
 - (PL-6) Persistence adapter (SQLite) and migrations [infra]
 - (PL-7) API server with submit/list/detail routes [Api]
-- (PL-8) Redaction & idempotency utilities + tests [platform]
 
 ## Doing (WIP ≤ 2)
 
@@ -73,9 +74,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- **PL-23 Complete**: Option B2 implementation finished with 15 atomic commits (documentation → adapter → test refactoring → workflow update → test DRY refactoring). Branch `timer/pl-23-pure-domain-events-at-port` ready for merge.
-- **Next**: Pull top item from Ready queue. Consider PL-4.6 (SQLite persistence), PL-2 (Orchestration domain), or PL-3 (Broker adapter).
-- **Achievement**: Clean hexagonal architecture - domain events at ports, infrastructure wrapping in adapters. Learned layer memoization patterns. All 282 tests passing with idiomatic Effect patterns.
+- **PL-24 PLANNED**: Comprehensive implementation plan created for Option E (Ambient Context) - 14 tasks across 5 phases (~7h estimate). Discovered documentation lies: ADR-0011 + 3 design docs claim `makeEnvelope` helper exists but it doesn't (checked git log d16df59 + actual code). Reality: Timer manually constructs MessageEnvelope via Schema class. Orchestration/Execution are just TODOs.
+- **Next**: Execute PL-24 (PR#36 P0 blocker) → Day 1: Core infra + test updates (Phases 1-2, ~3h). Day 2: Workflow implementation (Phase 3, ~2h). Day 3: Doc cleanup (Phases 4-5, ~2h). Then merge PR#36.
+- **Context**: PR#36 has 3 NITPICK fixes pushed (ba1458d, fca3e75, 2149de9). P0 (correlationId) and P1 (docs) tracked in PL-24 plan. User chose full Effect solution (Context pattern) over explicit parameters.
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
@@ -113,3 +114,4 @@ Minimal legend.
 [ADR-0009]: ../decisions/ADR-0009-observability.md
 [ADR-0010]: ../decisions/ADR-0010-identity.md
 [ADR-0011]: ../decisions/ADR-0011-message-schemas.md
+[ADR-0013]: ../decisions/ADR-0013-correlation-propagation.md
