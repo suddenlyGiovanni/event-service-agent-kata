@@ -68,28 +68,24 @@ export interface TimerEventBusPort {
 	 *
 	 * Used by: Command Handler
 	 *
-	 * **Pattern**: Adapter extracts envelope metadata (correlationId, causationId)
-	 * and provisions MessageMetadata Context for handler. Handler receives pure
-	 * command and extracts metadata from context when needed.
+	 * **Pattern**: Adapter extracts envelope metadata and passes it directly to handler
+	 * as a parameter.
 	 *
 	 * Adapter responsibilities:
 	 * - Subscribe to timer.commands topic
 	 * - Parse and validate {@link MessageEnvelope}
 	 * - Extract command from payload
-	 * - Provision MessageMetadata Context with envelope metadata:
+	 * - Extract metadata from envelope:
 	 *   - correlationId: From envelope (upstream correlation)
 	 *   - causationId: envelope.id (this command envelope is the cause)
-	 * - Delegate to handler with pure command
+	 * - Invoke handler with command AND metadata as parameters
 	 * - Map errors (parse errors, subscription errors)
 	 *
 	 * Handler responsibilities:
-	 * - Receive pure command (no infrastructure metadata in signature)
-	 * - Extract MessageMetadata from context: `yield* MessageMetadata`
+	 * - Receive pure command and metadata as direct parameters
 	 * - Use correlationId for timer aggregate
 	 * - Use causationId when publishing events (tracks "which command triggered this")
 	 *
-	 * **Type Safety**: Handler R parameter requires MessageMetadata, but adapter
-	 * provisions it, so handler implementer doesn't manage provisioning.
 	 *
 	 * @param handler - Effect to process each command (invokes scheduleTimerWorkflow)
 	 * @returns Effect that runs indefinitely, processing commands
@@ -99,12 +95,9 @@ export interface TimerEventBusPort {
 	 * @example
 	 * ```typescript
 	 * // Command Handler usage
-	 * yield* eventBus.subscribeToScheduleTimerCommands(command =>
+	 * yield* eventBus.subscribeToScheduleTimerCommands((command, metadata) =>
 	 *   Effect.gen(function* () {
-	 *     // Extract metadata from context (provisioned by adapter)
-	 *     const metadata = yield* MessageMetadata
-	 *
-	 *     // Use correlationId for timer aggregate
+	 *     // Metadata passed directly as parameter
 	 *     yield* scheduleTimerWorkflow({
 	 *       command,
 	 *       correlationId: metadata.correlationId
@@ -116,7 +109,8 @@ export interface TimerEventBusPort {
 	readonly subscribeToScheduleTimerCommands: <E, R>(
 		handler: (
 			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-		) => Effect.Effect<void, E, R | MessageMetadata>,
+			metadata: MessageMetadata.Type,
+		) => Effect.Effect<void, E, R>,
 	) => Effect.Effect<void, Ports.SubscribeError | E, R>
 }
 

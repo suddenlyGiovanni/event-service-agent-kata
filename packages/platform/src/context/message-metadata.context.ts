@@ -144,3 +144,7 @@ export class MessageMetadata extends Context.Tag('MessageMetadata')<
 		readonly causationId: Option.Option<EnvelopeId.Type>
 	}
 >() {}
+
+export declare namespace MessageMetadata {
+	type Type = Context.Tag.Service<MessageMetadata>
+}

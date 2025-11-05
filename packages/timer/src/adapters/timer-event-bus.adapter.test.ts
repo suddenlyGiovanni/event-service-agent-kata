@@ -349,16 +349,13 @@ describe('TimerEventBus', () => {
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.subscribeToScheduleTimerCommands(command =>
-						Effect.gen(function* () {
-							// Extract metadata from context (provisioned by adapter)
-							const metadata = yield* MessageMetadata
+					yield* timerEventBus.subscribeToScheduleTimerCommands((command, metadata) =>
+						Effect.sync(() => {
 							handlerCalled = true
 							receivedCommand = command
 							receivedCorrelationId = Option.getOrUndefined(metadata.correlationId)
 						}),
 					)
-
 					// Assert
 					expect(handlerCalled).toBe(true)
 					expect(receivedCommand).not.toBeNull()
@@ -463,15 +460,13 @@ describe('TimerEventBus', () => {
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.subscribeToScheduleTimerCommands(_command =>
-						Effect.gen(function* () {
-							// Extract metadata from context (provisioned by adapter)
-							const metadata = yield* MessageMetadata
+					yield* timerEventBus.subscribeToScheduleTimerCommands((_command, metadata) =>
+						Effect.sync(() => {
 							receivedCorrelationId = Option.getOrUndefined(metadata.correlationId)
 						}),
 					)
 
-					// Assert
+					// Assert: adapter passes metadata from envelope.correlationId (Option.none)
 					expect(receivedCorrelationId).toBeUndefined()
 				}).pipe(Effect.provide(TimerEventBusLive))
 			})

@@ -131,7 +131,8 @@ export class TimerEventBus {
 					<E, R>(
 						handler: (
 							command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-						) => Effect.Effect<void, E, R | MessageMetadata>,
+							metadata: MessageMetadata.Type,
+						) => Effect.Effect<void, E, R>,
 					): Effect.Effect<void, Ports.SubscribeError | E, R> =>
 						Effect.gen(function* () {
 							/**
@@ -181,25 +182,10 @@ export class TimerEventBus {
 												tenantId: command.tenantId,
 											})
 
-											/**
-											 * Provision MessageMetadata Context for handler
-											 *
-											 * Adapter extracts envelope metadata and provisions context so handler
-											 * can access it via `yield* MessageMetadata`. This enables:
-											 * - Pure domain handler signature (receives command only)
-											 * - Handler can extract correlationId for timer aggregate
-											 * - Handler can extract causationId when publishing events
-											 *
-											 * Context values:
-											 * - correlationId: From envelope (upstream correlation, if any)
-											 * - causationId: envelope.id (this command envelope caused the workflow)
-											 */
-											yield* handler(command).pipe(
-												Effect.provideService(MessageMetadata, {
-													causationId: Option.some(envelope.id),
-													correlationId: envelope.correlationId,
-												}),
-											)
+											yield* handler(command, {
+												causationId: Option.some(envelope.id),
+												correlationId: envelope.correlationId,
+											})
 										}),
 									),
 									Match.orElse(() =>
