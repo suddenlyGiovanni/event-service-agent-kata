@@ -56,7 +56,7 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	...ServiceCallEventBase.fields,
 
 	/**
-	 * timestamp when the due time was detected
+	 * Timestamp when the due time was detected
 	 *
 	 * Domain type: DateTime.Utc (Effect's immutable datetime)
 	 * Wire format: ISO8601 string (e.g., "2025-10-27T12:00:00.000Z")
