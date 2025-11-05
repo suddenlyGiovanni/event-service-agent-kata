@@ -5,6 +5,7 @@ import * as Layer from 'effect/Layer'
 import * as Match from 'effect/Match'
 import * as Option from 'effect/Option'
 
+import { MessageMetadata } from '@event-service-agent/platform/context'
 import { Topics } from '@event-service-agent/platform/routing'
 import { UUID7 } from '@event-service-agent/platform/uuid7'
 import { MessageEnvelope } from '@event-service-agent/schemas/envelope'
@@ -33,6 +34,18 @@ export class TimerEventBus {
 					publishDueTimeReached: Effect.fn('Timer.publishDueTimeReached')(function* (
 						dueTimeReached: Messages.Timer.Events.DueTimeReached.Type,
 					) {
+						/**
+						 * Extract observability metadata from Effect Context
+						 *
+						 * MessageMetadata is provisioned by workflow with correlationId/causationId
+						 * extracted from timer aggregate. This enables distributed tracing without
+						 * polluting domain event types.
+						 *
+						 * Type-safe: Port signature requires MessageMetadata in R parameter,
+						 * so missing context at workflow level causes compile error.
+						 */
+						const metadata = yield* MessageMetadata
+
 						const envelopeId: EnvelopeId.Type = yield* EnvelopeId.makeUUID7().pipe(
 							Effect.mapError(
 								parseError => new Ports.PublishError({ cause: `Failed to generate EnvelopeId: ${parseError}` }),
@@ -40,23 +53,30 @@ export class TimerEventBus {
 							Effect.provideService(UUID7, uuid),
 						)
 
-						const envelope = new MessageEnvelope({
+						const envelope: MessageEnvelope.Type = new MessageEnvelope({
 							/**
 							 * Preserve tenant+serviceCall partition key for ordering
 							 */
 							aggregateId: Option.some(dueTimeReached.serviceCallId),
 
 							/**
-							 * No causation tracking for autonomous timer events
+							 * Extract causationId from MessageMetadata Context
+							 *
+							 * - Some(id): Event caused by specific parent message (command envelope ID)
+							 * - None: Autonomous event (timer fired, no parent message)
 							 */
-							causationId: Option.none(),
+							causationId: metadata.causationId,
 
 							/**
-							 * Extract correlationId from...
-							 * TODO: need to investigate where this comes from in pure domain event pattern
-							 * 		 For now, we'll use Option.none() as the event doesn't carry correlationId
+							 * Extract correlationId from MessageMetadata Context
+							 *
+							 * Workflow provisions this from timer aggregate:
+							 * - Some(id): Timer scheduled with correlationId (from HTTP request or parent workflow)
+							 * - None: Timer scheduled without correlation context
+							 *
+							 * Enables distributed tracing across service boundaries.
 							 */
-							correlationId: Option.none<CorrelationId.Type>(),
+							correlationId: metadata.correlationId,
 							id: envelopeId,
 							payload: dueTimeReached,
 							tenantId: dueTimeReached.tenantId,
