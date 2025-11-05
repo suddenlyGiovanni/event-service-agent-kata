@@ -90,7 +90,7 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
  *          PersistenceError (query failure) or BatchProcessingError (processing failures)
  */
 export const pollDueTimersWorkflow: () => Effect.Effect<
-	undefined,
+	void,
 	Ports.PersistenceError | BatchProcessingError,
 	Ports.TimerEventBusPort | Ports.TimerPersistencePort | Ports.ClockPort
 > = Effect.fn('Timer.PollDueTimersWorkflow')(function* () {

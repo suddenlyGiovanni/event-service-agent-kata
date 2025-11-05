@@ -8,8 +8,9 @@ import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
-import type * as Messages from '@event-service-agent/schemas/messages'
-import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
+import { MessageMetadata } from '@event-service-agent/platform/context'
+import * as Messages from '@event-service-agent/schemas/messages'
+import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import * as Adapters from '../adapters/index.ts'
 import * as Domain from '../domain/timer-entry.domain.ts'
@@ -43,11 +44,15 @@ describe('scheduleTimerWorkflow', () => {
 				}
 
 				// Arrange: Mock dependencies (ClockPort, TimerPersistencePort)
-				// 	- ClockPort.now() returns fixed time
 				const persistence = yield* Ports.TimerPersistencePort
 
-				// Act: Execute workflow with sample command
-				yield* Workflows.scheduleTimerWorkflow({ command })
+				// Act: Execute workflow with sample command (provide MessageMetadata context)
+				yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
+						correlationId: Option.none(), // No correlation for this test
+					}),
+				)
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: TimerEntry persisted with correct values
@@ -74,17 +79,22 @@ describe('scheduleTimerWorkflow', () => {
 				// dueAt is 5 minutes from now (DateTime.Utc is the domain type)
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
-					_tag: 'ScheduleTimer',
-					dueAt,
-					serviceCallId,
-					tenantId,
-				}
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
 
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act
-				yield* Workflows.scheduleTimerWorkflow({ command })
+				yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
+						correlationId: Option.none(),
+					}),
+				)
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: registeredAt should equal clock.now()
@@ -102,17 +112,22 @@ describe('scheduleTimerWorkflow', () => {
 
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
-					_tag: 'ScheduleTimer',
-					dueAt,
-					serviceCallId,
-					tenantId,
-				}
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
 
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act
-				yield* Workflows.scheduleTimerWorkflow({ command })
+				yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
+						correlationId: Option.none(),
+					}),
+				)
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: status should be 'Scheduled'
@@ -137,17 +152,22 @@ describe('scheduleTimerWorkflow', () => {
 
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
-					_tag: 'ScheduleTimer',
-					dueAt,
-					serviceCallId,
-					tenantId,
-				}
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
 
 				const persistence = yield* Ports.TimerPersistencePort
 
-				// Act: Pass correlationId to workflow
-				yield* Workflows.scheduleTimerWorkflow({ command, correlationId })
+				// Act: Provide MessageMetadata with correlationId
+				yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
+						correlationId: Option.some(correlationId), // Provide correlationId via context
+					}),
+				)
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: correlationId should be Some(correlationId)
@@ -166,17 +186,22 @@ describe('scheduleTimerWorkflow', () => {
 
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
-					_tag: 'ScheduleTimer',
-					dueAt,
-					serviceCallId,
-					tenantId,
-				}
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
 
 				const persistence = yield* Ports.TimerPersistencePort
 
-				// Act: Don't pass correlationId
-				yield* Workflows.scheduleTimerWorkflow({ command })
+				// Act: Provide MessageMetadata without correlationId (Option.none())
+				yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
+						correlationId: Option.none(), // No correlation
+					}),
+				)
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: correlationId should be None
@@ -209,11 +234,15 @@ describe('scheduleTimerWorkflow', () => {
 					serviceCallId,
 					tenantId,
 				}
-				yield* Workflows.scheduleTimerWorkflow({ command })
+				yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
+						correlationId: Option.none(),
+					}),
+				)
 
 				// Assert: Timer should still be persisted (no fast-path optimization)
 				const maybeScheduledTimer = yield* persistence.find(tenantId, serviceCallId)
-
 				expect(Option.isSome(maybeScheduledTimer)).toBe(true)
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 				expect(timer._tag).toBe('Scheduled')
@@ -234,19 +263,31 @@ describe('scheduleTimerWorkflow', () => {
 
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
-				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
-					_tag: 'ScheduleTimer',
-					dueAt,
-					serviceCallId,
-					tenantId,
-				}
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
 
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act: Execute workflow TWICE with same command
-				yield* Workflows.scheduleTimerWorkflow({ command, correlationId })
+				// First call with correlationId
+				yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
+						correlationId: Option.some(correlationId),
+					}),
+				)
 				yield* TestClock.adjust('1 second')
-				yield* Workflows.scheduleTimerWorkflow({ command }) // Should not fail (upsert semantics)
+				// Second call without correlationId (should not fail - upsert semantics)
+				yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a4')),
+						correlationId: Option.none(), // No correlationId on second call
+					}),
+				)
 
 				// Assert: Timer exists (second call didn't error)
 				const maybeScheduledTimer = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
@@ -273,15 +314,22 @@ describe('scheduleTimerWorkflow', () => {
 
 				const dueAt = DateTime.add(now, { minutes: -5 })
 
-				const command: Messages.Orchestration.Commands.ScheduleTimer.Type = {
-					_tag: 'ScheduleTimer',
-					dueAt,
-					serviceCallId,
-					tenantId,
-				}
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
 
 				// Act & Assert: Workflow should fail with PersistenceError
-				const result = yield* Effect.either(Workflows.scheduleTimerWorkflow({ command }))
+				const result = yield* Effect.either(
+					Workflows.scheduleTimerWorkflow(command).pipe(
+						Effect.provideService(MessageMetadata, {
+							causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
+							correlationId: Option.none(),
+						}),
+					),
+				)
 
 				expect(Either.isLeft(result)).toBe(true)
 				if (Either.isLeft(result)) {
