@@ -618,7 +618,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow with TimerEventBusTest - should fail with BatchProcessingError
-				yield* Workflows.pollDueTimersWorkflow().pipe(Effect.provide(TimerEventBusTest))
+				yield* Workflows.pollDueTimersWorkflow()
 			}).pipe(Effect.provide(TimerEventBusTest))
 		})
 
