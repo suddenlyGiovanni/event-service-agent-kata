@@ -180,8 +180,25 @@ export class TimerEventBus {
 										tenantId: command.tenantId,
 									})
 
-									// Delegate to domain handler
-									yield* handler(command, Option.getOrUndefined(envelope.correlationId))
+									/**
+									 * Provision MessageMetadata Context for handler
+									 *
+									 * Adapter extracts envelope metadata and provisions context so handler
+									 * can access it via `yield* MessageMetadata`. This enables:
+									 * - Pure domain handler signature (receives command only)
+									 * - Handler can extract correlationId for timer aggregate
+									 * - Handler can extract causationId when publishing events
+									 *
+									 * Context values:
+									 * - correlationId: From envelope (upstream correlation, if any)
+									 * - causationId: envelope.id (this command envelope caused the workflow)
+									 */
+									yield* handler(command).pipe(
+										Effect.provideService(MessageMetadata, {
+											causationId: Option.some(envelope.id),
+											correlationId: envelope.correlationId,
+										}),
+									)
 								}),
 							),
 							Match.orElse(() =>
