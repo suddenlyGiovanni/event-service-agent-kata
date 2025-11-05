@@ -10,7 +10,7 @@ import { Topics } from '@event-service-agent/platform/routing'
 import { UUID7 } from '@event-service-agent/platform/uuid7'
 import { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 import * as Messages from '@event-service-agent/schemas/messages'
-import { type CorrelationId, EnvelopeId } from '@event-service-agent/schemas/shared'
+import { EnvelopeId } from '@event-service-agent/schemas/shared'
 
 import * as Ports from '../ports/index.ts'
 
@@ -127,88 +127,90 @@ export class TimerEventBus {
 					})
 				})
 
-				const subscribeToScheduleTimerCommands = Effect.fn('Timer.subscribeToScheduleTimerCommands')(function* <E, R>(
-					handler: (
-						command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-						correlationId?: CorrelationId.Type,
-					) => Effect.Effect<void, E, R>,
-				) {
-					/**
-					 * Log subscription establishment
-					 *
-					 * One-time log when subscription is set up, showing which topics
-					 * the Timer module is listening to for commands.
-					 */
-					yield* Effect.logInfo('Subscribed to ScheduleTimer commands', {
-						topics: Topics.Timer.Commands,
-					})
+				const subscribeToScheduleTimerCommands = Effect.fn('Timer.subscribeToScheduleTimerCommands')(
+					<E, R>(
+						handler: (
+							command: Messages.Orchestration.Commands.ScheduleTimer.Type,
+						) => Effect.Effect<void, E, R | MessageMetadata>,
+					): Effect.Effect<void, Ports.SubscribeError | E, R> =>
+						Effect.gen(function* () {
+							/**
+							 * Log subscription establishment
+							 *
+							 * One-time log when subscription is set up, showing which topics
+							 * the Timer module is listening to for commands.
+							 */
+							yield* Effect.logInfo('Subscribed to ScheduleTimer commands', {
+								topics: Topics.Timer.Commands,
+							})
 
-					yield* eventBus.subscribe([Topics.Timer.Commands], envelope =>
-						MessageEnvelope.matchPayload(envelope).pipe(
-							Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, command =>
-								Effect.gen(function* () {
-									/**
-									 * Annotate span with inbound message metadata
-									 *
-									 * Infrastructure-level annotations for command reception (inbound):
-									 * - Adapter annotates: message.envelope.id, message.correlationId (from upstream)
-									 * - Handler annotates: domain-level command details
-									 *
-									 * Enables span linking: upstream service span → adapter span → handler span
-									 */
-									yield* Effect.annotateCurrentSpan({
-										'message.causationId': Option.getOrUndefined(envelope.causationId),
-										'message.correlationId': Option.getOrUndefined(envelope.correlationId),
-										'message.envelope.id': envelope.id,
-										'message.type': envelope.type,
-									})
+							yield* eventBus.subscribe([Topics.Timer.Commands], envelope =>
+								MessageEnvelope.matchPayload(envelope).pipe(
+									Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, command =>
+										Effect.gen(function* () {
+											/**
+											 * Annotate span with inbound message metadata
+											 *
+											 * Infrastructure-level annotations for command reception (inbound):
+											 * - Adapter annotates: message.envelope.id, message.correlationId (from upstream)
+											 * - Handler annotates: domain-level command details
+											 *
+											 * Enables span linking: upstream service span → adapter span → handler span
+											 */
+											yield* Effect.annotateCurrentSpan({
+												'message.causationId': Option.getOrUndefined(envelope.causationId),
+												'message.correlationId': Option.getOrUndefined(envelope.correlationId),
+												'message.envelope.id': envelope.id,
+												'message.type': envelope.type,
+											})
 
-									/**
-									 * Log command reception at adapter boundary
-									 *
-									 * Infrastructure-level logging for inbound commands:
-									 * - Adapter logs: "Received ScheduleTimer command" (message arrived)
-									 * - Handler logs: domain-level processing events
-									 *
-									 * Enables debugging: verify command arrived with correct correlationId
-									 */
-									yield* Effect.logDebug('Received ScheduleTimer command', {
-										causationId: Option.getOrUndefined(envelope.causationId),
-										correlationId: Option.getOrUndefined(envelope.correlationId),
-										envelopeId: envelope.id,
-										serviceCallId: command.serviceCallId,
-										tenantId: command.tenantId,
-									})
+											/**
+											 * Log command reception at adapter boundary
+											 *
+											 * Infrastructure-level logging for inbound commands:
+											 * - Adapter logs: "Received ScheduleTimer command" (message arrived)
+											 * - Handler logs: domain-level processing events
+											 *
+											 * Enables debugging: verify command arrived with correct correlationId
+											 */
+											yield* Effect.logDebug('Received ScheduleTimer command', {
+												causationId: Option.getOrUndefined(envelope.causationId),
+												correlationId: Option.getOrUndefined(envelope.correlationId),
+												envelopeId: envelope.id,
+												serviceCallId: command.serviceCallId,
+												tenantId: command.tenantId,
+											})
 
-									/**
-									 * Provision MessageMetadata Context for handler
-									 *
-									 * Adapter extracts envelope metadata and provisions context so handler
-									 * can access it via `yield* MessageMetadata`. This enables:
-									 * - Pure domain handler signature (receives command only)
-									 * - Handler can extract correlationId for timer aggregate
-									 * - Handler can extract causationId when publishing events
-									 *
-									 * Context values:
-									 * - correlationId: From envelope (upstream correlation, if any)
-									 * - causationId: envelope.id (this command envelope caused the workflow)
-									 */
-									yield* handler(command).pipe(
-										Effect.provideService(MessageMetadata, {
-											causationId: Option.some(envelope.id),
-											correlationId: envelope.correlationId,
+											/**
+											 * Provision MessageMetadata Context for handler
+											 *
+											 * Adapter extracts envelope metadata and provisions context so handler
+											 * can access it via `yield* MessageMetadata`. This enables:
+											 * - Pure domain handler signature (receives command only)
+											 * - Handler can extract correlationId for timer aggregate
+											 * - Handler can extract causationId when publishing events
+											 *
+											 * Context values:
+											 * - correlationId: From envelope (upstream correlation, if any)
+											 * - causationId: envelope.id (this command envelope caused the workflow)
+											 */
+											yield* handler(command).pipe(
+												Effect.provideService(MessageMetadata, {
+													causationId: Option.some(envelope.id),
+													correlationId: envelope.correlationId,
+												}),
+											)
 										}),
-									)
-								}),
-							),
-							Match.orElse(() =>
-								Effect.logDebug('Ignoring non-ScheduleTimer message', {
-									receivedType: envelope.type,
-								}),
-							),
-						),
-					)
-				})
+									),
+									Match.orElse(() =>
+										Effect.logDebug('Ignoring non-ScheduleTimer message', {
+											receivedType: envelope.type,
+										}),
+									),
+								),
+							)
+						}),
+				)
 
 				return Ports.TimerEventBusPort.of({ publishDueTimeReached, subscribeToScheduleTimerCommands })
 			}),

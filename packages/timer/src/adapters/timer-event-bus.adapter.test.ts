@@ -219,7 +219,9 @@ describe('TimerEventBus', () => {
 
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
+					yield* timerEventBus
+						.publishDueTimeReached(dueTimeReachedEvent)
+						.pipe(Effect.provideService(MessageMetadata, { causationId: Option.none(), correlationId: Option.none() }))
 
 					// Assert: envelope timestamp reflects publishing time (T+10)
 					const envelope = publishedEnvelopes[0]
@@ -262,7 +264,9 @@ describe('TimerEventBus', () => {
 
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					const result = yield* Effect.either(timerEventBus.publishDueTimeReached(dueTimeReachedEvent))
+					const result = yield* Effect.either(timerEventBus.publishDueTimeReached(dueTimeReachedEvent)).pipe(
+						Effect.provideService(MessageMetadata, { causationId: Option.none(), correlationId: Option.none() }),
+					)
 
 					// Assert
 					expect(Either.isLeft(result)).toBe(true)
@@ -644,7 +648,9 @@ describe('TimerEventBus', () => {
 
 				// Act
 				const timerEventBus = yield* Ports.TimerEventBusPort
-				yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
+				yield* timerEventBus
+					.publishDueTimeReached(dueTimeReachedEvent)
+					.pipe(Effect.provideService(MessageMetadata, { causationId: Option.none(), correlationId: Option.none() }))
 
 				// Assert - envelope ID should be valid UUID7
 				expect(publishedEnvelopes).toHaveLength(1)
