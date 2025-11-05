@@ -54,6 +54,7 @@ describe('MessageEnvelope', () => {
 						expect(payload.serviceCallId).toBe(serviceCallId)
 						expect(DateTime.isDateTime(payload.reachedAt)).toBe(true)
 						expect(DateTime.isUtc(payload.reachedAt)).toBe(true)
+						expect(DateTime.Equivalence(payload.reachedAt, DateTime.unsafeMake(reachedAt))).toBe(true)
 					}),
 					Match.orElseAbsurd,
 				)
