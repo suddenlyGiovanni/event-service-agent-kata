@@ -58,6 +58,9 @@ Identity & Context
 // correlationId is Option<CorrelationId> from command schema
 const { tenantId, serviceCallId, correlationId, ...commandData } = command;
 
+// Extract metadata from incoming command envelope (provided by adapter)
+const commandMetadata = yield * MessageMetadata;
+
 // Fallback: If command lacks ServiceCallId (shouldn't happen per ADR-0010)
 const finalServiceCallId = serviceCallId ?? yield * ServiceCallId.makeUUID7();
 
@@ -70,11 +73,13 @@ const event = new ServiceCallSubmitted({
 });
 
 // Publish with MessageMetadata Context
+// - correlationId: pass through from command (already Option<CorrelationId>)
+// - causationId: use incoming command envelope ID for causality tracking
 yield *
   eventBus.publishServiceCallSubmitted(event).pipe(
     Effect.provideService(MessageMetadata, {
-      correlationId: Option.some(httpRequestCorrelationId), // From HTTP request
-      causationId: Option.some(envelopeId), // Command envelope that triggered this
+      correlationId, // From command (pass-through)
+      causationId: commandMetadata.causationId, // From command envelope
     })
   );
 ```
