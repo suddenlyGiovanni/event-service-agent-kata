@@ -6,6 +6,23 @@ Make agents effective by pointing to living sources of truth and shared principl
 
 ---
 
+## Quick Start (For New Tasks)
+
+When starting work on an issue, follow this workflow:
+
+1. **Read the issue carefully** - Understand the requirements and acceptance criteria
+2. **Check the Kanban** - Review `docs/plan/kanban.md` for context on current work
+3. **Read module design** - Check `docs/design/modules/<module-name>.md` for the module you're working on
+4. **Review relevant ADRs** - See `docs/decisions/` for architectural decisions
+5. **Follow TDD discipline** - RED → GREEN → REFACTOR with atomic commits
+6. **Use Effect-TS patterns** - All code uses Effect for type-safe effects and DI
+7. **Ensure multi-tenancy** - Every query must filter by `tenant_id`
+8. **Run tests frequently** - `bun run test` (watch mode) or `bun run test --run` (CI mode)
+9. **Format before committing** - `bun run format` and `bun run check`
+10. **Update Kanban on completion** - Mark task as done in `docs/plan/kanban.md` when complete
+
+---
+
 ## Set-In-Stone Principles
 
 - **Reasoning**: Domain Modeling Made Functional (DMMF) patterns.
@@ -1538,3 +1555,12 @@ docs(design): clarify Timer state machine transitions
 - Link changes in the plan.
 - Avoid scope creep: pick the top item from `docs/plan/kanban.md` (Doing → Ready order).
 - If a necessary decision is missing, add/adjust an ADR and reflect it in the Kanban.
+
+---
+
+## References
+
+This Copilot instructions file follows GitHub's best practices for Copilot coding agents:
+- [Best practices for using GitHub Copilot to work on tasks](https://docs.github.com/en/copilot/tutorials/coding-agent/get-the-best-results)
+- [GitHub Copilot coding agent documentation](https://docs.github.com/en/copilot/tutorials/coding-agent)
+- [Adding custom instructions for GitHub Copilot](https://docs.github.com/en/copilot/customizing-copilot/adding-custom-instructions-for-github-copilot)
