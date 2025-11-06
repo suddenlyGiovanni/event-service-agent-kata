@@ -179,7 +179,7 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 }
 
 // API handler (SAFE):
-const tenantId = yield * TenantId.decode(req.body.tenantId)
+const tenantId = yield* TenantId.decode(req.body.tenantId)
 // ✅ Validates UUID7 format! Rejects invalid input with ParseError
 ```
 

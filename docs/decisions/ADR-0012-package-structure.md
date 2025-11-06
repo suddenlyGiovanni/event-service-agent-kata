@@ -31,7 +31,7 @@ export const DomainMessage = Schema.Union(
 )
 
 // Consumer can't use decoded payload:
-const envelope = yield * MessageEnvelope.decodeJson(json)
+const envelope = yield* MessageEnvelope.decodeJson(json)
 yield * workflow.handle(envelope.payload)
 //                     ^^^^^^^^^^^^^^^^
 // ❌ TYPE MISMATCH: plain object vs branded types

@@ -440,7 +440,7 @@ const program = submitServiceCall(request).pipe(
 ## Architecture Benefits
 
 | Concept                        | Benefit                                      |
-| ------------------------------ | -------------------------------------------- |
+|--------------------------------|----------------------------------------------|
 | **Ports (Interfaces)**         | Domain isolated from infrastructure changes  |
 | **Adapters (Implementations)** | Swap implementations without domain changes  |
 | **Repository Pattern**         | Encapsulate data access, hide SQL complexity |

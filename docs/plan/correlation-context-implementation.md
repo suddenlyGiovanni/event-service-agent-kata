@@ -40,7 +40,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
   aggregateId: Schema.optionalWith(ServiceCallId, { as: 'Option', exact: true }),
   causationId: Schema.optionalWith(EnvelopeId, { as: 'Option', exact: true }),
   correlationId: Schema.optionalWith(CorrelationId, { as: 'Option', exact: true }),
-})
+}){}
 ```
 
 ✅ **Timer Implementation** - Manual envelope construction in adapter:

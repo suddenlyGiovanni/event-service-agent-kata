@@ -991,7 +991,7 @@ export const pollDueTimers: Effect.Effect<
   void,
   PersistenceError | BatchProcessingError,
   TimerPersistencePort | EventBusPort | ClockPort
-> = /*...*/;
+> = {/*...*/};
 ```
 
 **Explain Requirements (dependency injection context)**:
@@ -1013,7 +1013,7 @@ export const scheduleTimer = (
   ScheduledTimer,
   ValidationError | PersistenceError,
   ClockPort | TimerPersistencePort
-> => /*...*/;
+> => {/*...*/};
 ```
 
 **Clarify timing/concurrency assumptions**:
@@ -1170,7 +1170,7 @@ export const schedule = (
 
 ```typescript
 // Before refactor: Inline validation
-const result = command.dueAt > now ? new ScheduledTimer(...) : fail(...);
+const result = command.dueAt > now ? new ScheduledTimer( /*... */) : fail( /*... */);
 
 // After refactor: Extracted helper
 const validateFutureTimestamp = (dueAt: DateTime, now: DateTime) => {
@@ -1215,18 +1215,18 @@ const validated = yield* validateFutureTimestamp(command.dueAt, now);
 ```typescript
 // ❌ Bad: Restates obvious code
 // Publish the event
-yield * eventBus.publishDueTimeReached(event)
+yield* eventBus.publishDueTimeReached(event)
 
 // ❌ Bad: Outdated comment (code changed, comment didn't)
 // Use forEach to process timers
-const results = yield * Effect.partition(timers, processTimer) // ← Now uses partition!
+const results = yield* Effect.partition(timers, processTimer) // ← Now uses partition!
 
 // ✅ Good: Explains WHY partition, documents trade-off
 /*
  * Use partition instead of forEach to collect ALL failures, not fail-fast.
  * Trade-off: Higher memory for large batches, but better resilience.
  */
-const [failures, successes] = yield * Effect.partition(timers, processTimer)
+const [failures, successes] = yield* Effect.partition(timers, processTimer)
 
 // ✅ Good: Documents domain semantics with ADR link
 /**

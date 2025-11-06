@@ -138,17 +138,17 @@ Submitted → Scheduled → Running → Succeeded
 
 ```typescript
 type ServiceCall =
-  | { status: 'Submitted'; name: string; requestSpec: RequestSpec; ... }
-  | { status: 'Scheduled'; dueAt: DateTime.Utc; ... }
-  | { status: 'Running'; startedAt: DateTime.Utc; ... }
-  | { status: 'Succeeded'; responseMeta: ResponseMeta; ... }
-  | { status: 'Failed'; errorMeta: ErrorMeta; ... }
+  | { status: 'Submitted'; name: string; requestSpec: RequestSpec; /* ...*/ }
+  | { status: 'Scheduled'; dueAt: DateTime.Utc; /* ...*/ }
+  | { status: 'Running'; startedAt: DateTime.Utc; /* ...*/ }
+  | { status: 'Succeeded'; responseMeta: ResponseMeta; /* ...*/ }
+  | { status: 'Failed'; errorMeta: ErrorMeta; /* ...*/ }
 
 // State transition functions (pure)
-const schedule: (call: Submitted, dueAt: DateTime.Utc) => Scheduled
-const start: (call: Scheduled, startedAt: DateTime.Utc) => Running
-const succeed: (call: Running, meta: ResponseMeta) => Succeeded
-const fail: (call: Running, meta: ErrorMeta) => Failed
+declare const schedule: (call: Submitted, dueAt: DateTime.Utc) => Scheduled
+declare const start: (call: Scheduled, startedAt: DateTime.Utc) => Running
+declare const succeed: (call: Running, meta: ResponseMeta) => Succeeded
+declare const fail: (call: Running, meta: ErrorMeta) => Failed
 ```
 
 ## Workflows (Planned)

@@ -358,17 +358,17 @@ for (const schedule of dueSchedules) {
 	}
 
 	await eventBus.publish([envelope]) // First
-	await db.update("SET state = 'Reached' WHERE ...") // Second
+	await db.update('SET state = \'Reached\' WHERE ...') // Second
 }
 ```
 
 **Failure Scenarios:**
 
 | Scenario                       | Outcome                    | Acceptable? |
-| ------------------------------ | -------------------------- | ----------- |
-| Publish succeeds, update fails | Duplicate event next poll  | ✅ Yes      |
-| Update succeeds, publish fails | Event never sent           | ❌ No       |
-| Crash after publish            | Duplicate event on restart | ✅ Yes      |
+|--------------------------------|----------------------------|-------------|
+| Publish succeeds, update fails | Duplicate event next poll  | ✅ Yes       |
+| Update succeeds, publish fails | Event never sent           | ❌ No        |
+| Crash after publish            | Duplicate event on restart | ✅ Yes       |
 
 **Rationale:**
 
