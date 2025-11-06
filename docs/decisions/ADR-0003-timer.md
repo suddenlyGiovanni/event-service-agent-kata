@@ -107,14 +107,20 @@ stateDiagram-v2
 4. On restart: Resume worker loop (durable in DB)
 ```
 
+**Why this design:**
+- **Polling wins**: Only option that satisfies all constraints (durable, portable, broker-agnostic)
+- **5-second interval**: Balances latency (acceptable for MVP) with CPU cost (minimal)
+- **State field**: Enables idempotent processing (query excludes already-fired timers)
+- **Two-step process**: Find-then-mark pattern ensures at-least-once delivery
+
 **Requirements satisfied:**
 
 - ✅ Durability: Storage persists across crashes
 - ✅ Detection: Polling finds due schedules
 - ✅ At-least-once: Broker handles delivery semantics
-- ✅ Idempotency: Upsert on `(tenantId, serviceCallId)`
+- ✅ Idempotency: Upsert on `(tenantId, serviceCallId)` + state filtering
 - ✅ Broker-agnostic: Standard DB queries, no special features
-- ✅ Portable: No external dependencies
+- ✅ Portable: No external dependencies (works on any platform with SQLite)
 
 ---
 
@@ -122,7 +128,27 @@ stateDiagram-v2
 
 **Adopt periodic polling (5-second interval) as the Timer detection mechanism.**
 
-**Rationale:** First principles analysis shows this as the only viable path satisfying all MVP constraints (durable, broker-agnostic, portable, simple). Alternatives violate architectural principles or add unjustified complexity.
+**Rationale:** 
+
+First principles analysis shows this as the only viable path satisfying all MVP constraints:
+- **Durable**: Database survives crashes (unlike in-memory setTimeout)
+- **Broker-agnostic**: No dependency on broker-specific timer features
+- **Portable**: Works on any platform (no cloud scheduler lock-in)
+- **Simple**: ~50 lines of code vs 500+ for in-memory timer wheel
+- **Meets requirements**: Seconds-level accuracy is acceptable per domain constraints
+
+**Why NOT alternatives:**
+- ❌ `setTimeout`: Lost on restart (durability violated)
+- ❌ Cloud schedulers: Couples to AWS/GCP (portability violated)
+- ❌ `pg_cron`: Couples to PostgreSQL (we use SQLite for MVP)
+- ❌ In-memory timer wheel: Premature optimization (complexity without benefit)
+
+**Acceptable trade-offs:**
+- **Latency**: Up to 5 seconds delay (acceptable per domain constraints)
+- **CPU**: Query every 5s (~0.001% CPU on modern hardware)
+- **Scalability**: Single instance handles thousands of timers (adequate for MVP)
+
+**Evolution path:** Can optimize later with distributed coordination or in-memory scheduling when scale demands it.
 
 ---
 
@@ -132,23 +158,69 @@ stateDiagram-v2
 
 **Choice**: Single SQLite database (`event_service.db`) with Timer owning `timer_schedules` table.
 
+**Why shared database in MVP:**
+- **Simplicity**: Single database setup, no distributed transaction concerns
+- **Local development**: One file, easy to reset and debug
+- **Testing**: Fast integration tests without multiple database orchestration
+
+**Why strong boundaries despite shared database:**
+- Prepares for future service extraction (Phase N)
+- Enforces architectural discipline (no implicit coupling via JOINs)
+- Makes dependencies explicit via events (better than hidden DB queries)
+
 **Boundaries (enforced in code):**
 
 - ❌ **No Cross-Module JOINs**: Timer queries ONLY its own table
+  - **Why**: Prevents coupling to Orchestration's schema changes
+  - **Enforced**: Code reviews + architecture tests
+  
 - ✅ **Denormalized Storage**: Timer stores all needed data from `ScheduleTimer` event
+  - **Why**: Timer can operate independently without querying other tables
+  - **Trade-off**: Some data duplication, but enables service extraction
+  
 - ✅ **Event-Driven Communication**: Timer receives data via broker, not DB queries
+  - **Why**: Loose coupling, supports future physical separation
+  - **Pattern**: Command → Event → New Command (async workflow)
+  
 - ⚠️ **Foreign Keys**: For integrity only (can be removed when extracting to separate service)
+  - **Why keep now**: Prevents orphaned timers during MVP development
+  - **Why remove later**: Foreign keys don't work across services
 
 **Migration Path:**
 
 ```txt
 Phase 1 (MVP): Single event_service.db + strong code boundaries
+              ↓ (Preserves architectural discipline)
 Phase N: Extract to separate timer.db (already event-driven, denormalized)
+         ↓ (No code changes needed, just database split)
+Final: timer.db + timer_service running independently
 ```
 
 ---
 
 ### 2. Data Model
+
+**Why this schema design:**
+
+**Composite Primary Key `(tenantId, serviceCallId)`:**
+- **Why composite**: Ensures one timer per ServiceCall (business invariant)
+- **Why tenantId first**: Enables tenant-scoped queries and future sharding
+- **Why not auto-increment ID**: Application-generated IDs enable idempotency (see ADR-0010)
+
+**State field (`Scheduled | Reached`):**
+- **Why two states only**: Minimal state machine (simpler correctness proofs)
+- **Why not delete after firing**: Audit trail + debugging (can see when timer fired)
+- **Why Reached not Fired**: "Reached due time" is domain language (matches DueTimeReached event)
+
+**Timestamps (dueAt, registeredAt, reachedAt):**
+- **Why dueAt indexed**: Critical for polling query performance (sub-millisecond scans)
+- **Why registeredAt**: Latency metrics (reachedAt - registeredAt = total delay)
+- **Why reachedAt nullable**: Only set after successful firing (audit trail)
+
+**CorrelationId (optional):**
+- **Why optional**: System-initiated timers lack correlation context
+- **Why stored**: Enables end-to-end tracing from request → timer → execution
+- **Why not in primary key**: Not part of business identity (two timers can share correlationId)
 
 **Entity-Relationship Diagram**:
 
@@ -183,30 +255,42 @@ erDiagram
 ```typescript
 type TimerSchedule = {
   // Composite Primary Key
-  readonly tenantId: TenantId;
-  readonly serviceCallId: ServiceCallId;
+  readonly tenantId: TenantId;        // Why first: Tenant-scoped queries
+  readonly serviceCallId: ServiceCallId; // Why: One timer per ServiceCall
 
   // Schedule
-  readonly dueAt: timestamp; // When to fire (indexed!)
-  state: "Scheduled" | "Reached"; // Lifecycle
+  readonly dueAt: timestamp;          // Why indexed: Polling query performance
+  state: "Scheduled" | "Reached";     // Why: Idempotent processing via state filter
 
   // Audit
-  readonly registeredAt: timestamp;
-  reachedAt?: timestamp; // When event published
+  readonly registeredAt: timestamp;   // Why: Latency metrics
+  reachedAt?: timestamp;              // Why nullable: Only set after firing
 
   // Observability
-  readonly correlationId?: string;
+  readonly correlationId?: string;    // Why optional: System timers lack context
 };
 ```
 
 **Indexes:**
 
-- Composite: `(state, dueAt)` for polling query
-- Unique: `(tenantId, serviceCallId)` primary key
+- **Composite: `(state, dueAt)`** — For polling query (CRITICAL for performance)
+  - **Why state first**: Filters ~99% of rows (most timers are Reached)
+  - **Why dueAt second**: Enables range scan on remaining Scheduled timers
+  - **Performance**: O(log n) index seek + O(k) range scan (k = due timers)
+  
+- **Unique: `(tenantId, serviceCallId)`** — Primary key (business invariant)
+  - **Why unique**: Prevents duplicate timers for same ServiceCall
+  - **Why composite**: Multi-tenancy isolation at index level
 
 **Critical Polling Query:**
 
 ```sql
+-- Why this query structure:
+-- 1. state = 'Scheduled' filter leverages index (excludes Reached)
+-- 2. due_at <= datetime('now') uses index range scan (efficient)
+-- 3. ORDER BY due_at ASC fires oldest timers first (fairness)
+-- 4. LIMIT 100 prevents memory issues on large batches (safety)
+
 SELECT tenant_id, service_call_id, due_at, correlation_id
 FROM timer_schedules
 WHERE state = 'Scheduled' AND due_at <= datetime('now')
