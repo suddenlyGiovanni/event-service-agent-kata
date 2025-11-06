@@ -169,6 +169,11 @@ export const TimerEntry = {
 	schema: TimerEntrySchema,
 } as const
 
+/**
+ * TimerEntry namespace — Types and utilities for timer domain model
+ *
+ * Provides type aliases and helper functions for working with timer states.
+ */
 export namespace TimerEntry {
 	/**
 	 * Union type of all timer states

@@ -52,5 +52,12 @@ export const ErrorMeta = Schema.Struct({
 	message: Schema.optional(Schema.String),
 })
 
+/**
+ * HTTP response metadata type
+ */
 export type ResponseMeta = Schema.Schema.Type<typeof ResponseMeta>
+
+/**
+ * Error metadata type
+ */
 export type ErrorMeta = Schema.Schema.Type<typeof ErrorMeta>

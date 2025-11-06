@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/useNamingConvention: Exposes _tag for Tag registry */
 import * as Schema from 'effect/Schema'
 
 import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'
@@ -32,16 +33,34 @@ export class ServiceCallSubmitted extends Schema.TaggedClass<ServiceCallSubmitte
 	 */
 	tags: Schema.optional(Schema.Array(Schema.String)),
 }) {
+	/**
+	 * Decode from wire format to validated domain event
+	 */
 	static readonly decode = Schema.decode(ServiceCallSubmitted)
 
+	/**
+	 * Encode from domain event to wire format DTO
+	 */
 	static readonly encode = Schema.encode(ServiceCallSubmitted)
 
-	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	/**
+	 * Discriminator tag for pattern matching
+	 */
 	static readonly Tag = ServiceCallSubmitted._tag
 }
 
+/**
+ * Type aliases for ServiceCallSubmitted event
+ */
 export declare namespace ServiceCallSubmitted {
+	/**
+	 * Validated domain type
+	 */
 	type Type = typeof ServiceCallSubmitted.Type
+
+	/**
+	 * Wire format DTO type
+	 */
 	type Dto = typeof ServiceCallSubmitted.Encoded
 }
 
@@ -58,16 +77,34 @@ export class ServiceCallScheduled extends Schema.TaggedClass<ServiceCallSchedule
 	 */
 	dueAt: Schema.DateTimeUtc,
 }) {
+	/**
+	 * Decode from wire format to validated domain event
+	 */
 	static readonly decode = Schema.decode(ServiceCallScheduled)
 
+	/**
+	 * Encode from domain event to wire format DTO
+	 */
 	static readonly encode = Schema.encode(ServiceCallScheduled)
 
-	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	/**
+	 * Discriminator tag for pattern matching
+	 */
 	static readonly Tag = ServiceCallScheduled._tag
 }
 
+/**
+ * Type aliases for ServiceCallScheduled event
+ */
 export declare namespace ServiceCallScheduled {
+	/**
+	 * Validated domain type
+	 */
 	type Type = typeof ServiceCallScheduled.Type
+
+	/**
+	 * Wire format DTO type
+	 */
 	type Dto = typeof ServiceCallScheduled.Encoded
 }
 
@@ -84,16 +121,34 @@ export class ServiceCallRunning extends Schema.TaggedClass<ServiceCallRunning>()
 	 */
 	startedAt: Schema.DateTimeUtc,
 }) {
+	/**
+	 * Decode from wire format to validated domain event
+	 */
 	static readonly decode = Schema.decode(ServiceCallRunning)
 
+	/**
+	 * Encode from domain event to wire format DTO
+	 */
 	static readonly encode = Schema.encode(ServiceCallRunning)
 
-	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	/**
+	 * Discriminator tag for pattern matching
+	 */
 	static readonly Tag = ServiceCallRunning._tag
 }
 
+/**
+ * Type aliases for ServiceCallRunning event
+ */
 export declare namespace ServiceCallRunning {
+	/**
+	 * Validated domain type
+	 */
 	type Type = typeof ServiceCallRunning.Type
+
+	/**
+	 * Wire format DTO type
+	 */
 	type Dto = typeof ServiceCallRunning.Encoded
 }
 
@@ -117,16 +172,34 @@ export class ServiceCallSucceeded extends Schema.TaggedClass<ServiceCallSucceede
 
 	responseMeta: ResponseMeta,
 }) {
+	/**
+	 * Decode from wire format to validated domain event
+	 */
 	static readonly decode = Schema.decode(ServiceCallSucceeded)
 
+	/**
+	 * Encode from domain event to wire format DTO
+	 */
 	static readonly encode = Schema.encode(ServiceCallSucceeded)
 
-	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	/**
+	 * Discriminator tag for pattern matching
+	 */
 	static readonly Tag = ServiceCallSucceeded._tag
 }
 
+/**
+ * Type aliases for ServiceCallSucceeded event
+ */
 export declare namespace ServiceCallSucceeded {
+	/**
+	 * Validated domain type
+	 */
 	type Type = typeof ServiceCallSucceeded.Type
+
+	/**
+	 * Wire format DTO type
+	 */
 	type Dto = typeof ServiceCallSucceeded.Encoded
 }
 
@@ -148,19 +221,40 @@ export class ServiceCallFailed extends Schema.TaggedClass<ServiceCallFailed>()('
 	 */
 	finishedAt: Schema.DateTimeUtc,
 }) {
+	/**
+	 * Decode from wire format to validated domain event
+	 */
 	static readonly decode = Schema.decode(ServiceCallFailed)
 
+	/**
+	 * Encode from domain event to wire format DTO
+	 */
 	static readonly encode = Schema.encode(ServiceCallFailed)
 
-	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	/**
+	 * Discriminator tag for pattern matching
+	 */
 	static readonly Tag = ServiceCallFailed._tag
 }
 
+/**
+ * Type aliases for ServiceCallFailed event
+ */
 export declare namespace ServiceCallFailed {
+	/**
+	 * Validated domain type
+	 */
 	type Type = typeof ServiceCallFailed.Type
+
+	/**
+	 * Wire format DTO type
+	 */
 	type Dto = typeof ServiceCallFailed.Encoded
 }
 
+/**
+ * Schema union for runtime validation of any Orchestration event
+ */
 export const Events = Schema.Union(
 	ServiceCallSubmitted,
 	ServiceCallScheduled,
@@ -169,6 +263,12 @@ export const Events = Schema.Union(
 	ServiceCallFailed,
 )
 
+/**
+ * Union type of all Orchestration events
+ */
 export type Events = Schema.Schema.Type<typeof Events>
 
+/**
+ * Tag discriminator type for Orchestration events
+ */
 export type Tag = Events['_tag']

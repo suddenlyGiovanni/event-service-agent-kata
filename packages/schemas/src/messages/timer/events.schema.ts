@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/useNamingConvention: event schema tags must stay in PascalCase to match domain discriminators */
 import * as Schema from 'effect/Schema'
 
 import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
@@ -99,10 +100,19 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 */
 	static readonly encode = Schema.encode(DueTimeReached)
 
-	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	/**
+	 * Discriminator tag for pattern matching
+	 *
+	 * Used to discriminate between different event types in the Events union.
+	 */
 	static readonly Tag = DueTimeReached._tag
 }
 
+/**
+ * Type aliases for DueTimeReached event
+ *
+ * Provides convenient access to the validated and encoded types.
+ */
 export declare namespace DueTimeReached {
 	/**
 	 * Validated domain type (branded types preserved)
@@ -130,4 +140,10 @@ export const Events = Schema.Union(DueTimeReached)
  */
 export type Events = Schema.Schema.Type<typeof Events>
 
+/**
+ * Tag discriminator type for Timer events
+ *
+ * Union of all possible event tag values ('DueTimeReached', etc.).
+ * Used for exhaustive pattern matching on event types.
+ */
 export type Tag = typeof Events.Tag

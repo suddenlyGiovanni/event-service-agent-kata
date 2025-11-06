@@ -7,5 +7,10 @@
 		"semiColons": false,
 		"singleQuote": true,
 		"useTabs": true
+	},
+	"lint": {
+		"rules": {
+			"exclude": ["no-slow-types"]
+		}
 	}
 }
