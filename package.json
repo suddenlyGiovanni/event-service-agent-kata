@@ -60,5 +60,7 @@
 		"type-check": "bun --bun --workspaces type-check"
 	},
 	"type": "module",
-	"workspaces": ["packages/*"]
+	"workspaces": [
+		"packages/*"
+	]
 }

@@ -5,12 +5,14 @@
 Track future due times and emit [DueTimeReached] events when time arrives.
 
 **Why Timer exists as a separate module:**
+
 - **Separation of Concerns**: Orchestration focuses on business workflows; Timer focuses on time-based infrastructure
 - **Testability**: Time-dependent behavior isolated behind ClockPort, enabling deterministic testing
 - **Resilience**: Polling-based design survives crashes without losing scheduled timers (database is source of truth)
 - **Broker-Agnostic**: Timer implementation doesn't depend on broker-specific timer features (portability)
 
 **What Timer does NOT do:**
+
 - ❌ Owns ServiceCall aggregate (Orchestration owns it)
 - ❌ Makes business decisions (just signals "time's up")
 - ❌ Handles retries or cancellations (out of scope per domain constraints)
@@ -21,6 +23,7 @@ Track future due times and emit [DueTimeReached] events when time arrives.
 TimerEntry: `(tenantId, serviceCallId, dueAt, registeredAt, status)`
 
 **Why this structure:**
+
 - `(tenantId, serviceCallId)` composite key ensures idempotency (upsert semantics)
 - `dueAt` enables efficient polling queries (`WHERE dueAt <= now AND status = 'Scheduled'`)
 - `registeredAt` provides audit trail and latency metrics (`reachedAt - registeredAt`)
@@ -48,49 +51,50 @@ TimerEntry: `(tenantId, serviceCallId, dueAt, registeredAt, status)`
 
 ```typescript
 // Receive IDs from ScheduleTimer command
-const { tenantId, serviceCallId, dueAt } = command;
+const { tenantId, serviceCallId, dueAt } = command
 
 // Store TimerEntry keyed by (tenantId, serviceCallId)
-await db.upsert({ tenantId, serviceCallId, dueAt, status: "Scheduled" });
+await db.upsert({ tenantId, serviceCallId, dueAt, status: 'Scheduled' })
 
 // When firing: construct domain event (validated via Schema)
 const event = new DueTimeReached({
-  tenantId,
-  serviceCallId,
-  reachedAt: firedAt,  // DateTime.Utc (not ISO string)
-});
+	tenantId,
+	serviceCallId,
+	reachedAt: firedAt, // DateTime.Utc (not ISO string)
+})
 
 // Publish with MessageMetadata Context (workflow provides)
-yield* eventBus.publishDueTimeReached(event).pipe(
-  Effect.provideService(MessageMetadata, {
-    correlationId: timer.correlationId,  // From timer aggregate
-    causationId: Option.none(),          // Time-triggered
-  })
-);
+yield *
+	eventBus.publishDueTimeReached(event).pipe(
+		Effect.provideService(MessageMetadata, {
+			correlationId: timer.correlationId, // From timer aggregate
+			causationId: Option.none(), // Time-triggered
+		})
+	)
 ```
 
 **Real Implementation** (timer-event-bus.adapter.ts):
 
 ```typescript
 // Adapter extracts MessageMetadata from Context
-const metadata = yield* MessageMetadata;
+const metadata = yield * MessageMetadata
 
 // Generate envelope ID (UUID v7)
-const envelopeId = yield* EnvelopeId.makeUUID7();
+const envelopeId = yield * EnvelopeId.makeUUID7()
 
 // Construct envelope via Schema class (direct instantiation)
 const envelope: MessageEnvelope.Type = new MessageEnvelope({
-  id: envelopeId,
-  type: dueTimeReached._tag,
-  payload: dueTimeReached,  // Domain event (already validated)
-  tenantId: dueTimeReached.tenantId,
-  timestampMs: yield* clock.now(),
-  correlationId: metadata.correlationId,  // From Context
-  causationId: metadata.causationId,      // From Context
-  aggregateId: Option.some(dueTimeReached.serviceCallId),
-});
+	id: envelopeId,
+	type: dueTimeReached._tag,
+	payload: dueTimeReached, // Domain event (already validated)
+	tenantId: dueTimeReached.tenantId,
+	timestampMs: yield * clock.now(),
+	correlationId: metadata.correlationId, // From Context
+	causationId: metadata.causationId, // From Context
+	aggregateId: Option.some(dueTimeReached.serviceCallId),
+})
 
-yield* eventBus.publish([envelope]);
+yield * eventBus.publish([envelope])
 ```
 
 **Rationale — Why Timer is Stateless Regarding Identity:**
@@ -98,11 +102,13 @@ yield* eventBus.publish([envelope]);
 Timer doesn't own the ServiceCall aggregate—it's an infrastructure service that signals when time elapses. All meaningful identities (TenantId, ServiceCallId, CorrelationId) flow **through** Timer from Orchestration.
 
 **Why EnvelopeId generation happens in adapter, not workflow:**
+
 - Workflow deals with pure domain events (DueTimeReached schema)
 - Adapter wraps domain event in infrastructure envelope (MessageEnvelope)
 - This separation keeps domain pure and testable without envelope concerns
 
 **Why causationId is None for timer events:**
+
 - Timer firing is **time-triggered**, not **message-triggered**
 - No parent command/event caused the timer to fire—time passage did
 - Causation chain: ScheduleTimer command → timer persisted (causation ends)
@@ -113,11 +119,13 @@ See ADR-0010 for identity generation strategy, ADR-0011 for schema patterns, and
 ## Policies
 
 **On [ScheduleTimer] command received:**
+
 - Store or update TimerEntry keyed by `(tenantId, serviceCallId)` with `dueAt`
 - **Why upsert**: Idempotent—multiple schedule commands for same key don't create duplicates
 - **Why composite key**: Multi-tenancy isolation + per-ServiceCall timer identity
 
 **Scheduler loop (polling worker):**
+
 - At each tick, query for entries with `dueAt <= now` and `status == Scheduled`
 - **Why inclusive <=**: Catch timers at exact millisecond boundary (clock precision varies)
 - **Why status filter**: Exclude already-fired timers (Reached state) from reprocessing
@@ -134,12 +142,13 @@ Timer depends on these port abstractions:
 - **[ClockPort]** — Provides current time for due-time evaluation
   - **Why abstraction**: Enables deterministic testing (TestClock.adjust for time control)
   - **Why not Date.now()**: Effect-based for composability and tracing
-  
+
 - **[EventBusPort]** — Publishes [DueTimeReached] events to broker
   - **Why abstraction**: Broker-agnostic (works with NATS, Kafka, or in-memory)
   - **Why Event pattern**: Async, decoupled communication (Orchestration polls for events independently)
 
 **Why Timer has minimal ports:**
+
 - Timer is infrastructure service, not domain service
 - Needs only time and messaging—no business logic dependencies
 - Keeps module cohesive and easy to test in isolation

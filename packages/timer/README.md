@@ -16,25 +16,25 @@ The Timer module provides **durable delayed execution** for service calls. It re
 - **Reached**: Timer has fired (terminal state)
 
 ```typescript
-type TimerEntry = 
-  | ScheduledTimer  // Waiting to fire
-  | ReachedTimer    // Already fired
+type TimerEntry =
+	| ScheduledTimer // Waiting to fire
+	| ReachedTimer // Already fired
 ```
 
 ### Workflows
 
 1. **scheduleTimerWorkflow** (PL-4.3)
-   - Consumes: `ScheduleTimer` command
-   - Creates: `ScheduledTimer` domain entity
-   - Persists: Timer entry with `Scheduled` state
-   - No event published (timer just registered)
+    - Consumes: `ScheduleTimer` command
+    - Creates: `ScheduledTimer` domain entity
+    - Persists: Timer entry with `Scheduled` state
+    - No event published (timer just registered)
 
 2. **pollDueTimersWorkflow** (PL-4.4)
-   - Polls: All timers with `dueAt <= now` and `state = Scheduled`
-   - Batch processes: Up to 100 timers per poll
-   - Publishes: `DueTimeReached` event for each fired timer
-   - Transitions: `Scheduled` → `Reached` (two-operation model)
-   - Continues on error: Partial failures tracked with `BatchProcessingError`
+    - Polls: All timers with `dueAt <= now` and `state = Scheduled`
+    - Batch processes: Up to 100 timers per poll
+    - Publishes: `DueTimeReached` event for each fired timer
+    - Transitions: `Scheduled` → `Reached` (two-operation model)
+    - Continues on error: Partial failures tracked with `BatchProcessingError`
 
 ### Ports
 
@@ -115,15 +115,15 @@ import { scheduleTimerWorkflow } from '@event-service-agent/timer'
 import { Iso8601DateTime } from '@event-service-agent/schemas/shared'
 
 const program = Effect.gen(function* () {
-  yield* scheduleTimerWorkflow({
-    command: {
-      type: 'ScheduleTimer',
-      tenantId,
-      serviceCallId,
-      dueAt: Iso8601DateTime.make('2025-12-25T00:00:00Z')
-    },
-    correlationId
-  })
+	yield* scheduleTimerWorkflow({
+		command: {
+			type: 'ScheduleTimer',
+			tenantId,
+			serviceCallId,
+			dueAt: Iso8601DateTime.make('2025-12-25T00:00:00Z'),
+		},
+		correlationId,
+	})
 })
 ```
 
@@ -134,8 +134,8 @@ import { pollDueTimersWorkflow } from '@event-service-agent/timer'
 
 // Run periodically (e.g., every 10 seconds)
 const program = Effect.gen(function* () {
-  yield* pollDueTimersWorkflow()
-  // Publishes DueTimeReached for all due timers
+	yield* pollDueTimersWorkflow()
+	// Publishes DueTimeReached for all due timers
 })
 ```
 

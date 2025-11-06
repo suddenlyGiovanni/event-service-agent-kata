@@ -127,9 +127,9 @@ X-Tenant-ID: 01234567-89ab-7def-0123-456789abcdef
 
 ```json
 {
-  "serviceCallId": "01234567-89ab-7def-0123-456789abcdef",
-  "status": "submitted",
-  "submittedAt": "2025-10-28T10:42:00Z"
+	"serviceCallId": "01234567-89ab-7def-0123-456789abcdef",
+	"status": "submitted",
+	"submittedAt": "2025-10-28T10:42:00Z"
 }
 ```
 
@@ -144,18 +144,18 @@ X-Tenant-ID: 01234567-89ab-7def-0123-456789abcdef
 
 ```json
 {
-  "items": [
-    {
-      "serviceCallId": "...",
-      "name": "Check API Health",
-      "status": "scheduled",
-      "dueAt": "2025-12-25T10:00:00Z",
-      "submittedAt": "2025-10-28T10:42:00Z"
-    }
-  ],
-  "total": 127,
-  "limit": 50,
-  "offset": 0
+	"items": [
+		{
+			"serviceCallId": "...",
+			"name": "Check API Health",
+			"status": "scheduled",
+			"dueAt": "2025-12-25T10:00:00Z",
+			"submittedAt": "2025-10-28T10:42:00Z"
+		}
+	],
+	"total": 127,
+	"limit": 50,
+	"offset": 0
 }
 ```
 
@@ -170,21 +170,21 @@ X-Tenant-ID: 01234567-89ab-7def-0123-456789abcdef
 
 ```json
 {
-  "serviceCallId": "...",
-  "name": "Check API Health",
-  "status": "succeeded",
-  "requestSpec": { "method": "GET", "url": "..." },
-  "responseMeta": {
-    "status": 200,
-    "latencyMs": 142,
-    "bodySnippet": "{\"status\":\"ok\"}"
-  },
-  "timeline": [
-    { "event": "submitted", "timestamp": "2025-10-28T10:42:00Z" },
-    { "event": "scheduled", "timestamp": "2025-10-28T10:42:01Z" },
-    { "event": "running", "timestamp": "2025-12-25T10:00:00Z" },
-    { "event": "succeeded", "timestamp": "2025-12-25T10:00:01Z" }
-  ]
+	"serviceCallId": "...",
+	"name": "Check API Health",
+	"status": "succeeded",
+	"requestSpec": { "method": "GET", "url": "..." },
+	"responseMeta": {
+		"status": 200,
+		"latencyMs": 142,
+		"bodySnippet": "{\"status\":\"ok\"}"
+	},
+	"timeline": [
+		{ "event": "submitted", "timestamp": "2025-10-28T10:42:00Z" },
+		{ "event": "scheduled", "timestamp": "2025-10-28T10:42:01Z" },
+		{ "event": "running", "timestamp": "2025-12-25T10:00:00Z" },
+		{ "event": "succeeded", "timestamp": "2025-12-25T10:00:01Z" }
+	]
 }
 ```
 

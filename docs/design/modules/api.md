@@ -62,19 +62,19 @@ Identity & Context
 
 ```typescript
 // Entry point: validate and generate IDs
-const correlationId = Schema.make(CorrelationId)(crypto.randomUUID());
+const correlationId = Schema.make(CorrelationId)(crypto.randomUUID())
 
-const tenantId = yield * Schema.decode(TenantId)(req.params.tenantId); // Validate!
+const tenantId = yield * Schema.decode(TenantId)(req.params.tenantId) // Validate!
 
 const serviceCallId = req.body.serviceCallId
-  ? yield * Schema.decode(ServiceCallId)(req.body.serviceCallId) // Validate client ID
-  : yield * ServiceCallId.makeUUID7(); // Generate server ID
+	? yield * Schema.decode(ServiceCallId)(req.body.serviceCallId) // Validate client ID
+	: yield * ServiceCallId.makeUUID7() // Generate server ID
 
 // Pass to domain via RequestContext
-const ctx = RequestContext({ tenantId, correlationId });
+const ctx = RequestContext({ tenantId, correlationId })
 ```
 
-**Rationale:** API is the validation boundary. All external input must be validated before entering domain. Uses Effect Schema for ID validation and generation. See [ADR-0010][] for identity generation strategy and [ADR-0011][] for schema patterns.
+**Rationale:** API is the validation boundary. All external input must be validated before entering domain. Uses Effect Schema for ID validation and generation. See [ADR-0010][ADR-0010] for identity generation strategy and [ADR-0011][ADR-0011] for schema patterns.
 
 Inputs/Outputs Recap
 

@@ -5,6 +5,7 @@
 Contract the discovery into problem-space essentials: constraints, core concepts, and high-level workflows, independent of implementation or solution structures.
 
 **Why this document exists:**
+
 - **Shared Understanding**: Establishes ubiquitous language between stakeholders and developers
 - **Problem-First Thinking**: Defines WHAT we're solving before HOW we solve it
 - **Scope Boundaries**: Makes explicit what's in/out of MVP to prevent scope creep
@@ -50,6 +51,7 @@ Contract the discovery into problem-space essentials: constraints, core concepts
 ## Core Concepts (Ubiquitous Language)
 
 **Why establish ubiquitous language:**
+
 - Prevents miscommunication between domain experts and developers
 - Ensures code names match business vocabulary (ServiceCall, not Task/Job)
 - Enables non-technical stakeholders to understand code structure
@@ -115,6 +117,7 @@ Glossary (Problem-Space)
 ## High-Level Workflows
 
 **Why document workflows at problem-space level:**
+
 - Define business process independent of technical implementation
 - Validate that solution architecture maps back to business needs
 - Identify missing use cases or edge conditions early

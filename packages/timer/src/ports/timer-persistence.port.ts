@@ -254,7 +254,6 @@ export interface TimerPersistencePort {
  * TimerPersistencePort service tag
  *
  * Use this to access the TimerPersistencePort from the Effect context.
- *
  */
 export const TimerPersistencePort = Context.GenericTag<TimerPersistencePort>(
 	'@event-service-agent/timer/TimerPersistencePort',

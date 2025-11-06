@@ -86,7 +86,6 @@ export interface TimerEventBusPort {
 	 * - Use correlationId for timer aggregate
 	 * - Use causationId when publishing events (tracks "which command triggered this")
 	 *
-	 *
 	 * @param handler - Effect to process each command (invokes scheduleTimerWorkflow)
 	 * @returns Effect that runs indefinitely, processing commands
 	 * @throws SubscribeError - When subscription setup fails

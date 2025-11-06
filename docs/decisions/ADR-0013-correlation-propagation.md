@@ -103,16 +103,19 @@ Include infrastructure metadata in domain event schema.
 ```typescript
 // Domain event with metadata
 export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
-  "DueTimeReached",
-  {
-    ...ServiceCallEventBase.fields,
-    reachedAt: Schema.DateTimeUtc,
-    correlationId: Schema.optionalWith(CorrelationId, {
-      as: "Option",
-      exact: true,
-    }),
-    causationId: Schema.optionalWith(EnvelopeId, { as: "Option", exact: true }),
-  }
+	'DueTimeReached',
+	{
+		...ServiceCallEventBase.fields,
+		reachedAt: Schema.DateTimeUtc,
+		correlationId: Schema.optionalWith(CorrelationId, {
+			as: 'Option',
+			exact: true,
+		}),
+		causationId: Schema.optionalWith(EnvelopeId, {
+			as: 'Option',
+			exact: true,
+		}),
+	}
 ) {}
 ```
 
@@ -308,7 +311,6 @@ See `docs/plan/correlation-context-implementation.md` for 14-task breakdown (PL-
 **Clarification**: MessageMetadata Context is **orthogonal** to OpenTelemetry:
 
 - **MessageMetadata (This ADR)**: Application-level business workflow tracking
-
   - Lives in: MessageEnvelope payload
   - Purpose: Link messages in business logic (ServiceCall lifecycle)
   - Tools: Structured logs, event store queries

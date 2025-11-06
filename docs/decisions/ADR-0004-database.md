@@ -160,9 +160,9 @@ Each module owns its own SQLite file. Physical isolation enforces boundaries.
 **Module Wiring:**
 
 ```typescript
-const db = new Database(process.env.DB_PATH || "./data/event_service.db");
-const orchAdapter = new OrchestrationSqliteAdapter(db);
-const timerAdapter = new TimerSqliteAdapter(db);
+const db = new Database(process.env.DB_PATH || './data/event_service.db')
+const orchAdapter = new OrchestrationSqliteAdapter(db)
+const timerAdapter = new TimerSqliteAdapter(db)
 ```
 
 **Testing:** In-memory DBs for unit tests (module-isolated); file-based for E2E
@@ -201,40 +201,38 @@ Example (condensed):
 ```typescript
 // Domain use case (depends on port only)
 export const submitServiceCall = (req: SubmitServiceCallRequest) =>
-  Effect.gen(function* () {
-    const entity = ServiceCall.create(req);
-    const port = yield* OrchestrationPersistencePort;
-    yield* port.saveServiceCall(entity);
-    return entity;
-  });
+	Effect.gen(function* () {
+		const entity = ServiceCall.create(req)
+		const port = yield* OrchestrationPersistencePort
+		yield* port.saveServiceCall(entity)
+		return entity
+	})
 
 // Port
 export interface OrchestrationPersistencePort {
-  saveServiceCall(entity: ServiceCall): Effect<void, PersistenceError>;
+	saveServiceCall(entity: ServiceCall): Effect<void, PersistenceError>
 }
 
 // Adapter (simplified)
-export class OrchestrationSqliteAdapter
-  implements OrchestrationPersistencePort
-{
-  constructor(private db: Database) {}
-  saveServiceCall(entity: ServiceCall) {
-    return Effect.tryPromise(() =>
-      this.db.transaction(async (tx) => {
-        await tx.run(
-          `INSERT INTO service_calls (tenant_id, service_call_id, name, status, created_at)
+export class OrchestrationSqliteAdapter implements OrchestrationPersistencePort {
+	constructor(private db: Database) {}
+	saveServiceCall(entity: ServiceCall) {
+		return Effect.tryPromise(() =>
+			this.db.transaction(async (tx) => {
+				await tx.run(
+					`INSERT INTO service_calls (tenant_id, service_call_id, name, status, created_at)
                      VALUES (?, ?, ?, ?, ?)`,
-          [
-            entity.tenantId,
-            entity.id,
-            entity.name,
-            entity.status,
-            entity.createdAt,
-          ],
-        );
-      }),
-    );
-  }
+					[
+						entity.tenantId,
+						entity.id,
+						entity.name,
+						entity.status,
+						entity.createdAt,
+					],
+				)
+			})
+		)
+	}
 }
 ```
 

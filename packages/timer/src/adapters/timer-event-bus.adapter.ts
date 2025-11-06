@@ -47,7 +47,10 @@ export class TimerEventBus {
 
 					const envelopeId: EnvelopeId.Type = yield* EnvelopeId.makeUUID7().pipe(
 						Effect.mapError(
-							parseError => new Ports.PublishError({ cause: `Failed to generate EnvelopeId: ${parseError}` }),
+							parseError =>
+								new Ports.PublishError({
+									cause: `Failed to generate EnvelopeId: ${parseError}`,
+								}),
 						),
 						Effect.provideService(UUID7, uuid),
 					)
@@ -198,7 +201,10 @@ export class TimerEventBus {
 						}),
 				)
 
-				return Ports.TimerEventBusPort.of({ publishDueTimeReached, subscribeToScheduleTimerCommands })
+				return Ports.TimerEventBusPort.of({
+					publishDueTimeReached,
+					subscribeToScheduleTimerCommands,
+				})
 			}),
 		)
 }

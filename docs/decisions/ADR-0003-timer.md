@@ -108,6 +108,7 @@ stateDiagram-v2
 ```
 
 **Why this design:**
+
 - **Polling wins**: Only option that satisfies all constraints (durable, portable, broker-agnostic)
 - **5-second interval**: Balances latency (acceptable for MVP) with CPU cost (minimal)
 - **State field**: Enables idempotent processing (query excludes already-fired timers)
@@ -128,9 +129,10 @@ stateDiagram-v2
 
 **Adopt periodic polling (5-second interval) as the Timer detection mechanism.**
 
-**Rationale:** 
+**Rationale:**
 
 First principles analysis shows this as the only viable path satisfying all MVP constraints:
+
 - **Durable**: Database survives crashes (unlike in-memory setTimeout)
 - **Broker-agnostic**: No dependency on broker-specific timer features
 - **Portable**: Works on any platform (no cloud scheduler lock-in)
@@ -138,12 +140,14 @@ First principles analysis shows this as the only viable path satisfying all MVP 
 - **Meets requirements**: Seconds-level accuracy is acceptable per domain constraints
 
 **Why NOT alternatives:**
+
 - ❌ `setTimeout`: Lost on restart (durability violated)
 - ❌ Cloud schedulers: Couples to AWS/GCP (portability violated)
 - ❌ `pg_cron`: Couples to PostgreSQL (we use SQLite for MVP)
 - ❌ In-memory timer wheel: Premature optimization (complexity without benefit)
 
 **Acceptable trade-offs:**
+
 - **Latency**: Up to 5 seconds delay (acceptable per domain constraints)
 - **CPU**: Query every 5s (~0.001% CPU on modern hardware)
 - **Scalability**: Single instance handles thousands of timers (adequate for MVP)
@@ -159,11 +163,13 @@ First principles analysis shows this as the only viable path satisfying all MVP 
 **Choice**: Single SQLite database (`event_service.db`) with Timer owning `timer_schedules` table.
 
 **Why shared database in MVP:**
+
 - **Simplicity**: Single database setup, no distributed transaction concerns
 - **Local development**: One file, easy to reset and debug
 - **Testing**: Fast integration tests without multiple database orchestration
 
 **Why strong boundaries despite shared database:**
+
 - Prepares for future service extraction (Phase N)
 - Enforces architectural discipline (no implicit coupling via JOINs)
 - Makes dependencies explicit via events (better than hidden DB queries)
@@ -173,15 +179,15 @@ First principles analysis shows this as the only viable path satisfying all MVP 
 - ❌ **No Cross-Module JOINs**: Timer queries ONLY its own table
   - **Why**: Prevents coupling to Orchestration's schema changes
   - **Enforced**: Code reviews + architecture tests
-  
+
 - ✅ **Denormalized Storage**: Timer stores all needed data from `ScheduleTimer` event
   - **Why**: Timer can operate independently without querying other tables
   - **Trade-off**: Some data duplication, but enables service extraction
-  
+
 - ✅ **Event-Driven Communication**: Timer receives data via broker, not DB queries
   - **Why**: Loose coupling, supports future physical separation
   - **Pattern**: Command → Event → New Command (async workflow)
-  
+
 - ⚠️ **Foreign Keys**: For integrity only (can be removed when extracting to separate service)
   - **Why keep now**: Prevents orphaned timers during MVP development
   - **Why remove later**: Foreign keys don't work across services
@@ -203,21 +209,25 @@ Final: timer.db + timer_service running independently
 **Why this schema design:**
 
 **Composite Primary Key `(tenantId, serviceCallId)`:**
+
 - **Why composite**: Ensures one timer per ServiceCall (business invariant)
 - **Why tenantId first**: Enables tenant-scoped queries and future sharding
 - **Why not auto-increment ID**: Application-generated IDs enable idempotency (see ADR-0010)
 
 **State field (`Scheduled | Reached`):**
+
 - **Why two states only**: Minimal state machine (simpler correctness proofs)
 - **Why not delete after firing**: Audit trail + debugging (can see when timer fired)
 - **Why Reached not Fired**: "Reached due time" is domain language (matches DueTimeReached event)
 
 **Timestamps (dueAt, registeredAt, reachedAt):**
+
 - **Why dueAt indexed**: Critical for polling query performance (sub-millisecond scans)
 - **Why registeredAt**: Latency metrics (reachedAt - registeredAt = total delay)
 - **Why reachedAt nullable**: Only set after successful firing (audit trail)
 
 **CorrelationId (optional):**
+
 - **Why optional**: System-initiated timers lack correlation context
 - **Why stored**: Enables end-to-end tracing from request → timer → execution
 - **Why not in primary key**: Not part of business identity (two timers can share correlationId)
@@ -254,21 +264,21 @@ erDiagram
 
 ```typescript
 type TimerSchedule = {
-  // Composite Primary Key
-  readonly tenantId: TenantId;        // Why first: Tenant-scoped queries
-  readonly serviceCallId: ServiceCallId; // Why: One timer per ServiceCall
+	// Composite Primary Key
+	readonly tenantId: TenantId // Why first: Tenant-scoped queries
+	readonly serviceCallId: ServiceCallId // Why: One timer per ServiceCall
 
-  // Schedule
-  readonly dueAt: timestamp;          // Why indexed: Polling query performance
-  state: "Scheduled" | "Reached";     // Why: Idempotent processing via state filter
+	// Schedule
+	readonly dueAt: timestamp // Why indexed: Polling query performance
+	state: 'Scheduled' | 'Reached' // Why: Idempotent processing via state filter
 
-  // Audit
-  readonly registeredAt: timestamp;   // Why: Latency metrics
-  reachedAt?: timestamp;              // Why nullable: Only set after firing
+	// Audit
+	readonly registeredAt: timestamp // Why: Latency metrics
+	reachedAt?: timestamp // Why nullable: Only set after firing
 
-  // Observability
-  readonly correlationId?: string;    // Why optional: System timers lack context
-};
+	// Observability
+	readonly correlationId?: string // Why optional: System timers lack context
+}
 ```
 
 **Indexes:**
@@ -277,7 +287,7 @@ type TimerSchedule = {
   - **Why state first**: Filters ~99% of rows (most timers are Reached)
   - **Why dueAt second**: Enables range scan on remaining Scheduled timers
   - **Performance**: O(log n) index seek + O(k) range scan (k = due timers)
-  
+
 - **Unique: `(tenantId, serviceCallId)`** — Primary key (business invariant)
   - **Why unique**: Prevents duplicate timers for same ServiceCall
   - **Why composite**: Multi-tenancy isolation at index level
@@ -337,18 +347,18 @@ LIMIT 100;
 
 ```typescript
 for (const schedule of dueSchedules) {
-  // Envelope is self-contained with all routing metadata
-  const envelope = {
-    id: generateEnvelopeId(),
-    type: 'DueTimeReached',
-    tenantId: schedule.tenantId,
-    correlationId: schedule.correlationId,  // Optional
-    timestampMs: now,
-    payload: DueTimeReached(schedule)
-  };
-  
-  await eventBus.publish([envelope]);              // First
-  await db.update("SET state = 'Reached' WHERE ..."); // Second
+	// Envelope is self-contained with all routing metadata
+	const envelope = {
+		id: generateEnvelopeId(),
+		type: 'DueTimeReached',
+		tenantId: schedule.tenantId,
+		correlationId: schedule.correlationId, // Optional
+		timestampMs: now,
+		payload: DueTimeReached(schedule),
+	}
+
+	await eventBus.publish([envelope]) // First
+	await db.update("SET state = 'Reached' WHERE ...") // Second
 }
 ```
 
