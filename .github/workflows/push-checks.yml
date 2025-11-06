@@ -65,11 +65,20 @@ jobs:
         with:
           commit_message: "chore: lint and format code with Biome [skip ci]"
 
+      - name: 📋 Detect changed Markdown files
+        uses: tj-actions/changed-files@v47
+        id: changed-markdown-files
+        with:
+          files: '**/*.md'
+          separator: ","
+
       - name: 📝 Fix Markdown lint issues
-        id: markdown-fix
-        continue-on-error: true
-        shell: sh
-        run: bunx --bun markdownlint-cli2 --fix "docs/**/*.md"
+        if: steps.changed-markdown-files.outputs.any_changed == 'true'
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
+          separator: ","
+          fix: true
 
       - name: 🚦 Git Auto Commit Markdown fixes
         uses: stefanzweifel/git-auto-commit-action@v7

@@ -46,6 +46,14 @@ jobs:
           --assist-enabled=true \
           --reporter=github
 
+      - name: 📝 Lint Markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: |
+            **/*.md
+            !node_modules/**
+            !**/node_modules/**
+
       - name: 📚 Validate documentation
         continue-on-error: true
         shell: sh
