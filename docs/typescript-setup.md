@@ -7,12 +7,12 @@ This monorepo uses TypeScript Project References to enable efficient type checki
 ### Check All Packages (from root)
 
 ```bash
-tsc --noEmit
+tsc --build
 ```
 
-This single command type-checks all packages in the monorepo using TypeScript project references.
+This command type-checks all packages in the monorepo using TypeScript project references. It will check all referenced packages and report errors from any of them.
 
-**Note**: Use `tsc --noEmit` (without `--build` flag) for the most flexible type checking that works even without all type definition packages installed.
+**Note**: Use `tsc --build` (not `tsc --noEmit`) at the root level. With project references, `--build` is required to actually check the referenced projects.
 
 ### Check Individual Package
 
@@ -21,7 +21,7 @@ cd packages/<package-name>
 tsc --noEmit
 ```
 
-Each package can be type-checked independently.
+Each package can be type-checked independently using `tsc --noEmit`.
 
 ### Using npm/bun Scripts
 
@@ -73,7 +73,7 @@ Contains shared compiler options for all packages with strict type checking enab
 
 ## Benefits
 
-- **Single Command**: Type-check entire monorepo with `tsc --noEmit` from root
+- **Single Command**: Type-check entire monorepo with `tsc --build` from root
 - **Fast**: TypeScript uses project references for incremental checking
 - **Independent**: Each package can still be checked individually
 - **Standard**: Works with plain `tsc` without requiring bun
@@ -81,7 +81,5 @@ Contains shared compiler options for all packages with strict type checking enab
 ## Notes
 
 - The configuration requires TypeScript 3.0+ for project references support
-- Type definitions for `bun` and `@total-typescript/ts-reset` are specified but optional
-- When dependencies are installed via bun, all type definitions will be available
-- **Root type checking** (`tsc --noEmit` from root): Works even without installed dependencies, focuses on actual TypeScript code
-- **Package type checking** (from individual package): Requires dependencies to be installed for full type checking including type definition files
+- **Root type checking**: Use `tsc --build` to check all packages via project references
+- **Package type checking**: Use `tsc --noEmit` when checking individual packages

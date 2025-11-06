@@ -57,7 +57,7 @@
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
 		"test": "bun --bun vitest",
-		"type-check": "tsc --noEmit"
+		"type-check": "tsc --build"
 	},
 	"type": "module",
 	"workspaces": ["packages/*"]

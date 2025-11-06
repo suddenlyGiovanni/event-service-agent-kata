@@ -67,9 +67,6 @@
 		// Best practices
 		"strict": true,
 		"target": "ESNext",
-		// Note: The following types require dependencies to be installed via bun
-		// If running tsc without bun dependencies, you may see type definition errors
-		"types": ["bun", "@total-typescript/ts-reset"],
 		"verbatimModuleSyntax": true
 	}
 }
