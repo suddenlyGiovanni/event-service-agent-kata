@@ -256,6 +256,7 @@ export interface TimerEventBusPort {
 
 **MessageMetadata Context Pattern** (ADR-0013):
 
+- **Import**: `import { MessageMetadata } from '@event-service-agent/platform/context'`
 - **Publishing**: Port requires `MessageMetadata` in R parameter. Workflow provides via `Effect.provideService(MessageMetadata, { correlationId, causationId })`. Adapter extracts `yield* MessageMetadata`.
 - **Subscribing**: Adapter passes `MessageMetadata` as handler parameter (not via Context). This asymmetry aligns with Effect ecosystem: Context for ambient cross-cutting concerns, parameters for explicit data flow.
 
