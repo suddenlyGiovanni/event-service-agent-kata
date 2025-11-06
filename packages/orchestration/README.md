@@ -48,25 +48,25 @@ Owns the **ServiceCall** aggregate root with states:
 Orchestration is the **single writer** for ServiceCall data:
 
 ```txt
-         API
-          ↓ SubmitServiceCall
-    ┌──────────────────────────┐
-    │  @orchestration          │
-    │  (This Package)          │
-    │                          │
-    │  • Owns ServiceCall      │
-    │  • Coordinates modules   │
-    │  • Single writer ✅      │
-    └──────────────────────────┘
-          ↓                ↑
-    ScheduleTimer    DueTimeReached
-          ↓                ↑
-       Timer          Timer
-       
-          ↓                ↑
-    StartExecution  ExecutionResult
-          ↓                ↑
-      Execution      Execution
+     API
+      ↓ SubmitServiceCall
+┌──────────────────────────┐
+│  @orchestration          │
+│  (This Package)          │
+│                          │
+│  • Owns ServiceCall      │
+│  • Coordinates modules   │
+│  • Single writer ✅      │
+└──────────────────────────┘
+      ↓                ↑
+ScheduleTimer    DueTimeReached
+      ↓                ↑
+   Timer          Timer
+
+      ↓                ↑
+StartExecution  ExecutionResult
+      ↓                ↑
+  Execution      Execution
 ```
 
 **Key Principles:**
@@ -138,17 +138,17 @@ Submitted → Scheduled → Running → Succeeded
 
 ```typescript
 type ServiceCall =
-  | { status: 'Submitted'; name: string; requestSpec: RequestSpec; ... }
-  | { status: 'Scheduled'; dueAt: DateTime.Utc; ... }
-  | { status: 'Running'; startedAt: DateTime.Utc; ... }
-  | { status: 'Succeeded'; responseMeta: ResponseMeta; ... }
-  | { status: 'Failed'; errorMeta: ErrorMeta; ... }
+  | { status: 'Submitted'; name: string; requestSpec: RequestSpec; /* ...*/ }
+  | { status: 'Scheduled'; dueAt: DateTime.Utc; /* ...*/ }
+  | { status: 'Running'; startedAt: DateTime.Utc; /* ...*/ }
+  | { status: 'Succeeded'; responseMeta: ResponseMeta; /* ...*/ }
+  | { status: 'Failed'; errorMeta: ErrorMeta; /* ...*/ }
 
 // State transition functions (pure)
-const schedule: (call: Submitted, dueAt: DateTime.Utc) => Scheduled
-const start: (call: Scheduled, startedAt: DateTime.Utc) => Running
-const succeed: (call: Running, meta: ResponseMeta) => Succeeded
-const fail: (call: Running, meta: ErrorMeta) => Failed
+declare const schedule: (call: Submitted, dueAt: DateTime.Utc) => Scheduled
+declare const start: (call: Scheduled, startedAt: DateTime.Utc) => Running
+declare const succeed: (call: Running, meta: ResponseMeta) => Succeeded
+declare const fail: (call: Running, meta: ErrorMeta) => Failed
 ```
 
 ## Workflows (Planned)
@@ -156,59 +156,59 @@ const fail: (call: Running, meta: ErrorMeta) => Failed
 ### submitWorkflow
 
 ```typescript
-const submitWorkflow = Effect.fn('Orchestration.Submit')(
-  function* (command: SubmitServiceCall) {
-    // Generate ID
-    const serviceCallId = yield* ServiceCallId.makeUUID7()
-    
-    // Create aggregate
-    const serviceCall = ServiceCall.submit({
-      serviceCallId,
-      tenantId: command.tenantId,
-      name: command.name,
-      requestSpec: command.requestSpec,
-      submittedAt: yield* Clock.currentTimeMillis
-    })
-    
-    // Persist
-    yield* persistence.save(serviceCall)
-    
-    // Publish event
-    yield* eventBus.publish([makeSubmittedEvent(serviceCall)])
-    
-    // Send command to Timer
-    yield* eventBus.publish([makeScheduleTimerCommand(serviceCall)])
-  }
-)
+const submitWorkflow = Effect.fn('Orchestration.Submit')(function* (
+	command: SubmitServiceCall
+) {
+	// Generate ID
+	const serviceCallId = yield* ServiceCallId.makeUUID7()
+
+	// Create aggregate
+	const serviceCall = ServiceCall.submit({
+		serviceCallId,
+		tenantId: command.tenantId,
+		name: command.name,
+		requestSpec: command.requestSpec,
+		submittedAt: yield* Clock.currentTimeMillis,
+	})
+
+	// Persist
+	yield* persistence.save(serviceCall)
+
+	// Publish event
+	yield* eventBus.publish([makeSubmittedEvent(serviceCall)])
+
+	// Send command to Timer
+	yield* eventBus.publish([makeScheduleTimerCommand(serviceCall)])
+})
 ```
 
 ### dueWorkflow
 
 ```typescript
-const dueWorkflow = Effect.fn('Orchestration.Due')(
-  function* (event: DueTimeReached) {
-    // Load aggregate
-    const serviceCall = yield* persistence.find(
-      event.tenantId,
-      event.serviceCallId
-    )
-    
-    // Transition
-    const running = ServiceCall.start(
-      serviceCall,
-      yield* Clock.currentTimeMillis
-    )
-    
-    // Persist
-    yield* persistence.save(running)
-    
-    // Publish event
-    yield* eventBus.publish([makeRunningEvent(running)])
-    
-    // Send command to Execution
-    yield* eventBus.publish([makeStartExecutionCommand(running)])
-  }
-)
+const dueWorkflow = Effect.fn('Orchestration.Due')(function* (
+	event: DueTimeReached
+) {
+	// Load aggregate
+	const serviceCall = yield* persistence.find(
+		event.tenantId,
+		event.serviceCallId
+	)
+
+	// Transition
+	const running = ServiceCall.start(
+		serviceCall,
+		yield* Clock.currentTimeMillis
+	)
+
+	// Persist
+	yield* persistence.save(running)
+
+	// Publish event
+	yield* eventBus.publish([makeRunningEvent(running)])
+
+	// Send command to Execution
+	yield* eventBus.publish([makeStartExecutionCommand(running)])
+})
 ```
 
 ## Persistence Schema (Planned)
@@ -233,7 +233,7 @@ CREATE TABLE service_calls (
   PRIMARY KEY (tenant_id, service_call_id)
 );
 
-CREATE INDEX idx_service_calls_status 
+CREATE INDEX idx_service_calls_status
   ON service_calls(tenant_id, status, due_at);
 ```
 

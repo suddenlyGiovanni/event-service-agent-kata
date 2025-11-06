@@ -52,14 +52,14 @@ Pass metadata alongside domain event via separate context object.
 ```typescript
 // Port signature
 interface PublishContext {
-  readonly correlationId: Option<CorrelationId>
-  readonly causationId: Option<EnvelopeId>
+  readonly correlationId: Option.Option<CorrelationId>
+  readonly causationId: Option.Option<EnvelopeId>
 }
 
-publishDueTimeReached(
+declare const publishDueTimeReached: (
   event: DueTimeReached,
   context: PublishContext
-): Effect<void, PublishError>
+) => Effect<void, PublishError>
 
 // Workflow
 yield* eventBus.publishDueTimeReached(
@@ -103,16 +103,19 @@ Include infrastructure metadata in domain event schema.
 ```typescript
 // Domain event with metadata
 export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
-  "DueTimeReached",
-  {
-    ...ServiceCallEventBase.fields,
-    reachedAt: Schema.DateTimeUtc,
-    correlationId: Schema.optionalWith(CorrelationId, {
-      as: "Option",
-      exact: true,
-    }),
-    causationId: Schema.optionalWith(EnvelopeId, { as: "Option", exact: true }),
-  }
+	'DueTimeReached',
+	{
+		...ServiceCallEventBase.fields,
+		reachedAt: Schema.DateTimeUtc,
+		correlationId: Schema.optionalWith(CorrelationId, {
+			as: 'Option',
+			exact: true,
+		}),
+		causationId: Schema.optionalWith(EnvelopeId, {
+			as: 'Option',
+			exact: true,
+		}),
+	}
 ) {}
 ```
 
@@ -138,18 +141,17 @@ Adapter fetches aggregate to get metadata before wrapping.
 
 ```typescript
 // Adapter queries persistence
-publishDueTimeReached(event: DueTimeReached) {
-  return Effect.gen(function* () {
-    const persistence = yield* TimerPersistencePort
-    const timer = yield* persistence.find(event.tenantId, event.serviceCallId)
+const publishDueTimeReached = (event: DueTimeReached) => Effect.gen(function* () {
+	const persistence = yield* TimerPersistencePort
+	const timer = yield* persistence.find(event.tenantId, event.serviceCallId)
 
-    const envelope = new MessageEnvelope({
-      payload: event,
-      correlationId: Option.flatMap(timer, t => t.correlationId),
-      // ...
-    })
-  })
-}
+	const envelope = new MessageEnvelope({
+		payload: event,
+		correlationId: Option.flatMap(timer, t => t.correlationId),
+		// ...
+	})
+})
+
 ```
 
 **Pros**:
@@ -174,10 +176,10 @@ publishDueTimeReached(event: DueTimeReached) {
 Domain events carry aggregate reference.
 
 ```typescript
-publishDueTimeReached(
+declare const publishDueTimeReached: (
   event: DueTimeReached,
   timer: TimerEntry
-): Effect<void, PublishError>
+) => Effect<void, PublishError>
 ```
 
 **Pros**:
@@ -211,9 +213,9 @@ export class MessageMetadata extends Context.Tag('MessageMetadata')<
 >() {}
 
 // 2. Port signature requires context (R parameter)
-publishDueTimeReached(
+declare const publishDueTimeReached: (
   event: DueTimeReached
-): Effect<void, PublishError, MessageMetadata>  // ← Requires context
+) => Effect<void, PublishError, MessageMetadata>  // ← Requires context
 
 // 3. Workflow provisions context (per-request data)
 yield* eventBus.publishDueTimeReached(event).pipe(
@@ -308,7 +310,6 @@ See `docs/plan/correlation-context-implementation.md` for 14-task breakdown (PL-
 **Clarification**: MessageMetadata Context is **orthogonal** to OpenTelemetry:
 
 - **MessageMetadata (This ADR)**: Application-level business workflow tracking
-
   - Lives in: MessageEnvelope payload
   - Purpose: Link messages in business logic (ServiceCall lifecycle)
   - Tools: Structured logs, event store queries

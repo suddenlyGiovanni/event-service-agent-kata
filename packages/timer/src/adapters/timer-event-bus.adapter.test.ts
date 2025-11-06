@@ -123,9 +123,12 @@ describe('TimerEventBus', () => {
 
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus
-						.publishDueTimeReached(dueTimeReachedEvent)
-						.pipe(Effect.provideService(MessageMetadata, { causationId: Option.none(), correlationId: Option.none() }))
+					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
+						Effect.provideService(MessageMetadata, {
+							causationId: Option.none(),
+							correlationId: Option.none(),
+						}),
+					)
 
 					// Assert
 					expect(publishedEnvelopes).toHaveLength(1)
@@ -163,7 +166,10 @@ describe('TimerEventBus', () => {
 						tenantId,
 					})
 
-					const messageMetadata = MessageMetadata.of({ causationId: Option.none(), correlationId: Option.none() })
+					const messageMetadata = MessageMetadata.of({
+						causationId: Option.none(),
+						correlationId: Option.none(),
+					})
 
 					// Act - publish twice
 					const timerEventBus = yield* Ports.TimerEventBusPort
@@ -223,9 +229,12 @@ describe('TimerEventBus', () => {
 
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus
-						.publishDueTimeReached(dueTimeReachedEvent)
-						.pipe(Effect.provideService(MessageMetadata, { causationId: Option.none(), correlationId: Option.none() }))
+					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
+						Effect.provideService(MessageMetadata, {
+							causationId: Option.none(),
+							correlationId: Option.none(),
+						}),
+					)
 
 					// Assert: envelope timestamp reflects publishing time (T+10)
 					const envelope = publishedEnvelopes[0]
@@ -248,7 +257,12 @@ describe('TimerEventBus', () => {
 		describe('Error Handling', () => {
 			it.effect('should propagate PublishError from EventBusPort', () => {
 				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
-					publish: () => Effect.fail(new Ports.PublishError({ cause: 'Connection failed' })),
+					publish: () =>
+						Effect.fail(
+							new Ports.PublishError({
+								cause: 'Connection failed',
+							}),
+						),
 				})
 
 				const TimerEventBusLive = Layer.provide(
@@ -269,7 +283,10 @@ describe('TimerEventBus', () => {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
 					const result = yield* Effect.either(timerEventBus.publishDueTimeReached(dueTimeReachedEvent)).pipe(
-						Effect.provideService(MessageMetadata, { causationId: Option.none(), correlationId: Option.none() }),
+						Effect.provideService(MessageMetadata, {
+							causationId: Option.none(),
+							correlationId: Option.none(),
+						}),
 					)
 
 					// Assert
@@ -572,7 +589,12 @@ describe('TimerEventBus', () => {
 
 			it.effect('should propagate SubscribeError from EventBusPort', () => {
 				const EventBusTest = Layer.mock(Ports.EventBusPort, {
-					subscribe: () => Effect.fail(new Ports.SubscribeError({ cause: 'Consumer creation failed' })),
+					subscribe: () =>
+						Effect.fail(
+							new Ports.SubscribeError({
+								cause: 'Consumer creation failed',
+							}),
+						),
 				})
 
 				const TimerEventBusLive = Layer.provide(
@@ -647,9 +669,12 @@ describe('TimerEventBus', () => {
 
 				// Act
 				const timerEventBus = yield* Ports.TimerEventBusPort
-				yield* timerEventBus
-					.publishDueTimeReached(dueTimeReachedEvent)
-					.pipe(Effect.provideService(MessageMetadata, { causationId: Option.none(), correlationId: Option.none() }))
+				yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.none(),
+						correlationId: Option.none(),
+					}),
+				)
 
 				// Assert - envelope ID should be valid UUID7
 				expect(publishedEnvelopes).toHaveLength(1)

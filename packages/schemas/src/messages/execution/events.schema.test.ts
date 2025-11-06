@@ -121,7 +121,9 @@ describe('Execution Events Schema', () => {
 				const event: Execution.Events.ExecutionSucceeded.Type = yield* Execution.Events.ExecutionSucceeded.decode(dto)
 
 				expect(event.responseMeta.bodySnippet).toBe('Success response body...')
-				expect(event.responseMeta.headers).toEqual({ 'Content-Type': 'application/json' })
+				expect(event.responseMeta.headers).toEqual({
+					'Content-Type': 'application/json',
+				})
 			}),
 		)
 
@@ -204,7 +206,10 @@ describe('Execution Events Schema', () => {
 
 				const event: Execution.Events.ExecutionFailed.Type = yield* Execution.Events.ExecutionFailed.decode(dto)
 
-				expect(event.errorMeta.details).toEqual({ retry: false, statusCode: 500 })
+				expect(event.errorMeta.details).toEqual({
+					retry: false,
+					statusCode: 500,
+				})
 				expect(event.errorMeta.latencyMs).toBe(5000)
 			}),
 		)
@@ -279,7 +284,10 @@ describe('Execution Events Schema', () => {
 			Effect.gen(function* () {
 				const dto = {
 					_tag: Execution.Events.ExecutionFailed.Tag,
-					errorMeta: { kind: 'NetworkError' as const, message: 'Timeout' },
+					errorMeta: {
+						kind: 'NetworkError' as const,
+						message: 'Timeout',
+					},
 					finishedAt,
 					serviceCallId,
 					tenantId,

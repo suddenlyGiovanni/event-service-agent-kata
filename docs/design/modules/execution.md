@@ -26,47 +26,47 @@ Identity & Context
 
 ```typescript
 // Receive IDs from command
-const { tenantId, serviceCallId, requestSpec } = command;
+const { tenantId, serviceCallId, requestSpec } = command
 
 // Construct domain event (validated via Schema)
 const event = new ExecutionStarted({
-  tenantId,
-  serviceCallId,
-  startedAt: now, // DateTime.Utc
-});
+	tenantId,
+	serviceCallId,
+	startedAt: now, // DateTime.Utc
+})
 
 // Publish with MessageMetadata Context
 yield *
-  eventBus.publishExecutionStarted(event).pipe(
-    Effect.provideService(MessageMetadata, {
-      correlationId: command.correlationId, // Forward from command
-      causationId: Option.some(commandEnvelopeId), // StartExecution envelope
-    })
-  );
+	eventBus.publishExecutionStarted(event).pipe(
+		Effect.provideService(MessageMetadata, {
+			correlationId: command.correlationId, // Forward from command
+			causationId: Option.some(commandEnvelopeId), // StartExecution envelope
+		})
+	)
 ```
 
 **Pattern** (execution-event-bus.adapter.ts - future implementation):
 
 ```typescript
 // Adapter extracts MessageMetadata from Context
-const metadata = yield * MessageMetadata;
+const metadata = yield * MessageMetadata
 
 // Generate envelope ID (UUID v7)
-const envelopeId = yield * EnvelopeId.makeUUID7();
+const envelopeId = yield * EnvelopeId.makeUUID7()
 
 // Construct envelope via Schema class
 const envelope: MessageEnvelope.Type = new MessageEnvelope({
-  id: envelopeId,
-  type: event._tag,
-  payload: event,
-  tenantId: event.tenantId,
-  timestampMs: yield * clock.now(),
-  correlationId: metadata.correlationId,
-  causationId: metadata.causationId,
-  aggregateId: Option.some(event.serviceCallId),
-});
+	id: envelopeId,
+	type: event._tag,
+	payload: event,
+	tenantId: event.tenantId,
+	timestampMs: yield * clock.now(),
+	correlationId: metadata.correlationId,
+	causationId: metadata.causationId,
+	aggregateId: Option.some(event.serviceCallId),
+})
 
-yield * eventBus.publish([envelope]);
+yield * eventBus.publish([envelope])
 ```
 
 **Rationale:** Execution is stateless and doesn't own any aggregates. All IDs flow through from Orchestration via [StartExecution] command. Adapter generates EnvelopeId (UUID v7) for broker deduplication. Workflow provides `MessageMetadata` Context, forwarding correlationId from command and setting causationId to command envelope ID. See ADR-0010 for identity generation strategy, ADR-0011 for schema patterns, and ADR-0013 for MessageMetadata Context pattern.

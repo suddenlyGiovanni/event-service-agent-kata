@@ -1,8 +1,8 @@
 # Implementation Plan: Option E (Ambient Context for CorrelationId Propagation)
 
-**Status**: Planning  
-**Decision**: Full Effect-idiomatic solution (Ambient Context pattern)  
-**Context**: PR#36 P0 issue - restore correlationId propagation after pure domain events refactoring  
+**Status**: Planning\
+**Decision**: Full Effect-idiomatic solution (Ambient Context pattern)\
+**Context**: PR#36 P0 issue - restore correlationId propagation after pure domain events refactoring\
 **Date**: 2025-11-05
 
 ---
@@ -40,24 +40,24 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
   aggregateId: Schema.optionalWith(ServiceCallId, { as: 'Option', exact: true }),
   causationId: Schema.optionalWith(EnvelopeId, { as: 'Option', exact: true }),
   correlationId: Schema.optionalWith(CorrelationId, { as: 'Option', exact: true }),
-})
+}){}
 ```
 
 ✅ **Timer Implementation** - Manual envelope construction in adapter:
 
 ```typescript
 // packages/timer/src/adapters/timer-event-bus.adapter.ts (lines 40-69)
-const envelopeId = yield * EnvelopeId.makeUUID7();
+const envelopeId = yield * EnvelopeId.makeUUID7()
 const envelope = new MessageEnvelope({
-  id: envelopeId,
-  type: dueTimeReached._tag,
-  payload: dueTimeReached, // Pure domain event
-  tenantId: dueTimeReached.tenantId,
-  timestampMs: yield * clock.now(),
-  aggregateId: Option.some(dueTimeReached.serviceCallId),
-  causationId: Option.none(),
-  correlationId: Option.none(), // ❌ BROKEN - loses correlation!
-});
+	id: envelopeId,
+	type: dueTimeReached._tag,
+	payload: dueTimeReached, // Pure domain event
+	tenantId: dueTimeReached.tenantId,
+	timestampMs: yield * clock.now(),
+	aggregateId: Option.some(dueTimeReached.serviceCallId),
+	causationId: Option.none(),
+	correlationId: Option.none(), // ❌ BROKEN - loses correlation!
+})
 ```
 
 ✅ **Test Suite** - Shows actual usage pattern (not hypothetical `makeEnvelope`):
@@ -65,15 +65,15 @@ const envelope = new MessageEnvelope({
 ```typescript
 // packages/timer/src/adapters/timer-event-bus.adapter.test.ts (lines 40-70)
 const dueTimeReachedEvent = new Messages.Timer.Events.DueTimeReached({
-  reachedAt: now,
-  serviceCallId,
-  tenantId,
-});
+	reachedAt: now,
+	serviceCallId,
+	tenantId,
+})
 
-yield * timerEventBus.publishDueTimeReached(dueTimeReachedEvent);
+yield * timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
 
 // Test assertion shows problem:
-assertEquals(envelope.correlationId, Option.none()); // TODO comment
+assertEquals(envelope.correlationId, Option.none()) // TODO comment
 ```
 
 ❌ **Orchestration/Execution** - Only placeholder files (not implemented):
@@ -81,7 +81,7 @@ assertEquals(envelope.correlationId, Option.none()); // TODO comment
 ```typescript
 // packages/orchestration/src/index.ts
 // TODO: Implement orchestration logic
-export {};
+export {}
 ```
 
 ❌ **`makeEnvelope` helper** - Referenced in docs but DOES NOT EXIST in codebase
@@ -93,13 +93,12 @@ export {};
 ```typescript
 // THIS DOES NOT EXIST IN CODE:
 const envelope =
-  yield *
-  makeEnvelope("ServiceCallSubmitted", dto, {
-    tenantId,
-    correlationId: Option.getOrUndefined(correlationId),
-    timestampMs: now.epochMillis,
-    aggregateId: finalServiceCallId,
-  });
+	yield* makeEnvelope('ServiceCallSubmitted', dto, {
+		tenantId,
+		correlationId: Option.getOrUndefined(correlationId),
+		timestampMs: now.epochMillis,
+		aggregateId: finalServiceCallId,
+	})
 ```
 
 ❌ **ADR-0011 documents makeEnvelope** (lines 399-450):
@@ -123,12 +122,12 @@ export const makeEnvelope = <T extends DomainMessage.Encoded>(
 
 ```typescript
 // 1. Define Context Tag for message metadata
-export class MessageMetadata extends Context.Tag("MessageMetadata")<
-  MessageMetadata,
-  {
-    readonly correlationId: Option.Option<CorrelationId.Type>;
-    readonly causationId: Option.Option<EnvelopeId.Type>;
-  }
+export class MessageMetadata extends Context.Tag('MessageMetadata')<
+	MessageMetadata,
+	{
+		readonly correlationId: Option.Option<CorrelationId.Type>
+		readonly causationId: Option.Option<EnvelopeId.Type>
+	}
 >() {}
 ```
 
@@ -137,11 +136,13 @@ export class MessageMetadata extends Context.Tag("MessageMetadata")<
 ```typescript
 // Port signature includes MessageMetadata requirement
 export interface TimerEventBusPort {
-  readonly publishDueTimeReached: (event: DueTimeReached.Type) => Effect.Effect<
-    void,
-    PublishError,
-    MessageMetadata // ← Requires metadata context
-  >;
+	readonly publishDueTimeReached: (
+		event: DueTimeReached.Type
+	) => Effect.Effect<
+		void,
+		PublishError,
+		MessageMetadata // ← Requires metadata context
+	>
 }
 ```
 
@@ -169,17 +170,17 @@ const workflow = Effect.gen(function* () {
 ```typescript
 // Adapter reads from ambient context
 const adapter = Effect.gen(function* () {
-  const metadata = yield* MessageMetadata; // Type-safe requirement
+	const metadata = yield* MessageMetadata // Type-safe requirement
 
-  const envelope = new MessageEnvelope({
-    payload: event,
-    correlationId: metadata.correlationId, // From context
-    causationId: metadata.causationId,
-    // ...
-  });
+	const envelope = new MessageEnvelope({
+		payload: event,
+		correlationId: metadata.correlationId, // From context
+		causationId: metadata.causationId,
+		// ...
+	})
 
-  yield* bus.publish([envelope]);
-});
+	yield* bus.publish([envelope])
+})
 ```
 
 ---
@@ -224,13 +225,13 @@ const adapter = Effect.gen(function* () {
 - [ ] Create `withMessageMetadata` test helper for context provisioning
 - [ ] Pattern:
 
-  ```typescript
-  const withMessageMetadata = (correlationId: Option<CorrelationId.Type>) =>
-    Effect.provideService(MessageMetadata, {
-      correlationId,
-      causationId: Option.none(),
-    });
-  ```
+    ```typescript
+    const withMessageMetadata = (correlationId: Option<CorrelationId.Type>) =>
+    	Effect.provideService(MessageMetadata, {
+    		correlationId,
+    		causationId: Option.none(),
+    	})
+    ```
 
 - [ ] **Files**: `packages/timer/src/adapters/timer-event-bus.adapter.test.ts`
 - **Tests**: Helper used in existing tests
@@ -404,20 +405,20 @@ const adapter = Effect.gen(function* () {
 
 ### Risk: MessageMetadata missing in context
 
-**Impact**: Runtime error when adapter tries to access context  
-**Mitigation**: Type system enforces requirement (R parameter); compile error if not provided  
+**Impact**: Runtime error when adapter tries to access context\
+**Mitigation**: Type system enforces requirement (R parameter); compile error if not provided\
 **Testing**: Add explicit test for missing context error
 
 ### Risk: Confusion between Layers vs Service Provisioning
 
-**Impact**: Developers try to use Layers for per-request data  
-**Mitigation**: Clear documentation + examples in docs/patterns/  
+**Impact**: Developers try to use Layers for per-request data\
+**Mitigation**: Clear documentation + examples in docs/patterns/\
 **Testing**: Include both patterns in test suite as reference
 
 ### Risk: Documentation drift (again!)
 
-**Impact**: Docs get out of sync with implementation  
-**Mitigation**: Add doc validation to CI (future: compare code snippets to actual code)  
+**Impact**: Docs get out of sync with implementation\
+**Mitigation**: Add doc validation to CI (future: compare code snippets to actual code)\
 **Process**: Update docs in same PR as implementation
 
 ---

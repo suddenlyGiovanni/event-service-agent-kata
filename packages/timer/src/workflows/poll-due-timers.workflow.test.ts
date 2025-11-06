@@ -159,7 +159,10 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					}),
 				)
 
-				yield* Effect.forEach(timers, persistence.save, { concurrency: 1, discard: true })
+				yield* Effect.forEach(timers, persistence.save, {
+					concurrency: 1,
+					discard: true,
+				})
 
 				// Act: Advance time to make all timers due
 				yield* TestClock.adjust('6 minutes')
@@ -619,7 +622,12 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 	describe('Error Handling - Publish Failures', () => {
 		it.effect.fails('propagates batch failure when publish fails', () => {
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: () => Effect.fail(new Ports.PublishError({ cause: 'Event bus publish failed' })),
+				publishDueTimeReached: () =>
+					Effect.fail(
+						new Ports.PublishError({
+							cause: 'Event bus publish failed',
+						}),
+					),
 			})
 
 			return Effect.gen(function* () {
@@ -676,7 +684,11 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					callCount++
 					// Fail on second timer (callCount === 2)
 					if (callCount === 2) {
-						return Effect.fail(new Ports.PublishError({ cause: 'Event bus publish failed' }))
+						return Effect.fail(
+							new Ports.PublishError({
+								cause: 'Event bus publish failed',
+							}),
+						)
 					}
 					return Effect.sync(() => {
 						publishedEvents.push(event)
@@ -707,7 +719,10 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					}),
 				)
 
-				yield* Effect.forEach(timers, persistence.save, { concurrency: 1, discard: true })
+				yield* Effect.forEach(timers, persistence.save, {
+					concurrency: 1,
+					discard: true,
+				})
 
 				// Act: Advance time to make all timers due
 				yield* TestClock.adjust('6 minutes')
@@ -820,7 +835,12 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					Ports.TimerPersistencePort.of({
 						...basePersistence,
 						markFired: () =>
-							Effect.fail(new Ports.PersistenceError({ cause: 'Database connection lost', operation: 'markFired' })),
+							Effect.fail(
+								new Ports.PersistenceError({
+									cause: 'Database connection lost',
+									operation: 'markFired',
+								}),
+							),
 					}),
 				)
 
@@ -884,7 +904,12 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 
 			const TestPersistence = Layer.mock(Ports.TimerPersistencePort, {
 				findDue: () =>
-					Effect.fail(new Ports.PersistenceError({ cause: 'Database connection failed', operation: 'findDue' })),
+					Effect.fail(
+						new Ports.PersistenceError({
+							cause: 'Database connection failed',
+							operation: 'findDue',
+						}),
+					),
 			})
 
 			return Effect.gen(function* () {

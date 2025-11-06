@@ -17,8 +17,8 @@ Each approach has implications for idempotency, event correlation, outbox patter
 
 ### System Requirements
 
-- **Event-driven architecture** — At-least-once delivery, idempotent processing ([ADR-0006][])
-- **Outbox pattern** — Publish domain events within database transaction ([ADR-0008][])
+- **Event-driven architecture** — At-least-once delivery, idempotent processing ([ADR-0006][ADR-0006])
+- **Outbox pattern** — Publish domain events within database transaction ([ADR-0008][ADR-0008])
 - **Multi-tenant** — All aggregates keyed by `(tenantId, entityId)`
 - **Idempotency key** — `(tenantId, serviceCallId)` must be known before DB insert
 - **Event correlation** — Messages reference ServiceCallId for tracing/debugging
@@ -34,8 +34,8 @@ Each approach has implications for idempotency, event correlation, outbox patter
 
 ```typescript
 // ❌ PROBLEM: Can't use ID until AFTER insert
-const result = await db.insert(serviceCall).returning(["id"]);
-const serviceCallId = result.id; // Only available NOW!
+const result = await db.insert(serviceCall).returning(['id'])
+const serviceCallId = result.id // Only available NOW!
 
 // ❌ Can't include in idempotency check BEFORE insert
 // ❌ Can't publish events referencing serviceCallId within same transaction
@@ -110,15 +110,15 @@ Use `crypto.randomUUID()` directly in application code. If UUID v7 library neede
 ```typescript
 // API accepts optional serviceCallId for idempotency
 interface SubmitServiceCallRequest {
-  serviceCallId?: ServiceCallId; // Client-provided (idempotent retry)
-  tenantId: TenantId;
-  name: string;
-  // ...
+	serviceCallId?: ServiceCallId // Client-provided (idempotent retry)
+	tenantId: TenantId
+	name: string
+	// ...
 }
 
 // Handler logic
 const serviceCallId =
-  req.body.serviceCallId ?? Schema.make(ServiceCallId)(crypto.randomUUID());
+	req.body.serviceCallId ?? Schema.make(ServiceCallId)(crypto.randomUUID())
 
 // Now have ID BEFORE any DB operation
 ```
@@ -133,18 +133,18 @@ This enables:
 
 ### Positive
 
-✅ **Idempotency works naturally** — Have `(tenantId, serviceCallId)` before DB insert  
-✅ **Outbox pattern works** — Events can reference ServiceCallId within same transaction  
-✅ **Immediate availability** — Can log, trace, return ID without DB roundtrip  
-✅ **Event correlation** — All messages reference ServiceCallId from creation  
-✅ **Client flexibility** — Clients can provide ID for idempotency or let server generate  
-✅ **Better DB performance** — UUID v7 insertion order improves index locality  
+✅ **Idempotency works naturally** — Have `(tenantId, serviceCallId)` before DB insert\
+✅ **Outbox pattern works** — Events can reference ServiceCallId within same transaction\
+✅ **Immediate availability** — Can log, trace, return ID without DB roundtrip\
+✅ **Event correlation** — All messages reference ServiceCallId from creation\
+✅ **Client flexibility** — Clients can provide ID for idempotency or let server generate\
+✅ **Better DB performance** — UUID v7 insertion order improves index locality\
 ✅ **Simpler architecture** — No IdGeneratorPort, no extra abstraction
 
 ### Negative
 
-⚠️ **Validation required** — Must validate client-provided IDs at API boundary (see Migration below)  
-⚠️ **Application responsibility** — Application must generate IDs (can't delegate to DB)  
+⚠️ **Validation required** — Must validate client-provided IDs at API boundary (see Migration below)\
+⚠️ **Application responsibility** — Application must generate IDs (can't delegate to DB)\
 ⚠️ **Collision risk** — Theoretical (but UUID v7 has 74 bits randomness = negligible risk)
 
 ### Migration: Brand.nominal → Schema.brand
@@ -155,36 +155,35 @@ This enables:
 
 ```typescript
 // ❌ OLD: No validation!
-export type TenantId = string & Brand.Brand<"TenantId">;
-export const TenantId = Brand.nominal<TenantId>();
+export type TenantId = string & Brand.Brand<'TenantId'>
+export const TenantId = Brand.nominal<TenantId>()
 
 // API handler (UNSAFE):
-const tenantId = req.body.tenantId as TenantId; // Accepts ANYTHING!
+const tenantId = req.body.tenantId as TenantId // Accepts ANYTHING!
 ```
 
 **Current implementation:** Migrated to `Schema.brand` with UUID v7 validation:
 
 ```typescript
 // ✅ CURRENT: Runtime validation with UUID7 schema
-import * as Schema from "effect/Schema";
+import * as Schema from 'effect/Schema'
 
 export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
-  static readonly makeUUID7 = (time?: DateTime.Utc) => 
-    Effect.gen(function* () {
-      const uuid7 = yield* Uuid7Service.randomUUIDv7(time)
-      return TenantId.make(uuid7)  // Validated UUID7 → branded TenantId
-    })
-  
-  static readonly decode = (value: string) => 
-    Schema.decode(TenantId)(value)  // Validates UUID7 format!
+	static readonly makeUUID7 = (time?: DateTime.Utc) =>
+		Effect.gen(function* () {
+			const uuid7 = yield* Uuid7Service.randomUUIDv7(time)
+			return TenantId.make(uuid7) // Validated UUID7 → branded TenantId
+		})
+
+	static readonly decode = (value: string) => Schema.decode(TenantId)(value) // Validates UUID7 format!
 }
 
 // API handler (SAFE):
-const tenantId = yield * TenantId.decode(req.body.tenantId);
+const tenantId = yield* TenantId.decode(req.body.tenantId)
 // ✅ Validates UUID7 format! Rejects invalid input with ParseError
 ```
 
-**Completed in:** `packages/schemas/src/shared/`  
+**Completed in:** `packages/schemas/src/shared/`\
 **Branded types migrated:**
 
 - TenantId → `packages/schemas/src/shared/tenant-id.schema.ts`

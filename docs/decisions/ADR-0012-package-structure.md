@@ -24,15 +24,15 @@ During PL-14 schema migration, we discovered that the `@event-service-agent/cont
 ```typescript
 // contracts defines plain DTO shape
 export const DomainMessage = Schema.Union(
-  Schema.Struct({
-    _tag: Literal('DueTimeReached'),
-    tenantId: Schema.String,  // ← Lost TenantId brand!
-  })
+	Schema.Struct({
+		_tag: Literal('DueTimeReached'),
+		tenantId: Schema.String, // ← Lost TenantId brand!
+	})
 )
 
 // Consumer can't use decoded payload:
 const envelope = yield* MessageEnvelope.decodeJson(json)
-yield* workflow.handle(envelope.payload)  
+yield * workflow.handle(envelope.payload)
 //                     ^^^^^^^^^^^^^^^^
 // ❌ TYPE MISMATCH: plain object vs branded types
 ```
@@ -239,9 +239,9 @@ import { Topics } from '@event-service-agent/platform/routing'
 
 ```json
 {
-  "dependencies": {
-    "@event-service-agent/contracts": "workspace:*"
-  }
+	"dependencies": {
+		"@event-service-agent/contracts": "workspace:*"
+	}
 }
 ```
 
@@ -249,10 +249,10 @@ import { Topics } from '@event-service-agent/platform/routing'
 
 ```json
 {
-  "dependencies": {
-    "@event-service-agent/schemas": "workspace:*",
-    "@event-service-agent/platform": "workspace:*"
-  }
+	"dependencies": {
+		"@event-service-agent/schemas": "workspace:*",
+		"@event-service-agent/platform": "workspace:*"
+	}
 }
 ```
 

@@ -90,7 +90,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 *
 	 * // Run the program
 	 * await Effect.runPromise(testable) // "fixed-uuid-000-000-000-000"
-	 *```
+	 * ```
 	 */
 	static readonly Test = <A extends `${string}-${string}-${string}-${string}-${string}`>(
 		fixed: A,
@@ -119,7 +119,6 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 *
 	 * await Effect.runPromise(program) // [ "12345678-0000-7000-8000-000000000000", "12345678-0000-7000-8000-000000000001", "12345678-0000-7000-8000-000000000002" ]
 	 * ```
-	 *
 	 */
 	static readonly Sequence = (prefix = '00000000'): Context.Tag.Service<UUIDPort> => {
 		// Create new counter instance per call

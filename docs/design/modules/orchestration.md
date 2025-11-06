@@ -56,56 +56,56 @@ Identity & Context
 ```typescript
 // Typical: ServiceCallId provided by API in SubmitServiceCall command
 // correlationId is Option<CorrelationId> from command schema
-const { tenantId, serviceCallId, correlationId, ...commandData } = command;
+const { tenantId, serviceCallId, correlationId, ...commandData } = command
 
 // Extract metadata from incoming command envelope (provided by adapter)
-const commandMetadata = yield * MessageMetadata;
+const commandMetadata = yield * MessageMetadata
 
 // Fallback: If command lacks ServiceCallId (shouldn't happen per ADR-0010)
-const finalServiceCallId = serviceCallId ?? yield * ServiceCallId.makeUUID7();
+const finalServiceCallId = serviceCallId ?? yield * ServiceCallId.makeUUID7()
 
 // Construct domain event (validated via Schema)
 const event = new ServiceCallSubmitted({
-  tenantId,
-  serviceCallId: finalServiceCallId,
-  name: commandData.name,
-  // ... other fields
-});
+	tenantId,
+	serviceCallId: finalServiceCallId,
+	name: commandData.name,
+	// ... other fields
+})
 
 // Publish with MessageMetadata Context
 // - correlationId: pass through from command (already Option<CorrelationId>)
 // - causationId: use incoming command envelope ID for causality tracking
 yield *
-  eventBus.publishServiceCallSubmitted(event).pipe(
-    Effect.provideService(MessageMetadata, {
-      correlationId, // From command (pass-through)
-      causationId: commandMetadata.causationId, // From command envelope
-    })
-  );
+	eventBus.publishServiceCallSubmitted(event).pipe(
+		Effect.provideService(MessageMetadata, {
+			correlationId, // From command (pass-through)
+			causationId: commandMetadata.causationId, // From command envelope
+		})
+	)
 ```
 
 **Pattern** (orchestration-event-bus.adapter.ts - future implementation):
 
 ```typescript
 // Adapter extracts MessageMetadata from Context
-const metadata = yield * MessageMetadata;
+const metadata = yield * MessageMetadata
 
 // Generate envelope ID (UUID v7)
-const envelopeId = yield * EnvelopeId.makeUUID7();
+const envelopeId = yield * EnvelopeId.makeUUID7()
 
 // Construct envelope via Schema class
 const envelope: MessageEnvelope.Type = new MessageEnvelope({
-  id: envelopeId,
-  type: event._tag,
-  payload: event,
-  tenantId: event.tenantId,
-  timestampMs: yield * clock.now(),
-  correlationId: metadata.correlationId,
-  causationId: metadata.causationId,
-  aggregateId: Option.some(event.serviceCallId),
-});
+	id: envelopeId,
+	type: event._tag,
+	payload: event,
+	tenantId: event.tenantId,
+	timestampMs: yield * clock.now(),
+	correlationId: metadata.correlationId,
+	causationId: metadata.causationId,
+	aggregateId: Option.some(event.serviceCallId),
+})
 
-yield * eventBus.publish([envelope]);
+yield * eventBus.publish([envelope])
 ```
 
 **Rationale:** Orchestration is the aggregate owner (ServiceCall). It receives ServiceCallId from API (preferred per ADR-0010) or generates via UUID7 if missing. Adapter generates EnvelopeId (UUID v7) for broker deduplication. Workflow provides `MessageMetadata` Context with correlationId from HTTP request and causationId from triggering command envelope. See ADR-0010 for identity generation strategy, ADR-0011 for schema patterns, and ADR-0013 for MessageMetadata Context pattern.

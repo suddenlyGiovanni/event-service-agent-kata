@@ -108,14 +108,14 @@ This package exists to establish the structure but doesn't contain adapters yet.
 ```typescript
 // packages/adapters/src/broker/nats-event-bus.adapter.ts
 export class NatsEventBus {
-  static readonly Live: Layer.Layer<EventBusPort, NatsError, ...> = 
+  static readonly Live: Layer.Layer<EventBusPort, NatsError /*, ... */> =
     Layer.effect(EventBusPort, Effect.gen(function* () {
       const nc = yield* connectNats()
       const js = nc.jetstream()
-      
+
       return EventBusPort.of({
-        publish: (envelopes) => /* ... */,
-        subscribe: (topics, handler) => /* ... */
+        publish: (envelopes) => {/* ... */},
+        subscribe: (topics, handler) => {/* ... */},
       })
     }))
 }
@@ -126,14 +126,14 @@ export class NatsEventBus {
 ```typescript
 // packages/adapters/src/persistence/sqlite-timer-persistence.adapter.ts
 export class SqliteTimerPersistence {
-  static readonly Live: Layer.Layer<TimerPersistencePort, ...> = 
+  static readonly Live: Layer.Layer<TimerPersistencePort /*, ...*/> =
     Layer.effect(TimerPersistencePort, Effect.gen(function* () {
       const db = yield* Database
-      
+
       return TimerPersistencePort.of({
-        save: (timer) => /* SQL INSERT */,
-        findScheduledTimer: (id) => /* SQL SELECT */,
-        findDue: (tenantId, now) => /* SQL SELECT WHERE due */
+        save: (timer) => {/* <SQL INSERT> */},
+        findScheduledTimer: (id) => {/* <SQL SELECT> */},
+        findDue: (tenantId, now) => {/* <SQL SELECT WHERE due> */}
       })
     }))
 }

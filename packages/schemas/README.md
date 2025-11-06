@@ -28,7 +28,7 @@ http/                RequestSpec
 ```typescript
 import { TenantId } from '@event-service-agent/schemas/shared'
 
-const id = yield* TenantId.makeUUID7()  // Effect<TenantId, ParseError, UUID7>
+const id = yield* TenantId.makeUUID7() // Effect<TenantId, ParseError, UUID7>
 ```
 
 ### Create a domain event
@@ -37,10 +37,10 @@ const id = yield* TenantId.makeUUID7()  // Effect<TenantId, ParseError, UUID7>
 import { DueTimeReached } from '@event-service-agent/schemas/messages/timer'
 
 const event = new DueTimeReached({
-  tenantId,
-  serviceCallId,
-  reachedAt: timestamp,
-})  // Validated at construction
+	tenantId,
+	serviceCallId,
+	reachedAt: timestamp,
+}) // Validated at construction
 ```
 
 ### Decode from JSON (e.g., NATS message)
@@ -52,7 +52,7 @@ const envelope = yield* MessageEnvelope.decodeJson(jsonString)
 
 // Pattern match on typed payload
 if (envelope.payload._tag === 'DueTimeReached') {
-  yield* handle(envelope.payload)  // TypeScript knows the type!
+	yield* handle(envelope.payload) // TypeScript knows the type!
 }
 ```
 
@@ -88,20 +88,22 @@ effect → schemas → platform → modules
 
 Branded ID schemas (`TenantId`, `ServiceCallId`, etc.) provide a `makeUUID7()` method that requires the `UUID7` service from `@event-service-agent/platform`. This creates a **runtime-only** dependency that doesn't create circular type dependencies.
 
-**Key insight**: Schemas define the *types*, platform provides the *service implementation*.
+**Key insight**: Schemas define the _types_, platform provides the _service implementation_.
 
 ### How It Works
 
 ```typescript
 // In schemas/src/shared/tenant-id.schema.ts
-import * as Service from '@event-service-agent/platform/uuid7'  // Runtime service
+import * as Service from '@event-service-agent/platform/uuid7' // Runtime service
 
 export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
-  static readonly makeUUID7 = (time?: DateTime.Utc): Effect.Effect<TenantId, ParseError, Service.UUID7> =>
-    Service.generateUUID7(time).pipe(
-      Effect.flatMap(TenantId.decode),
-      Effect.withSpan('TenantId.makeUUID7'),
-    )
+	static readonly makeUUID7 = (
+		time?: DateTime.Utc
+	): Effect.Effect<TenantId, ParseError, Service.UUID7> =>
+		Service.generateUUID7(time).pipe(
+			Effect.flatMap(TenantId.decode),
+			Effect.withSpan('TenantId.makeUUID7')
+		)
 }
 ```
 
@@ -114,18 +116,18 @@ import { TenantId } from '@event-service-agent/schemas/shared'
 import { UUID7 } from '@event-service-agent/platform/uuid7'
 
 const program = Effect.gen(function* () {
-  const tenantId = yield* TenantId.makeUUID7()
-  // ...
+	const tenantId = yield* TenantId.makeUUID7()
+	// ...
 }).pipe(Effect.provide(UUID7.Default))
 ```
 
 ### Why This Doesn't Create Circular Dependencies
 
-**Type level**: Schemas only reference platform's service *interface* (not module types).
+**Type level**: Schemas only reference platform's service _interface_ (not module types).
 
 **Runtime level**: Dependency flows one direction:
 
-1. Schemas *requires* platform's UUID7 service
+1. Schemas _requires_ platform's UUID7 service
 2. Platform never imports from schemas for its UUID7 implementation
 3. Modules depend on both (but never vice versa)
 

@@ -98,32 +98,38 @@ packages/execution/
 ### executeRequestWorkflow
 
 ```typescript
-const executeRequestWorkflow = Effect.fn('Execution.ExecuteRequest')(
-  function* (command: StartExecution) {
-    // 1. Fetch full request body from storage
-    const requestSpec = yield* bodyStorage.getRequestBody(
-      command.tenantId,
-      command.serviceCallId
-    )
-    
-    // 2. Execute HTTP request
-    const result = yield* httpClient.execute(requestSpec).pipe(
-      Effect.either  // Catch errors
-    )
-    
-    // 3. Publish result event
-    yield* Either.match(result, {
-      onLeft: (error) => eventBus.publish([{
-        type: 'ExecutionFailed',
-        errorMeta: classifyError(error)
-      }]),
-      onRight: (response) => eventBus.publish([{
-        type: 'ExecutionSucceeded',
-        responseMeta: captureMetadata(response)
-      }])
-    })
-  }
-)
+const executeRequestWorkflow = Effect.fn('Execution.ExecuteRequest')(function* (
+	command: StartExecution
+) {
+	// 1. Fetch full request body from storage
+	const requestSpec = yield* bodyStorage.getRequestBody(
+		command.tenantId,
+		command.serviceCallId
+	)
+
+	// 2. Execute HTTP request
+	const result = yield* httpClient.execute(requestSpec).pipe(
+		Effect.either // Catch errors
+	)
+
+	// 3. Publish result event
+	yield* Either.match(result, {
+		onLeft: (error) =>
+			eventBus.publish([
+				{
+					type: 'ExecutionFailed',
+					errorMeta: classifyError(error),
+				},
+			]),
+		onRight: (response) =>
+			eventBus.publish([
+				{
+					type: 'ExecutionSucceeded',
+					responseMeta: captureMetadata(response),
+				},
+			]),
+	})
+})
 ```
 
 ## Ports Required
@@ -132,8 +138,8 @@ const executeRequestWorkflow = Effect.fn('Execution.ExecuteRequest')(
 
 ```typescript
 interface HttpClientPort {
-  // Execute HTTP request with timeout/retry
-  execute: (spec: RequestSpec) => Effect.Effect<Response, HttpError>
+	// Execute HTTP request with timeout/retry
+	execute: (spec: RequestSpec) => Effect.Effect<Response, HttpError>
 }
 ```
 
@@ -141,11 +147,11 @@ interface HttpClientPort {
 
 ```typescript
 interface BodyStoragePort {
-  // Retrieve full request body by serviceCallId
-  getRequestBody: (
-    tenantId: TenantId,
-    serviceCallId: ServiceCallId
-  ) => Effect.Effect<RequestSpec, StorageError>
+	// Retrieve full request body by serviceCallId
+	getRequestBody: (
+		tenantId: TenantId,
+		serviceCallId: ServiceCallId
+	) => Effect.Effect<RequestSpec, StorageError>
 }
 ```
 
@@ -155,11 +161,11 @@ Errors are classified for metrics and retry decisions:
 
 ```typescript
 type ErrorKind =
-  | 'NetworkError'      // Connection failed, DNS lookup failed
-  | 'TimeoutError'      // Request exceeded timeout
-  | 'HttpError'         // Got response but 4xx/5xx status
-  | 'ValidationError'   // Response failed validation
-  | 'UnknownError'      // Unexpected error
+	| 'NetworkError' // Connection failed, DNS lookup failed
+	| 'TimeoutError' // Request exceeded timeout
+	| 'HttpError' // Got response but 4xx/5xx status
+	| 'ValidationError' // Response failed validation
+	| 'UnknownError' // Unexpected error
 ```
 
 Each error includes:
@@ -175,10 +181,10 @@ Success responses capture:
 
 ```typescript
 interface ResponseMeta {
-  status: number          // HTTP status code (2xx)
-  headers?: Record        // Selected headers (filtered)
-  bodySnippet?: string    // First 1KB of body (sanitized)
-  latencyMs?: number      // Request duration
+	status: number // HTTP status code (2xx)
+	headers?: Record // Selected headers (filtered)
+	bodySnippet?: string // First 1KB of body (sanitized)
+	latencyMs?: number // Request duration
 }
 ```
 

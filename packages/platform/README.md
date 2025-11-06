@@ -23,7 +23,7 @@ import type * as Messages from '@event-service-agent/platform/messages'
 
 // Type-safe message handling
 const handleCommand = (cmd: Messages.Orchestration.Commands.ScheduleTimer) => {
-  // ...
+	// ...
 }
 ```
 
@@ -43,8 +43,8 @@ import { EventBusPort } from '@event-service-agent/platform/ports'
 
 // Depend on port, not implementation
 const workflow = Effect.gen(function* () {
-  const bus = yield* EventBusPort
-  yield* bus.publish([envelope])
+	const bus = yield* EventBusPort
+	yield* bus.publish([envelope])
 })
 ```
 
@@ -78,7 +78,11 @@ import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 
 // Use the schema-derived type
 const envelope: MessageEnvelope.Type = {
-  id, type, tenantId, payload, timestampMs
+	id,
+	type,
+	tenantId,
+	payload,
+	timestampMs,
 }
 ```
 
@@ -88,10 +92,10 @@ const envelope: MessageEnvelope.Type = {
 import type { RequestSpec } from '@event-service-agent/platform/types'
 
 const request: RequestSpec = {
-  method: 'POST',
-  url: 'https://api.example.com',
-  headers: { 'Content-Type': 'application/json' },
-  body: '{"key": "value"}'
+	method: 'POST',
+	url: 'https://api.example.com',
+	headers: { 'Content-Type': 'application/json' },
+	body: '{"key": "value"}',
 }
 ```
 
@@ -115,7 +119,7 @@ The `platform` package sits at the **center** of the hexagonal architecture:
          └──────────────────┘
                     ↕
 ┌─────────────────────────────────────────────┐
-│         Infrastructure Adapters              │
+│         Infrastructure Adapters             │
 │  (NATS, SQLite, HTTP, In-Memory)            │
 └─────────────────────────────────────────────┘
 ```
@@ -131,10 +135,10 @@ The `platform` package sits at the **center** of the hexagonal architecture:
 
 ```json
 {
-  "./messages": "Message type definitions",
-  "./ports": "Port interface contracts",
-  "./routing": "Topic/routing configuration",
-  "./types": "Shared type definitions"
+	"./messages": "Message type definitions",
+	"./ports": "Port interface contracts",
+	"./routing": "Topic/routing configuration",
+	"./types": "Shared type definitions"
 }
 ```
 

@@ -305,7 +305,10 @@ describe('Orchestration Events Schema', () => {
 
 				expectTypeOf(event).toEqualTypeOf<Orchestration.Events.ServiceCallFailed.Type>()
 				expect(event.errorMeta.latencyMs).toBe(5000)
-				expect(event.errorMeta.details).toEqual({ retryable: false, statusCode: 500 })
+				expect(event.errorMeta.details).toEqual({
+					retryable: false,
+					statusCode: 500,
+				})
 			}),
 		)
 

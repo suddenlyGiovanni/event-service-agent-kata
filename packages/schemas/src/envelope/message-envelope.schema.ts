@@ -94,7 +94,10 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 * @see ADR-0010 — ServiceCallId generation strategy
 		 * @see ADR-0002 — Broker partitioning strategy
 		 */
-		aggregateId: Schema.optionalWith(ServiceCallId, { as: 'Option', exact: true }),
+		aggregateId: Schema.optionalWith(ServiceCallId, {
+			as: 'Option',
+			exact: true,
+		}),
 
 		/**
 		 * **Causation Identifier** — Links this message to its immediate cause
@@ -155,7 +158,10 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 * @see docs/design/messages.md — Message semantics and identity
 		 * @see ADR-0009 — Observability baseline (structured logging)
 		 */
-		causationId: Schema.optionalWith(EnvelopeId, { as: 'Option', exact: true }),
+		causationId: Schema.optionalWith(EnvelopeId, {
+			as: 'Option',
+			exact: true,
+		}),
 
 		/**
 		 * **Correlation Identifier** — Request/conversation trace ID
@@ -209,7 +215,10 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 * @see ADR-0009 — Observability baseline (correlation logging)
 		 * @see ADR-0010 — Identity generation (correlationId generated at API entry)
 		 */
-		correlationId: Schema.optionalWith(CorrelationId, { as: 'Option', exact: true }),
+		correlationId: Schema.optionalWith(CorrelationId, {
+			as: 'Option',
+			exact: true,
+		}),
 
 		/**
 		 * **Envelope Identifier** — Unique message instance ID
@@ -301,23 +310,19 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		type: Schema.Literal(
 			// Timer Events
 			Messages.Timer.Events.DueTimeReached.Tag,
-
 			// Orchestration Commands
 			Messages.Orchestration.Commands.ScheduleTimer.Tag,
 			Messages.Orchestration.Commands.StartExecution.Tag,
-
 			// Orchestration Events
 			Messages.Orchestration.Events.ServiceCallSubmitted.Tag,
 			Messages.Orchestration.Events.ServiceCallScheduled.Tag,
 			Messages.Orchestration.Events.ServiceCallRunning.Tag,
 			Messages.Orchestration.Events.ServiceCallSucceeded.Tag,
 			Messages.Orchestration.Events.ServiceCallFailed.Tag,
-
 			// Execution Events
 			Messages.Execution.Events.ExecutionStarted.Tag,
 			Messages.Execution.Events.ExecutionSucceeded.Tag,
 			Messages.Execution.Events.ExecutionFailed.Tag,
-
 			// API Commands
 			Messages.Api.Commands.SubmitServiceCall.Tag,
 		),
