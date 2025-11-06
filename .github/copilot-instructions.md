@@ -711,6 +711,541 @@ it.effect("should fail on past dueAt", () =>
 
 ---
 
+## Code Documentation Principles
+
+### Documentation Philosophy
+
+Code documentation serves to explain **WHY** decisions were made, not **WHAT** the code does or **HOW** it works. Well-named functions, types, and variables should make the WHAT and HOW self-evident.
+
+**Core Principles**:
+
+- **Self-Documenting Code First**: Clear naming (functions, variables, types) reduces need for comments
+- **Explain Intent**: Document the reasoning behind non-obvious decisions
+- **Document Trade-offs**: Explain why you chose approach A over approach B
+- **Link to Context**: Reference ADRs, design docs, and domain concepts
+- **Keep Current**: Outdated comments are worse than no comments
+
+**Examples**:
+
+```typescript
+// ❌ Bad: Restates what code does
+// Set the timer to scheduled state
+timer.state = 'Scheduled';
+
+// ✅ Good: Clear variable name, no comment needed
+const scheduledTimer = TimerEntry.schedule(command);
+
+// ✅ Good: Explains WHY, references decision
+// Publish event BEFORE marking as fired to ensure at-least-once delivery.
+// If publish fails, timer remains Scheduled and will retry on next poll.
+// See ADR-0008 for outbox pattern rationale.
+yield* eventBus.publishDueTimeReached(event);
+yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now);
+```
+
+---
+
+### When to Write Comments
+
+**✅ DO comment**:
+
+1. **Trade-offs and architectural decisions**:
+
+   ```typescript
+   // Use partition instead of forEach to collect ALL failures, not fail-fast.
+   // This ensures partial batch success: processed timers are marked fired,
+   // failed timers remain Scheduled for retry on next poll.
+   // Trade-off: Higher memory usage for large batches, but better resilience.
+   const [failures, successes] = yield* Effect.partition(dueTimers, processTimer);
+   ```
+
+2. **Domain concepts and business rules**:
+
+   ```typescript
+   /**
+    * Scheduled state represents a timer awaiting its due time.
+    *
+    * Domain semantics:
+    * - Timer is persisted in database (durable)
+    * - Will fire when clock reaches dueAt timestamp
+    * - Can be cancelled before firing
+    * - Transitions to Reached when fired, or Cancelled if explicitly cancelled
+    */
+   export class ScheduledTimer { /*...*/ }
+   ```
+
+3. **Gotchas, edge cases, and timing assumptions**:
+
+   ```typescript
+   // GOTCHA: findDue query uses inclusive comparison (<=) to ensure we don't
+   // miss timers due at exact microsecond boundary. Clock precision varies.
+   const dueTimers = yield* persistence.findDue(now); // WHERE due_at <= now
+
+   // EDGE CASE: Empty batch early return prevents unnecessary event bus calls
+   if (Chunk.isEmpty(dueTimers)) {
+     yield* Effect.logDebug('No due timers found');
+     return; // Skip partition, no failures to report
+   }
+   ```
+
+4. **Non-obvious performance or concurrency choices**:
+
+   ```typescript
+   // Process sequentially (concurrency: 1) to preserve partition key ordering.
+   // Kafka guarantees order only within a partition; concurrent processing
+   // could reorder DueTimeReached events for same serviceCallId.
+   // See ADR-0002 for broker ordering guarantees.
+   const results = yield* Effect.partition(timers, processTimer, {
+     concurrency: 1,
+   });
+   ```
+
+5. **Links to ADRs and design docs**:
+
+   ```typescript
+   // Generate UUID v7 in application code, not database.
+   // See ADR-0010 for identity generation strategy.
+   const envelopeId = EnvelopeId.make();
+
+   // Outbox pattern: append events to outbox table in same transaction.
+   // Events published after commit to avoid dual-write problem.
+   // See ADR-0008 for detailed rationale and failure mode analysis.
+   yield* outbox.append(events);
+   ```
+
+**❌ DON'T comment**:
+
+1. **Obvious operations** (code is self-documenting):
+
+   ```typescript
+   // ❌ Redundant: name already says what it does
+   // Get current time
+   const now = yield* clock.now();
+
+   // ✅ Just write the code
+   const now = yield* clock.now();
+   ```
+
+2. **What type signatures already express**:
+
+   ```typescript
+   // ❌ Redundant: types + name already document this
+   /**
+    * @param timer - The timer to process
+    * @returns void
+    */
+   function processTimer(timer: ScheduledTimer): Effect.Effect<void, Error> { /*...*/ }
+
+   // ✅ Types document parameters; only add comment if explaining WHY or edge cases
+   function processTimer(timer: ScheduledTimer): Effect.Effect<void, Error> { /*...*/ }
+   ```
+
+3. **Implementation details of pure functions**:
+
+   ```typescript
+   // ❌ Don't explain HOW sorting works
+   // Sort timers by dueAt ascending
+   const sorted = timers.sort((a, b) => a.dueAt - b.dueAt);
+
+   // ✅ Function name + types are sufficient
+   const sortedByDueTime = timers.sort((a, b) => a.dueAt - b.dueAt);
+   ```
+
+---
+
+### TSDoc/JSDoc Structure
+
+**Use for public APIs, ports, and domain models**:
+
+```typescript
+/**
+ * [One-line summary of what this does]
+ *
+ * [Optional: Longer description explaining domain semantics, usage context,
+ * or important invariants]
+ *
+ * @param paramName - Description (focus on constraints, not type—types already document that)
+ * @returns Description of success value and what it represents in domain
+ * @throws ErrorType - When and why this error occurs (domain semantics, not implementation)
+ * @example
+ * ```typescript
+ * // Show typical usage pattern
+ * const timer = yield* scheduleTimer({ tenantId, serviceCallId, dueAt });
+ * ```
+ *
+ * [Optional: Links to related concepts]
+ * @see ADR-0003 for timer state machine
+ * @see TimerPersistencePort for storage contract
+ */
+export const scheduleTimer = (
+  command: ScheduleTimerCommand,
+): Effect.Effect<ScheduledTimer, ValidationError | PersistenceError, ClockPort> => {
+  /*...*/
+};
+```
+
+**Template for domain models**:
+
+```typescript
+/**
+ * [Entity/Value Object name] represents [domain concept].
+ *
+ * Domain semantics:
+ * - [Key invariant 1]
+ * - [Key invariant 2]
+ * - [Lifecycle/state transitions]
+ *
+ * [Optional: Trade-offs or design decisions]
+ *
+ * @example
+ * ```typescript
+ * const entry = new ScheduledTimer({
+ *   tenantId: TenantId.make("tenant-123"),
+ *   serviceCallId: ServiceCallId.make(),
+ *   dueAt: DateTime.now().pipe(DateTime.add("5 minutes")),
+ * });
+ * ```
+ */
+export class ScheduledTimer extends Schema.Class<ScheduledTimer>("ScheduledTimer")({
+  tenantId: TenantId,
+  serviceCallId: ServiceCallId,
+  dueAt: DateTime.DateTime.Utc,
+  // ...
+}) {}
+```
+
+---
+
+### Effect-TS Specific Patterns
+
+**Document Error channel types and their meanings**:
+
+```typescript
+/**
+ * Polls for due timers and processes them in a batch.
+ *
+ * Error semantics:
+ * - PersistenceError: Database query failed; entire batch aborted (no timers processed)
+ * - BatchProcessingError: One or more timers failed; partial success (see failures array)
+ *
+ * Retry strategy:
+ * - PersistenceError: Retry entire workflow (query + process)
+ * - BatchProcessingError: Failed timers remain Scheduled; retry on next poll cycle
+ *
+ * @returns undefined on full success; fails with error on partial/full failure
+ */
+export const pollDueTimers: Effect.Effect<
+  void,
+  PersistenceError | BatchProcessingError,
+  TimerPersistencePort | EventBusPort | ClockPort
+> = /*...*/;
+```
+
+**Explain Requirements (dependency injection context)**:
+
+```typescript
+/**
+ * Schedules a timer for future firing.
+ *
+ * Requirements (injected via Layer):
+ * - ClockPort: Validates dueAt is in future (domain rule: no past timers)
+ * - TimerPersistencePort: Persists timer with idempotency key (tenantId, serviceCallId)
+ *
+ * Effect runs in bounded context: no HTTP calls, no broker access (workflow isolation).
+ * Use pollDueTimersWorkflow for event publishing after timer fires.
+ */
+export const scheduleTimer = (
+  command: ScheduleTimerCommand,
+): Effect.Effect<
+  ScheduledTimer,
+  ValidationError | PersistenceError,
+  ClockPort | TimerPersistencePort
+> => /*...*/;
+```
+
+**Clarify timing/concurrency assumptions**:
+
+```typescript
+/**
+ * Processes timer firings with sequential ordering guarantee.
+ *
+ * Concurrency: MUST be 1 (sequential processing).
+ * Reason: Preserve broker partition order for events with same serviceCallId.
+ * If events fire out-of-order, downstream consumers may see stale data.
+ *
+ * Timing assumption: Each timer processing takes <100ms (publish + persist).
+ * Large batches (>1000 timers) may cause backpressure; consider pagination.
+ *
+ * @see ADR-0002 for broker ordering guarantees
+ */
+const processTimers = (timers: Chunk<ScheduledTimer>) =>
+  Effect.partition(timers, processTimerFiring, {
+    concurrency: 1, // ← Critical: DO NOT increase
+  });
+```
+
+---
+
+### Cross-Reference Strategy
+
+**Link code to ADRs using standardized format**:
+
+```typescript
+// Use [adr: ADR-####] in comments
+// Generate ServiceCallId in application code (UUID v7).
+// See [adr: ADR-0010] for identity generation strategy.
+
+// Or in TSDoc:
+/**
+ * @see ADR-0010 for why we generate IDs in application, not database
+ */
+```
+
+**Link to design docs for complex patterns**:
+
+```typescript
+// Port-adapter pattern follows hexagonal architecture.
+// See docs/design/hexagonal-architecture-layers.md for layer responsibilities.
+
+/**
+ * TimerPersistencePort abstracts storage operations for Timer module.
+ *
+ * Port responsibilities (Layer 2):
+ * - Define domain-facing interface (persistence operations)
+ * - Declare domain error types (PersistenceError, not SQLite errors)
+ *
+ * Adapter responsibilities (Layer 3):
+ * - Map infrastructure errors to domain errors
+ * - Implement storage using SQLite/in-memory/etc.
+ *
+ * @see docs/design/ports.md#timerpersistenceport for contract details
+ */
+```
+
+**Reference Kanban items for TODOs**:
+
+```typescript
+// TODO(PL-4.4): Implement idempotency check in workflow
+// Current implementation allows duplicate schedules for same serviceCallId.
+// See ADR-0006 for keying strategy (tenantId, serviceCallId).
+
+// TODO(PL-8): Add retry policy for BatchProcessingError
+// Currently fails entire poll cycle on partial failures.
+// Consider exponential backoff with max retries.
+```
+
+---
+
+### TDD Integration
+
+**RED phase: Document test intent and expected behavior**:
+
+```typescript
+describe('TimerEntry.schedule', () => {
+  // RED: Test intent clearly stated
+  it.effect('should reject past dueAt timestamp', () =>
+    Effect.gen(function* () {
+      // Arrange: Create command with past timestamp
+      const pastTime = DateTime.now().pipe(DateTime.subtract('1 hour'));
+      const command = { tenantId, serviceCallId, dueAt: pastTime };
+
+      // Act: Attempt to schedule timer
+      const result = yield* TimerEntry.schedule(command).pipe(Effect.either);
+
+      // Assert: ValidationError with specific field
+      expect(Either.isLeft(result)).toBe(true);
+      expect(result.left.field).toBe('dueAt');
+    }),
+  );
+});
+```
+
+**GREEN phase: Add function-level docs with examples**:
+
+```typescript
+/**
+ * Creates a ScheduledTimer from a command, validating domain invariants.
+ *
+ * Domain rules:
+ * - dueAt must be in future (no past timers)
+ * - tenantId and serviceCallId must be valid UUIDs
+ *
+ * @param command - Timer schedule parameters
+ * @returns ScheduledTimer on success
+ * @throws ValidationError if domain rules violated
+ *
+ * @example
+ * ```typescript
+ * const timer = yield* TimerEntry.schedule({
+ *   tenantId: TenantId.make("tenant-123"),
+ *   serviceCallId: ServiceCallId.make(),
+ *   dueAt: DateTime.now().pipe(DateTime.add("5 minutes")),
+ * });
+ * ```
+ */
+export const schedule = (
+  command: ScheduleTimerCommand,
+): Effect.Effect<ScheduledTimer, ValidationError, ClockPort> => {
+  // Implementation now documents itself with clear steps
+  return Effect.gen(function* () {
+    const clock = yield* ClockPort;
+    const now = yield* clock.now();
+
+    // Validate dueAt is future (domain rule)
+    if (DateTime.lessThanOrEqualTo(command.dueAt, now)) {
+      return yield* Effect.fail(
+        new ValidationError({ field: 'dueAt', message: 'Must be future timestamp' }),
+      );
+    }
+
+    // Construct domain entity
+    return new ScheduledTimer({
+      tenantId: command.tenantId,
+      serviceCallId: command.serviceCallId,
+      dueAt: command.dueAt,
+    });
+  });
+};
+```
+
+**REFACTOR phase: Update comments to match new structure**:
+
+```typescript
+// Before refactor: Inline validation
+const result = command.dueAt > now ? new ScheduledTimer(...) : fail(...);
+
+// After refactor: Extracted helper
+const validateFutureTimestamp = (dueAt: DateTime, now: DateTime) => {
+  // Domain rule: timers cannot be scheduled in the past
+  // Clock precision may vary; use strict greater-than comparison
+  return DateTime.greaterThan(dueAt, now)
+    ? Effect.succeed(dueAt)
+    : Effect.fail(new ValidationError({ field: 'dueAt', message: 'Must be future' }));
+};
+
+// Update workflow to use extracted function (comment removed—name is clear)
+const validated = yield* validateFutureTimestamp(command.dueAt, now);
+```
+
+---
+
+### Quality Gates
+
+**Before marking feature complete, verify**:
+
+- [ ] Public APIs have TSDoc with `@param`, `@returns`, `@throws`, `@example`
+- [ ] Domain models document invariants and state transitions
+- [ ] Effect error types are documented with recovery strategies
+- [ ] Trade-offs and non-obvious decisions have inline comments
+- [ ] ADR/design doc links added for architectural patterns
+- [ ] TODOs reference Kanban items (e.g., `TODO(PL-##)`)
+- [ ] No commented-out code (use git history instead)
+- [ ] No outdated comments (grep for "TODO", "FIXME", "HACK")
+
+**Review prompts (for self/peer review)**:
+
+- Can I understand WHY this code exists without reading implementation?
+- Are error cases documented with recovery strategies?
+- Would a new contributor understand the domain rules?
+- Do comments add value, or just restate code?
+- Are there links to relevant ADRs/design docs?
+
+**Examples of good vs bad comments from this project**:
+
+```typescript
+// ❌ Bad: Restates obvious code
+// Publish the event
+yield* eventBus.publishDueTimeReached(event);
+
+// ❌ Bad: Outdated comment (code changed, comment didn't)
+// Use forEach to process timers
+const results = yield* Effect.partition(timers, processTimer); // ← Now uses partition!
+
+// ✅ Good: Explains WHY partition, documents trade-off
+// Use partition instead of forEach to collect ALL failures, not fail-fast.
+// Trade-off: Higher memory for large batches, but better resilience.
+const [failures, successes] = yield* Effect.partition(timers, processTimer);
+
+// ✅ Good: Documents domain semantics with ADR link
+/**
+ * Error representing batch processing failures during timer polling.
+ *
+ * Domain semantics:
+ * - Failed timers remain in Scheduled state (retry on next poll)
+ * - Successful timers are marked as Reached (forgotten)
+ * - Caller can inspect failures and implement retry policies
+ *
+ * @see ADR-0003 for timer state machine transitions
+ */
+export class BatchProcessingError extends Schema.TaggedError<BatchProcessingError>() { /*...*/ }
+```
+
+---
+
+### Red Flags to Avoid
+
+**❌ Commented-out code** (use git history):
+
+```typescript
+// ❌ Bad: Dead code left in comments
+// const oldSchedule = (timer) => db.insert(timer);
+// yield* oldSchedule(timer);
+
+// ✅ Good: Delete and commit; git history preserves old implementation
+yield* persistence.scheduleTimer(timer);
+```
+
+**❌ Outdated/stale comments**:
+
+```typescript
+// ❌ Bad: Comment doesn't match code anymore
+// Process timers one at a time
+const results = yield* Effect.all(timers.map(processTimer), { concurrency: 10 }); // ← Now concurrent!
+
+// ✅ Good: Update comment or remove if code is self-documenting
+// Process timers concurrently (max 10 at once) for throughput.
+// Note: Out-of-order event publishing; only safe for independent timers.
+const results = yield* Effect.all(timers.map(processTimer), { concurrency: 10 });
+```
+
+**❌ Apologetic comments without action items**:
+
+```typescript
+// ❌ Bad: Acknowledges problem but doesn't fix it
+// HACK: This is a terrible way to do it, but it works for now
+const result = JSON.parse(JSON.stringify(data));
+
+// ✅ Good: Add TODO with Kanban reference and ADR context
+// TODO(PL-15): Replace deep clone with structural sharing (Effect HashMap)
+// Current approach is inefficient for large objects; causes GC pressure.
+// See ADR-0012 for immutability patterns.
+const result = JSON.parse(JSON.stringify(data));
+
+// ✅ Better: Fix it now if trivial
+const result = HashMap.fromIterable(data.entries());
+```
+
+**❌ Noise (ASCII art, excessive decoration)**:
+
+```typescript
+// ❌ Bad: Visual noise without value
+/******************************************************************************
+ *                          TIMER MODULE                                      *
+ *                                                                            *
+ * This module handles timer scheduling and firing                            *
+ ******************************************************************************/
+
+// ✅ Good: Let file structure and naming convey organization
+// packages/timer/src/workflows/schedule-timer.workflow.ts
+
+/**
+ * Schedules a timer for future firing.
+ * @see docs/design/modules/timer.md for module responsibilities
+ */
+```
+
+---
+
 ## Multi-Tenancy Checklist (Per Feature)
 
 ### RED Phase (Test Tenant Isolation)
