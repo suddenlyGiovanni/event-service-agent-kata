@@ -16,10 +16,7 @@
 							":BLANK_LINE:",
 							":PACKAGE_WITH_PROTOCOL:",
 							{
-								"source": [
-									":PACKAGE:",
-									"!@event-service-agent/**"
-								]
+								"source": [":PACKAGE:", "!@event-service-agent/**"]
 							},
 							":BLANK_LINE:",
 							"@event-service-agent/**",
@@ -159,11 +156,7 @@
 					"options": {
 						"conventions": [
 							{
-								"formats": [
-									"camelCase",
-									"PascalCase",
-									"CONSTANT_CASE"
-								],
+								"formats": ["camelCase", "PascalCase", "CONSTANT_CASE"],
 								"selector": {
 									"kind": "const",
 									"scope": "any"
