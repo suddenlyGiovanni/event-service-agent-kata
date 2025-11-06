@@ -18,6 +18,11 @@ jobs:
       - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
+      - name: 🦕 Setup Deno (for doc validation)
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: "2.5.0"
+
       - name: 🔍 Typecheck code
         run: bun run type-check
 

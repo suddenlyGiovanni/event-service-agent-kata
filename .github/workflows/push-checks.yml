@@ -65,11 +65,16 @@ jobs:
         with:
           commit_message: "chore: lint and format code with Biome [skip ci]"
 
-      - name: 📚 Validate documentation
-        id: doc-check
+      - name: 📝 Fix Markdown lint issues
+        id: markdown-fix
         continue-on-error: true
         shell: sh
-        run: bun run doc-check
+        run: bunx --bun markdownlint-cli2 --fix "docs/**/*.md"
+
+      - name: 🚦 Git Auto Commit Markdown fixes
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "chore: fix markdown lint issues [skip ci]"
 
       - name: 🧪 Run tests
         id: tests
@@ -77,7 +82,7 @@ jobs:
         run: bun run test --run
 
       - name: ❌ Fail if any check failed
-        if: steps.typecheck.outcome == 'failure' || steps.lint.outcome == 'failure' || steps.format.outcome == 'failure' || steps.tests.outcome == 'failure' || steps.doc-check.outcome == 'failure'
+        if: steps.typecheck.outcome == 'failure' || steps.lint.outcome == 'failure' || steps.format.outcome == 'failure' || steps.tests.outcome == 'failure'
         run: |
           echo "::error::One or more checks failed"
           exit 1
