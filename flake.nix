@@ -25,6 +25,7 @@
           packages = with pkgs; [
             bun
             biome
+            deno
           ];
 
           # Show bun version each time direnv enters the shell
