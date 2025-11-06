@@ -247,10 +247,10 @@ export interface TimerEventBusPort {
    */
   subscribeToScheduleTimerCommands<E, R>(
     handler: (
-      cmd: Messages.Orchestration.Commands.ScheduleTimer.Type,
+      command: Messages.Orchestration.Commands.ScheduleTimer.Type,
       metadata: MessageMetadata.Type
     ) => Effect.Effect<void, E, R>
-  ): Effect.Effect<void, SubscribeError | E, R>;
+  ): Effect.Effect<void, Ports.SubscribeError | E, R>;
 }
 ```
 
