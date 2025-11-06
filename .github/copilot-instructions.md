@@ -736,9 +736,11 @@ timer.state = 'Scheduled';
 const scheduledTimer = TimerEntry.schedule(command);
 
 // ✅ Good: Explains WHY, references decision
-// Publish event BEFORE marking as fired to ensure at-least-once delivery.
-// If publish fails, timer remains Scheduled and will retry on next poll.
-// See ADR-0008 for outbox pattern rationale.
+/*
+ * Publish event BEFORE marking as fired to ensure at-least-once delivery.
+ * If publish fails, timer remains Scheduled and will retry on next poll.
+ * See ADR-0008 for outbox pattern rationale.
+ */
 yield* eventBus.publishDueTimeReached(event);
 yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now);
 ```
@@ -752,10 +754,12 @@ yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now);
 1. **Trade-offs and architectural decisions**:
 
    ```typescript
-   // Use partition instead of forEach to collect ALL failures, not fail-fast.
-   // This ensures partial batch success: processed timers are marked fired,
-   // failed timers remain Scheduled for retry on next poll.
-   // Trade-off: Higher memory usage for large batches, but better resilience.
+   /*
+    * Use partition instead of forEach to collect ALL failures, not fail-fast.
+    * This ensures partial batch success: processed timers are marked fired,
+    * failed timers remain Scheduled for retry on next poll.
+    * Trade-off: Higher memory usage for large batches, but better resilience.
+    */
    const [failures, successes] = yield* Effect.partition(dueTimers, processTimer);
    ```
 
@@ -777,8 +781,10 @@ yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now);
 3. **Gotchas, edge cases, and timing assumptions**:
 
    ```typescript
-   // GOTCHA: findDue query uses inclusive comparison (<=) to ensure we don't
-   // miss timers due at exact microsecond boundary. Clock precision varies.
+   /*
+    * GOTCHA: findDue query uses inclusive comparison (<=) to ensure we don't
+    * miss timers due at exact microsecond boundary. Clock precision varies.
+    */
    const dueTimers = yield* persistence.findDue(now); // WHERE due_at <= now
 
    // EDGE CASE: Empty batch early return prevents unnecessary event bus calls
@@ -791,10 +797,12 @@ yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now);
 4. **Non-obvious performance or concurrency choices**:
 
    ```typescript
-   // Process sequentially (concurrency: 1) to preserve partition key ordering.
-   // Kafka guarantees order only within a partition; concurrent processing
-   // could reorder DueTimeReached events for same serviceCallId.
-   // See ADR-0002 for broker ordering guarantees.
+   /*
+    * Process sequentially (concurrency: 1) to preserve partition key ordering.
+    * Kafka guarantees order only within a partition; concurrent processing
+    * could reorder DueTimeReached events for same serviceCallId.
+    * See ADR-0002 for broker ordering guarantees.
+    */
    const results = yield* Effect.partition(timers, processTimer, {
      concurrency: 1,
    });
@@ -803,13 +811,17 @@ yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now);
 5. **Links to ADRs and design docs**:
 
    ```typescript
-   // Generate UUID v7 in application code, not database.
-   // See ADR-0010 for identity generation strategy.
+   /*
+    * Generate UUID v7 in application code, not database.
+    * See ADR-0010 for identity generation strategy.
+    */
    const envelopeId = EnvelopeId.make();
 
-   // Outbox pattern: append events to outbox table in same transaction.
-   // Events published after commit to avoid dual-write problem.
-   // See ADR-0008 for detailed rationale and failure mode analysis.
+   /*
+    * Outbox pattern: append events to outbox table in same transaction.
+    * Events published after commit to avoid dual-write problem.
+    * See ADR-0008 for detailed rationale and failure mode analysis.
+    */
    yield* outbox.append(events);
    ```
 
@@ -818,8 +830,10 @@ yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now);
 1. **Obvious operations** (code is self-documenting):
 
    ```typescript
-   // ❌ Redundant: name already says what it does
-   // Get current time
+   /*
+    * ❌ Redundant: name already says what it does
+    * Get current time
+    */
    const now = yield* clock.now();
 
    // ✅ Just write the code
@@ -843,8 +857,10 @@ yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now);
 3. **Implementation details of pure functions**:
 
    ```typescript
-   // ❌ Don't explain HOW sorting works
-   // Sort timers by dueAt ascending
+   /*
+    * ❌ Don't explain HOW sorting works
+    * Sort timers by dueAt ascending
+    */
    const sorted = timers.sort((a, b) => a.dueAt - b.dueAt);
 
    // ✅ Function name + types are sufficient
@@ -1116,8 +1132,10 @@ const result = command.dueAt > now ? new ScheduledTimer(...) : fail(...);
 
 // After refactor: Extracted helper
 const validateFutureTimestamp = (dueAt: DateTime, now: DateTime) => {
-  // Domain rule: timers cannot be scheduled in the past
-  // Clock precision may vary; use strict greater-than comparison
+  /*
+   * Domain rule: timers cannot be scheduled in the past
+   * Clock precision may vary; use strict greater-than comparison
+   */
   return DateTime.greaterThan(dueAt, now)
     ? Effect.succeed(dueAt)
     : Effect.fail(new ValidationError({ field: 'dueAt', message: 'Must be future' }));
@@ -1162,8 +1180,10 @@ yield* eventBus.publishDueTimeReached(event);
 const results = yield* Effect.partition(timers, processTimer); // ← Now uses partition!
 
 // ✅ Good: Explains WHY partition, documents trade-off
-// Use partition instead of forEach to collect ALL failures, not fail-fast.
-// Trade-off: Higher memory for large batches, but better resilience.
+/*
+ * Use partition instead of forEach to collect ALL failures, not fail-fast.
+ * Trade-off: Higher memory for large batches, but better resilience.
+ */
 const [failures, successes] = yield* Effect.partition(timers, processTimer);
 
 // ✅ Good: Documents domain semantics with ADR link
@@ -1203,8 +1223,10 @@ yield* persistence.scheduleTimer(timer);
 const results = yield* Effect.all(timers.map(processTimer), { concurrency: 10 }); // ← Now concurrent!
 
 // ✅ Good: Update comment or remove if code is self-documenting
-// Process timers concurrently (max 10 at once) for throughput.
-// Note: Out-of-order event publishing; only safe for independent timers.
+/*
+ * Process timers concurrently (max 10 at once) for throughput.
+ * Note: Out-of-order event publishing; only safe for independent timers.
+ */
 const results = yield* Effect.all(timers.map(processTimer), { concurrency: 10 });
 ```
 
@@ -1216,9 +1238,11 @@ const results = yield* Effect.all(timers.map(processTimer), { concurrency: 10 })
 const result = JSON.parse(JSON.stringify(data));
 
 // ✅ Good: Add TODO with Kanban reference and ADR context
-// TODO(PL-15): Replace deep clone with structural sharing (Effect HashMap)
-// Current approach is inefficient for large objects; causes GC pressure.
-// See ADR-0012 for immutability patterns.
+/*
+ * TODO(PL-15): Replace deep clone with structural sharing (Effect HashMap)
+ * Current approach is inefficient for large objects; causes GC pressure.
+ * See ADR-0012 for immutability patterns.
+ */
 const result = JSON.parse(JSON.stringify(data));
 
 // ✅ Better: Fix it now if trivial
