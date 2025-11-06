@@ -47,7 +47,11 @@ import * as Service from '@event-service-agent/platform/uuid7'
 
 import { UUID7 } from './uuid7.schema.ts'
 
-const ServiceCallIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/ServiceCallId')
+/**
+ * ServiceCallId brand for internal use
+ * @internal
+ */
+export const ServiceCallIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/ServiceCallId')
 
 /**
  * ServiceCallId — Branded UUID7 for service call aggregate identification

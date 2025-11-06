@@ -41,7 +41,11 @@ import * as Service from '@event-service-agent/platform/uuid7'
 
 import { UUID7 } from './uuid7.schema.ts'
 
-const TenantIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/TenantId')
+/**
+ * TenantId brand for internal use
+ * @internal
+ */
+export const TenantIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/TenantId')
 
 /**
  * TenantId — Branded UUID7 for tenant identification

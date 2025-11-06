@@ -18,8 +18,8 @@ import type { LazyArbitrary } from 'effect/Arbitrary'
 import * as Schema from 'effect/Schema'
 
 const identifier = 'UUID7' as const
-const UUID7SchemaId: unique symbol = Symbol.for(`@event-service-agent/schemas/SchemaId/${identifier}`)
-const UUID7Brand: unique symbol = Symbol.for(`@event-service-agent/schemas/shared/${identifier}`)
+export const UUID7SchemaId: unique symbol = Symbol.for(`@event-service-agent/schemas/SchemaId/${identifier}`)
+export const UUID7Brand: unique symbol = Symbol.for(`@event-service-agent/schemas/shared/${identifier}`)
 
 /**
  * UUID v7 regex pattern (RFC 9562 compliant)

@@ -64,7 +64,11 @@ import * as Service from '@event-service-agent/platform/uuid7'
 
 import { UUID7 } from './uuid7.schema.ts'
 
-const EnvelopeIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/EnvelopeId')
+/**
+ * EnvelopeId brand for internal use
+ * @internal
+ */
+export const EnvelopeIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/EnvelopeId')
 
 /**
  * EnvelopeId — Branded UUID7 for message envelope identification
