@@ -1554,3 +1554,12 @@ docs(design): clarify Timer state machine transitions
 - Link changes in the plan.
 - Avoid scope creep: pick the top item from `docs/plan/kanban.md` (Doing → Ready order).
 - If a necessary decision is missing, add/adjust an ADR and reflect it in the Kanban.
+
+---
+
+## References
+
+This Copilot instructions file follows GitHub's best practices for Copilot coding agents:
+- [Best practices for using GitHub Copilot to work on tasks](https://docs.github.com/en/copilot/tutorials/coding-agent/get-the-best-results)
+- [GitHub Copilot coding agent documentation](https://docs.github.com/en/copilot/tutorials/coding-agent)
+- [Adding custom instructions for GitHub Copilot](https://docs.github.com/en/copilot/customizing-copilot/adding-custom-instructions-for-github-copilot)
