@@ -205,10 +205,18 @@ Used in: [Timer] (workflows publish events, handlers consume commands).
 ```ts
 import type * as Effect from "effect/Effect";
 import type * as Messages from "@event-service-agent/schemas/messages";
+import type { MessageMetadata } from "@event-service-agent/platform/context";
 
 export interface TimerEventBusPort {
   /**
    * Publish DueTimeReached domain event with MessageMetadata Context
+   *
+   * MessageMetadata is a Context.Tag from the platform layer that carries
+   * correlation and causation identifiers for distributed tracing.
+   *
+   * Note the asymmetry in how MessageMetadata is referenced:
+   *   - In Effect R parameter: Use the tag itself (MessageMetadata)
+   *   - In handler parameters: Use the extracted type (MessageMetadata.Type)
    *
    * Workflow provides MessageMetadata via Effect.provideService:
    *   - correlationId: From timer aggregate (original ScheduleTimer command)
