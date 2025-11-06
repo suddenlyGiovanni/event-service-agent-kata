@@ -6,6 +6,22 @@ Make agents effective by pointing to living sources of truth and shared principl
 
 ---
 
+## Quick Start (For New Tasks)
+
+When starting work on an issue, follow this workflow:
+
+1. **Read the issue carefully** - Understand the requirements and acceptance criteria
+2. **Check the Kanban** - Review `docs/plan/kanban.md` for context on current work
+3. **Read module design** - Check `docs/design/modules/<module-name>.md` for the module you're working on
+4. **Review relevant ADRs** - See `docs/decisions/` for architectural decisions
+5. **Follow TDD discipline** - RED → GREEN → REFACTOR with atomic commits
+6. **Use Effect-TS patterns** - All code uses Effect for type-safe effects and DI
+7. **Ensure multi-tenancy** - Every query must filter by `tenant_id`
+8. **Run tests frequently** - `bun run test` (watch mode) or `bun run test --run` (CI mode)
+9. **Format before committing** - `bun run format` and `bun run check`
+
+---
+
 ## Set-In-Stone Principles
 
 - **Reasoning**: Domain Modeling Made Functional (DMMF) patterns.
