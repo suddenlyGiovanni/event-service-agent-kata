@@ -38,13 +38,14 @@ jobs:
           fix: true
 
       - name: 🚦 Commit Markdown fixes
-        uses: stefanzweifel/git-auto-commit-action@v7
-        with:
-          commit_message: "chore: fix markdown lint issues"
-          skip_dirty_check: false
-          skip_fetch: true
-          skip_checkout: true
-          skip_push: true
+        shell: bash
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: fix markdown lint issues"
+          fi
 
       - name: 💅 Format code
         shell: sh
@@ -63,13 +64,14 @@ jobs:
           --write
 
       - name: 🚦 Commit format fixes
-        uses: stefanzweifel/git-auto-commit-action@v7
-        with:
-          commit_message: "chore: format code with Biome"
-          skip_dirty_check: false
-          skip_fetch: true
-          skip_checkout: true
-          skip_push: true
+        shell: bash
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: format code with Biome"
+          fi
 
       - name: 🚨 Lint code
         shell: sh
@@ -88,13 +90,14 @@ jobs:
           --write
 
       - name: 🚦 Commit lint fixes
-        uses: stefanzweifel/git-auto-commit-action@v7
-        with:
-          commit_message: "chore: lint code with Biome"
-          skip_dirty_check: false
-          skip_fetch: true
-          skip_checkout: true
-          skip_push: true
+        shell: bash
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: lint code with Biome"
+          fi
 
       - name: 📤 Push all fixes
         uses: ad-m/github-push-action@master
