@@ -54,6 +54,7 @@
 	"scripts": {
 		"check": "biome check --write .",
 		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
+		"doc-check": "deno doc --lint $(find packages -name '*.ts' -not -path '*/node_modules/*' -not -name '*.test.ts' -not -name 'vitest.config.ts')",
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
 		"lint:md": "bunx --bun markdownlint-cli2 --fix docs/**/*.md",

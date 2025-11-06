@@ -47,3 +47,47 @@
 
 - [Plan](./docs/plan/plan.md)
 - [Kanban](./docs/plan/kanban.md)
+
+---
+
+## Development
+
+### Prerequisites
+
+This project uses **Bun** (>=1.3.0) as the runtime and package manager. See [devEngines](./package.json) for specific version requirements.
+
+### Installation
+
+```bash
+bun install
+```
+
+### Available Scripts
+
+- `bun run test` - Run tests in watch mode
+- `bun run test --run` - Run tests once (CI mode)
+- `bun run type-check` - TypeScript type checking across all workspaces
+- `bun run lint` - Lint code with Biome
+- `bun run format` - Format code with Biome
+- `bun run check` - Run Biome checks with auto-fix
+- `bun run doc-check` - Validate TSDoc documentation (see below)
+
+### Documentation Validation
+
+This project uses **Deno's doc linter** to validate TSDoc comments and `@example` blocks, even though the project runs on Bun. This approach:
+
+- **Prevents documentation rot**: Ensures code examples in documentation stay in sync with API changes
+- **Validates `@example` blocks**: Checks TypeScript syntax in documentation examples
+- **Catches missing documentation**: Identifies public APIs without proper JSDoc
+- **Leverages best-in-class tooling**: Uses Deno's built-in documentation validation without adding Node.js/Bun dependencies
+
+**Running locally:**
+
+```bash
+# Requires Deno 2.5+ to be installed
+bun run doc-check
+```
+
+**In CI**: Documentation validation runs automatically in both pull request and push workflows. Currently configured as `continue-on-error: true` while the codebase is being progressively documented.
+
+**Future directions**: As the ecosystem matures, we may migrate to native Bun/Node.js solutions or extract `@example` blocks as executable unit tests.

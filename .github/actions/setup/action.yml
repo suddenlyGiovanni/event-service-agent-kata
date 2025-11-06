@@ -26,3 +26,8 @@ runs:
     - name: 🧩 Install dependencies
       shell: bash
       run: bun ci
+
+    - name: 🦕 Setup Deno (for doc validation)
+      uses: denoland/setup-deno@v2
+      with:
+        deno-version: "2.5.0"

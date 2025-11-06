@@ -41,5 +41,10 @@ jobs:
           --assist-enabled=true \
           --reporter=github
 
+      - name: 📚 Validate documentation
+        continue-on-error: true
+        shell: sh
+        run: bun run doc-check
+
       - name: 🧪 Run tests
         run: bun run test --run

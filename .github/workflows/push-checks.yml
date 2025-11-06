@@ -65,13 +65,19 @@ jobs:
         with:
           commit_message: "chore: lint and format code with Biome [skip ci]"
 
+      - name: 📚 Validate documentation
+        id: doc-check
+        continue-on-error: true
+        shell: sh
+        run: bun run doc-check
+
       - name: 🧪 Run tests
         id: tests
         continue-on-error: true
         run: bun run test --run
 
       - name: ❌ Fail if any check failed
-        if: steps.typecheck.outcome == 'failure' || steps.lint.outcome == 'failure' || steps.format.outcome == 'failure' || steps.tests.outcome == 'failure'
+        if: steps.typecheck.outcome == 'failure' || steps.lint.outcome == 'failure' || steps.format.outcome == 'failure' || steps.tests.outcome == 'failure' || steps.doc-check.outcome == 'failure'
         run: |
           echo "::error::One or more checks failed"
           exit 1
