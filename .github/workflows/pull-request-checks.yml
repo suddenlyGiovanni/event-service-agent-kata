@@ -5,9 +5,70 @@ on:
       - main
 
 jobs:
-  checks:
-    name: 🫸 Pull Request Checks
+  code-quality:
+    name: 🎨 Code Quality
     runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
+
+      - name: 🎨 Check code quality (lint + format)
+        shell: sh
+        run: |
+          bun biome ci \
+          --max-diagnostics=none \
+          --reporter=github
+
+      - name: 📋 Lint Markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: |
+            **/*.md
+            !node_modules/**
+            !**/node_modules/**
+
+  type-safety:
+    name: 🔍 Type Safety
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
+
+      - name: 🚨 Typecheck code
+        run: bun run type-check
+
+  tests:
+    name: 🧪 Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
+
+      - name: 🧪 Run tests
+        run: bun run test --run
+
+  documentation:
+    name: 📚 Documentation
+    runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - name: 📥 Checkout code
@@ -23,41 +84,6 @@ jobs:
         with:
           deno-version: "2.5.0"
 
-      - name: 🔍 Typecheck code
-        run: bun run type-check
-
-      - name: 🚨 Lint code
-        shell: sh
-        run: |
-          bun biome ci \
-          --max-diagnostics=none \
-          --formatter-enabled=false \
-          --linter-enabled=true \
-          --assist-enabled=true \
-          --reporter=github
-
-      - name: 💅 Format check
-        shell: sh
-        run: |
-          bun biome ci \
-          --max-diagnostics=none \
-          --formatter-enabled=true \
-          --linter-enabled=false \
-          --assist-enabled=true \
-          --reporter=github
-
-      - name: 📝 Lint Markdown files
-        uses: DavidAnson/markdownlint-cli2-action@v20
-        with:
-          globs: |
-            **/*.md
-            !node_modules/**
-            !**/node_modules/**
-
       - name: 📚 Validate documentation
-        continue-on-error: true
         shell: sh
         run: bun run doc-check
-
-      - name: 🧪 Run tests
-        run: bun run test --run
