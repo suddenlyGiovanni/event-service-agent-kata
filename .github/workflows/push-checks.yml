@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  checks:
-    name: 🫸 Push Checks
+  auto-fix:
+    name: 🔧 Auto-fix Code
     runs-on: ubuntu-latest
 
     steps:
@@ -19,14 +19,56 @@ jobs:
       - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
-      - name: 🔍 Typecheck code
-        id: typecheck
-        continue-on-error: true
-        run: bun run type-check
+      - name: � Detect changed Markdown files
+        uses: tj-actions/changed-files@v47
+        id: changed-markdown-files
+        with:
+          files: '**/*.md'
+          separator: ","
+
+      - name: 📝 Fix Markdown lint issues
+        if: steps.changed-markdown-files.outputs.any_changed == 'true'
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
+          separator: ","
+          fix: true
+
+      - name: 🚦 Commit Markdown fixes
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "chore: fix markdown lint issues"
+          skip_dirty_check: false
+          skip_fetch: true
+          skip_checkout: true
+          push_options: false
+
+      - name: 💅 Format code
+        shell: sh
+        run: |
+          bun biome check \
+          --max-diagnostics=none \
+          --vcs-enabled=true \
+          --vcs-use-ignore-file=true \
+          --vcs-root="." \
+          --formatter-enabled=true \
+          --linter-enabled=false \
+          --assist-enabled=true \
+          --reporter=github \
+          --changed \
+          --no-errors-on-unmatched \
+          --write
+
+      - name: 🚦 Commit format fixes
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "chore: format code with Biome"
+          skip_dirty_check: false
+          skip_fetch: true
+          skip_checkout: true
+          push_options: false
 
       - name: 🚨 Lint code
-        id: lint
-        continue-on-error: true
         shell: sh
         run: |
           bun biome check \
@@ -42,56 +84,43 @@ jobs:
           --changed \
           --write
 
-      - name: 💅 Format code
-        id: format
-        continue-on-error: true
-        shell: sh
-        run: |
-          bun biome check \
-          --max-diagnostics=none \
-          --vcs-enabled=true \
-          --vcs-use-ignore-file=true \
-          --vcs-root="." \
-          --formatter-enabled=true \
-          --linter-enabled=false  \
-          --assist-enabled=true \
-          --reporter=github \
-          --changed \
-          --no-errors-on-unmatched \
-          --write
-
-      - name: 🚦 Git Auto Commit fixes (with Biome)
+      - name: 🚦 Commit lint fixes
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
-          commit_message: "chore: lint and format code with Biome [skip ci]"
+          commit_message: "chore: lint code with Biome"
+          skip_dirty_check: false
+          skip_fetch: true
+          skip_checkout: true
+          push_options: false
 
-      - name: 📋 Detect changed Markdown files
-        uses: tj-actions/changed-files@v47
-        id: changed-markdown-files
+      - name: 📤 Push all fixes
+        uses: ad-m/github-push-action@master
         with:
-          files: '**/*.md'
-          separator: ","
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
 
-      - name: 📝 Fix Markdown lint issues
-        if: steps.changed-markdown-files.outputs.any_changed == 'true'
-        uses: DavidAnson/markdownlint-cli2-action@v20
+  validate:
+    name: ✅ Validate (${{ matrix.check }})
+    runs-on: ubuntu-latest
+    needs: auto-fix
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [typecheck, test]
+
+    steps:
+      - name: � Checkout code
+        uses: actions/checkout@v5
         with:
-          globs: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
-          separator: ","
-          fix: true
+          fetch-depth: 0
 
-      - name: 🚦 Git Auto Commit Markdown fixes
-        uses: stefanzweifel/git-auto-commit-action@v7
-        with:
-          commit_message: "chore: fix markdown lint issues [skip ci]"
+      - name: � Install dependencies
+        uses: ./.github/actions/setup
 
-      - name: 🧪 Run tests
-        id: tests
-        continue-on-error: true
-        run: bun run test --run
-
-      - name: ❌ Fail if any check failed
-        if: steps.typecheck.outcome == 'failure' || steps.lint.outcome == 'failure' || steps.format.outcome == 'failure' || steps.tests.outcome == 'failure'
+      - name: 🔍 Run ${{ matrix.check }}
         run: |
-          echo "::error::One or more checks failed"
-          exit 1
+          if [ "${{ matrix.check }}" = "typecheck" ]; then
+            bun run type-check
+          elif [ "${{ matrix.check }}" = "test" ]; then
+            bun run test --run
+          fi
