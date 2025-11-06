@@ -5,8 +5,8 @@ on:
       - main
 
 jobs:
-  code-quality:
-    name: 🎨 Code Quality
+  lint:
+    name: 🎨 Lint
     runs-on: ubuntu-latest
 
     steps:
@@ -18,23 +18,15 @@ jobs:
       - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
-      - name: 🎨 Check code quality (lint + format)
+      - name: 🎨 Lint and format code
         shell: sh
         run: |
           bun biome ci \
           --max-diagnostics=none \
           --reporter=github
 
-      - name: 📋 Lint Markdown files
-        uses: DavidAnson/markdownlint-cli2-action@v20
-        with:
-          globs: |
-            **/*.md
-            !node_modules/**
-            !**/node_modules/**
-
-  type-safety:
-    name: 🔍 Type Safety
+  typecheck:
+    name: 🚨 Typecheck
     runs-on: ubuntu-latest
 
     steps:
@@ -46,8 +38,29 @@ jobs:
       - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
-      - name: 🚨 Typecheck code
+      - name: 🔍 Typecheck code
         run: bun run type-check
+
+  markdown:
+    name: 📋 Markdown
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
+
+      - name: 📝 Lint Markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: |
+            **/*.md
+            !node_modules/**
+            !**/node_modules/**
 
   tests:
     name: 🧪 Tests
@@ -65,8 +78,8 @@ jobs:
       - name: 🧪 Run tests
         run: bun run test --run
 
-  documentation:
-    name: 📚 Documentation
+  docs:
+    name: 📚 Docs
     runs-on: ubuntu-latest
     continue-on-error: true
 
@@ -76,14 +89,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 🧩 Install dependencies
-        uses: ./.github/actions/setup
-
       - name: 🦕 Setup Deno (for doc validation)
         uses: denoland/setup-deno@v2
         with:
           deno-version: "2.5.0"
+      
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
 
-      - name: 📚 Validate documentation
+      - name: 📚 Validate TSDoc comments
         shell: sh
         run: bun run doc-check
