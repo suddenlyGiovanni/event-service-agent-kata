@@ -2,6 +2,12 @@
 
 import * as Context from 'effect/Context'
 
+/**
+ * UUIDPort — UUID generation service
+ *
+ * Provides UUIDv7 generation for time-ordered unique identifiers.
+ * Use for envelope IDs, correlation IDs, and entity identifiers.
+ */
 export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/UUID')<
 	UUIDPort,
 	{

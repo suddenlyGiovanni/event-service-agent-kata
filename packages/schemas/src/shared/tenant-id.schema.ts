@@ -146,6 +146,11 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 		Schema.decodeEither(TenantId)(value)
 }
 
+/**
+ * Type aliases for TenantId
+ *
+ * Provides convenient access to the branded type.
+ */
 export declare namespace TenantId {
 	/**
 	 * The branded type: string & Brand<UUID7Brand> & Brand<TenantIdBrand>

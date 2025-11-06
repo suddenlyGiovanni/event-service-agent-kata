@@ -145,6 +145,12 @@ export class MessageMetadata extends Context.Tag('MessageMetadata')<
 	}
 >() {}
 
+/**
+ * Type aliases for MessageMetadata service
+ *
+ * Provides convenient access to the service type.
+ */
 export declare namespace MessageMetadata {
+	/** Service type from the MessageMetadata tag */
 	type Type = Context.Tag.Service<MessageMetadata>
 }

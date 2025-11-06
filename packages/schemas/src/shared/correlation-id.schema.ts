@@ -154,6 +154,11 @@ export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) 
 		Schema.decodeEither(CorrelationId)(value)
 }
 
+/**
+ * Type aliases for CorrelationId
+ *
+ * Provides convenient access to the branded type.
+ */
 export declare namespace CorrelationId {
 	/**
 	 * The branded type: string & Brand<UUID7Brand> & Brand<CorrelationIdBrand>

@@ -123,6 +123,11 @@ export class ServiceCallId extends UUID7.pipe(Schema.brand(ServiceCallIdBrand)) 
 		Schema.decodeEither(ServiceCallId)(value)
 }
 
+/**
+ * Type aliases for ServiceCallId
+ *
+ * Provides convenient access to the branded type.
+ */
 export declare namespace ServiceCallId {
 	/**
 	 * The branded type: string & Brand<UUID7Brand> & Brand<ServiceCallIdBrand>

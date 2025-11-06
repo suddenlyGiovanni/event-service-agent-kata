@@ -77,9 +77,17 @@ export class UUID7 extends Schema.UUID.pipe(
 	}),
 	Schema.brand(UUID7Brand),
 ) {
+	/**
+	 * Decode from string to validated UUID7
+	 */
 	static readonly decode = Schema.decode(UUID7)
 }
 
+/**
+ * Type aliases for UUID7
+ *
+ * Provides convenient access to the branded UUID7 type.
+ */
 export declare namespace UUID7 {
 	/**
 	 * UUID7 type - Branded string representing a time-ordered UUID v7

@@ -170,6 +170,11 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 		Schema.decodeEither(EnvelopeId)(value)
 }
 
+/**
+ * Type aliases for EnvelopeId
+ *
+ * Provides convenient access to the branded type.
+ */
 export declare namespace EnvelopeId {
 	/**
 	 * The branded type: string & Brand<UUID7Brand> & Brand<EnvelopeIdBrand>
