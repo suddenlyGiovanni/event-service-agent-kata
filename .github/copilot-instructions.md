@@ -948,7 +948,7 @@ export class ScheduledTimer extends Schema.Class<ScheduledTimer>("ScheduledTimer
  * - PersistenceError: Retry entire workflow (query + process)
  * - BatchProcessingError: Failed timers remain Scheduled; retry on next poll cycle
  *
- * @returns undefined on full success; fails with error on partial/full failure
+ * @returns void on full success; fails with error on partial/full failure
  */
 export const pollDueTimers: Effect.Effect<
   void,
