@@ -19,6 +19,7 @@ When starting work on an issue, follow this workflow:
 7. **Ensure multi-tenancy** - Every query must filter by `tenant_id`
 8. **Run tests frequently** - `bun run test` (watch mode) or `bun run test --run` (CI mode)
 9. **Format before committing** - `bun run format` and `bun run check`
+10. **Update Kanban on completion** - Mark task as done in `docs/plan/kanban.md` when complete
 
 ---
 
