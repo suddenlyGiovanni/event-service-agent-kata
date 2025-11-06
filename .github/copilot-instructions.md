@@ -795,8 +795,8 @@ yield * persistence.markFired(timer.tenantId, timer.serviceCallId, now)
      * Domain semantics:
      * - Timer is persisted in database (durable)
      * - Will fire when clock reaches dueAt timestamp
-     * - Can be cancelled before firing
-     * - Transitions to Reached when fired, or Cancelled if explicitly cancelled
+     * - Can be canceled before firing
+     * - Transitions to Reached when fired, or Cancelled if explicitly canceled
      */
     export class ScheduledTimer {
     	/*...*/
