@@ -5,6 +5,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   auto-fix:
     name: 🔧 Auto-fix Code
@@ -19,7 +22,7 @@ jobs:
       - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
-      - name: � Detect changed Markdown files
+      - name: 📋 Detect changed Markdown files
         uses: tj-actions/changed-files@v47
         id: changed-markdown-files
         with:
@@ -31,7 +34,7 @@ jobs:
         uses: DavidAnson/markdownlint-cli2-action@v20
         with:
           globs: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
-          separator: ","
+          separator: "," 
           fix: true
 
       - name: 🚦 Commit Markdown fixes
@@ -41,7 +44,7 @@ jobs:
           skip_dirty_check: false
           skip_fetch: true
           skip_checkout: true
-          push_options: false
+          skip_push: true
 
       - name: 💅 Format code
         shell: sh
@@ -66,7 +69,7 @@ jobs:
           skip_dirty_check: false
           skip_fetch: true
           skip_checkout: true
-          push_options: false
+          skip_push: true
 
       - name: 🚨 Lint code
         shell: sh
@@ -91,7 +94,7 @@ jobs:
           skip_dirty_check: false
           skip_fetch: true
           skip_checkout: true
-          push_options: false
+          skip_push: true
 
       - name: 📤 Push all fixes
         uses: ad-m/github-push-action@master
@@ -109,12 +112,12 @@ jobs:
         check: [typecheck, test]
 
     steps:
-      - name: � Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: � Install dependencies
+      - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
       - name: 🔍 Run ${{ matrix.check }}
