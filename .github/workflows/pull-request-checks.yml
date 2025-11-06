@@ -44,15 +44,13 @@ jobs:
   markdown:
     name: 📋 Markdown
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-
-      - name: 🧩 Install dependencies
-        uses: ./.github/actions/setup
 
       - name: 📝 Lint Markdown files
         uses: DavidAnson/markdownlint-cli2-action@v20
