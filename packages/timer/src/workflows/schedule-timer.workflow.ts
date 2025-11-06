@@ -42,39 +42,11 @@ import * as Ports from '../ports/index.ts'
 /**
  * Schedule a timer to fire at a specified future time
  *
- * Creates a ScheduledTimer aggregate and persists it. The timer will be picked
- * up by the polling workflow when its dueAt time is reached.
- *
- * **Workflow Steps**:
- * 1. Extract MessageMetadata from Context (correlationId, causationId for tracing)
- * 2. Get current time for registeredAt timestamp
- * 3. Create ScheduledTimer aggregate with all domain data
- * 4. Persist timer (upsert based on tenantId + serviceCallId)
- *
- * **Idempotency**: Persistence layer handles idempotency via upsert. Calling
- * this workflow multiple times with the same (tenantId, serviceCallId) will
- * update the timer with new values (dueAt, registeredAt, correlationId).
- *
- * **Error Handling**:
- * - PersistenceError: Propagated to caller for retry/alerting
- * - No validation errors: Command is pre-validated by schema before reaching workflow
- *
- * @param command - ScheduleTimer command with tenantId, serviceCallId, dueAt
- * @returns Effect that succeeds when timer is persisted
- * @throws PersistenceError - When save operation fails
- * @requires MessageMetadata - Correlation/causation context from command envelope (injected by handler)
- * @requires ClockPort - For current timestamp
- * @requires TimerPersistencePort - For persistence
- *
- * @example Handler usage (provisions MessageMetadata from envelope)
- * ```typescript
- * // Command handler extracts metadata and provisions it
- * yield* eventBus.subscribeToScheduleTimerCommands((command, metadata) =>
- *   scheduleTimerWorkflow(command).pipe(
- *     Effect.provideService(MessageMetadata, metadata)
- *   )
- * )
- * ```
+ * See file-level documentation above for comprehensive details on:
+ * - Architecture pattern and workflow steps
+ * - Idempotency strategy
+ * - Error handling approach
+ * - MessageMetadata Context requirements
  */
 export const scheduleTimerWorkflow: (
 	command: Messages.Orchestration.Commands.ScheduleTimer.Type,

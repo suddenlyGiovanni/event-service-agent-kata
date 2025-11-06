@@ -158,50 +158,12 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
 /**
  * Poll for due timers and process them in a batch
  *
- * **Workflow Steps**:
- * 1. Get current time
- * 2. Query for all timers with dueAt <= now (findDue)
- * 3. Process each timer: publish event + mark as fired
- * 4. Collect successes and failures separately
- * 5. Report metrics and propagate failures (if any)
- *
- * **Concurrency Strategy — Sequential Processing (concurrency: 1)**:
- * Timers are processed one at a time to preserve partition key ordering in the
- * message broker. Concurrent processing could reorder DueTimeReached events for
- * the same serviceCallId, violating ordering guarantees.
- *
- * Trade-off: Lower throughput (sequential) vs ordering guarantees
- * - Accepted because: Per-aggregate ordering is critical for correctness
- * - Mitigation: Batch size tunable, can run multiple pollers in parallel (different tenants)
- *
- * Alternative: Concurrent processing (concurrency: 10)
- * - Rejected because: Could reorder events within same partition key
- * - See ADR-0002 for broker ordering guarantees
- *
- * **Early Return — Empty Batch Optimization**:
- * If no timers are due, return immediately without processing. This avoids:
- * - Unnecessary partition/logging operations
- * - Event bus calls when there's no work
- * - Metric noise from empty batches
- *
- * @returns Effect that succeeds when all timers process successfully
- * @throws PersistenceError - When findDue query fails (infrastructure error)
- * @throws BatchProcessingError - When one or more timers fail to process
- * @requires TimerEventBusPort - For publishing events
- * @requires TimerPersistencePort - For querying and updating timers
- * @requires ClockPort - For current time
- *
- * @example Scheduled polling (every 5 seconds)
- * ```typescript
- * // Run indefinitely with 5-second interval
- * Effect.repeat(
- *   pollDueTimersWorkflow(),
- *   Schedule.fixed('5 seconds')
- * ).pipe(
- *   Effect.provide(timerLayers),
- *   Effect.retry(Schedule.exponential('1 second')) // Retry on failures
- * )
- * ```
+ * See file-level documentation above for comprehensive details on:
+ * - Workflow steps and processing order
+ * - Concurrency strategy (sequential for ordering)
+ * - Error handling (partition for partial success)
+ * - Early return optimization
+ * - Design trade-offs (polling vs push, fail-fast vs error accumulation)
  */
 export const pollDueTimersWorkflow: () => Effect.Effect<
 	void,
