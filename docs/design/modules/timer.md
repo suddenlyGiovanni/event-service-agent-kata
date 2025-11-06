@@ -172,15 +172,10 @@ sequenceDiagram
   end
 ```
 
-Inputs/Outputs
+## Inputs/Outputs
 
-- Inputs: [ScheduleTimer]
-- Outputs: [DueTimeReached]
-
-## Ports
-
-- [ClockPort]
-- [EventBusPort]
+- **Inputs**: [ScheduleTimer]
+- **Outputs**: [DueTimeReached]
 
 [ScheduleTimer]: ../messages.md#scheduletimer
 [DueTimeReached]: ../messages.md#duetimereached
