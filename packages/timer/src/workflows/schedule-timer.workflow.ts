@@ -17,8 +17,9 @@ import * as Ports from '../ports/index.ts'
  * - ClockPort: For current timestamp (registeredAt)
  * - TimerPersistencePort: For saving timer aggregate
  *
- * **Pattern**: Workflow requires MessageMetadata via Context (symmetric with publishDueTimeReached).
- * This enables full metadata access (correlationId + causationId) for tracing/observability.
+ * **Pattern**: Workflow extracts MessageMetadata via Context (command handler provides it as parameter,
+ * then forwards via Effect.provideService). This enables full metadata access (correlationId + causationId)
+ * for tracing/observability.
  *
  * @param command - ScheduleTimer command with tenantId, serviceCallId, dueAt
  * @returns Effect that succeeds when timer is persisted
