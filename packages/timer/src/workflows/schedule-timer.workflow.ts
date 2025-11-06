@@ -1,45 +1,69 @@
 import * as Effect from 'effect/Effect'
-import * as Option from 'effect/Option'
 
+import { MessageMetadata } from '@event-service-agent/platform/context'
 import type * as Messages from '@event-service-agent/schemas/messages'
-import type { CorrelationId } from '@event-service-agent/schemas/shared'
 
 import * as Domain from '../domain/timer-entry.domain.ts'
 import * as Ports from '../ports/index.ts'
 
-interface WorkflowInput {
-	/**
-	 * @see Messages.Orchestration.Commands.ScheduleTimer.Type
-	 */
-	readonly command: Messages.Orchestration.Commands.ScheduleTimer.Type
-	readonly correlationId?: CorrelationId.Type
-}
-
-export const scheduleTimerWorkflow: ({
-	command,
-	correlationId,
-}: WorkflowInput) => Effect.Effect<void, Ports.PersistenceError, Ports.ClockPort | Ports.TimerPersistencePort> =
-	Effect.fn('Timer.ScheduleTimer')(function* ({ command, correlationId }) {
+/**
+ * Schedule a timer to fire at a specified future time
+ *
+ * **Command-triggered workflow**: Processes ScheduleTimer command from Orchestration module.
+ * Handler provisions MessageMetadata Context (extracted from command envelope).
+ *
+ * **Context Requirements**:
+ * - MessageMetadata: Provides correlationId (from envelope) and causationId (command envelope ID)
+ * - ClockPort: For current timestamp (registeredAt)
+ * - TimerPersistencePort: For saving timer aggregate
+ *
+ * **Pattern**: Workflow extracts MessageMetadata via Context (command handler provides it as parameter,
+ * then forwards via Effect.provideService). This enables full metadata access (correlationId + causationId)
+ * for tracing/observability.
+ *
+ * @param command - ScheduleTimer command with tenantId, serviceCallId, dueAt
+ * @returns Effect that succeeds when timer is persisted
+ * @throws PersistenceError - When save fails
+ * @requires MessageMetadata - Correlation/causation context from command envelope
+ * @requires ClockPort - For current time
+ * @requires TimerPersistencePort - For persistence
+ *
+ * @example
+ * ```typescript
+ * // Handler forwards metadata from envelope to workflow
+ * yield* eventBus.subscribeToScheduleTimerCommands((command, metadata) =>
+ *   scheduleTimerWorkflow(command).pipe(
+ *     Effect.provideService(MessageMetadata, metadata)
+ *   )
+ * )
+ * ```
+ */
+export const scheduleTimerWorkflow: (
+	command: Messages.Orchestration.Commands.ScheduleTimer.Type,
+) => Effect.Effect<void, Ports.PersistenceError, MessageMetadata | Ports.ClockPort | Ports.TimerPersistencePort> =
+	Effect.fn('Timer.ScheduleTimer')(function* ({ dueAt, serviceCallId, tenantId }) {
+		// Extract context dependencies
+		const { causationId, correlationId } = yield* MessageMetadata
 		const clock = yield* Ports.ClockPort
 		const persistence = yield* Ports.TimerPersistencePort
 
+		// Annotate span with full metadata (correlationId + causationId for tracing)
 		yield* Effect.annotateCurrentSpan({
-			correlationId: Option.fromNullable(correlationId),
-			dueAt: command.dueAt,
-			serviceCallId: command.serviceCallId,
-			tenantId: command.tenantId,
+			causationId,
+			correlationId,
+			dueAt,
+			serviceCallId,
+			tenantId,
 		})
 
-		// Get current time
 		const registeredAt = yield* clock.now()
 
-		// Create ScheduledTimer domain object directly (already have domain types)
 		const scheduledTimer = new Domain.ScheduledTimer({
-			correlationId: Option.fromNullable(correlationId),
-			dueAt: command.dueAt, // DateTime.Utc
-			registeredAt, // DateTime.Utc
-			serviceCallId: command.serviceCallId,
-			tenantId: command.tenantId,
+			correlationId,
+			dueAt,
+			registeredAt,
+			serviceCallId,
+			tenantId,
 		})
 
 		yield* persistence.save(scheduledTimer)

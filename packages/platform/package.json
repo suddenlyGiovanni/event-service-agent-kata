@@ -12,6 +12,7 @@
 		"typescript": "catalog:typescript"
 	},
 	"exports": {
+		"./context": "./src/context/index.ts",
 		"./ports": "./src/ports/index.ts",
 		"./routing": "./src/routing/index.ts",
 		"./uuid7": "./src/uuid7.service.ts"

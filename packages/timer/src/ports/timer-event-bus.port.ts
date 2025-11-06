@@ -3,9 +3,9 @@
 import * as Context from 'effect/Context'
 import type * as Effect from 'effect/Effect'
 
+import type { MessageMetadata } from '@event-service-agent/platform/context'
 import type * as Ports from '@event-service-agent/platform/ports'
 import type * as Messages from '@event-service-agent/schemas/messages'
-import type { CorrelationId } from '@event-service-agent/schemas/shared'
 
 /**
  * TimerEventBusPort - Timer module's complete EventBus contract
@@ -31,33 +31,61 @@ export interface TimerEventBusPort {
 	 * Used by: pollDueTimersWorkflow
 	 *
 	 * **Pattern**: Workflow constructs pure domain event, port publishes it.
+	 * Workflow provisions MessageMetadata Context with correlationId/causationId.
+	 *
 	 * Adapter responsibilities:
+	 * - Extract MessageMetadata from Effect Context (yield* MessageMetadata)
 	 * - Wrap event in MessageEnvelope with generated EnvelopeId
 	 * - Extract tenantId/serviceCallId/reachedAt for routing/metadata
-	 * - Extract correlationId from timer aggregate (stored during schedule)
-	 * - Delegate to EventBusPort.publish([envelope])
+	 * - Populate correlationId/causationId from MessageMetadata Context
+	 * - Delegate to `EventBusPort.publish([envelope])`
 	 *
-	 * @param event - Pure domain event (DueTimeReached.Type) with all domain fields
+	 * **Type Safety**: R parameter requires MessageMetadata, enforcing context
+	 * provisioning at workflow level. Missing context = compile error.
+	 *
+	 * @param event - Pure domain event {@link DueTimeReached.Type} with all domain fields
 	 * @returns Effect that succeeds when event is published
 	 * @throws PublishError - When broker publish fails
+	 * @requires MessageMetadata - Context providing correlationId/causationId
+	 *
+	 * @example
+	 * ```typescript
+	 * // Workflow provisions context
+	 * yield* eventBus.publishDueTimeReached(event).pipe(
+	 *   Effect.provideService(MessageMetadata, {
+	 *     correlationId: timer.correlationId,
+	 *     causationId: Option.none()
+	 *   })
+	 * )
+	 * ```
 	 */
 	readonly publishDueTimeReached: (
 		event: Messages.Timer.Events.DueTimeReached.Type,
-	) => Effect.Effect<void, Ports.PublishError>
+	) => Effect.Effect<void, Ports.PublishError, MessageMetadata>
 
 	/**
 	 * Subscribe to ScheduleTimer commands from Orchestration
 	 *
-	 * Used by: Command Handler (future - not PL-4.4)
+	 * Used by: Command Handler
 	 *
-	 * Handles:
-	 * - Topic subscription ('timer.commands')
-	 * - Envelope parsing and validation
-	 * - Command extraction from payload
-	 * - CorrelationId propagation
-	 * - Error mapping (parse errors, subscription errors)
+	 * **Pattern**: Adapter extracts envelope metadata and passes it directly to handler
+	 * as a parameter.
 	 *
-	 * Handler receives parsed, validated command (not raw envelope).
+	 * Adapter responsibilities:
+	 * - Subscribe to timer.commands topic
+	 * - Parse and validate {@link MessageEnvelope}
+	 * - Extract command from payload
+	 * - Extract metadata from envelope:
+	 *   - correlationId: From envelope (upstream correlation)
+	 *   - causationId: envelope.id (this command envelope is the cause)
+	 * - Invoke handler with command AND metadata as parameters
+	 * - Map errors (parse errors, subscription errors)
+	 *
+	 * Handler responsibilities:
+	 * - Receive pure command and metadata as direct parameters
+	 * - Use correlationId for timer aggregate
+	 * - Use causationId when publishing events (tracks "which command triggered this")
+	 *
 	 *
 	 * @param handler - Effect to process each command (invokes scheduleTimerWorkflow)
 	 * @returns Effect that runs indefinitely, processing commands
@@ -66,16 +94,22 @@ export interface TimerEventBusPort {
 	 *
 	 * @example
 	 * ```typescript
-	 * // Command Handler usage (future)
-	 * yield* eventBus.subscribeToScheduleTimerCommands((command, correlationId) =>
-	 *   scheduleTimerWorkflow({ command, correlationId })
+	 * // Command Handler usage
+	 * yield* eventBus.subscribeToScheduleTimerCommands((command, metadata) =>
+	 *   Effect.gen(function* () {
+	 *     // Metadata passed directly as parameter
+	 *     yield* scheduleTimerWorkflow({
+	 *       command,
+	 *       correlationId: metadata.correlationId
+	 *     })
+	 *   })
 	 * )
 	 * ```
 	 */
 	readonly subscribeToScheduleTimerCommands: <E, R>(
 		handler: (
 			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-			correlationId?: CorrelationId.Type,
+			metadata: MessageMetadata.Type,
 		) => Effect.Effect<void, E, R>,
 	) => Effect.Effect<void, Ports.SubscribeError | E, R>
 }

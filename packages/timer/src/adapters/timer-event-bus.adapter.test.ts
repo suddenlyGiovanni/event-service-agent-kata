@@ -7,6 +7,7 @@ import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
+import { MessageMetadata } from '@event-service-agent/platform/context'
 import { Topics } from '@event-service-agent/platform/routing'
 import { UUID7 } from '@event-service-agent/platform/uuid7'
 import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
@@ -44,7 +45,7 @@ describe('TimerEventBus', () => {
 			 * See: docs/decisions/ADR-0013-correlation-propagation.md
 			 * See: docs/plan/correlation-context-implementation.md (Phase 1-2)
 			 */
-			it.todo('should publish DueTimeReached event with correlationId from MessageMetadata context', () => {
+			it.effect('should publish DueTimeReached event with correlationId from MessageMetadata context', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
@@ -60,7 +61,6 @@ describe('TimerEventBus', () => {
 					const clock = yield* Ports.ClockPort
 					const now = yield* clock.now()
 
-					// Create domain event (pure, no correlationId)
 					const dueTimeReachedEvent = new Messages.Timer.Events.DueTimeReached({
 						reachedAt: now,
 						serviceCallId,
@@ -68,8 +68,13 @@ describe('TimerEventBus', () => {
 					})
 
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					// TODO(PL-24): Wrap with Effect.provideService(MessageMetadata, { correlationId, causationId })
-					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
+
+					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
+						Effect.provideService(MessageMetadata, {
+							causationId: Option.none(),
+							correlationId: Option.some(correlationId),
+						}),
+					)
 
 					// Assert
 					expect(publishedEnvelopes).toHaveLength(1)
@@ -80,9 +85,9 @@ describe('TimerEventBus', () => {
 
 					expect(envelope.type).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 					expect(envelope.tenantId).toBe(tenantId)
-					// TODO(PL-24): Change to Option.some(correlationId) once context provisioning implemented
+					// Verify correlationId from MessageMetadata context propagated to envelope
 					assertEquals(envelope.correlationId, Option.some(correlationId))
-					// timestampMs is now DateTime.Utc (compare via DateTime.Equivalence)
+
 					expect(DateTime.Equivalence(envelope.timestampMs, now)).toBe(true)
 					const payload = envelope.payload
 					assert(payload._tag === Messages.Timer.Events.DueTimeReached.Tag)
@@ -118,7 +123,9 @@ describe('TimerEventBus', () => {
 
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
+					yield* timerEventBus
+						.publishDueTimeReached(dueTimeReachedEvent)
+						.pipe(Effect.provideService(MessageMetadata, { causationId: Option.none(), correlationId: Option.none() }))
 
 					// Assert
 					expect(publishedEnvelopes).toHaveLength(1)
@@ -156,10 +163,16 @@ describe('TimerEventBus', () => {
 						tenantId,
 					})
 
+					const messageMetadata = MessageMetadata.of({ causationId: Option.none(), correlationId: Option.none() })
+
 					// Act - publish twice
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
-					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
+					yield* timerEventBus
+						.publishDueTimeReached(dueTimeReachedEvent)
+						.pipe(Effect.provideService(MessageMetadata, messageMetadata))
+					yield* timerEventBus
+						.publishDueTimeReached(dueTimeReachedEvent)
+						.pipe(Effect.provideService(MessageMetadata, messageMetadata))
 
 					// Assert
 					expect(publishedEnvelopes).toHaveLength(2)
@@ -210,7 +223,9 @@ describe('TimerEventBus', () => {
 
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
+					yield* timerEventBus
+						.publishDueTimeReached(dueTimeReachedEvent)
+						.pipe(Effect.provideService(MessageMetadata, { causationId: Option.none(), correlationId: Option.none() }))
 
 					// Assert: envelope timestamp reflects publishing time (T+10)
 					const envelope = publishedEnvelopes[0]
@@ -253,7 +268,9 @@ describe('TimerEventBus', () => {
 
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					const result = yield* Effect.either(timerEventBus.publishDueTimeReached(dueTimeReachedEvent))
+					const result = yield* Effect.either(timerEventBus.publishDueTimeReached(dueTimeReachedEvent)).pipe(
+						Effect.provideService(MessageMetadata, { causationId: Option.none(), correlationId: Option.none() }),
+					)
 
 					// Assert
 					expect(Either.isLeft(result)).toBe(true)
@@ -336,14 +353,13 @@ describe('TimerEventBus', () => {
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.subscribeToScheduleTimerCommands((command, correlId) =>
+					yield* timerEventBus.subscribeToScheduleTimerCommands((command, metadata) =>
 						Effect.sync(() => {
 							handlerCalled = true
 							receivedCommand = command
-							receivedCorrelationId = correlId
+							receivedCorrelationId = Option.getOrUndefined(metadata.correlationId)
 						}),
 					)
-
 					// Assert
 					expect(handlerCalled).toBe(true)
 					expect(receivedCommand).not.toBeNull()
@@ -448,13 +464,13 @@ describe('TimerEventBus', () => {
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
-					yield* timerEventBus.subscribeToScheduleTimerCommands((_command, correlId) =>
+					yield* timerEventBus.subscribeToScheduleTimerCommands((_command, metadata) =>
 						Effect.sync(() => {
-							receivedCorrelationId = correlId
+							receivedCorrelationId = Option.getOrUndefined(metadata.correlationId)
 						}),
 					)
 
-					// Assert
+					// Assert: adapter passes metadata from envelope.correlationId (Option.none)
 					expect(receivedCorrelationId).toBeUndefined()
 				}).pipe(Effect.provide(TimerEventBusLive))
 			})
@@ -631,7 +647,9 @@ describe('TimerEventBus', () => {
 
 				// Act
 				const timerEventBus = yield* Ports.TimerEventBusPort
-				yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent)
+				yield* timerEventBus
+					.publishDueTimeReached(dueTimeReachedEvent)
+					.pipe(Effect.provideService(MessageMetadata, { causationId: Option.none(), correlationId: Option.none() }))
 
 				// Assert - envelope ID should be valid UUID7
 				expect(publishedEnvelopes).toHaveLength(1)
