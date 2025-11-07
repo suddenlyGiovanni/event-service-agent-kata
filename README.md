@@ -70,8 +70,10 @@ bun install
 - `bun run lint` - Lint code with Biome
 - `bun run format` - Format code with Biome
 - `bun run check` - Run Biome checks with auto-fix
-- `bun run doc-check` - Validate TSDoc documentation (see below)
-- `bun run doc-check:examples` - Type-check code examples in JSDoc/TSDoc blocks (see below)
+- `bun run docs:check` - Validate TSDoc documentation (see below)
+- `bun run docs:test` - Run code examples in JSDoc/TSDoc `@example` blocks as tests
+- `bun run docs:type-check` - Type-check code examples in JSDoc/TSDoc blocks (see below)
+- `bun run docs:lint` - Lint markdown files with markdownlint
 
 ### Documentation Validation
 
@@ -99,19 +101,24 @@ This means doc validation commands automatically know which files to check witho
 # Requires Deno 2.5+ to be installed
 
 # Validate JSDoc structure and completeness
-bun run doc-check
+bun run docs:check
 # Or directly with Deno
-deno task doc-check
+deno task docs:check
+
+# Run code examples in JSDoc/TSDoc @example blocks as tests
+bun run docs:test
+# Or directly with Deno
+deno task docs:test
 
 # Type-check code examples in documentation
-bun run doc-check:examples
+bun run docs:type-check
 # Or directly with Deno
-deno task doc-check:examples
+deno task docs:type-check
 ```
 
 **In CI**: Documentation validation runs automatically in pull request workflows:
 
-- `doc-check` - Validates JSDoc structure (configured as `continue-on-error: true`)
-- `doc-check:examples` - Type-checks code examples in JSDoc blocks (configured as `continue-on-error: true`)
+- `docs:check` - Validates JSDoc structure (configured as `continue-on-error: true`)
+- `docs:type-check` - Type-checks code examples in JSDoc blocks (configured as `continue-on-error: true`)
 
 **Future directions**: As the ecosystem matures, we may migrate to native Bun/Node.js solutions or extract `@example` blocks as executable unit tests.
