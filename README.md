@@ -71,13 +71,15 @@ bun install
 - `bun run format` - Format code with Biome
 - `bun run check` - Run Biome checks with auto-fix
 - `bun run doc-check` - Validate TSDoc documentation (see below)
+- `bun run doc-check:examples` - Type-check code examples in JSDoc/TSDoc blocks (see below)
 
 ### Documentation Validation
 
-This project uses **Deno's doc linter** to validate TSDoc comments and `@example` blocks, even though the project runs on Bun. This approach:
+This project uses **Deno's doc tooling** to validate TSDoc comments and `@example` blocks, even though the project runs on Bun. This approach:
 
 - **Prevents documentation rot**: Ensures code examples in documentation stay in sync with API changes
 - **Validates `@example` blocks**: Checks TypeScript syntax in documentation examples
+- **Type-checks documentation examples**: Validates that code in JSDoc blocks is type-correct with `deno check --doc-only`
 - **Catches missing documentation**: Identifies public APIs without proper JSDoc
 - **Leverages best-in-class tooling**: Uses Deno's built-in documentation validation without adding Node.js/Bun dependencies
 
@@ -85,9 +87,16 @@ This project uses **Deno's doc linter** to validate TSDoc comments and `@example
 
 ```bash
 # Requires Deno 2.5+ to be installed
+
+# Validate JSDoc structure and completeness
 bun run doc-check
+
+# Type-check code examples in documentation
+bun run doc-check:examples
 ```
 
-**In CI**: Documentation validation runs automatically in both pull request and push workflows. Currently configured as `continue-on-error: true` while the codebase is being progressively documented.
+**In CI**: Documentation validation runs automatically in pull request workflows:
+- `doc-check` - Validates JSDoc structure (configured as `continue-on-error: true`)
+- `doc-check:examples` - Type-checks code examples in JSDoc blocks (configured as `continue-on-error: true`)
 
 **Future directions**: As the ecosystem matures, we may migrate to native Bun/Node.js solutions or extract `@example` blocks as executable unit tests.

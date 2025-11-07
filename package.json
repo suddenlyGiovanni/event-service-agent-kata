@@ -55,6 +55,7 @@
 		"check": "biome check --write .",
 		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
 		"doc-check": "deno doc --lint ./packages/**/src/**/*.ts",
+		"doc-check:examples": "deno check --doc-only ./packages/**/src/**/*.ts",
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
 		"lint:md": "bunx --bun markdownlint-cli2 --fix docs/**/*.md",

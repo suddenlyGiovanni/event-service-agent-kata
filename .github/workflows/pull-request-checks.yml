@@ -98,3 +98,8 @@ jobs:
       - name: 📚 Validate TSDoc comments
         shell: sh
         run: bun run doc-check
+
+      - name: 📖 Type-check documentation examples
+        continue-on-error: true
+        shell: sh
+        run: bun run doc-check:examples
