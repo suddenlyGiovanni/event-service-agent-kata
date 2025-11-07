@@ -80,8 +80,6 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 *   reachedAt: '2025-10-27T12:00:00.000Z',
 	 * })
 	 * ```
-	 *
-	 * @internal
 	 */
 	static readonly decode = Schema.decode(DueTimeReached)
 
@@ -99,8 +97,6 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 * // dto: { type: 'DueTimeReached', tenantId: string, ... }
 	 * await broker.publish(JSON.stringify(dto))
 	 * ```
-	 *
-	 * @internal
 	 */
 	static readonly encode = Schema.encode(DueTimeReached)
 
@@ -108,8 +104,6 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 * Discriminator tag for pattern matching
 	 *
 	 * Used to discriminate between different event types in the Events union.
-	 *
-	 * @internal
 	 */
 	static readonly Tag = DueTimeReached._tag
 }
@@ -139,7 +133,7 @@ export declare namespace DueTimeReached {
 /**
  * Schema union for runtime validation of any Timer event
  *
- * @internal
+
  */
 export const Events = Schema.Union(DueTimeReached)
 

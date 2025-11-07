@@ -4,7 +4,7 @@ import * as Schema from 'effect/Schema'
  * Minimal RequestSpec schemas to match platform interfaces.
  * These are intentionally conservative and can be expanded later.
  *
- * @internal
+
  */
 export const RequestSpec = Schema.Struct({
 	body: Schema.optional(Schema.String),
@@ -23,7 +23,7 @@ export type RequestSpec = Schema.Schema.Type<typeof RequestSpec>
  *
  * Uses bodySnippet instead of full body for reduced storage/logging overhead.
  *
- * @internal
+
  */
 export const RequestSpecWithoutBody = Schema.Struct({
 	bodySnippet: Schema.optional(Schema.String),

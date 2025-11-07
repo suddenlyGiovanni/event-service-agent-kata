@@ -48,21 +48,21 @@ export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('
 	/**
 	 * Decode from wire format to validated command
 	 *
-	 * @internal
+	 *
 	 */
 	static readonly decode = Schema.decode(SubmitServiceCall)
 
 	/**
 	 * Encode from command to wire format DTO
 	 *
-	 * @internal
+	 *
 	 */
 	static readonly encode = Schema.encode(SubmitServiceCall)
 
 	/**
 	 * Discriminator tag for pattern matching
 	 *
-	 * @internal
+	 *
 	 */
 	static readonly Tag = SubmitServiceCall._tag
 }
@@ -84,8 +84,6 @@ export declare namespace SubmitServiceCall {
 
 /**
  * Schema union for runtime validation of any API command
- *
- * @internal
  */
 export const Commands = Schema.Union(SubmitServiceCall)
 

@@ -29,7 +29,6 @@ import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/sch
  * correlationId is optional because:
  * - Present for timers created via command (traces back to originating request)
  * - Absent for system-initiated timers (no user request to correlate to)
- * @internal
  */
 export const Timer = Schema.Struct({
 	correlationId: Schema.optionalWith(CorrelationId, {
@@ -91,7 +90,6 @@ export class ReachedTimer extends Schema.TaggedClass<ReachedTimer>()('Reached', 
  * Effect Schema automatically discriminates by _tag field, enabling type-safe
  * pattern matching and JSON serialization/deserialization.
  *
- * @internal
  */
 export const TimerEntrySchema = Schema.Union(ScheduledTimer, ReachedTimer)
 

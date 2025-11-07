@@ -8,7 +8,7 @@ import * as Schema from 'effect/Schema'
  * - Sensitive headers may be excluded or redacted
  * - Full response body is stored separately if needed for debugging
  *
- * @internal
+
  */
 export const ResponseMeta = Schema.Struct({
 	/**
@@ -34,7 +34,7 @@ export const ResponseMeta = Schema.Struct({
  * - Stack traces and internal errors are logged separately, not transmitted in events
  * - Error messages are safe for observability (no secrets/credentials)
  *
- * @internal
+
  */
 export const ErrorMeta = Schema.Struct({
 	/**

@@ -214,7 +214,5 @@ export interface EventBusPort {
  *   yield* bus.publish([envelope])  // Envelope is self-contained
  * })
  * ```
- *
- * @internal
  */
 export const EventBusPort = Context.GenericTag<EventBusPort>('@event-service-agent/platform/EventBusPort')

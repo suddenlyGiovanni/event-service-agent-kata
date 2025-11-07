@@ -32,8 +32,6 @@ import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '../shared/in
  * After decode, envelope.payload will have branded types and pattern matching support.
  *
  * @see ADR-0012 for rationale
- *
- * @internal
  */
 export const DomainMessage = Schema.Union(
 	Messages.Timer.Events.Events,

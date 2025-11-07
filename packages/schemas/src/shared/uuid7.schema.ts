@@ -19,19 +19,19 @@ import * as Schema from 'effect/Schema'
 
 /**
  * Identifier constant for UUID7 schema
- * @internal
+
  */
 export const identifier = 'UUID7' as const
 
 /**
  * Schema identifier symbol for UUID7
- * @internal
+
  */
 export const UUID7SchemaId: unique symbol = Symbol.for(`@event-service-agent/schemas/SchemaId/${identifier}`)
 
 /**
  * Brand symbol for UUID7 type
- * @internal
+
  */
 export const UUID7Brand: unique symbol = Symbol.for(`@event-service-agent/schemas/shared/${identifier}`)
 
@@ -48,7 +48,7 @@ export const UUID7Brand: unique symbol = Symbol.for(`@event-service-agent/schema
  * Named capture groups:
  * - `timestampHigh`, `timestampMid`, `timestampLowVersion`, `variant`, `node`
  *
- * @internal
+
  */
 export const UUID7Regex =
 	/^(?<timestampHigh>[0-9a-f]{8})-(?<timestampMid>[0-9a-f]{4})-(?<timestampLowVersion>7[0-9a-f]{3})-(?<variant>[89ab][0-9a-f]{3})-(?<node>[0-9a-f]{12})$/i

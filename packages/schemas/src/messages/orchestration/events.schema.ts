@@ -35,22 +35,16 @@ export class ServiceCallSubmitted extends Schema.TaggedClass<ServiceCallSubmitte
 }) {
 	/**
 	 * Decode from wire format to validated domain event
-	 *
-	 * @internal
 	 */
 	static readonly decode = Schema.decode(ServiceCallSubmitted)
 
 	/**
 	 * Encode from domain event to wire format DTO
-	 *
-	 * @internal
 	 */
 	static readonly encode = Schema.encode(ServiceCallSubmitted)
 
 	/**
 	 * Discriminator tag for pattern matching
-	 *
-	 * @internal
 	 */
 	static readonly Tag = ServiceCallSubmitted._tag
 }
@@ -85,22 +79,16 @@ export class ServiceCallScheduled extends Schema.TaggedClass<ServiceCallSchedule
 }) {
 	/**
 	 * Decode from wire format to validated domain event
-	 *
-	 * @internal
 	 */
 	static readonly decode = Schema.decode(ServiceCallScheduled)
 
 	/**
 	 * Encode from domain event to wire format DTO
-	 *
-	 * @internal
 	 */
 	static readonly encode = Schema.encode(ServiceCallScheduled)
 
 	/**
 	 * Discriminator tag for pattern matching
-	 *
-	 * @internal
 	 */
 	static readonly Tag = ServiceCallScheduled._tag
 }
@@ -135,22 +123,16 @@ export class ServiceCallRunning extends Schema.TaggedClass<ServiceCallRunning>()
 }) {
 	/**
 	 * Decode from wire format to validated domain event
-	 *
-	 * @internal
 	 */
 	static readonly decode = Schema.decode(ServiceCallRunning)
 
 	/**
 	 * Encode from domain event to wire format DTO
-	 *
-	 * @internal
 	 */
 	static readonly encode = Schema.encode(ServiceCallRunning)
 
 	/**
 	 * Discriminator tag for pattern matching
-	 *
-	 * @internal
 	 */
 	static readonly Tag = ServiceCallRunning._tag
 }
@@ -192,22 +174,16 @@ export class ServiceCallSucceeded extends Schema.TaggedClass<ServiceCallSucceede
 }) {
 	/**
 	 * Decode from wire format to validated domain event
-	 *
-	 * @internal
 	 */
 	static readonly decode = Schema.decode(ServiceCallSucceeded)
 
 	/**
 	 * Encode from domain event to wire format DTO
-	 *
-	 * @internal
 	 */
 	static readonly encode = Schema.encode(ServiceCallSucceeded)
 
 	/**
 	 * Discriminator tag for pattern matching
-	 *
-	 * @internal
 	 */
 	static readonly Tag = ServiceCallSucceeded._tag
 }
@@ -247,22 +223,16 @@ export class ServiceCallFailed extends Schema.TaggedClass<ServiceCallFailed>()('
 }) {
 	/**
 	 * Decode from wire format to validated domain event
-	 *
-	 * @internal
 	 */
 	static readonly decode = Schema.decode(ServiceCallFailed)
 
 	/**
 	 * Encode from domain event to wire format DTO
-	 *
-	 * @internal
 	 */
 	static readonly encode = Schema.encode(ServiceCallFailed)
 
 	/**
 	 * Discriminator tag for pattern matching
-	 *
-	 * @internal
 	 */
 	static readonly Tag = ServiceCallFailed._tag
 }
@@ -285,7 +255,7 @@ export declare namespace ServiceCallFailed {
 /**
  * Schema union for runtime validation of any Orchestration event
  *
- * @internal
+
  */
 export const Events = Schema.Union(
 	ServiceCallSubmitted,
