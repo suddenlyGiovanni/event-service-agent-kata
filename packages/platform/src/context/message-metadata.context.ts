@@ -96,7 +96,6 @@ import type { CorrelationId, EnvelopeId } from '@event-service-agent/schemas/sha
  * parameter).
  *
  * @example
- * ```typescript
  * 	import * as Effect from 'effect/Effect'
  * 	import * as Option from 'effect/Option'
  *
@@ -121,7 +120,6 @@ import type { CorrelationId, EnvelopeId } from '@event-service-agent/schemas/sha
  * 	  		causationId: Option.none(),
  * 		})
  * 	})
- * ```
  */
 export class MessageMetadata extends Context.Tag('MessageMetadata')<
 	MessageMetadata,
