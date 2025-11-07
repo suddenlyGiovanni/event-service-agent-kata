@@ -1,45 +1,31 @@
 {
 	"$schema": "https://raw.githubusercontent.com/denoland/deno/refs/heads/main/cli/schemas/config-file.v1.json",
-	"tasks": {
-		"doc-check": "deno doc --lint $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' | tr '\n' ' ')",
-		"doc-check:examples": "deno check --doc-only $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' | tr '\n' ' ')"
-	},
+	"exclude": ["node_modules/", "packages/*/node_modules/", "packages/*/dist/", "**/*.test.ts", "**/vitest.config.ts"],
 	"fmt": {
+		"files": {
+			"exclude": ["node_modules/", "packages/*/node_modules/", "**/*.test.ts", "**/vitest.config.ts"],
+			"include": ["packages/*/src/**/*.ts"]
+		},
 		"indentWidth": 4,
 		"lineWidth": 120,
 		"proseWrap": "preserve",
 		"semiColons": false,
 		"singleQuote": true,
-		"useTabs": true,
-		"files": {
-			"include": ["packages/*/src/**/*.ts"],
-			"exclude": [
-				"node_modules/",
-				"packages/*/node_modules/",
-				"**/*.test.ts",
-				"**/vitest.config.ts"
-			]
-		}
+		"useTabs": true
 	},
 	"lint": {
+		"files": {
+			"exclude": ["node_modules/", "packages/*/node_modules/", "**/*.test.ts", "**/vitest.config.ts"],
+			"include": ["packages/*/src/**/*.ts"]
+		},
 		"rules": {
 			"exclude": ["no-slow-types"]
-		},
-		"files": {
-			"include": ["packages/*/src/**/*.ts"],
-			"exclude": [
-				"node_modules/",
-				"packages/*/node_modules/",
-				"**/*.test.ts",
-				"**/vitest.config.ts"
-			]
 		}
 	},
-	"exclude": [
-		"node_modules/",
-		"packages/*/node_modules/",
-		"packages/*/dist/",
-		"**/*.test.ts",
-		"**/vitest.config.ts"
-	]
+	"nodeModulesDir": "manual",
+	"tasks": {
+		"doc-check": "deno doc --lint $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' | tr '\n' ' ')",
+		"doc-check:examples": "deno check --doc-only $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' | tr '\n' ' ')"
+	},
+	"workspace": ["packages/*"]
 }
