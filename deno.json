@@ -21,23 +21,23 @@
 	},
 	"nodeModulesDir": "manual",
 	"tasks": {
-		"doc:lint": {
+		"docs:check": {
 			"command": "deno doc --lint $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' | tr '\n' ' ')",
 			"description": "Lint JSDoc documentation (validate structure, completeness, and exports)"
 		},
-		"doc:test": {
+		"docs:test": {
 			"command": "deno test --doc $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' | tr '\n' ' ')",
 			"description": "Run documentation tests (execute JSDoc @example code blocks)"
 		},
-		"doc:type-check": {
+		"docs:type-check": {
 			"command": "deno check --doc $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' | tr '\n' ' ')",
 			"description": "Type-check documentation examples (validate JSDoc @example code blocks)"
 		},
-		"fmt": {
+		"format": {
 			"command": "deno fmt",
 			"description": "Format TypeScript source files"
 		},
-		"fmt:check": {
+		"format:check": {
 			"command": "deno fmt --check",
 			"description": "Check TypeScript source file formatting (without modifying)"
 		},
