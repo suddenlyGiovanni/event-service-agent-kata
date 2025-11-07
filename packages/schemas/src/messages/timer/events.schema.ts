@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/style/useNamingConvention: event schema tags must stay in PascalCase to match domain discriminators */
+/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag` discriminators */
 import * as Schema from 'effect/Schema'
 
 import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'

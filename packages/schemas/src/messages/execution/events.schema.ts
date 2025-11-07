@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass generates required runtime identifiers */
+/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag` discriminators */
 import * as Schema from 'effect/Schema'
 
 import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'

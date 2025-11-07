@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/style/useNamingConvention: Exposes _tag for Tag registry */
+/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag` discriminators */
 import * as Schema from 'effect/Schema'
 
 import { TenantId } from '../../shared/index.ts'
