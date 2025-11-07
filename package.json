@@ -54,8 +54,9 @@
 	"scripts": {
 		"check": "biome check --write .",
 		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
-		"doc-check": "deno task doc-check",
-		"doc-check:examples": "deno task doc-check:examples",
+		"doc:lint": "deno task doc:lint",
+		"doc:test": "deno task doc:test",
+		"doc:type-check": "deno task doc:type-check",
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
 		"lint:md": "bunx --bun markdownlint-cli2 --fix docs/**/*.md",
