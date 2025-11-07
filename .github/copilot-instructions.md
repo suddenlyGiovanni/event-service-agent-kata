@@ -967,24 +967,24 @@ Documentation examples run in **Deno** (not Bun/Vitest), which means:
 
 **Example-compatible assertion patterns**:
 
-```typescript
+````typescript
 /**
  * @example
  * ```typescript
  * import * as Effect from "effect/Effect"
  * import assert from "node:assert/strict"
- * 
+ *
  * // ✅ Good: Uses standard assertions
  * const result = Effect.runSync(createTimer({ duration: 5000 }))
  * assert.ok(result.id)
  * assert.equal(result.state, "Scheduled")
- * 
+ *
  * // ❌ Bad: Vitest-specific (won't work in Deno)
  * // expect(result.id).toBeDefined()
  * // expect(result.state).toBe("Scheduled")
  * ```
  */
-```
+````
 
 **Iterative validation workflow**:
 
@@ -1044,18 +1044,16 @@ All TypeScript code blocks in markdown must be type-correct and executable:
 
 **Example of correct markdown code block**:
 
-````markdown
 ```typescript
 import { Effect } from 'effect'
 import { TimerEntry } from './domain/timer-entry'
 
 // This code will be type-checked by CI
 const workflow = Effect.gen(function* () {
-  const timer = yield* TimerEntry.schedule({ tenantId, serviceCallId, dueAt })
-  return timer
+	const timer = yield* TimerEntry.schedule({ tenantId, serviceCallId, dueAt })
+	return timer
 })
 ```
-````
 
 **Common mistakes to avoid**:
 
@@ -1074,10 +1072,6 @@ When adding/updating markdown code blocks across multiple files:
 4. **Use focused validation**: Check specific directories: `deno check --doc-only docs/design/*.md`
 
 This avoids noise from broken code blocks in unrelated files during development.
-})
-
-```
-````
 
 **Common mistakes to avoid**:
 
