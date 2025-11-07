@@ -18,16 +18,22 @@ export class ExecutionStarted extends Schema.TaggedClass<ExecutionStarted>()('Ex
 }) {
 	/**
 	 * Decode from wire format to validated domain event
+	 *
+	 * @internal
 	 */
 	static readonly decode = Schema.decode(ExecutionStarted)
 
 	/**
 	 * Encode from domain event to wire format DTO
+	 *
+	 * @internal
 	 */
 	static readonly encode = Schema.encode(ExecutionStarted)
 
 	/**
 	 * Discriminator tag for pattern matching
+	 *
+	 * @internal
 	 */
 	static readonly Tag = ExecutionStarted._tag
 }
@@ -68,16 +74,22 @@ export class ExecutionSucceeded extends Schema.TaggedClass<ExecutionSucceeded>()
 }) {
 	/**
 	 * Decode from wire format to validated domain event
+	 *
+	 * @internal
 	 */
 	static readonly decode = Schema.decode(ExecutionSucceeded)
 
 	/**
 	 * Encode from domain event to wire format DTO
+	 *
+	 * @internal
 	 */
 	static readonly encode = Schema.encode(ExecutionSucceeded)
 
 	/**
 	 * Discriminator tag for pattern matching
+	 *
+	 * @internal
 	 */
 	static readonly Tag = ExecutionSucceeded._tag
 }
@@ -116,16 +128,22 @@ export class ExecutionFailed extends Schema.TaggedClass<ExecutionFailed>()('Exec
 }) {
 	/**
 	 * Decode from wire format to validated domain event
+	 *
+	 * @internal
 	 */
 	static readonly decode = Schema.decode(ExecutionFailed)
 
 	/**
 	 * Encode from domain event to wire format DTO
+	 *
+	 * @internal
 	 */
 	static readonly encode = Schema.encode(ExecutionFailed)
 
 	/**
 	 * Discriminator tag for pattern matching
+	 *
+	 * @internal
 	 */
 	static readonly Tag = ExecutionFailed._tag
 }
@@ -145,6 +163,8 @@ export declare namespace ExecutionFailed {
 
 /**
  * Schema union for runtime validation of any Execution event
+ *
+ * @internal
  */
 export const Events = Schema.Union(ExecutionStarted, ExecutionSucceeded, ExecutionFailed)
 

@@ -7,6 +7,8 @@ import { ServiceCallId, TenantId } from '../../shared/index.ts'
  *
  * This schema provides the fundamental identity fields that every service call event
  * must include, regardless of which module produces it (Timer, Orchestration, Execution, API).
+ *
+ * @internal
  */
 export const ServiceCallEventBase = Schema.Struct({
 	/**

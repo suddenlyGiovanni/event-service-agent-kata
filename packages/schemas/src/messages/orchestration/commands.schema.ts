@@ -65,6 +65,8 @@ export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()('Schedule
 	 * Returns `Effect<ScheduleTimer, ParseError>`:
 	 * - **Success**: Validated ScheduleTimer instance
 	 * - **Failure**: ParseError with detailed validation errors
+	 *
+	 * @internal
 	 */
 	static readonly decode = Schema.decode(ScheduleTimer)
 
@@ -75,11 +77,15 @@ export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()('Schedule
 	 * - Unbrands types (TenantId → string, ServiceCallId → string)
 	 * - Preserves ISO8601 DateTime format
 	 * - Ready for JSON serialization
+	 *
+	 * @internal
 	 */
 	static readonly encode = Schema.encode(ScheduleTimer)
 
 	/**
 	 * Discriminator tag for pattern matching
+	 *
+	 * @internal
 	 */
 	static readonly Tag = ScheduleTimer._tag
 }
@@ -122,16 +128,22 @@ export class StartExecution extends Schema.TaggedClass<StartExecution>()('StartE
 }) {
 	/**
 	 * Decode from wire format to validated command
+	 *
+	 * @internal
 	 */
 	static readonly decode = Schema.decode(StartExecution)
 
 	/**
 	 * Encode from command to wire format DTO
+	 *
+	 * @internal
 	 */
 	static readonly encode = Schema.encode(StartExecution)
 
 	/**
 	 * Discriminator tag for pattern matching
+	 *
+	 * @internal
 	 */
 	static readonly Tag = StartExecution._tag
 }
@@ -153,6 +165,8 @@ export declare namespace StartExecution {
 
 /**
  * Schema union for runtime validation of any Orchestration command
+ *
+ * @internal
  */
 export const Commands = Schema.Union(StartExecution, ScheduleTimer)
 
