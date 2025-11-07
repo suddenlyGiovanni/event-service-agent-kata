@@ -19,7 +19,8 @@ When starting work on an issue, follow this workflow:
 7. **Ensure multi-tenancy** - Every query must filter by `tenant_id`
 8. **Run tests frequently** - `bun run test` (watch mode) or `bun run test --run` (CI mode)
 9. **Format before committing** - `bun run format` and `bun run check`
-10. **Update Kanban on completion** - Mark task as done in `docs/plan/kanban.md` when complete
+10. **Validate documentation** - Run `bun run docs:check`, `docs:type-check`, `docs:test` before committing
+11. **Update Kanban on completion** - Mark task as done in `docs/plan/kanban.md` when complete
 
 ---
 
@@ -746,6 +747,15 @@ Code documentation serves to explain **WHY** decisions were made, not **WHAT** t
 - **Document Trade-offs**: Explain why you chose approach A over approach B
 - **Link to Context**: Reference ADRs, design docs, and domain concepts
 - **Keep Current**: Outdated comments are worse than no comments
+- **Validate Examples**: All code examples must compile and pass tests (enforced by CI)
+
+**Documentation Quality Layers** (all enforced by CI):
+
+1. **TSDoc structure validation** (`bun run docs:check`): Ensures JSDoc completeness and correct syntax
+2. **TSDoc example type-checking** (`bun run docs:type-check`): Validates TypeScript in `@example` blocks
+3. **TSDoc example testing** (`bun run docs:test`): Executes `@example` blocks as tests
+4. **Markdown code validation** (`bun run docs:type-check:md`): Type-checks TypeScript in markdown files
+5. **Markdown prose linting** (`bun run docs:lint`): Enforces markdown style guide
 
 **Examples**:
 
@@ -935,6 +945,58 @@ export const scheduleTimer = (
 }
 ````
 
+**CRITICAL: `@example` blocks must be executable and type-correct**:
+
+- All code in `@example` blocks is validated by `bun run docs:type-check`
+- Examples are executed as tests by `bun run docs:test`
+- Use realistic, working code that demonstrates actual API usage
+- Import all dependencies explicitly in examples
+- Avoid pseudo-code or simplified examples that wouldn't compile
+- Test examples locally before committing: `bun run docs:type-check && bun run docs:test`
+
+**Deno Test Environment Constraints**:
+
+Documentation examples run in **Deno** (not Bun/Vitest), which means:
+
+- **No Bun globals**: Cannot use `Bun`, `expect()`, or Vitest matchers
+- **No Vitest imports**: Cannot import from `@effect/vitest` or `vitest`
+- **Use WinterCG baseline**: Only use APIs available across all runtimes (Deno, Bun, Node.js)
+- **For assertions**: Use `node:assert` or `node:assert/strict` (standard across runtimes)
+- **Real imports required**: All imports must resolve (e.g., `import { Effect } from "effect"`)
+- **No relative imports**: Use package names (e.g., `"effect"`, not `"./domain/timer"`)
+
+**Example-compatible assertion patterns**:
+
+```typescript
+/**
+ * @example
+ * ```typescript
+ * import * as Effect from "effect/Effect"
+ * import assert from "node:assert/strict"
+ * 
+ * // ✅ Good: Uses standard assertions
+ * const result = Effect.runSync(createTimer({ duration: 5000 }))
+ * assert.ok(result.id)
+ * assert.equal(result.state, "Scheduled")
+ * 
+ * // ❌ Bad: Vitest-specific (won't work in Deno)
+ * // expect(result.id).toBeDefined()
+ * // expect(result.state).toBe("Scheduled")
+ * ```
+ */
+```
+
+**Iterative validation workflow**:
+
+When adding/updating TSDoc examples across multiple files:
+
+1. **Check one file at a time**: `deno check --doc packages/timer/src/domain/timer.ts`
+2. **Fix errors incrementally**: Broken examples in one file won't block checking others
+3. **Run full suite when clean**: `bun run docs:type-check && bun run docs:test`
+4. **Use file-scoped test**: `deno test --doc packages/timer/src/domain/timer.ts`
+
+This avoids noise from broken examples in unrelated files during development.
+
 **Template for domain models**:
 
 ````typescript
@@ -966,6 +1028,63 @@ export class ScheduledTimer extends Schema.Class<ScheduledTimer>(
 	// ...
 }) {}
 ````
+
+---
+
+### Markdown Documentation Quality
+
+**When writing markdown files in `docs/`**:
+
+All TypeScript code blocks in markdown must be type-correct and executable:
+
+- Code blocks are validated by `bun run docs:type-check:md` (uses `deno check --doc-only`)
+- Import statements required for code blocks to type-check correctly
+- Use realistic, working examples (not pseudo-code)
+- Markdown prose must follow style guide (`bun run docs:lint`)
+
+**Example of correct markdown code block**:
+
+````markdown
+```typescript
+import { Effect } from 'effect'
+import { TimerEntry } from './domain/timer-entry'
+
+// This code will be type-checked by CI
+const workflow = Effect.gen(function* () {
+  const timer = yield* TimerEntry.schedule({ tenantId, serviceCallId, dueAt })
+  return timer
+})
+```
+````
+
+**Common mistakes to avoid**:
+
+- ❌ Incomplete imports (missing Effect, Schema, etc.)
+- ❌ Pseudo-code that won't compile
+- ❌ Using `...` to indicate omitted code (use actual code or skip the example)
+- ❌ Referencing undefined variables
+
+**Iterative validation workflow**:
+
+When adding/updating markdown code blocks across multiple files:
+
+1. **Check one file at a time**: `deno check --doc-only docs/design/timer.md`
+2. **Fix errors incrementally**: Broken code blocks in one file won't block checking others
+3. **Run full suite when clean**: `bun run docs:type-check:md`
+4. **Use focused validation**: Check specific directories: `deno check --doc-only docs/design/*.md`
+
+This avoids noise from broken code blocks in unrelated files during development.
+})
+
+```
+````
+
+**Common mistakes to avoid**:
+
+- ❌ Incomplete imports (missing Effect, Schema, etc.)
+- ❌ Pseudo-code that won't compile
+- ❌ Using `...` to indicate omitted code (use actual code or skip the example)
+- ❌ Referencing undefined variables
 
 ---
 
@@ -1211,6 +1330,14 @@ const validated = yield * validateFutureTimestamp(command.dueAt, now)
 - [ ] TODOs reference Kanban items (e.g., `TODO(PL-##)`)
 - [ ] No commented-out code (use git history instead)
 - [ ] No outdated comments (grep for "TODO", "FIXME", "HACK")
+
+**Documentation validation** (automated checks):
+
+- [ ] TSDoc structure is valid (`bun run docs:check`)
+- [ ] `@example` blocks are executable and type-correct (`bun run docs:type-check`)
+- [ ] `@example` blocks pass as tests (`bun run docs:test`)
+- [ ] Markdown code blocks are type-correct (`bun run docs:type-check:md`)
+- [ ] Markdown prose follows style guide (`bun run docs:lint`)
 
 **Review prompts (for self/peer review)**:
 
