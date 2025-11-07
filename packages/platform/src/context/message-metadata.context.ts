@@ -1,5 +1,4 @@
 /**
- * @file Message Metadata Context
  * @module @event-service-agent/platform/context
  *
  * Effect Context for propagating message correlation and causation metadata
@@ -79,6 +78,7 @@
  * - **Testability**: Easy to mock/provision in tests via Effect.provideService
  * - **Scalability**: New metadata fields don't require changing all port signatures
  *
+ * @file Message Metadata Context
  * @see {@link https://github.com/suddenlyGiovanni/event-service-agent-kata/blob/main/docs/decisions/ADR-0013-correlation-propagation.md ADR-0013: CorrelationId Propagation Through Pure Domain Events}
  * @see {@link https://github.com/suddenlyGiovanni/event-service-agent-kata/blob/main/docs/plan/correlation-context-implementation.md PL-24: MessageMetadata Context Implementation Plan}
  */
@@ -91,26 +91,35 @@ import type { CorrelationId, EnvelopeId } from '@event-service-agent/schemas/sha
 /**
  * Message Metadata Context
  *
- * Provides correlation and causation identifiers for message envelope construction.
- * Propagated implicitly through Effect's Context system (R parameter).
+ * Provides correlation and causation identifiers for message envelope
+ * construction. Propagated implicitly through Effect's Context system (R
+ * parameter).
  *
  * @example
- * ```typescript
- * // Provision context in workflow
- * yield* publishEvent(event).pipe(
- *   Effect.provideService(MessageMetadata, {
- *     correlationId: Option.some(correlationId),
- *     causationId: Option.none()
- *   })
- * )
+ * 	import * as Effect from 'effect/Effect'
+ * 	import * as Option from 'effect/Option'
  *
- * // Extract in adapter
- * const metadata = yield* MessageMetadata
- * const envelope = new MessageEnvelope({
- *   correlationId: metadata.correlationId,
- *   // ...
- * })
- * ```
+ * 	import type { CorrelationId, EnvelopeId } from '@event-service-agent/schemas/shared'
+ *
+ * 	// Provision context in workflow
+ * 	const program = Effect.gen(function* () {
+ *
+ * 	yield* publishEvent(event).pipe(
+ * 	  Effect.provideService(MessageMetadata, {
+ * 	    correlationId: Option.some(correlationId),
+ * 	    causationId: Option.none()
+ * 	  })
+ * 	})
+ *
+ * 	// Extract in adapter
+ * 	const adapter = Effect.gen(function* () {
+ * 		const metadata = yield* MessageMetadata
+ *
+ * 		const envelope = new MessageEnvelope({
+ * 			correlationId: metadata.correlationId,
+ * 	  		causationId: Option.none(),
+ * 		})
+ * 	})
  */
 export class MessageMetadata extends Context.Tag('MessageMetadata')<
 	MessageMetadata,
@@ -119,10 +128,12 @@ export class MessageMetadata extends Context.Tag('MessageMetadata')<
 		 * Correlation identifier for distributed tracing
 		 *
 		 * Links causally-related messages across service boundaries.
+		 *
 		 * - **Some(id)**: Message is part of distributed workflow
 		 * - **None**: Message originated without correlation context
 		 *
 		 * Typically extracted from:
+		 *
 		 * - Incoming HTTP request headers (`X-Correlation-Id`)
 		 * - Domain aggregate state (`timer.correlationId`)
 		 * - Parent message envelope (`envelope.correlationId`)
@@ -132,11 +143,14 @@ export class MessageMetadata extends Context.Tag('MessageMetadata')<
 		/**
 		 * Causation identifier (parent message envelope ID)
 		 *
-		 * Links child messages to immediate parent for causality chain reconstruction.
+		 * Links child messages to immediate parent for causality chain
+		 * reconstruction.
+		 *
 		 * - **Some(id)**: Message caused by specific parent message
 		 * - **None**: Message is root cause (no parent)
 		 *
 		 * Typically extracted from:
+		 *
 		 * - Incoming message envelope (`envelope.id`)
 		 * - Command that triggered event (`commandEnvelope.id`)
 		 * - None for spontaneous events (timers, polling)
@@ -145,6 +159,12 @@ export class MessageMetadata extends Context.Tag('MessageMetadata')<
 	}
 >() {}
 
+/**
+ * Type aliases for MessageMetadata service
+ *
+ * Provides convenient access to the service type.
+ */
 export declare namespace MessageMetadata {
+	/** Service type from the MessageMetadata tag */
 	type Type = Context.Tag.Service<MessageMetadata>
 }

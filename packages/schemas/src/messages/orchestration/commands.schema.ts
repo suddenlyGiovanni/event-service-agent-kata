@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag` discriminators  */
 import * as Schema from 'effect/Schema'
 
 import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
@@ -77,12 +78,24 @@ export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()('Schedule
 	 */
 	static readonly encode = Schema.encode(ScheduleTimer)
 
-	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	/**
+	 * Discriminator tag for pattern matching
+	 */
 	static readonly Tag = ScheduleTimer._tag
 }
 
+/**
+ * Type aliases for ScheduleTimer command
+ */
 export declare namespace ScheduleTimer {
+	/**
+	 * Validated domain type
+	 */
 	type Type = typeof ScheduleTimer.Type
+
+	/**
+	 * Wire format DTO type
+	 */
 	type Dto = typeof ScheduleTimer.Encoded
 }
 
@@ -107,20 +120,48 @@ export class StartExecution extends Schema.TaggedClass<StartExecution>()('StartE
 	 */
 	requestSpec: RequestSpecWithoutBody,
 }) {
+	/**
+	 * Decode from wire format to validated command
+	 */
 	static readonly decode = Schema.decode(StartExecution)
+
+	/**
+	 * Encode from command to wire format DTO
+	 */
 	static readonly encode = Schema.encode(StartExecution)
 
-	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	/**
+	 * Discriminator tag for pattern matching
+	 */
 	static readonly Tag = StartExecution._tag
 }
 
+/**
+ * Type aliases for StartExecution command
+ */
 export declare namespace StartExecution {
+	/**
+	 * Validated domain type
+	 */
 	type Type = typeof StartExecution.Type
+
+	/**
+	 * Wire format DTO type
+	 */
 	type Dto = typeof StartExecution.Encoded
 }
 
+/**
+ * Schema union for runtime validation of any Orchestration command
+ */
 export const Commands = Schema.Union(StartExecution, ScheduleTimer)
 
+/**
+ * Union type of all Orchestration commands
+ */
 export type Commands = Schema.Schema.Type<typeof Commands>
 
+/**
+ * Tag discriminator type for Orchestration commands
+ */
 export type Tag = Commands['_tag']

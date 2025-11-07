@@ -17,9 +17,20 @@
 import type { LazyArbitrary } from 'effect/Arbitrary'
 import * as Schema from 'effect/Schema'
 
-const identifier = 'UUID7' as const
-const UUID7SchemaId: unique symbol = Symbol.for(`@event-service-agent/schemas/SchemaId/${identifier}`)
-const UUID7Brand: unique symbol = Symbol.for(`@event-service-agent/schemas/shared/${identifier}`)
+/**
+ * Identifier constant for UUID7 schema
+ */
+export const identifier = 'UUID7' as const
+
+/**
+ * Schema identifier symbol for UUID7
+ */
+export const UUID7SchemaId: unique symbol = Symbol.for(`@event-service-agent/schemas/SchemaId/${identifier}`)
+
+/**
+ * Brand symbol for UUID7 type
+ */
+export const UUID7Brand: unique symbol = Symbol.for(`@event-service-agent/schemas/shared/${identifier}`)
 
 /**
  * UUID v7 regex pattern (RFC 9562 compliant)
@@ -33,8 +44,6 @@ const UUID7Brand: unique symbol = Symbol.for(`@event-service-agent/schemas/share
  *
  * Named capture groups:
  * - `timestampHigh`, `timestampMid`, `timestampLowVersion`, `variant`, `node`
- *
- * @internal
  */
 export const UUID7Regex =
 	/^(?<timestampHigh>[0-9a-f]{8})-(?<timestampMid>[0-9a-f]{4})-(?<timestampLowVersion>7[0-9a-f]{3})-(?<variant>[89ab][0-9a-f]{3})-(?<node>[0-9a-f]{12})$/i
@@ -77,9 +86,17 @@ export class UUID7 extends Schema.UUID.pipe(
 	}),
 	Schema.brand(UUID7Brand),
 ) {
+	/**
+	 * Decode from string to validated UUID7
+	 */
 	static readonly decode = Schema.decode(UUID7)
 }
 
+/**
+ * Type aliases for UUID7
+ *
+ * Provides convenient access to the branded UUID7 type.
+ */
 export declare namespace UUID7 {
 	/**
 	 * UUID7 type - Branded string representing a time-ordered UUID v7

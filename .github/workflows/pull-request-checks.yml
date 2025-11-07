@@ -5,8 +5,28 @@ on:
       - main
 
 jobs:
-  checks:
-    name: 🫸 Pull Request Checks
+  lint:
+    name: 🎨 Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
+
+      - name: 🎨 Lint and format code
+        shell: sh
+        run: |
+          bun biome ci \
+          --max-diagnostics=none \
+          --reporter=github
+
+  typecheck:
+    name: 🚨 Typecheck
     runs-on: ubuntu-latest
 
     steps:
@@ -21,25 +41,70 @@ jobs:
       - name: 🔍 Typecheck code
         run: bun run type-check
 
-      - name: 🚨 Lint code
+      - name: 📖 Type-check documentation examples
+        continue-on-error: true
         shell: sh
-        run: |
-          bun biome ci \
-          --max-diagnostics=none \
-          --formatter-enabled=false \
-          --linter-enabled=true \
-          --assist-enabled=true \
-          --reporter=github
+        run: bun run docs:type-check
 
-      - name: 💅 Format check
+      - name: 📝 Type-check markdown code blocks
+        continue-on-error: true
         shell: sh
-        run: |
-          bun biome ci \
-          --max-diagnostics=none \
-          --formatter-enabled=true \
-          --linter-enabled=false \
-          --assist-enabled=true \
-          --reporter=github
+        run: bun run docs:type-check:md
+
+  markdown:
+    name: 📋 Markdown
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 📝 Lint Markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: |
+            **/*.md
+            !node_modules/**
+            !**/node_modules/**
+
+  tests:
+    name: 🧪 Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
 
       - name: 🧪 Run tests
         run: bun run test --run
+
+      - name: 📚 Run documentation tests
+        continue-on-error: true
+        shell: sh
+        run: bun run docs:test
+
+  docs:
+    name: 📚 Docs
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
+
+      - name: 📚 Validate TSDoc comments
+        shell: sh
+        run: bun run docs:check

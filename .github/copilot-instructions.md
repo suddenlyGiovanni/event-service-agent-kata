@@ -19,17 +19,18 @@ When starting work on an issue, follow this workflow:
 7. **Ensure multi-tenancy** - Every query must filter by `tenant_id`
 8. **Run tests frequently** - `bun run test` (watch mode) or `bun run test --run` (CI mode)
 9. **Format before committing** - `bun run format` and `bun run check`
-10. **Update Kanban on completion** - Mark task as done in `docs/plan/kanban.md` when complete
+10. **Validate documentation** - Run `bun run docs:check`, `docs:type-check`, `docs:test` before committing
+11. **Update Kanban on completion** - Mark task as done in `docs/plan/kanban.md` when complete
 
 ---
 
 ## Set-In-Stone Principles
 
--   **Reasoning**: Domain Modeling Made Functional (DMMF) patterns.
--   **Style**: Functional TypeScript (algebraic data types, pure functions, composition).
--   **Discipline**: Test-Driven Development (TDD) — RED-GREEN-REFACTOR with atomic commits.
--   **Runtime**: Effect-TS as effect system, standard library, and ecosystem backbone.
--   **Tooling**: Bun 1.3+ runtime, Vitest with `@effect/vitest`, Biome for formatting/linting.
+- **Reasoning**: Domain Modeling Made Functional (DMMF) patterns.
+- **Style**: Functional TypeScript (algebraic data types, pure functions, composition).
+- **Discipline**: Test-Driven Development (TDD) — RED-GREEN-REFACTOR with atomic commits.
+- **Runtime**: Effect-TS as effect system, standard library, and ecosystem backbone.
+- **Tooling**: Bun 1.3+ runtime, Vitest with `@effect/vitest`, Biome for formatting/linting.
 
 ---
 
@@ -37,14 +38,14 @@ When starting work on an issue, follow this workflow:
 
 These constraints appear consistently across ADRs and must be enforced in all code:
 
--   **Single Writer Principle**: Only Orchestration writes to domain tables. All other modules consume via events.
--   **No Cross-Module DB Access**: Modules query only their own tables (enforced by ports, validated in reviews).
--   **No Synchronous Cross-Module Calls**: All inter-module communication via `EventBusPort` (message broker).
--   **Idempotency Everywhere**: All command/event handlers must be idempotent; key by `(tenantId, serviceCallId)`.
--   **Per-Aggregate Ordering**: Preserve message order within `(tenantId, serviceCallId)`; broker partition key required.
--   **Outbox After Commit**: Domain events published only after transaction commit; no inline broker calls (see ADR-0008).
--   **Application-Generated IDs**: Generate `ServiceCallId`/`EnvelopeId` in application code (UUID v7), never in database (see ADR-0010).
--   **Multi-Tenancy By Default**: Every query must filter by `tenant_id`; every message must carry `tenantId`.
+- **Single Writer Principle**: Only Orchestration writes to domain tables. All other modules consume via events.
+- **No Cross-Module DB Access**: Modules query only their own tables (enforced by ports, validated in reviews).
+- **No Synchronous Cross-Module Calls**: All inter-module communication via `EventBusPort` (message broker).
+- **Idempotency Everywhere**: All command/event handlers must be idempotent; key by `(tenantId, serviceCallId)`.
+- **Per-Aggregate Ordering**: Preserve message order within `(tenantId, serviceCallId)`; broker partition key required.
+- **Outbox After Commit**: Domain events published only after transaction commit; no inline broker calls (see ADR-0008).
+- **Application-Generated IDs**: Generate `ServiceCallId`/`EnvelopeId` in application code (UUID v7), never in database (see ADR-0010).
+- **Multi-Tenancy By Default**: Every query must filter by `tenant_id`; every message must carry `tenantId`.
 
 ---
 
@@ -54,18 +55,18 @@ These constraints appear consistently across ADRs and must be enforced in all co
 
 **Core Principles**:
 
--   **Algebraic Data Types**: Use discriminated unions (`type State = Scheduled | Reached`) and `Schema.TaggedClass` for domain models.
--   **Immutability**: All data structures immutable; use `Effect.Ref` or `HashMap` for state management.
--   **Pure Functions**: Domain logic has no side effects; return `Effect<A, E, R>` for effectful operations.
--   **Composition**: Prefer `pipe`, `Effect.gen`, and function composition over OOP patterns.
--   **Type Safety**: Enable `exactOptionalPropertyTypes` in tsconfig; use branded types (`TenantId`, `ServiceCallId`).
+- **Algebraic Data Types**: Use discriminated unions (`type State = Scheduled | Reached`) and `Schema.TaggedClass` for domain models.
+- **Immutability**: All data structures immutable; use `Effect.Ref` or `HashMap` for state management.
+- **Pure Functions**: Domain logic has no side effects; return `Effect<A, E, R>` for effectful operations.
+- **Composition**: Prefer `pipe`, `Effect.gen`, and function composition over OOP patterns.
+- **Type Safety**: Enable `exactOptionalPropertyTypes` in tsconfig; use branded types (`TenantId`, `ServiceCallId`).
 
 **Forbidden Patterns**:
 
--   ❌ Classes with mutable state (use `Schema.Class` for data, not behavior)
--   ❌ Throwing exceptions (use typed errors in Effect)
--   ❌ `null` (use `Option<A>` or `Either<E, A>`)
--   ❌ Inheritance (use composition and layers)
+- ❌ Classes with mutable state (use `Schema.Class` for data, not behavior)
+- ❌ Throwing exceptions (use typed errors in Effect)
+- ❌ `null` (use `Option<A>` or `Either<E, A>`)
+- ❌ Inheritance (use composition and layers)
 
 ---
 
@@ -75,19 +76,19 @@ These constraints appear consistently across ADRs and must be enforced in all co
 
 **Core Modules** (prefer these over native alternatives):
 
--   **Data structures**: `HashMap`, `HashSet`, `Chunk` (not native `Map`, `Set`, `Array`)
--   **Concurrency**: `Effect.gen`, `Effect.all`, `Fiber` (not raw `async`/`await`)
--   **Time**: `DateTime`, `Duration` (not native `Date`)
--   **Errors**: `Effect.fail`, `Effect.die` (not `throw`)
--   **State**: `Ref`, `Deferred`, `Queue` (not mutable variables)
--   **Validation**: `effect/schema` (not Zod, io-ts)
--   **Testing**: `@effect/vitest` (built-in Effect matchers, `TestClock`, `TestContext`)
+- **Data structures**: `HashMap`, `HashSet`, `Chunk` (not native `Map`, `Set`, `Array`)
+- **Concurrency**: `Effect.gen`, `Effect.all`, `Fiber` (not raw `async`/`await`)
+- **Time**: `DateTime`, `Duration` (not native `Date`)
+- **Errors**: `Effect.fail`, `Effect.die` (not `throw`)
+- **State**: `Ref`, `Deferred`, `Queue` (not mutable variables)
+- **Validation**: `effect/schema` (not Zod, io-ts)
+- **Testing**: `@effect/vitest` (built-in Effect matchers, `TestClock`, `TestContext`)
 
 **Extended Ecosystem** (when needed):
 
--   `@effect/platform`: HTTP client/server, file system, terminal
--   `@effect/sql-sqlite-bun`: Database access (preferred over raw `bun:sqlite`)
--   `@effect/vitest`: Test utilities and Effect-aware assertions
+- `@effect/platform`: HTTP client/server, file system, terminal
+- `@effect/sql-sqlite-bun`: Database access (preferred over raw `bun:sqlite`)
+- `@effect/vitest`: Test utilities and Effect-aware assertions
 
 **Layer Pattern** (dependency injection):
 
@@ -131,8 +132,8 @@ getA.pipe(Effect.flatMap((a) => getB(a).pipe(Effect.map((b) => compute(a, b)))))
 
 **Documentation Sources** (use MCP tools to get up-to-date info):
 
--   **Effect.ts docs**: Use `mcp_effect-mcp_effect_docs_search` and `mcp_effect-mcp_get_effect_doc` tools for latest API documentation and examples.
--   **Context7**: Use `mcp_upstash_conte_resolve-library-id` then `mcp_upstash_conte_get-library-docs` for Effect and other library documentation.
+- **Effect.ts docs**: Use `mcp_effect-mcp_effect_docs_search` and `mcp_effect-mcp_get_effect_doc` tools for latest API documentation and examples.
+- **Context7**: Use `mcp_upstash_conte_resolve-library-id` then `mcp_upstash_conte_get-library-docs` for Effect and other library documentation.
 
 ---
 
@@ -140,16 +141,16 @@ getA.pipe(Effect.flatMap((a) => getB(a).pipe(Effect.map((b) => compute(a, b)))))
 
 **Why Bun**:
 
--   Native TypeScript execution (no build step for development)
--   Built-in test runner (Vitest uses Bun runtime)
--   SQLite native support (`bun:sqlite`)
--   Fast package manager (replaces `npm`/`yarn`)
+- Native TypeScript execution (no build step for development)
+- Built-in test runner (Vitest uses Bun runtime)
+- SQLite native support (`bun:sqlite`)
+- Fast package manager (replaces `npm`/`yarn`)
 
 **Project Setup**:
 
--   **Package manager**: `bun install` (lockfile: `bun.lockb`)
--   **Catalogs**: Use `catalog:<name>` in `package.json` for version pinning across workspace
--   **Workspaces**: Monorepo with `packages/*/package.json`
+- **Package manager**: `bun install` (lockfile: `bun.lockb`)
+- **Catalogs**: Use `catalog:<name>` in `package.json` for version pinning across workspace
+- **Workspaces**: Monorepo with `packages/*/package.json`
 
 **Running Code**:
 
@@ -166,9 +167,9 @@ bun run --filter @event-service-agent/timer test
 
 **Common Gotchas**:
 
--   Use `import { Database } from 'bun:sqlite'` (not `better-sqlite3`)
--   `@types/bun` provides `Bun` global and `bun:*` module types
--   Bun's `test()` runner exists but we use Vitest for Effect integration
+- Use `import { Database } from 'bun:sqlite'` (not `better-sqlite3`)
+- `@types/bun` provides `Bun` global and `bun:*` module types
+- Bun's `test()` runner exists but we use Vitest for Effect integration
 
 ---
 
@@ -176,10 +177,10 @@ bun run --filter @event-service-agent/timer test
 
 **Why Vitest**:
 
--   Monorepo-native (automatic workspace detection)
--   Watch mode with UI (`--ui` flag)
--   Effect integration via `@effect/vitest`
--   Bun runtime (fast, native TypeScript)
+- Monorepo-native (automatic workspace detection)
+- Watch mode with UI (`--ui` flag)
+- Effect integration via `@effect/vitest`
+- Bun runtime (fast, native TypeScript)
 
 **Test Structure**:
 
@@ -230,9 +231,9 @@ bun run test --ui
 
 **Test Organization** (per package):
 
--   Unit tests: co-located with source (`*.test.ts`)
--   Test layers: `<name>.adapter.test.ts` exports (e.g., `ClockPortTest`)
--   Vitest config: `packages/*/vitest.config.ts` (inherits from root)
+- Unit tests: co-located with source (`*.test.ts`)
+- Test layers: `<name>.adapter.test.ts` exports (e.g., `ClockPortTest`)
+- Vitest config: `packages/*/vitest.config.ts` (inherits from root)
 
 **Vitest Config Pattern**:
 
@@ -262,15 +263,15 @@ export default defineProjectConfig({
 
 **Setup** (already configured):
 
--   TypeScript plugin: `@effect/language-service` in `tsconfig.base.json`
--   Provides hover info for Effect types, pipe suggestions, error hints
--   Enable in VS Code: TypeScript → "Use Workspace Version"
+- TypeScript plugin: `@effect/language-service` in `tsconfig.base.json`
+- Provides hover info for Effect types, pipe suggestions, error hints
+- Enable in VS Code: TypeScript → "Use Workspace Version"
 
 **What It Does**:
 
--   Shows `Effect<Success, Error, Requirements>` in hover
--   Suggests `Effect.gen` conversions
--   Highlights unhandled errors in Effect chains
+- Shows `Effect<Success, Error, Requirements>` in hover
+- Suggests `Effect.gen` conversions
+- Highlights unhandled errors in Effect chains
 
 ---
 
@@ -305,46 +306,46 @@ bun --workspace run biome check --write .
 
 ### Before Touching a Module
 
--   **Module responsibilities**: `docs/design/modules/<module-name>.md`
--   **Commands consumed/produced**: `docs/design/messages.md` (index by context)
--   **Ports required**: `docs/design/modules/<module-name>.md` (bottom section)
--   **Architecture layers**: `docs/design/hexagonal-architecture-layers.md`
+- **Module responsibilities**: `docs/design/modules/<module-name>.md`
+- **Commands consumed/produced**: `docs/design/messages.md` (index by context)
+- **Ports required**: `docs/design/modules/<module-name>.md` (bottom section)
+- **Architecture layers**: `docs/design/hexagonal-architecture-layers.md`
 
 ### Before Implementing a Port
 
--   **Interface contract**: `docs/design/ports.md#<port-name>port`
--   **Adapter patterns**: `docs/design/hexagonal-architecture-layers.md#layer-3-adapters`
+- **Interface contract**: `docs/design/ports.md#<port-name>port`
+- **Adapter patterns**: `docs/design/hexagonal-architecture-layers.md#layer-3-adapters`
 
 ### Before Message Handling
 
--   **Message schema**: `docs/design/messages.md#<message-name>`
--   **Identity rules**: `docs/decisions/ADR-0010-identity.md#decision`
--   **Idempotency**: `docs/decisions/ADR-0006-idempotency.md`
+- **Message schema**: `docs/design/messages.md#<message-name>`
+- **Identity rules**: `docs/decisions/ADR-0010-identity.md#decision`
+- **Idempotency**: `docs/decisions/ADR-0006-idempotency.md`
 
 ### Before Database Work
 
--   **Schema design**: `docs/decisions/ADR-0005-schema.md`
--   **Module boundaries**: `docs/decisions/ADR-0004-database.md#key-design-choices`
--   **Outbox pattern**: `docs/decisions/ADR-0008-outbox.md`
+- **Schema design**: `docs/decisions/ADR-0005-schema.md`
+- **Module boundaries**: `docs/decisions/ADR-0004-database.md#key-design-choices`
+- **Outbox pattern**: `docs/decisions/ADR-0008-outbox.md`
 
 ### Before Broker Integration
 
--   **Broker choice**: `docs/decisions/ADR-0002-broker.md#decision`
--   **Routing strategy**: `docs/decisions/ADR-0002-broker.md#recommended-defaults-mvp`
--   **Tenancy**: `docs/design/domain.md#tenancy`
+- **Broker choice**: `docs/decisions/ADR-0002-broker.md#decision`
+- **Routing strategy**: `docs/decisions/ADR-0002-broker.md#recommended-defaults-mvp`
+- **Tenancy**: `docs/design/domain.md#tenancy`
 
 ### Current Work
 
--   **Active tasks**: `docs/plan/kanban.md` (Doing/Ready items, WIP ≤ 2)
--   **Read module docs for context** — don't expect task-specific guidance here
+- **Active tasks**: `docs/plan/kanban.md` (Doing/Ready items, WIP ≤ 2)
+- **Read module docs for context** — don't expect task-specific guidance here
 
 ### External Documentation
 
 When you need up-to-date information about libraries and tools:
 
--   **Effect-TS**: Use `mcp_effect-mcp_effect_docs_search` to search documentation, then `mcp_effect-mcp_get_effect_doc` to retrieve specific pages.
--   **Any Library**: Use `mcp_upstash_conte_resolve-library-id` to find the correct library ID, then `mcp_upstash_conte_get-library-docs` to get focused documentation.
--   **GitHub/Repos**: Use `mcp_github_*` tools (e.g., `github_get_file_contents`, `github_search_code`) to inspect implementation details.
+- **Effect-TS**: Use `mcp_effect-mcp_effect_docs_search` to search documentation, then `mcp_effect-mcp_get_effect_doc` to retrieve specific pages.
+- **Any Library**: Use `mcp_upstash_conte_resolve-library-id` to find the correct library ID, then `mcp_upstash_conte_get-library-docs` to get focused documentation.
+- **GitHub/Repos**: Use `mcp_github_*` tools (e.g., `github_get_file_contents`, `github_search_code`) to inspect implementation details.
 
 ---
 
@@ -375,10 +376,10 @@ When you need up-to-date information about libraries and tools:
 
 **Atomic Commit Rule**:
 
--   One logical change per commit (RED, GREEN, or REFACTOR—not mixed)
--   Each commit leaves code in working state (tests pass, except RED phase)
--   Refactor commits have ZERO test changes
--   Feature commits have matching test updates
+- One logical change per commit (RED, GREEN, or REFACTOR—not mixed)
+- Each commit leaves code in working state (tests pass, except RED phase)
+- Refactor commits have ZERO test changes
+- Feature commits have matching test updates
 
 ---
 
@@ -495,8 +496,8 @@ Effect.provide(workflow, Layer.merge(TimerPersistence.inMemory, ClockPortTest))
 
 **REFACTOR phase**:
 
--   Extract test helpers (fixtures, builders)
--   No new assertions—only reorganization
+- Extract test helpers (fixtures, builders)
+- No new assertions—only reorganization
 
 ---
 
@@ -528,8 +529,8 @@ git commit -m "refactor(timer): extract state validation to pure function"
 
 **When to batch**:
 
--   Multiple test cases for same feature (RED phase) → one commit
--   Port interface + in-memory adapter → one commit (minimum working port)
+- Multiple test cases for same feature (RED phase) → one commit
+- Port interface + in-memory adapter → one commit (minimum working port)
 
 ---
 
@@ -649,10 +650,10 @@ const sqlite = Layer.effect(
 
 ### Key Principles
 
--   Domain never imports adapters (only ports)
--   Test adapters enable TDD without infrastructure
--   Production adapters defer to integration test phase
--   All ports follow same `Context.Tag` + `Layer.effect` pattern
+- Domain never imports adapters (only ports)
+- Test adapters enable TDD without infrastructure
+- Production adapters defer to integration test phase
+- All ports follow same `Context.Tag` + `Layer.effect` pattern
 
 ---
 
@@ -727,9 +728,9 @@ it.effect('should fail on past dueAt', () =>
 
 ### Never Use
 
--   ❌ `try/catch` (use `Effect.tryPromise` or `Effect.try`)
--   ❌ `throw new Error` (use `Effect.fail(new DomainError(...))`)
--   ❌ `null` for optional (use `Option<A>`)
+- ❌ `try/catch` (use `Effect.tryPromise` or `Effect.try`)
+- ❌ `throw new Error` (use `Effect.fail(new DomainError(...))`)
+- ❌ `null` for optional (use `Option<A>`)
 
 ---
 
@@ -741,11 +742,20 @@ Code documentation serves to explain **WHY** decisions were made, not **WHAT** t
 
 **Core Principles**:
 
--   **Self-Documenting Code First**: Clear naming (functions, variables, types) reduces need for comments
--   **Explain Intent**: Document the reasoning behind non-obvious decisions
--   **Document Trade-offs**: Explain why you chose approach A over approach B
--   **Link to Context**: Reference ADRs, design docs, and domain concepts
--   **Keep Current**: Outdated comments are worse than no comments
+- **Self-Documenting Code First**: Clear naming (functions, variables, types) reduces need for comments
+- **Explain Intent**: Document the reasoning behind non-obvious decisions
+- **Document Trade-offs**: Explain why you chose approach A over approach B
+- **Link to Context**: Reference ADRs, design docs, and domain concepts
+- **Keep Current**: Outdated comments are worse than no comments
+- **Validate Examples**: All code examples must compile and pass tests (enforced by CI)
+
+**Documentation Quality Layers** (all enforced by CI):
+
+1. **TSDoc structure validation** (`bun run docs:check`): Ensures JSDoc completeness and correct syntax
+2. **TSDoc example type-checking** (`bun run docs:type-check`): Validates TypeScript in `@example` blocks
+3. **TSDoc example testing** (`bun run docs:test`): Executes `@example` blocks as tests
+4. **Markdown code validation** (`bun run docs:type-check:md`): Type-checks TypeScript in markdown files
+5. **Markdown prose linting** (`bun run docs:lint`): Enforces markdown style guide
 
 **Examples**:
 
@@ -935,6 +945,58 @@ export const scheduleTimer = (
 }
 ````
 
+**CRITICAL: `@example` blocks must be executable and type-correct**:
+
+- All code in `@example` blocks is validated by `bun run docs:type-check`
+- Examples are executed as tests by `bun run docs:test`
+- Use realistic, working code that demonstrates actual API usage
+- Import all dependencies explicitly in examples
+- Avoid pseudo-code or simplified examples that wouldn't compile
+- Test examples locally before committing: `bun run docs:type-check && bun run docs:test`
+
+**Deno Test Environment Constraints**:
+
+Documentation examples run in **Deno** (not Bun/Vitest), which means:
+
+- **No Bun globals**: Cannot use `Bun`, `expect()`, or Vitest matchers
+- **No Vitest imports**: Cannot import from `@effect/vitest` or `vitest`
+- **Use WinterCG baseline**: Only use APIs available across all runtimes (Deno, Bun, Node.js)
+- **For assertions**: Use `node:assert` or `node:assert/strict` (standard across runtimes)
+- **Real imports required**: All imports must resolve (e.g., `import { Effect } from "effect"`)
+- **No relative imports**: Use package names (e.g., `"effect"`, not `"./domain/timer"`)
+
+**Example-compatible assertion patterns**:
+
+````typescript
+/**
+ * @example
+ * ```typescript
+ * import * as Effect from "effect/Effect"
+ * import assert from "node:assert/strict"
+ *
+ * // ✅ Good: Uses standard assertions
+ * const result = Effect.runSync(createTimer({ duration: 5000 }))
+ * assert.ok(result.id)
+ * assert.equal(result.state, "Scheduled")
+ *
+ * // ❌ Bad: Vitest-specific (won't work in Deno)
+ * // expect(result.id).toBeDefined()
+ * // expect(result.state).toBe("Scheduled")
+ * ```
+ */
+````
+
+**Iterative validation workflow**:
+
+When adding/updating TSDoc examples across multiple files:
+
+1. **Check one file at a time**: `deno check --doc packages/timer/src/domain/timer.ts`
+2. **Fix errors incrementally**: Broken examples in one file won't block checking others
+3. **Run full suite when clean**: `bun run docs:type-check && bun run docs:test`
+4. **Use file-scoped test**: `deno test --doc packages/timer/src/domain/timer.ts`
+
+This avoids noise from broken examples in unrelated files during development.
+
 **Template for domain models**:
 
 ````typescript
@@ -969,6 +1031,57 @@ export class ScheduledTimer extends Schema.Class<ScheduledTimer>(
 
 ---
 
+### Markdown Documentation Quality
+
+**When writing markdown files in `docs/`**:
+
+All TypeScript code blocks in markdown must be type-correct and executable:
+
+- Code blocks are validated by `bun run docs:type-check:md` (uses `deno check --doc-only`)
+- Import statements required for code blocks to type-check correctly
+- Use realistic, working examples (not pseudo-code)
+- Markdown prose must follow style guide (`bun run docs:lint`)
+
+**Example of correct markdown code block**:
+
+```typescript
+import { Effect } from 'effect'
+import { TimerEntry } from './domain/timer-entry'
+
+// This code will be type-checked by CI
+const workflow = Effect.gen(function* () {
+	const timer = yield* TimerEntry.schedule({ tenantId, serviceCallId, dueAt })
+	return timer
+})
+```
+
+**Common mistakes to avoid**:
+
+- ❌ Incomplete imports (missing Effect, Schema, etc.)
+- ❌ Pseudo-code that won't compile
+- ❌ Using `...` to indicate omitted code (use actual code or skip the example)
+- ❌ Referencing undefined variables
+
+**Iterative validation workflow**:
+
+When adding/updating markdown code blocks across multiple files:
+
+1. **Check one file at a time**: `deno check --doc-only docs/design/timer.md`
+2. **Fix errors incrementally**: Broken code blocks in one file won't block checking others
+3. **Run full suite when clean**: `bun run docs:type-check:md`
+4. **Use focused validation**: Check specific directories: `deno check --doc-only docs/design/*.md`
+
+This avoids noise from broken code blocks in unrelated files during development.
+
+**Common mistakes to avoid**:
+
+- ❌ Incomplete imports (missing Effect, Schema, etc.)
+- ❌ Pseudo-code that won't compile
+- ❌ Using `...` to indicate omitted code (use actual code or skip the example)
+- ❌ Referencing undefined variables
+
+---
+
 ### Effect-TS Specific Patterns
 
 **Document Error channel types and their meanings**:
@@ -988,10 +1101,12 @@ export class ScheduledTimer extends Schema.Class<ScheduledTimer>(
  * @returns void on full success; fails with error on partial/full failure
  */
 export const pollDueTimers: Effect.Effect<
-  void,
-  PersistenceError | BatchProcessingError,
-  TimerPersistencePort | EventBusPort | ClockPort
-> = {/*...*/};
+	void,
+	PersistenceError | BatchProcessingError,
+	TimerPersistencePort | EventBusPort | ClockPort
+> = {
+	/*...*/
+}
 ```
 
 **Explain Requirements (dependency injection context)**:
@@ -1008,12 +1123,14 @@ export const pollDueTimers: Effect.Effect<
  * Use pollDueTimersWorkflow for event publishing after timer fires.
  */
 export const scheduleTimer = (
-  command: ScheduleTimerCommand,
+	command: ScheduleTimerCommand
 ): Effect.Effect<
-  ScheduledTimer,
-  ValidationError | PersistenceError,
-  ClockPort | TimerPersistencePort
-> => {/*...*/};
+	ScheduledTimer,
+	ValidationError | PersistenceError,
+	ClockPort | TimerPersistencePort
+> => {
+	/*...*/
+}
 ```
 
 **Clarify timing/concurrency assumptions**:
@@ -1027,7 +1144,7 @@ export const scheduleTimer = (
  * If events fire out-of-order, downstream consumers may see stale data.
  *
  * Timing assumption: Each timer processing takes <100ms (publish + persist).
- * Large batches (>1000 timers) may cause backpressure; consider pagination.
+ * Large batches (>1000 timers) may cause back-pressure; consider pagination.
  *
  * @see ADR-0002 for broker ordering guarantees
  */
@@ -1170,21 +1287,27 @@ export const schedule = (
 
 ```typescript
 // Before refactor: Inline validation
-const result = command.dueAt > now ? new ScheduledTimer( /*... */) : fail( /*... */);
+const result =
+	command.dueAt > now ? new ScheduledTimer(/*... */) : fail(/*... */)
 
 // After refactor: Extracted helper
 const validateFutureTimestamp = (dueAt: DateTime, now: DateTime) => {
-  /*
-   * Domain rule: timers cannot be scheduled in the past
-   * Clock precision may vary; use strict greater-than comparison
-   */
-  return DateTime.greaterThan(dueAt, now)
-    ? Effect.succeed(dueAt)
-    : Effect.fail(new ValidationError({ field: 'dueAt', message: 'Must be future' }));
-};
+	/*
+	 * Domain rule: timers cannot be scheduled in the past
+	 * Clock precision may vary; use strict greater-than comparison
+	 */
+	return DateTime.greaterThan(dueAt, now)
+		? Effect.succeed(dueAt)
+		: Effect.fail(
+				new ValidationError({
+					field: 'dueAt',
+					message: 'Must be future',
+				})
+		  )
+}
 
 // Update workflow to use extracted function (comment removed—name is clear)
-const validated = yield* validateFutureTimestamp(command.dueAt, now);
+const validated = yield * validateFutureTimestamp(command.dueAt, now)
 ```
 
 ---
@@ -1193,40 +1316,48 @@ const validated = yield* validateFutureTimestamp(command.dueAt, now);
 
 **Before marking feature complete, verify**:
 
--   [ ] Public APIs have TSDoc with `@param`, `@returns`, `@throws`, `@example`
--   [ ] Domain models document invariants and state transitions
--   [ ] Effect error types are documented with recovery strategies
--   [ ] Trade-offs and non-obvious decisions have inline comments
--   [ ] ADR/design doc links added for architectural patterns
--   [ ] TODOs reference Kanban items (e.g., `TODO(PL-##)`)
--   [ ] No commented-out code (use git history instead)
--   [ ] No outdated comments (grep for "TODO", "FIXME", "HACK")
+- [ ] Public APIs have TSDoc with `@param`, `@returns`, `@throws`, `@example`
+- [ ] Domain models document invariants and state transitions
+- [ ] Effect error types are documented with recovery strategies
+- [ ] Trade-offs and non-obvious decisions have inline comments
+- [ ] ADR/design doc links added for architectural patterns
+- [ ] TODOs reference Kanban items (e.g., `TODO(PL-##)`)
+- [ ] No commented-out code (use git history instead)
+- [ ] No outdated comments (grep for "TODO", "FIXME", "HACK")
+
+**Documentation validation** (automated checks):
+
+- [ ] TSDoc structure is valid (`bun run docs:check`)
+- [ ] `@example` blocks are executable and type-correct (`bun run docs:type-check`)
+- [ ] `@example` blocks pass as tests (`bun run docs:test`)
+- [ ] Markdown code blocks are type-correct (`bun run docs:type-check:md`)
+- [ ] Markdown prose follows style guide (`bun run docs:lint`)
 
 **Review prompts (for self/peer review)**:
 
--   Can I understand WHY this code exists without reading implementation?
--   Are error cases documented with recovery strategies?
--   Would a new contributor understand the domain rules?
--   Do comments add value, or just restate code?
--   Are there links to relevant ADRs/design docs?
+- Can I understand WHY this code exists without reading implementation?
+- Are error cases documented with recovery strategies?
+- Would a new contributor understand the domain rules?
+- Do comments add value, or just restate code?
+- Are there links to relevant ADRs/design docs?
 
 **Examples of good vs bad comments from this project**:
 
 ```typescript
 // ❌ Bad: Restates obvious code
 // Publish the event
-yield* eventBus.publishDueTimeReached(event)
+yield * eventBus.publishDueTimeReached(event)
 
 // ❌ Bad: Outdated comment (code changed, comment didn't)
 // Use forEach to process timers
-const results = yield* Effect.partition(timers, processTimer) // ← Now uses partition!
+const results = yield * Effect.partition(timers, processTimer) // ← Now uses partition!
 
 // ✅ Good: Explains WHY partition, documents trade-off
 /*
  * Use partition instead of forEach to collect ALL failures, not fail-fast.
  * Trade-off: Higher memory for large batches, but better resilience.
  */
-const [failures, successes] = yield* Effect.partition(timers, processTimer)
+const [failures, successes] = yield * Effect.partition(timers, processTimer)
 
 // ✅ Good: Documents domain semantics with ADR link
 /**
@@ -1343,18 +1474,18 @@ it.effect('should not return timers from other tenants', () =>
 
 ### GREEN Phase (Implementation)
 
--   [ ] Add `tenantId` to command/event payload (see `messages.md`)
--   [ ] Include `tenant_id` in all SQL `WHERE` clauses
--   [ ] Use composite key `(tenant_id, aggregate_id)` in tables
--   [ ] Add `tenantId` to broker partition key: `${tenantId}.${serviceCallId}`
+- [ ] Add `tenantId` to command/event payload (see `messages.md`)
+- [ ] Include `tenant_id` in all SQL `WHERE` clauses
+- [ ] Use composite key `(tenant_id, aggregate_id)` in tables
+- [ ] Add `tenantId` to broker partition key: `${tenantId}.${serviceCallId}`
 
 ---
 
 ### REFACTOR Phase (Enforce at Boundaries)
 
--   [ ] Validate `tenantId` is non-empty in command handlers
--   [ ] Add integration test: queries without `tenantId` fail/return empty
--   [ ] Verify logs include `tenantId` for tracing (ADR-0009)
+- [ ] Validate `tenantId` is non-empty in command handlers
+- [ ] Add integration test: queries without `tenantId` fail/return empty
+- [ ] Verify logs include `tenantId` for tracing (ADR-0009)
 
 ---
 
@@ -1377,10 +1508,10 @@ const tenantTimers = db.query(
 
 ### Schema Conventions (See ADR-0005)
 
--   All tables: `tenant_id` as first column in primary key
--   Timestamps: `created_at`, `updated_at` (ISO8601, UTC)
--   Status columns: use string enums (e.g., `'Scheduled'`, `'Reached'`)
--   Composite keys: `(tenant_id, aggregate_id)` for uniqueness
+- All tables: `tenant_id` as first column in primary key
+- Timestamps: `created_at`, `updated_at` (ISO8601, UTC)
+- Status columns: use string enums (e.g., `'Scheduled'`, `'Reached'`)
+- Composite keys: `(tenant_id, aggregate_id)` for uniqueness
 
 ---
 
@@ -1403,17 +1534,17 @@ SELECT * FROM service_calls WHERE created_at > ?;
 
 ### Transaction Boundaries
 
--   Domain update + outbox append: single transaction
--   Read then write: use `SELECT ... FOR UPDATE` (serializable isolation)
--   Long-running: break into smaller transactions (polling, not streaming)
+- Domain update + outbox append: single transaction
+- Read then write: use `SELECT ... FOR UPDATE` (serializable isolation)
+- Long-running: break into smaller transactions (polling, not streaming)
 
 ---
 
 ### Testing
 
--   Unit: in-memory SQLite (`:memory:`)
--   Integration: file-based with cleanup (`./test-db-${timestamp}.db`)
--   Migrations: separate test DB per suite (parallel-safe)
+- Unit: in-memory SQLite (`:memory:`)
+- Integration: file-based with cleanup (`./test-db-${timestamp}.db`)
+- Migrations: separate test DB per suite (parallel-safe)
 
 ---
 
@@ -1425,17 +1556,17 @@ SELECT * FROM service_calls WHERE created_at > ?;
 
 **Create ADR draft if**:
 
--   Affects multiple modules (e.g., message format, port signature)
--   Impacts future extensibility (e.g., database schema, identity format)
--   Has trade-offs worth documenting (e.g., polling vs push, sync vs async)
--   Relates to operational concerns (e.g., observability, deployment)
+- Affects multiple modules (e.g., message format, port signature)
+- Impacts future extensibility (e.g., database schema, identity format)
+- Has trade-offs worth documenting (e.g., polling vs push, sync vs async)
+- Relates to operational concerns (e.g., observability, deployment)
 
 **Examples**:
 
--   ✅ ADR needed: "Should Timer use polling or broker delayed messages?"
--   ✅ ADR needed: "Generate ServiceCallId in app or database?"
--   ❌ No ADR: "Should this helper be in `utils.ts` or `helpers.ts`?"
--   ❌ No ADR: "Should I use `forEach` or `for-of`?"
+- ✅ ADR needed: "Should Timer use polling or broker delayed messages?"
+- ✅ ADR needed: "Generate ServiceCallId in app or database?"
+- ❌ No ADR: "Should this helper be in `utils.ts` or `helpers.ts`?"
+- ❌ No ADR: "Should I use `forEach` or `for-of`?"
 
 ---
 
@@ -1450,9 +1581,9 @@ SELECT * FROM service_calls WHERE created_at > ?;
 
 **Don't block on trivial choices**:
 
--   Naming (can refactor later)
--   File organization (emerge patterns first)
--   Test helper structure (extract when needed)
+- Naming (can refactor later)
+- File organization (emerge patterns first)
+- Test helper structure (extract when needed)
 
 ---
 
@@ -1477,37 +1608,37 @@ When encountering a choice:
 
 ### Architecture Violations
 
--   ❌ Direct database queries across modules (e.g., Timer reading `service_calls` table)
--   ❌ In-process function calls between modules (use `EventBusPort`)
--   ❌ Database-generated IDs (use UUID v7 in application; see ADR-0010)
--   ❌ Synchronous HTTP calls in domain logic (inject `HttpClientPort`)
+- ❌ Direct database queries across modules (e.g., Timer reading `service_calls` table)
+- ❌ In-process function calls between modules (use `EventBusPort`)
+- ❌ Database-generated IDs (use UUID v7 in application; see ADR-0010)
+- ❌ Synchronous HTTP calls in domain logic (inject `HttpClientPort`)
 
 ---
 
 ### Messaging Violations
 
--   ❌ Publishing events before DB commit (outbox pattern; see ADR-0008)
--   ❌ Fire-and-forget broker calls (always handle ack/nack)
--   ❌ Missing `tenantId` in message envelope
--   ❌ Global message handlers without tenant filter
+- ❌ Publishing events before DB commit (outbox pattern; see ADR-0008)
+- ❌ Fire-and-forget broker calls (always handle ack/nack)
+- ❌ Missing `tenantId` in message envelope
+- ❌ Global message handlers without tenant filter
 
 ---
 
 ### Effect Anti-Patterns
 
--   ❌ `Effect.runSync` in production code (only tests)
--   ❌ Catching errors without mapping to domain errors
--   ❌ Using `any` or `unknown` for Effect type parameters
--   ❌ Layers with side effects in constructor (use `Effect.gen` + `acquireRelease`)
+- ❌ `Effect.runSync` in production code (only tests)
+- ❌ Catching errors without mapping to domain errors
+- ❌ Using `any` or `unknown` for Effect type parameters
+- ❌ Layers with side effects in constructor (use `Effect.gen` + `acquireRelease`)
 
 ---
 
 ### Testing Shortcuts
 
--   ❌ Mocking Effect runtime internals
--   ❌ Tests without tenant isolation checks
--   ❌ Integration tests without cleanup
--   ❌ Committing `.only()` tests to version control
+- ❌ Mocking Effect runtime internals
+- ❌ Tests without tenant isolation checks
+- ❌ Integration tests without cleanup
+- ❌ Committing `.only()` tests to version control
 
 ---
 
@@ -1521,9 +1652,9 @@ When encountering a choice:
 
 **Scope values** (prefer these):
 
--   `timer`, `orchestration`, `execution`, `api`
--   `ports`, `platform`, `adapters`
--   `design`, `plan`, `adr` (for docs)
+- `timer`, `orchestration`, `execution`, `api`
+- `ports`, `platform`, `adapters`
+- `design`, `plan`, `adr` (for docs)
 
 ---
 
@@ -1564,27 +1695,27 @@ docs(design): clarify Timer state machine transitions
 
 ### Link Work/Decisions
 
--   Reference `PL-#` for plan items
--   Use `[adr: ADR-####]` for decision links
--   Body: explain the what and the why; wrap at ~72c
+- Reference `PL-#` for plan items
+- Use `[adr: ADR-####]` for decision links
+- Body: explain the what and the why; wrap at ~72c
 
 ---
 
 ## File Pointers (Start Here)
 
--   Entry: `README.md`
--   Design: `docs/design/*`
--   Decisions: `docs/decisions/*`
--   Plan: `docs/plan/*`
+- Entry: `README.md`
+- Design: `docs/design/*`
+- Decisions: `docs/decisions/*`
+- Plan: `docs/plan/*`
 
 ---
 
 ## If Something's Unclear
 
--   Prefer updating/adding a small ADR or design note rather than encoding assumptions in code or this file.
--   Link changes in the plan.
--   Avoid scope creep: pick the top item from `docs/plan/kanban.md` (Doing → Ready order).
--   If a necessary decision is missing, add/adjust an ADR and reflect it in the Kanban.
+- Prefer updating/adding a small ADR or design note rather than encoding assumptions in code or this file.
+- Link changes in the plan.
+- Avoid scope creep: pick the top item from `docs/plan/kanban.md` (Doing → Ready order).
+- If a necessary decision is missing, add/adjust an ADR and reflect it in the Kanban.
 
 ---
 
@@ -1592,6 +1723,6 @@ docs(design): clarify Timer state machine transitions
 
 This Copilot instructions file follows GitHub's best practices for Copilot coding agents:
 
--   [Best practices for using GitHub Copilot to work on tasks](https://docs.github.com/en/copilot/tutorials/coding-agent/get-the-best-results)
--   [GitHub Copilot coding agent documentation](https://docs.github.com/en/copilot/tutorials/coding-agent)
--   [Adding custom instructions for GitHub Copilot](https://docs.github.com/en/copilot/customizing-copilot/adding-custom-instructions-for-github-copilot)
+- [Best practices for using GitHub Copilot to work on tasks](https://docs.github.com/en/copilot/tutorials/coding-agent/get-the-best-results)
+- [GitHub Copilot coding agent documentation](https://docs.github.com/en/copilot/tutorials/coding-agent)
+- [Adding custom instructions for GitHub Copilot](https://docs.github.com/en/copilot/customizing-copilot/adding-custom-instructions-for-github-copilot)

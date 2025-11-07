@@ -61,7 +61,10 @@ import * as Service from '@event-service-agent/platform/uuid7'
 
 import { UUID7 } from './uuid7.schema.ts'
 
-const CorrelationIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/CorrelationId')
+/**
+ * CorrelationId brand for internal use
+ */
+export const CorrelationIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/CorrelationId')
 
 /**
  * CorrelationId — Branded UUID7 for distributed request tracing
@@ -154,6 +157,11 @@ export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) 
 		Schema.decodeEither(CorrelationId)(value)
 }
 
+/**
+ * Type aliases for CorrelationId
+ *
+ * Provides convenient access to the branded type.
+ */
 export declare namespace CorrelationId {
 	/**
 	 * The branded type: string & Brand<UUID7Brand> & Brand<CorrelationIdBrand>

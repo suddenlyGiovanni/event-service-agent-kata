@@ -5,7 +5,6 @@ dev = true # Whether to install development dependencies. Default true.
 peer = true # Whether to install peer dependencies. Default true.
 exact = true # Whether to set an exact version in package.json. Default false.
 saveTextLockfile = true # Whether to save a text lockfile (bunfig.lock.toml). Default true.
-frozenLockfile = true # When true, bun install will not update bun.lock. Default false.
 linkWorkspacePackages = true
 # Only install package versions published at least 3 days ago
 # minimumReleaseAge = 259200

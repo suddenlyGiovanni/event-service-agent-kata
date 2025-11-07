@@ -5,9 +5,12 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  checks:
-    name: 🫸 Push Checks
+  auto-fix:
+    name: 🔧 Auto-fix Code
     runs-on: ubuntu-latest
 
     steps:
@@ -19,14 +22,58 @@ jobs:
       - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
-      - name: 🔍 Typecheck code
-        id: typecheck
-        continue-on-error: true
-        run: bun run type-check
+      - name: 📋 Detect changed Markdown files
+        uses: tj-actions/changed-files@v47
+        id: changed-markdown-files
+        with:
+          files: '**/*.md'
+          separator: ","
+
+      - name: 📝 Fix Markdown lint issues
+        if: steps.changed-markdown-files.outputs.any_changed == 'true'
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
+          separator: "," 
+          fix: true
+
+      - name: 🚦 Commit Markdown fixes
+        shell: bash
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: fix markdown lint issues"
+          fi
+
+      - name: 💅 Format code
+        shell: sh
+        run: |
+          bun biome check \
+          --max-diagnostics=none \
+          --vcs-enabled=true \
+          --vcs-use-ignore-file=true \
+          --vcs-root="." \
+          --formatter-enabled=true \
+          --linter-enabled=false \
+          --assist-enabled=true \
+          --reporter=github \
+          --changed \
+          --no-errors-on-unmatched \
+          --write
+
+      - name: 🚦 Commit format fixes
+        shell: bash
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: format code with Biome"
+          fi
 
       - name: 🚨 Lint code
-        id: lint
-        continue-on-error: true
         shell: sh
         run: |
           bun biome check \
@@ -42,36 +89,44 @@ jobs:
           --changed \
           --write
 
-      - name: 💅 Format code
-        id: format
-        continue-on-error: true
-        shell: sh
+      - name: 🚦 Commit lint fixes
+        shell: bash
         run: |
-          bun biome check \
-          --max-diagnostics=none \
-          --vcs-enabled=true \
-          --vcs-use-ignore-file=true \
-          --vcs-root="." \
-          --formatter-enabled=true \
-          --linter-enabled=false  \
-          --assist-enabled=true \
-          --reporter=github \
-          --changed \
-          --no-errors-on-unmatched \
-          --write
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: lint code with Biome"
+          fi
 
-      - name: 🚦 Git Auto Commit fixes (with Biome)
-        uses: stefanzweifel/git-auto-commit-action@v7
+      - name: 📤 Push all fixes
+        uses: ad-m/github-push-action@master
         with:
-          commit_message: "chore: lint and format code with Biome [skip ci]"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
 
-      - name: 🧪 Run tests
-        id: tests
-        continue-on-error: true
-        run: bun run test --run
+  validate:
+    name: ✅ Validate (${{ matrix.check }})
+    runs-on: ubuntu-latest
+    needs: auto-fix
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [typecheck, test]
 
-      - name: ❌ Fail if any check failed
-        if: steps.typecheck.outcome == 'failure' || steps.lint.outcome == 'failure' || steps.format.outcome == 'failure' || steps.tests.outcome == 'failure'
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
+
+      - name: 🔍 Run ${{ matrix.check }}
         run: |
-          echo "::error::One or more checks failed"
-          exit 1
+          if [ "${{ matrix.check }}" = "typecheck" ]; then
+            bun run type-check
+          elif [ "${{ matrix.check }}" = "test" ]; then
+            bun run test --run
+          fi

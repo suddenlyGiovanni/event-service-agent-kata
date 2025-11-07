@@ -14,6 +14,12 @@ import { EnvelopeId } from '@event-service-agent/schemas/shared'
 
 import * as Ports from '../ports/index.ts'
 
+/**
+ * TimerEventBus — Adapter implementation for timer event publishing
+ *
+ * Wraps timer domain events in MessageEnvelope and publishes via EventBusPort.
+ * Generates envelope IDs and correlation context for each published event.
+ */
 export class TimerEventBus {
 	/**
 	 * Live adapter implementation that composes over shared EventBusPort

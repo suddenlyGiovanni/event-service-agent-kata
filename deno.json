@@ -1,11 +1,54 @@
 {
 	"$schema": "https://raw.githubusercontent.com/denoland/deno/refs/heads/main/cli/schemas/config-file.v1.json",
+	"exclude": ["node_modules/", "packages/*/node_modules/", "packages/*/dist/", "**/*.test.ts", "**/vitest.config.ts"],
 	"fmt": {
+		"exclude": ["**/*.test.ts", "**/vitest.config.ts"],
+		"include": ["packages/*/src/**/*.ts"],
 		"indentWidth": 4,
 		"lineWidth": 120,
 		"proseWrap": "preserve",
 		"semiColons": false,
 		"singleQuote": true,
+		"useBraces": "preferNone",
 		"useTabs": true
-	}
+	},
+	"lint": {
+		"exclude": ["**/*.test.ts", "**/vitest.config.ts"],
+		"include": ["packages/*/src/**/*.ts"],
+		"rules": {
+			"exclude": ["no-slow-types", "no-namespace"]
+		}
+	},
+	"nodeModulesDir": "manual",
+	"tasks": {
+		"docs:check": {
+			"command": "deno doc --lint $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' | tr '\n' ' ')",
+			"description": "Lint JSDoc documentation (validate structure, completeness, and exports)"
+		},
+		"docs:test": {
+			"command": "deno test --doc $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' | tr '\n' ' ')",
+			"description": "Run documentation tests (execute JSDoc @example code blocks)"
+		},
+		"docs:type-check": {
+			"command": "deno check --doc $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' | tr '\n' ' ')",
+			"description": "Type-check documentation examples (validate JSDoc @example code blocks)"
+		},
+		"docs:type-check:md": {
+			"command": "deno check --doc-only $(find docs -name '*.md' | tr '\n' ' ')",
+			"description": "Type-check code blocks in markdown documentation files"
+		},
+		"format": {
+			"command": "deno fmt",
+			"description": "Format TypeScript source files"
+		},
+		"format:check": {
+			"command": "deno fmt --check",
+			"description": "Check TypeScript source file formatting (without modifying)"
+		},
+		"lint": {
+			"command": "deno lint",
+			"description": "Lint TypeScript source files (code style and quality)"
+		}
+	},
+	"workspace": ["packages/*"]
 }

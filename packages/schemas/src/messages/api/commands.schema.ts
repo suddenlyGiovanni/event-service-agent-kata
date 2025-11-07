@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag` discriminators */
 import * as Schema from 'effect/Schema'
 
 import { TenantId } from '../../shared/index.ts'
@@ -44,21 +45,48 @@ export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('
 
 	tenantId: TenantId,
 }) {
+	/**
+	 * Decode from wire format to validated command
+	 */
 	static readonly decode = Schema.decode(SubmitServiceCall)
 
+	/**
+	 * Encode from command to wire format DTO
+	 */
 	static readonly encode = Schema.encode(SubmitServiceCall)
 
-	// biome-ignore lint/style/useNamingConvention: Exposes _tag for Tag registry
+	/**
+	 * Discriminator tag for pattern matching
+	 */
 	static readonly Tag = SubmitServiceCall._tag
 }
 
+/**
+ * Type aliases for SubmitServiceCall command
+ */
 export declare namespace SubmitServiceCall {
+	/**
+	 * Validated domain type
+	 */
 	type Type = typeof SubmitServiceCall.Type
+
+	/**
+	 * Wire format DTO type
+	 */
 	type Dto = typeof SubmitServiceCall.Encoded
 }
 
+/**
+ * Schema union for runtime validation of any API command
+ */
 export const Commands = Schema.Union(SubmitServiceCall)
 
+/**
+ * Union type of all API commands
+ */
 export type Commands = Schema.Schema.Type<typeof Commands>
 
+/**
+ * Tag discriminator type for API commands
+ */
 export type Tag = Commands['_tag']

@@ -8,7 +8,9 @@ runs:
       with:
         bun-version-file: "package.json"
 
-
+    - name: 🦕 Setup Deno
+      uses: denoland/setup-deno@v2
+      
     - name: 📦 Get Bun cache directory
       id: bun-cache
       shell: bash

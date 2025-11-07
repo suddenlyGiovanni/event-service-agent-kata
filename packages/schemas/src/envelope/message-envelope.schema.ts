@@ -41,6 +41,11 @@ export const DomainMessage = Schema.Union(
 	Messages.Api.Commands.Commands,
 )
 
+/**
+ * Type aliases for DomainMessage union
+ *
+ * Provides convenient access to the union type and its encoded representation.
+ */
 export declare namespace DomainMessage {
 	/**
 	 * Type - Union of all domain message types
@@ -58,6 +63,15 @@ export declare namespace DomainMessage {
 	type Tag = DomainMessage.Type['_tag']
 }
 
+/**
+ * MessageEnvelope — Transport wrapper for all domain messages
+ *
+ * Wraps commands and events with routing and correlation metadata for broker transport.
+ * Provides partition key, correlation context, and envelope identity for tracing.
+ *
+ * @see docs/decisions/ADR-0013-correlation-propagation.md for correlation context design
+ * @see docs/decisions/ADR-0010-identity.md for envelope ID generation
+ */
 export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvelope')(
 	Schema.Struct({
 		/**
@@ -515,6 +529,11 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		Match.value(envelope.payload)
 }
 
+/**
+ * Type aliases for MessageEnvelope
+ *
+ * Provides convenient access to validated and encoded envelope types.
+ */
 export declare namespace MessageEnvelope {
 	/**
 	 * Type - Validated envelope with typed payload

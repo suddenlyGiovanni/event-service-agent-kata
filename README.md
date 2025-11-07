@@ -47,3 +47,9 @@
 
 - [Plan](./docs/plan/plan.md)
 - [Kanban](./docs/plan/kanban.md)
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](./docs/CONTRIBUTING.md) for development setup, available scripts, and workflow guidelines.

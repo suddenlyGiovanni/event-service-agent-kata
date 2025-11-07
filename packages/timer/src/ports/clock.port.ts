@@ -22,6 +22,14 @@ import * as Context from 'effect/Context'
 import type * as DateTime from 'effect/DateTime'
 import type * as Effect from 'effect/Effect'
 
+/**
+ * ClockPort — Port for time operations in Timer module
+ *
+ * Abstracts system clock to enable:
+ * - Testability (inject TestClock for deterministic time)
+ * - Time manipulation in tests (TestClock.adjust)
+ * - Platform independence (Effect DateTime)
+ */
 export interface ClockPort {
 	/**
 	 * Get current UTC time

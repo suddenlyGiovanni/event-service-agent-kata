@@ -54,9 +54,13 @@
 	"scripts": {
 		"check": "biome check --write .",
 		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
+		"docs:check": "deno task docs:check",
+		"docs:lint": "bunx --bun markdownlint-cli2 --fix docs/**/*.md",
+		"docs:test": "deno task docs:test",
+		"docs:type-check": "deno task docs:type-check",
+		"docs:type-check:md": "deno task docs:type-check:md",
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
-		"lint:md": "bunx --bun markdownlint-cli2 --fix docs/**/*.md",
 		"test": "bun --bun vitest",
 		"type-check": "bun --bun --workspaces type-check"
 	},
