@@ -108,8 +108,21 @@ export const TimerEntrySchema = Schema.Union(ScheduledTimer, ReachedTimer)
  *
  * @example Basic usage
  * ```typescript
+ * import * as DateTime from "effect/DateTime"
+ * import * as Option from "effect/Option"
+ * import { ServiceCallId, TenantId } from "@event-service-agent/schemas/shared"
+ * 
+ * // Create a scheduled timer
+ * const timer = new TimerEntry.ScheduledTimer({
+ *   tenantId: TenantId.make(),
+ *   serviceCallId: ServiceCallId.make(),
+ *   dueAt: DateTime.unsafeMake(Date.now() + 5000),
+ *   registeredAt: DateTime.unsafeMake(Date.now()),
+ *   correlationId: Option.none()
+ * })
+ * 
  * // Check if timer is due
- * const timer: TimerEntry.ScheduledTimer = ...
+ * const now = DateTime.unsafeMake(Date.now() + 6000)
  * if (TimerEntry.isDue(timer, now)) {
  *   // Transition to Reached
  *   const reached = TimerEntry.markReached(timer, now)
@@ -118,7 +131,19 @@ export const TimerEntrySchema = Schema.Union(ScheduledTimer, ReachedTimer)
  *
  * @example Pattern matching
  * ```typescript
- * const timer: TimerEntry.Type = ...
+ * import * as DateTime from "effect/DateTime"
+ * import * as Option from "effect/Option"
+ * import { ServiceCallId, TenantId } from "@event-service-agent/schemas/shared"
+ * 
+ * // Timer can be in different states
+ * const timer: TimerEntry.Type = new TimerEntry.ScheduledTimer({
+ *   tenantId: TenantId.make(),
+ *   serviceCallId: ServiceCallId.make(),
+ *   dueAt: DateTime.unsafeMake(Date.now() + 5000),
+ *   registeredAt: DateTime.unsafeMake(Date.now()),
+ *   correlationId: Option.none()
+ * })
+ * 
  * if (TimerEntry.isScheduled(timer)) {
  *   // TypeScript knows timer is ScheduledTimer here
  *   console.log(timer.dueAt)
