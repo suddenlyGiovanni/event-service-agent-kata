@@ -1031,7 +1031,7 @@ export const scheduleTimer = (
  * If events fire out-of-order, downstream consumers may see stale data.
  *
  * Timing assumption: Each timer processing takes <100ms (publish + persist).
- * Large batches (>1000 timers) may cause backpressure; consider pagination.
+ * Large batches (>1000 timers) may cause back-pressure; consider pagination.
  *
  * @see ADR-0002 for broker ordering guarantees
  */

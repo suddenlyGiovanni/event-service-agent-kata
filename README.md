@@ -86,6 +86,7 @@ This project uses **Deno's doc tooling** to validate TSDoc comments and `@exampl
 **Configuration:**
 
 The repository includes a `deno.json` configuration file that defines:
+
 - File inclusion/exclusion patterns (automatically excludes test files and vitest configs)
 - Deno tasks for documentation validation
 - Formatting and linting rules specific to Deno
