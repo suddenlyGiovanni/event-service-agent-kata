@@ -33,6 +33,10 @@
 			"command": "deno check --doc $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' | tr '\n' ' ')",
 			"description": "Type-check documentation examples (validate JSDoc @example code blocks)"
 		},
+		"docs:type-check:md": {
+			"command": "deno check --doc-only $(find docs -name '*.md' | tr '\n' ' ')",
+			"description": "Type-check code blocks in markdown documentation files"
+		},
 		"format": {
 			"command": "deno fmt",
 			"description": "Format TypeScript source files"

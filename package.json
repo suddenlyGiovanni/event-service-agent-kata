@@ -58,6 +58,7 @@
 		"docs:lint": "bunx --bun markdownlint-cli2 --fix docs/**/*.md",
 		"docs:test": "deno task docs:test",
 		"docs:type-check": "deno task docs:type-check",
+		"docs:type-check:md": "deno task docs:type-check:md",
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
 		"test": "bun --bun vitest",

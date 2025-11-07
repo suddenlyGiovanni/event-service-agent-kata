@@ -46,6 +46,11 @@ jobs:
         shell: sh
         run: bun run docs:type-check
 
+      - name: 📝 Type-check markdown code blocks
+        continue-on-error: true
+        shell: sh
+        run: bun run docs:type-check:md
+
   markdown:
     name: 📋 Markdown
     runs-on: ubuntu-latest

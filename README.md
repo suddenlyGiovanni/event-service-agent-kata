@@ -73,6 +73,7 @@ bun install
 - `bun run docs:check` - Validate TSDoc documentation (see below)
 - `bun run docs:test` - Run code examples in JSDoc/TSDoc `@example` blocks as tests
 - `bun run docs:type-check` - Type-check code examples in JSDoc/TSDoc blocks (see below)
+- `bun run docs:type-check:md` - Type-check TypeScript code blocks in markdown files
 - `bun run docs:lint` - Lint markdown files with markdownlint
 
 ### Documentation Validation
@@ -114,11 +115,17 @@ deno task docs:test
 bun run docs:type-check
 # Or directly with Deno
 deno task docs:type-check
+
+# Type-check TypeScript code blocks in markdown files
+bun run docs:type-check:md
+# Or directly with Deno
+deno task docs:type-check:md
 ```
 
 **In CI**: Documentation validation runs automatically in pull request workflows:
 
 - `docs:check` - Validates JSDoc structure (configured as `continue-on-error: true`)
 - `docs:type-check` - Type-checks code examples in JSDoc blocks (configured as `continue-on-error: true`)
+- `docs:type-check:md` - Type-checks TypeScript code blocks in markdown files (configured as `continue-on-error: true`)
 
 **Future directions**: As the ecosystem matures, we may migrate to native Bun/Node.js solutions or extract `@example` blocks as executable unit tests.
