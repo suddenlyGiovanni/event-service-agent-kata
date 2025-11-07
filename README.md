@@ -83,6 +83,15 @@ This project uses **Deno's doc tooling** to validate TSDoc comments and `@exampl
 - **Catches missing documentation**: Identifies public APIs without proper JSDoc
 - **Leverages best-in-class tooling**: Uses Deno's built-in documentation validation without adding Node.js/Bun dependencies
 
+**Configuration:**
+
+The repository includes a `deno.json` configuration file that defines:
+- File inclusion/exclusion patterns (automatically excludes test files and vitest configs)
+- Deno tasks for documentation validation
+- Formatting and linting rules specific to Deno
+
+This means doc validation commands automatically know which files to check without needing to specify glob patterns.
+
 **Running locally:**
 
 ```bash
@@ -90,9 +99,13 @@ This project uses **Deno's doc tooling** to validate TSDoc comments and `@exampl
 
 # Validate JSDoc structure and completeness
 bun run doc-check
+# Or directly with Deno
+deno task doc-check
 
 # Type-check code examples in documentation
 bun run doc-check:examples
+# Or directly with Deno
+deno task doc-check:examples
 ```
 
 **In CI**: Documentation validation runs automatically in pull request workflows:
