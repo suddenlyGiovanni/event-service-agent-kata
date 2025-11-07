@@ -1,0 +1,142 @@
+# Contributing Guide
+
+## Development Setup
+
+### Prerequisites
+
+This project uses **Bun** (>=1.3.0) as the runtime and package manager. See [devEngines](../package.json) for specific version requirements.
+
+#### Option 1: Nix + direnv (Recommended)
+
+The project includes a Nix flake that provides a reproducible development environment with all required tools (Bun, Deno, Biome).
+
+**Setup:**
+
+1. Install [Nix](https://nixos.org/download.html) with flakes enabled
+2. Install [direnv](https://direnv.net/docs/installation.html)
+3. Run `direnv allow` in the project root
+
+The `.envrc` file automatically loads the Nix development shell when you enter the project directory. This ensures everyone uses the exact same tool versions.
+
+**What it provides:**
+
+- Bun 1.3+ runtime and package manager
+- Deno 2.5+ for documentation validation
+- Biome for code formatting and linting
+
+See [`flake.nix`](../flake.nix) for the complete environment definition.
+
+#### Option 2: Manual Installation
+
+Alternatively, install the required tools manually:
+
+### Installation
+
+```bash
+bun install
+```
+
+## Available Scripts
+
+- `bun run test` - Run tests in watch mode
+- `bun run test --run` - Run tests once (CI mode)
+- `bun run type-check` - TypeScript type checking across all workspaces
+- `bun run lint` - Lint code with Biome
+- `bun run format` - Format code with Biome
+- `bun run check` - Run Biome checks with auto-fix
+- `bun run docs:check` - Validate TSDoc documentation (see below)
+- `bun run docs:test` - Run code examples in JSDoc/TSDoc `@example` blocks as tests
+- `bun run docs:type-check` - Type-check code examples in JSDoc/TSDoc blocks (see below)
+- `bun run docs:type-check:md` - Type-check TypeScript code blocks in markdown files
+- `bun run docs:lint` - Lint markdown files with markdownlint
+
+## Documentation Validation
+
+This project uses **Deno's doc tooling** to validate TSDoc comments and `@example` blocks, even though the project runs on Bun. This approach:
+
+- **Prevents documentation rot**: Ensures code examples in documentation stay in sync with API changes
+- **Validates `@example` blocks**: Checks TypeScript syntax in documentation examples
+- **Type-checks documentation examples**: Validates that code in JSDoc blocks is type-correct with `deno check --doc-only`
+- **Catches missing documentation**: Identifies public APIs without proper JSDoc
+- **Leverages best-in-class tooling**: Uses Deno's built-in documentation validation without adding Node.js/Bun dependencies
+
+### Configuration
+
+The repository includes a `deno.json` configuration file that defines:
+
+- File inclusion/exclusion patterns (automatically excludes test files and vitest configs)
+- Deno tasks for documentation validation
+- Formatting and linting rules specific to Deno
+
+This means doc validation commands automatically know which files to check without needing to specify glob patterns.
+
+### Running Documentation Validation Locally
+
+```bash
+# Requires Deno 2.5+ to be installed
+
+# Validate JSDoc structure and completeness
+bun run docs:check
+# Or directly with Deno
+deno task docs:check
+
+# Run code examples in JSDoc/TSDoc @example blocks as tests
+bun run docs:test
+# Or directly with Deno
+deno task docs:test
+
+# Type-check code examples in documentation
+bun run docs:type-check
+# Or directly with Deno
+deno task docs:type-check
+
+# Type-check TypeScript code blocks in markdown files
+bun run docs:type-check:md
+# Or directly with Deno
+deno task docs:type-check:md
+```
+
+### CI Integration
+
+Documentation validation runs automatically in pull request workflows:
+
+- `docs:check` - Validates JSDoc structure (configured as `continue-on-error: true`)
+- `docs:type-check` - Type-checks code examples in JSDoc blocks (configured as `continue-on-error: true`)
+- `docs:type-check:md` - Type-checks TypeScript code blocks in markdown files (configured as `continue-on-error: true`)
+
+### Future Directions
+
+As the ecosystem matures, we may migrate to native Bun/Node.js solutions or extract `@example` blocks as executable unit tests.
+
+## Development Workflow
+
+### TDD Cycle
+
+This project follows strict Test-Driven Development (TDD):
+
+1. **🔴 RED**: Write failing test
+2. **🟢 GREEN**: Minimum code to pass
+3. **🔵 REFACTOR**: Improve without changing behavior
+
+See [Copilot Instructions](../.github/copilot-instructions.md) for detailed TDD workflow and commit discipline.
+
+### Code Quality Gates
+
+Before committing:
+
+- [ ] All tests pass (`bun run test --run`)
+- [ ] Type-checking passes (`bun run type-check`)
+- [ ] Code is formatted (`bun run format`)
+- [ ] Code is linted (`bun run check`)
+- [ ] Documentation is valid (`bun run docs:check`)
+- [ ] Documentation examples type-check (`bun run docs:type-check`)
+
+## Architecture
+
+This project follows Domain-Driven Design (DDD) and Hexagonal Architecture principles:
+
+- **Domain Layer**: Pure business logic (Effect-TS patterns)
+- **Application Layer**: Use cases and workflows
+- **Infrastructure Layer**: Adapters for external systems
+
+See the [design documentation](./design/) for detailed architecture guidelines.
