@@ -17,8 +17,22 @@
 import type { LazyArbitrary } from 'effect/Arbitrary'
 import * as Schema from 'effect/Schema'
 
-const identifier = 'UUID7' as const
+/**
+ * Identifier constant for UUID7 schema
+ * @internal
+ */
+export const identifier = 'UUID7' as const
+
+/**
+ * Schema identifier symbol for UUID7
+ * @internal
+ */
 export const UUID7SchemaId: unique symbol = Symbol.for(`@event-service-agent/schemas/SchemaId/${identifier}`)
+
+/**
+ * Brand symbol for UUID7 type
+ * @internal
+ */
 export const UUID7Brand: unique symbol = Symbol.for(`@event-service-agent/schemas/shared/${identifier}`)
 
 /**

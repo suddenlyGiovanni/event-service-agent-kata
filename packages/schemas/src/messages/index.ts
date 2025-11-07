@@ -1,10 +1,18 @@
-/** API module messages */
+/**
+ * API module messages
+ */
 import * as Api from './api/index.ts'
-/** Execution module messages */
+/**
+ * Execution module messages
+ */
 import * as Execution from './execution/index.ts'
-/** Orchestration module messages */
+/**
+ * Orchestration module messages
+ */
 import * as Orchestration from './orchestration/index.ts'
-/** Timer module messages */
+/**
+ * Timer module messages
+ */
 import * as Timer from './timer/index.ts'
 
 /**
