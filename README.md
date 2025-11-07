@@ -96,6 +96,7 @@ bun run doc-check:examples
 ```
 
 **In CI**: Documentation validation runs automatically in pull request workflows:
+
 - `doc-check` - Validates JSDoc structure (configured as `continue-on-error: true`)
 - `doc-check:examples` - Type-checks code examples in JSDoc blocks (configured as `continue-on-error: true`)
 
