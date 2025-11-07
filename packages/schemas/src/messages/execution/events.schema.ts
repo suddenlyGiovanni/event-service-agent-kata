@@ -145,8 +145,6 @@ export declare namespace ExecutionFailed {
 
 /**
  * Schema union for runtime validation of any Execution event
- *
-
  */
 export const Events = Schema.Union(ExecutionStarted, ExecutionSucceeded, ExecutionFailed)
 

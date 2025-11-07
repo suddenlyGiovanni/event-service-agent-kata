@@ -254,8 +254,6 @@ export declare namespace ServiceCallFailed {
 
 /**
  * Schema union for runtime validation of any Orchestration event
- *
-
  */
 export const Events = Schema.Union(
 	ServiceCallSubmitted,

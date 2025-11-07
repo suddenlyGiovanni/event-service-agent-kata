@@ -89,7 +89,6 @@ export class ReachedTimer extends Schema.TaggedClass<ReachedTimer>()('Reached', 
  *
  * Effect Schema automatically discriminates by _tag field, enabling type-safe
  * pattern matching and JSON serialization/deserialization.
- *
  */
 export const TimerEntrySchema = Schema.Union(ScheduledTimer, ReachedTimer)
 

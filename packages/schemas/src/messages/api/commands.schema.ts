@@ -47,22 +47,16 @@ export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('
 }) {
 	/**
 	 * Decode from wire format to validated command
-	 *
-	 *
 	 */
 	static readonly decode = Schema.decode(SubmitServiceCall)
 
 	/**
 	 * Encode from command to wire format DTO
-	 *
-	 *
 	 */
 	static readonly encode = Schema.encode(SubmitServiceCall)
 
 	/**
 	 * Discriminator tag for pattern matching
-	 *
-	 *
 	 */
 	static readonly Tag = SubmitServiceCall._tag
 }

@@ -75,7 +75,6 @@ export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()('Schedule
 	 * - Unbrands types (TenantId → string, ServiceCallId → string)
 	 * - Preserves ISO8601 DateTime format
 	 * - Ready for JSON serialization
-	 *
 	 */
 	static readonly encode = Schema.encode(ScheduleTimer)
 
@@ -154,8 +153,6 @@ export declare namespace StartExecution {
 
 /**
  * Schema union for runtime validation of any Orchestration command
- *
-
  */
 export const Commands = Schema.Union(StartExecution, ScheduleTimer)
 

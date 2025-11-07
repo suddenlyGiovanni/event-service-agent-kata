@@ -43,7 +43,6 @@ import { UUID7 } from './uuid7.schema.ts'
 
 /**
  * TenantId brand for internal use
-
  */
 export const TenantIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/TenantId')
 

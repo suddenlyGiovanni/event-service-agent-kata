@@ -7,8 +7,6 @@ import * as Schema from 'effect/Schema'
  * - `bodySnippet` is truncated/sanitized before storage and transmission
  * - Sensitive headers may be excluded or redacted
  * - Full response body is stored separately if needed for debugging
- *
-
  */
 export const ResponseMeta = Schema.Struct({
 	/**
@@ -33,8 +31,6 @@ export const ResponseMeta = Schema.Struct({
  * - `details` may be sanitized to remove sensitive information
  * - Stack traces and internal errors are logged separately, not transmitted in events
  * - Error messages are safe for observability (no secrets/credentials)
- *
-
  */
 export const ErrorMeta = Schema.Struct({
 	/**

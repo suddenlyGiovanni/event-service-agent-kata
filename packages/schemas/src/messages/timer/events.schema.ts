@@ -132,8 +132,6 @@ export declare namespace DueTimeReached {
 
 /**
  * Schema union for runtime validation of any Timer event
- *
-
  */
 export const Events = Schema.Union(DueTimeReached)
 

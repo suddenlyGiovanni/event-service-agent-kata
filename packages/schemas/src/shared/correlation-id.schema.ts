@@ -63,7 +63,6 @@ import { UUID7 } from './uuid7.schema.ts'
 
 /**
  * CorrelationId brand for internal use
-
  */
 export const CorrelationIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/CorrelationId')
 
