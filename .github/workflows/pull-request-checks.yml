@@ -41,6 +41,11 @@ jobs:
       - name: 🔍 Typecheck code
         run: bun run type-check
 
+      - name: 📖 Type-check documentation examples
+        continue-on-error: true
+        shell: sh
+        run: bun run docs:type-check
+
   markdown:
     name: 📋 Markdown
     runs-on: ubuntu-latest
@@ -76,6 +81,11 @@ jobs:
       - name: 🧪 Run tests
         run: bun run test --run
 
+      - name: 📚 Run documentation tests
+        continue-on-error: true
+        shell: sh
+        run: bun run docs:test
+
   docs:
     name: 📚 Docs
     runs-on: ubuntu-latest
@@ -87,19 +97,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 🦕 Setup Deno (for doc validation)
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: "2.5.0"
-      
       - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
       - name: 📚 Validate TSDoc comments
         shell: sh
         run: bun run docs:check
-
-      - name: 📖 Type-check documentation examples
-        continue-on-error: true
-        shell: sh
-        run: bun run docs:type-check
