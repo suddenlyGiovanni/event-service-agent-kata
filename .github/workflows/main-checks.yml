@@ -39,7 +39,7 @@ jobs:
       - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
-      - name: � Typecheck code
+      - name: 🔍 Typecheck code
         run: bun run type-check
 
   tests:
