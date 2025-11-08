@@ -54,6 +54,7 @@
 	"scripts": {
 		"check": "biome check --write .",
 		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
+		"docs:build": "echo \"no-op docs build (MVP)\"",
 		"docs:check": "deno task docs:check",
 		"docs:lint": "bunx --bun markdownlint-cli2 --fix docs/**/*.md",
 		"docs:test": "deno task docs:test",
