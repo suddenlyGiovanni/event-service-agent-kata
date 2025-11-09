@@ -18,9 +18,10 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: github-pages
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure Pages
         uses: actions/configure-pages@v3
