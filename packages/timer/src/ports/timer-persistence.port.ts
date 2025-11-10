@@ -87,6 +87,29 @@ export declare namespace TimerScheduleKey {
 }
 
 /**
+ * TimerScheduleKey - Composite identity for timer persistence operations
+ *
+ * All persistence queries use (tenantId, serviceCallId) as the idempotent key.
+ * Keeping the Schema definition in the port layer ensures adapters/tests share
+ * the same structural contract without depending on adapter internals.
+ */
+export const TimerScheduleKey = Schema.Struct({
+	/**
+	 * Service call identifier - unique per timer
+	 */
+	serviceCallId: ServiceCallId,
+
+	/**
+	 * Tenant identifier - supports multi-tenant isolation
+	 */
+	tenantId: TenantId,
+})
+
+export declare namespace TimerScheduleKey {
+	type Type = typeof TimerScheduleKey.Type
+}
+
+/**
  * TimerPersistencePort - Timer storage port interface
  *
  * Responsibilities:
