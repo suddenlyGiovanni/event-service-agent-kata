@@ -7,7 +7,7 @@ kramdown:
   input: GFM
   syntax_highlighter: rouge
   hard_wrap: false
-  
+
 # Site settings
 title: Event Service Agent Kata
 description: Event-driven, multi-tenant service-call agent kata
