@@ -1,6 +1,6 @@
 final: prev:
 let
-  version = "1.3.1"; # bump when needed
+  version = "1.3.2"; # bump when needed
   system = prev.stdenv.hostPlatform.system;
 
   urls = {
@@ -11,7 +11,7 @@ let
 
   # Fill the SRI hash (sha256-...) for your system after the first attempt.
   hashes = {
-    aarch64-darwin = "sha256-ronylWETMwdRWqPdpdXv3R6dJod+yFtPGAABNDGqmO0=";
+    aarch64-darwin = "sha256-2FhHmC21dFGBMKRVgrzxTY4r6WELZstQRsIDSFeLD+I=";
     # add other systems here as needed
   };
 in {
