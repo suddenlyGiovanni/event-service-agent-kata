@@ -34,7 +34,6 @@ Prioritized queue.
     Link ADRs like [adr: ADR-0001]; add tags like [infra] or [Api].
 -->
 
-- (PL-24) **P0 CRITICAL** — Implement MessageMetadata Context for correlationId propagation [Timer] [platform] [docs] [adr: [ADR-0013]] — **BLOCKS PR#36 MERGE**. See `docs/plan/correlation-context-implementation.md` for 14-task breakdown (~7h). Option E (Ambient Context) accepted. Fixes broken distributed tracing after PL-23 pure domain events refactoring. Updates 6 outdated docs that claim non-existent `makeEnvelope` helper exists.
 - (PL-4.6) SQLite persistence adapter [Timer] — Deferred until after Schema migration (PL-14)
 - (PL-2) Orchestration core domain model and transitions [Orchestration]
 - (PL-3) Broker adapter implementation + local broker setup [infra]
@@ -56,6 +55,7 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-24) Implement MessageMetadata Context for correlationId propagation [Timer] [platform] [docs] [adr: [ADR-0013]] — **COMPLETE**: PR#37 merged (Nov 6, 2025). Option E (Ambient Context) implementation. Created `MessageMetadata` Context.Tag with `correlationId`/`causationId` fields. Updated `TimerEventBusPort` signatures to require `MessageMetadata` in R parameter (asymmetric pattern). Refactored both workflows (`pollDueTimersWorkflow`, `scheduleTimerWorkflow`) to provision Context. Updated 22 tests, activated 2 correlation propagation tests. Fixed broken distributed tracing after PL-23. Removed false `makeEnvelope` references from 6 docs (ADR-0011, ADR-0009, 4 design docs). Updated to dual-level observability strategy (Phase 1 complete, Phase 2 planned). 280/282 tests passing. **Commit**: 3d49ca6
 - (PL-23) Refactor EventBusPort to use pure domain types [Timer] [architecture] — **COMPLETE**: Option B2 implementation with 15 commits across 4 phases. Port accepts pure domain events (`DueTimeReached`), adapter wraps in `MessageEnvelope`. Test layer refactoring (Phase 1-3): fixed composition → extracted base layers → migrated to `@effect/vitest layer()`. Workflow updated (TDD RED-GREEN): construct domain events before publishing. Final REFACTOR phase: extracted BaseTestLayers (10/13 tests simplified, 3 kept explicit for test isolation). All 282 tests passing. **Branch**: `timer/pl-23-pure-domain-events-at-port` (ready for merge).
 - (PL-15) Migrate to Schema.DateTimeUtc [schemas, timer, platform] — PR #34 (draft): Completed all 5 migrations (DateTime.Utc, Option<T>, branded types, cross-field validation, naming consistency). 282 tests passing, backward compatible wire format, comprehensive documentation updates.
 - (PL-14.2) Migrate platform message interfaces → `@event-service-agent/schemas` [schemas]
@@ -78,9 +78,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- **PL-24 PLANNED**: Comprehensive implementation plan created for Option E (Ambient Context) - 14 tasks across 5 phases (~7h estimate). Discovered documentation lies: ADR-0011 + 3 design docs claim `makeEnvelope` helper exists but it doesn't (checked git log d16df59 + actual code). Reality: Timer manually constructs MessageEnvelope via Schema class. Orchestration/Execution are just TODOs.
-- **Next**: Execute PL-24 (PR#36 P0 blocker) → Day 1: Core infra + test updates (Phases 1-2, ~3h). Day 2: Workflow implementation (Phase 3, ~2h). Day 3: Doc cleanup (Phases 4-5, ~2h). Then merge PR#36.
-- **Context**: PR#36 has 3 NITPICK fixes pushed (ba1458d, fca3e75, 2149de9). P0 (correlationId) and P1 (docs) tracked in PL-24 plan. User chose full Effect solution (Context pattern) over explicit parameters.
+- **PL-24 COMPLETE** (Nov 10, 2025): Validated all documentation references against commit 3d49ca6 (PR#37, merged Nov 6). All 6 outdated docs corrected, `makeEnvelope` references removed. Pattern guide embedded in MessageMetadata Context TSDoc (171 lines). Tests: 280/282 passing, 2 correlation propagation tests activated.
+- **Next**: PL-4.6 (SQLite persistence adapter for Timer) — Replace in-memory adapter with `@effect/sql-sqlite-bun`. Implement two-operation query model (findScheduledTimer, findDue), state machine persistence (Scheduled → Reached), idempotency via composite key (tenant_id, service_call_id). TDD workflow: RED → GREEN → REFACTOR with atomic commits.
+- **Branch**: Creating `timer/pl-4.6-sqlite-persistence` from main (HEAD: 9f8c372)
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
