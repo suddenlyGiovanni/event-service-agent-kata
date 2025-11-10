@@ -26,15 +26,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Configure Pages
+      - name: Setup Pages
         uses: actions/configure-pages@v5
+
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
         with:
-          enablement: true
+          source: ./docs
+          destination: ./docs/_site
 
       - name: Upload artifact for Pages
         uses: actions/upload-pages-artifact@v4
         with:
-          path: ./docs
+          path: ./docs/_site
 
       - name: Deploy to GitHub Pages
         id: deployment
