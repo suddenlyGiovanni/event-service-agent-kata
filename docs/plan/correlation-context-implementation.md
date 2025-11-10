@@ -1,5 +1,9 @@
 # Implementation Plan: Option E (Ambient Context for CorrelationId Propagation)
 
+[← Back to Plan](README.md) | [← Documentation Home](../index.md)
+
+---
+
 **Status**: Planning\
 **Decision**: Full Effect-idiomatic solution (Ambient Context pattern)\
 **Context**: PR#36 P0 issue - restore correlationId propagation after pure domain events refactoring\

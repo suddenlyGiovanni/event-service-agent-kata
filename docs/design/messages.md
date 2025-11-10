@@ -1,4 +1,9 @@
-# Messages Catalog
+# Messages (Commands & Events)
+
+[← Back to Design Docs](README.md) | [← Documentation Home](../index.md)
+
+---
+
 
 ## Purpose
 

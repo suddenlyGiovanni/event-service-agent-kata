@@ -1,5 +1,9 @@
 # Kanban
 
+[← Back to Plan](README.md) | [← Documentation Home](../index.md)
+
+---
+
 <!--
 Purpose:
     A tiny, self-managed Kanban:

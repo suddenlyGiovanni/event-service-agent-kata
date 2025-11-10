@@ -1,5 +1,9 @@
 # API (Edge) Module
 
+[← Back to Design Docs](../README.md) | [← Documentation Home](../../index.md)
+
+---
+
 Responsibility
 
 - Accept external requests, validate, publish commands, and query DB for UI.

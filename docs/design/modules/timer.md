@@ -1,5 +1,9 @@
 # Timer Module
 
+[← Back to Design Docs](../README.md) | [← Documentation Home](../../index.md)
+
+---
+
 ## Responsibility
 
 Track future due times and emit [DueTimeReached] events when time arrives.

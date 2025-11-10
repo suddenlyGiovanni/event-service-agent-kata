@@ -1,5 +1,9 @@
 # Decisions (ADRs)
 
+[← Back to Documentation Home](../index.md)
+
+---
+
 Purpose
 
 - Capture implementation-affecting decisions separately from domain design.

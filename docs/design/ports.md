@@ -1,4 +1,9 @@
-# Ports
+# Ports (Adapter Contracts)
+
+[← Back to Design Docs](README.md) | [← Documentation Home](../index.md)
+
+---
+
 
 Minimal domain-facing ports to keep the system simple and broker/storage agnostic. Adapters implement these interfaces.
 

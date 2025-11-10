@@ -1,5 +1,9 @@
 # Contributing Guide
 
+[← Back to Documentation Home](index.md)
+
+---
+
 ## Development Setup
 
 ### Prerequisites

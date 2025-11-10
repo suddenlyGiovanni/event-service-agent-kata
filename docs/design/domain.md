@@ -1,5 +1,9 @@
 # Domain (Problem Space)
 
+[← Back to Design Docs](README.md) | [← Documentation Home](../index.md)
+
+---
+
 ## Purpose
 
 Contract the discovery into problem-space essentials: constraints, core concepts, and high-level workflows, independent of implementation or solution structures.

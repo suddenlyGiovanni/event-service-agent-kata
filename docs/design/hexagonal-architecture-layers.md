@@ -1,4 +1,9 @@
-# Hexagonal Architecture: Layers & Dependency Flow
+# Hexagonal Architecture Layers
+
+[← Back to Design Docs](README.md) | [← Documentation Home](../index.md)
+
+---
+
 
 This document explains how database, repositories, ports, adapters, and dependency injection work together in our hexagonal architecture.
 
