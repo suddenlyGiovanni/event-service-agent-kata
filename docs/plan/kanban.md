@@ -80,27 +80,31 @@ Prioritized queue.
 ## Notes (today)
 
 - **PL-4.6 IN PROGRESS** (Nov 11, 2025): SQLite persistence adapter for Timer. Branch `timer/pl-4.6-sqlite-persistence`.
-- **Implementation Plan** (14 steps tracked in TODO list):
-  1. Add dependencies (@effect/sql, @effect/sql-sqlite-bun)
-  2. Create migration (0001_create_timer_schedules.ts)
-  3. RED: Copy in-memory tests → SQLite tests (16 tests, all failing)
-  4. GREEN: Implement operations one-by-one (save, find, findScheduledTimer, findDue, markFired, delete)
-  5. GREEN: All 16 tests passing
-  6. REFACTOR: Extract helpers, add JSDoc
-  7. Export and verify integration
+- **Implementation Plan** (16 steps tracked in TODO list):
+  - **Phase 1: Add SQLite adapter (Steps 1-13)**
+    - Add dependencies (@effect/sql, @effect/sql-sqlite-bun)
+    - Create migration (0001_create_timer_schedules.ts)
+    - Add `sqlite(config: { filename: string })` to timer-persistence.adapter.ts (mark `inMemory` as @deprecated)
+    - RED: Copy in-memory tests → sqlite tests (16 tests, all failing, use `:memory:` config)
+    - GREEN: Implement operations one-by-one (save, find, findScheduledTimer, findDue, markFired, delete)
+    - GREEN: All 16 sqlite tests passing
+    - REFACTOR: Extract helpers, add JSDoc
+  - **Phase 2: Deprecate HashMap adapter (Steps 14-16)**
+    - Migrate existing tests from `inMemory` → `sqlite({ filename: ':memory:' })`
+    - Delete deprecated `inMemory` HashMap implementation (single source of truth)
+    - Export and verify integration
+- **Key Architectural Decision** (Nov 11, 2025):
+  - **APPROVED**: Replace HashMap `inMemory` adapter with SQLite `:memory:` configuration
+  - **Rationale**: Single codebase (no divergence), tests validate production SQL path, negligible speed difference (1-2ms)
+  - **Migration**: Keep `inMemory` temporarily (@deprecated), migrate tests in Phase 2, then delete
 - **Key Technical Decisions**:
+  - Use `Model.Class` in adapter layer for field helpers (DateTimeInsertFromDate, FieldOption)
+  - Keep `Schema.TaggedClass` in domain (pure state machine: Scheduled → Reached)
+  - TimerRow (Model.Class) ↔ TimerEntry (Schema.TaggedClass) mapping at adapter boundary
   - Migrations in packages/timer/src/migrations/ (TypeScript files exporting Effects)
-  - Manual mapping between SQL rows ↔ domain models (no ORM)
-  - Encoding: DateTime.Utc → ISO8601 string, Option<T> → T | null
   - Database: ./data/event_service.db (shared with Orchestration per ADR-0004)
-  - Migration table: effect_sql_migrations (default)
-- **Next Action**: Start with Step 1 (add dependencies)
-- **Key Technical Decisions**:
-  - Migrations in packages/timer/src/migrations/ (TypeScript files exporting Effects)
-  - Manual mapping between SQL rows ↔ domain models (no ORM)
-  - Encoding: DateTime.Utc → ISO8601 string, Option<T> → T | null
-  - Database: ./data/event_service.db (shared with Orchestration per ADR-0004)
-  - Migration table: effect_sql_migrations (default)
+  - Production: `sqlite({ filename: './data/event_service.db' })`
+  - Tests: `sqlite({ filename: ':memory:' })`
 - **Next Action**: Start with Step 1 (add dependencies)
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
