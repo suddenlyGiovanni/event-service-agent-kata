@@ -1,5 +1,7 @@
 {
 	"dependencies": {
+		"@effect/sql": "catalog:effect",
+		"@effect/sql-sqlite-bun": "catalog:effect",
 		"@event-service-agent/schemas": "workspace:*",
 		"effect": "catalog:effect"
 	},
