@@ -7,6 +7,8 @@
 	"catalogs": {
 		"effect": {
 			"@effect/language-service": "latest",
+			"@effect/sql": "latest",
+			"@effect/sql-sqlite-bun": "latest",
 			"effect": "latest"
 		},
 		"lint": {
