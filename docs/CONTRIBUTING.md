@@ -135,6 +135,41 @@ Before committing:
 - [ ] Documentation is valid (`bun run docs:check`)
 - [ ] Documentation examples type-check (`bun run docs:type-check`)
 
+## Writing Documentation
+
+### Markdown Files
+
+All documentation is written in Markdown and published to GitHub Pages using Jekyll.
+
+### Mermaid Diagrams
+
+The published documentation supports **Mermaid diagrams** for visualizing architecture, flows, and relationships. Diagrams are rendered client-side using Mermaid.js.
+
+**Usage:** Use standard markdown code blocks with the `mermaid` language identifier:
+
+````markdown
+```mermaid
+flowchart LR
+    A[Start] --> B[Process]
+    B --> C[End]
+```
+````
+
+**Supported diagram types:**
+- Flowcharts
+- Sequence diagrams
+- Class diagrams
+- State diagrams
+- Entity relationship diagrams
+- And more (see [Mermaid documentation](https://mermaid.js.org/))
+
+**Preview:**
+- GitHub renders Mermaid diagrams automatically in markdown files
+- Published docs (GitHub Pages) render diagrams using the same rendering engine
+- Local markdown previews may or may not support Mermaid depending on your editor
+
+**Examples:** See existing ADRs in `docs/decisions/` for real-world examples of Mermaid diagrams.
+
 ## Architecture
 
 This project follows Domain-Driven Design (DDD) and Hexagonal Architecture principles:
