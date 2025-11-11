@@ -34,7 +34,6 @@ Prioritized queue.
     Link ADRs like [adr: ADR-0001]; add tags like [infra] or [Api].
 -->
 
-- (PL-4.6) SQLite persistence adapter [Timer] — Deferred until after Schema migration (PL-14)
 - (PL-2) Orchestration core domain model and transitions [Orchestration]
 - (PL-3) Broker adapter implementation + local broker setup [infra]
 - (PL-5) Execution module with mock HttpClientPort [Execution]
@@ -44,6 +43,8 @@ Prioritized queue.
 ## Doing (WIP ≤ 2)
 
 <!-- Only what you're actively working on. Move one item at a time. -->
+
+- (PL-4.6) SQLite persistence adapter [Timer] — Replace in-memory adapter with `@effect/sql-sqlite-bun`
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
@@ -78,9 +79,29 @@ Prioritized queue.
 
 ## Notes (today)
 
-- **PL-24 COMPLETE** (Nov 10, 2025): Validated all documentation references against commit 3d49ca6 (PR#37, merged Nov 6). All 6 outdated docs corrected, `makeEnvelope` references removed. Pattern guide embedded in MessageMetadata Context TSDoc (171 lines). Tests: 280/282 passing, 2 correlation propagation tests activated.
-- **Next**: PL-4.6 (SQLite persistence adapter for Timer) — Replace in-memory adapter with `@effect/sql-sqlite-bun`. Implement two-operation query model (findScheduledTimer, findDue), state machine persistence (Scheduled → Reached), idempotency via composite key (tenant_id, service_call_id). TDD workflow: RED → GREEN → REFACTOR with atomic commits.
-- **Branch**: Creating `timer/pl-4.6-sqlite-persistence` from main (HEAD: 9f8c372)
+- **PL-4.6 IN PROGRESS** (Nov 11, 2025): SQLite persistence adapter for Timer. Branch `timer/pl-4.6-sqlite-persistence`.
+- **Implementation Plan** (14 steps tracked in TODO list):
+  1. Add dependencies (@effect/sql, @effect/sql-sqlite-bun)
+  2. Create migration (0001_create_timer_schedules.ts)
+  3. RED: Copy in-memory tests → SQLite tests (16 tests, all failing)
+  4. GREEN: Implement operations one-by-one (save, find, findScheduledTimer, findDue, markFired, delete)
+  5. GREEN: All 16 tests passing
+  6. REFACTOR: Extract helpers, add JSDoc
+  7. Export and verify integration
+- **Key Technical Decisions**:
+  - Migrations in packages/timer/src/migrations/ (TypeScript files exporting Effects)
+  - Manual mapping between SQL rows ↔ domain models (no ORM)
+  - Encoding: DateTime.Utc → ISO8601 string, Option<T> → T | null
+  - Database: ./data/event_service.db (shared with Orchestration per ADR-0004)
+  - Migration table: effect_sql_migrations (default)
+- **Next Action**: Start with Step 1 (add dependencies)
+- **Key Technical Decisions**:
+  - Migrations in packages/timer/src/migrations/ (TypeScript files exporting Effects)
+  - Manual mapping between SQL rows ↔ domain models (no ORM)
+  - Encoding: DateTime.Utc → ISO8601 string, Option<T> → T | null
+  - Database: ./data/event_service.db (shared with Orchestration per ADR-0004)
+  - Migration table: effect_sql_migrations (default)
+- **Next Action**: Start with Step 1 (add dependencies)
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
