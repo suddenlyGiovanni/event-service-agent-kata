@@ -156,6 +156,7 @@ flowchart LR
 ````
 
 **Supported diagram types:**
+
 - Flowcharts
 - Sequence diagrams
 - Class diagrams
@@ -164,6 +165,7 @@ flowchart LR
 - And more (see [Mermaid documentation](https://mermaid.js.org/))
 
 **Preview:**
+
 - GitHub renders Mermaid diagrams automatically in markdown files
 - Published docs (GitHub Pages) render diagrams using the same rendering engine
 - Local markdown previews may or may not support Mermaid depending on your editor
