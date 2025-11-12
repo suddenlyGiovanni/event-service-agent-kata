@@ -1,0 +1,62 @@
+import { SqlClient } from '@effect/sql'
+import * as Effect from 'effect/Effect'
+
+export default Effect.gen(function* () {
+	const sql = yield* SqlClient.SqlClient
+
+	// Step 1: Add new columns to existing table
+	yield* sql`ALTER TABLE timer_schedules ADD COLUMN correlation_id TEXT`
+	yield* sql`ALTER TABLE timer_schedules ADD COLUMN due_at TEXT`
+	yield* sql`ALTER TABLE timer_schedules ADD COLUMN registered_at TEXT`
+	yield* sql`ALTER TABLE timer_schedules ADD COLUMN reached_at TEXT`
+	yield* sql`ALTER TABLE timer_schedules ADD COLUMN state TEXT DEFAULT 'Scheduled'`
+
+	// Step 2: Create new table with all constraints
+	yield* sql`
+		CREATE TABLE timer_schedules_new (
+			tenant_id TEXT NOT NULL,
+			service_call_id TEXT NOT NULL,
+			correlation_id TEXT NOT NULL,
+			due_at TEXT NOT NULL,
+			registered_at TEXT NOT NULL,
+			reached_at TEXT,
+			state TEXT NOT NULL DEFAULT 'Scheduled',
+			PRIMARY KEY (tenant_id, service_call_id),
+			FOREIGN KEY (tenant_id, service_call_id) 
+				REFERENCES service_calls(tenant_id, service_call_id) 
+				ON DELETE CASCADE,
+			CHECK (state IN ('Scheduled', 'Reached'))
+		) STRICT
+	`
+
+	// Step 3: Copy data from old table to new (if any exists)
+	yield* sql`
+		INSERT INTO timer_schedules_new 
+			(tenant_id, service_call_id, correlation_id, due_at, registered_at, reached_at, state)
+		SELECT 
+			tenant_id, service_call_id, 
+			COALESCE(correlation_id, ''), 
+			COALESCE(due_at, '1970-01-01T00:00:00Z'), 
+			COALESCE(registered_at, '1970-01-01T00:00:00Z'), 
+			reached_at, 
+			COALESCE(state, 'Scheduled')
+		FROM timer_schedules
+	`
+
+	// Step 4: Drop old table
+	yield* sql`DROP TABLE timer_schedules`
+
+	// Step 5: Rename new table to original name
+	yield* sql`ALTER TABLE timer_schedules_new RENAME TO timer_schedules`
+
+	// Step 6: Create indexes
+	yield* sql`
+		CREATE INDEX idx_timer_schedules_due_at
+		ON timer_schedules(tenant_id, state, due_at)
+	`
+
+	yield* sql`
+		CREATE INDEX idx_timer_schedules_correlation_id
+		ON timer_schedules(correlation_id)
+	`
+})
