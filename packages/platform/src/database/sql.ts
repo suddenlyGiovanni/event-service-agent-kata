@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/style/useNamingConvention: SQL is conventional abbreviation (matches Effect examples) */
 
-import type * as Platform from '@effect/platform'
+import * as Platform from '@effect/platform'
 import * as Path from '@effect/platform/Path'
 import * as PlatformBun from '@effect/platform-bun'
 import * as Sql from '@effect/sql'
@@ -9,6 +9,7 @@ import * as Config from 'effect/Config'
 import type { ConfigError } from 'effect/ConfigError'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import * as Stream from 'effect/Stream'
 import * as StringModule from 'effect/String'
 
 /**
@@ -112,16 +113,30 @@ export class SQL {
 	/**
 	 * Shared migrator layer for both Live and Test environments.
 	 *
-	 * - Discovers migrations from: packages/platform/src/database/migrations/*.ts
-	 * - Future: Will discover from all modules when glob import.meta.glob is configured
+	 * Discovery strategy:
+	 * - Finds all migration files across all packages in the monorepo
+	 * - Uses Bun.Glob with pattern to discover package migration directories
+	 * - Sorts by filename for deterministic execution order
 	 * - Tracks executed migrations in effect_sql_migrations table
 	 * - Schema directory: Workspace-root data/ (configurable via DB_SCHEMA_DIR env var)
 	 *
+	 * Migration Organization:
+	 * - Bootstrap migration (0001) in platform package creates table skeletons
+	 * - Module migrations (0003+) add domain-specific columns and constraints
+	 * - Filename-based ordering ensures bootstrap runs before module migrations
+	 * - Each module owns its schema evolution via migrations in its src/migrations/
+	 *
+	 * @see ADR-0005 for schema design (bootstrap + module evolution pattern)
+	 * @see ADR-0012 for package structure (module ownership)
 	 * @internal Shared between Live and Test to ensure identical schema
 	 */
 	private static readonly Migrator: Layer.Layer<
 		never,
-		ConfigError | Platform.Error.BadArgument | Sql.Migrator.MigrationError | Sql.SqlError.SqlError,
+		| ConfigError
+		| Platform.Error.BadArgument
+		| Platform.Error.SystemError
+		| Sql.Migrator.MigrationError
+		| Sql.SqlError.SqlError,
 		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient
 	> = Layer.unwrapEffect(
 		Effect.gen(function* () {
@@ -130,8 +145,68 @@ export class SQL {
 			const config = yield* SQL.DatabaseConfig
 			const path = yield* Path.Path
 
-			const migrationsPath = yield* path.fromFileUrl(new URL('./migrations', import.meta.url))
-			yield* Effect.logDebug('Migrations path resolved', { migrationsPath })
+			// Resolve workspace root from package.json location
+			// packages/platform/src/database → workspace root (4 levels up)
+			const workspaceRoot = yield* path.fromFileUrl(new URL('../../../..', import.meta.url))
+
+			yield* Effect.logDebug('Workspace root resolved', { workspaceRoot })
+
+			// Find all migration files across packages using Bun.Glob + Effect Stream
+			// Pattern includes both standard location (packages/*/src/migrations/*.ts)
+			// and platform's database-specific location (packages/platform/src/database/migrations/*.ts)
+			const glob1 = new Bun.Glob('packages/*/src/migrations/*.ts')
+			const glob2 = new Bun.Glob('packages/platform/src/database/migrations/*.ts')
+
+			// Convert AsyncIterableIterator to Effect Stream for composability
+			const files1 = Stream.fromAsyncIterable(
+				glob1.scan({ cwd: workspaceRoot }),
+				error =>
+					new Platform.Error.SystemError({
+						cause: error,
+						description: String(error),
+						method: 'glob.scan',
+						module: 'FileSystem',
+						pathOrDescriptor: workspaceRoot,
+						reason: 'Unknown',
+					}),
+			)
+			const files2 = Stream.fromAsyncIterable(
+				glob2.scan({ cwd: workspaceRoot }),
+				error =>
+					new Platform.Error.SystemError({
+						cause: error,
+						description: String(error),
+						method: 'glob.scan',
+						module: 'FileSystem',
+						pathOrDescriptor: workspaceRoot,
+						reason: 'Unknown',
+					}),
+			)
+
+			// Merge both streams and collect into array
+			const migrationFiles = yield* Stream.merge(files1, files2).pipe(
+				Stream.runCollect,
+				Effect.map(chunk => Array.from(chunk)),
+			)
+
+			// Sort by filename to ensure deterministic execution order
+			// Example order: 0001_bootstrap_schema.ts, 0003_timer_schedules_schema.ts, ...
+			const sortedMigrations = migrationFiles.sort()
+
+			yield* Effect.logInfo('Discovered migrations', {
+				count: sortedMigrations.length,
+				files: sortedMigrations,
+			})
+
+			// Load migrations from all discovered files
+			// Convert relative paths to absolute paths for dynamic import
+			const migrationPaths = sortedMigrations.map(file => `${workspaceRoot}/${file}`)
+
+			// Create loader compatible with fromGlob signature: Record<string, () => Promise<any>>
+			// Each entry is a migration file path with a dynamic import function
+			const migrationsRecord = Object.fromEntries(migrationPaths.map(path => [path, () => import(path)]))
+
+			const loader = SqliteBun.SqliteMigrator.fromGlob(migrationsRecord)
 
 			yield* Effect.logInfo('Creating migrator layer', {
 				schemaDirectory: config.schemaDirectory,
@@ -139,7 +214,7 @@ export class SQL {
 			})
 
 			return SqliteBun.SqliteMigrator.layer({
-				loader: SqliteBun.SqliteMigrator.fromFileSystem(migrationsPath),
+				loader,
 				schemaDirectory: config.schemaDirectory,
 				table: 'effect_sql_migrations',
 			}).pipe(Layer.provide(PlatformBun.BunContext.layer))
@@ -213,7 +288,11 @@ export class SQL {
 	 */
 	static readonly Live: Layer.Layer<
 		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient,
-		Sql.Migrator.MigrationError | Sql.SqlError.SqlError | ConfigError | Platform.Error.BadArgument,
+		| Sql.Migrator.MigrationError
+		| Sql.SqlError.SqlError
+		| ConfigError
+		| Platform.Error.BadArgument
+		| Platform.Error.SystemError,
 		Platform.Path.Path
 	> = Layer.unwrapEffect(
 		Effect.gen(function* () {
@@ -241,7 +320,11 @@ export class SQL {
 	 */
 	static readonly Test: Layer.Layer<
 		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient,
-		Sql.Migrator.MigrationError | Sql.SqlError.SqlError | ConfigError | Platform.Error.BadArgument,
+		| Sql.Migrator.MigrationError
+		| Sql.SqlError.SqlError
+		| ConfigError
+		| Platform.Error.BadArgument
+		| Platform.Error.SystemError,
 		Platform.Path.Path
 	> = Layer.unwrapEffect(
 		Effect.gen(function* () {
