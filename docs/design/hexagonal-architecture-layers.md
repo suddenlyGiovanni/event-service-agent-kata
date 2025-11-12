@@ -238,7 +238,7 @@ await tx.run(
   `INSERT INTO service_calls (
     tenant_id, service_call_id, name, status, created_at
   ) VALUES (?, ?, ?, ?, ?)`,
-  [serviceCall.tenantId, serviceCall.id, serviceCall.name, ...]
+  [serviceCall.tenantId, serviceCall.id, serviceCall.name, /* ... */]
 );
 ```
 
@@ -361,10 +361,10 @@ sequenceDiagram
 
 ```typescript
 // ✅ Good: Domain depends on interface
-function useCase(port: PersistencePort) { ... }
+function useCase(port: PersistencePort) { /* ... */ }
 
 // ❌ Bad: Domain depends on implementation
-function useCase(adapter: SqliteAdapter) { ... }
+function useCase(adapter: SqliteAdapter) { /* ... */ }
 ```
 
 ### 2. **Repository Pattern**
