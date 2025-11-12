@@ -79,27 +79,38 @@ Prioritized queue.
 
 ## Notes (today)
 
-- **PL-4.6 IN PROGRESS** (Nov 11, 2025): SQLite persistence adapter for Timer. Branch `timer/pl-4.6-sqlite-persistence`.
+- **PL-4.6 IN PROGRESS** (Nov 12, 2025): SQLite persistence adapter for Timer. Branch `timer/pl-4.6-sqlite-persistence`.
 - **Implementation Plan** (17 steps tracked in TODO list):
-  - **Phase 0: Bootstrap prerequisite (Steps 1-3)**
-    - Add dependencies to timer + platform (@effect/sql, @effect/sql-sqlite-bun)
-    - Create bootstrap migration (0001_bootstrap_schema.ts) - Platform responsibility
-      - Minimal table structure: service_calls (stub), timer_schedules (skeleton), http_execution_log, outbox
-      - FK relationships ONLY (no domain fields)
-    - Create Timer schema migration (0003_timer_schedules_schema.ts)
-      - Add Timer domain fields (correlation_id, due_at, registered_at, reached_at, state)
-      - Add CHECK constraints and indexes
-  - **Phase 1: Add SQLite adapter (Steps 4-14)**
-    - Add `sqlite(config: { filename: string })` with Migrator (runs bootstrap + timer migrations)
-    - Define TimerRow Model.Class (maps to full timer_schedules schema)
-    - RED: Copy in-memory tests → sqlite tests (16 tests, all failing, `:memory:` runs both migrations)
-    - GREEN: Implement operations one-by-one (save, find, findScheduledTimer, findDue, markFired, delete)
-    - GREEN: All 16 sqlite tests passing
-    - REFACTOR: Extract helpers, document bootstrap + module schema split
-  - **Phase 2: Deprecate HashMap adapter (Steps 15-17)**
-    - Migrate existing tests from `inMemory` → `sqlite({ filename: ':memory:' })`
-    - Delete deprecated `inMemory` HashMap implementation (single source of truth)
-    - Export and verify integration
+  - **Phase 0: Bootstrap prerequisite (Steps 1-3)** - **COMPLETE**
+    - [x] Add dependencies to timer + platform (@effect/sql, @effect/sql-sqlite-bun)
+    - [x] Create bootstrap migration (0001_bootstrap_schema.ts) - Platform responsibility
+      - [x] Minimal table structure: service_calls (stub), timer_schedules (skeleton), http_execution_log, outbox
+      - [x] FK relationships ONLY (no domain fields)
+      - [x] Migration validation tests (15 tests): table creation, structure, pragmas, data integrity
+    - [x] Migration scripts for local DX: `bun run db:migrate`, `bun run db:reset`
+      - [x] Native Bun .env support (--env-file flag)
+      - [x] Scripts at workspace root (correct CWD for relative paths)
+      - [x] .env.example documentation
+    - **Next**: Create Timer schema migration (0003_timer_schedules_schema.ts)
+      - [ ] Add Timer domain fields (correlation_id, due_at, registered_at, reached_at, state)
+      - [ ] Add CHECK constraints and indexes
+  - **Phase 1: Add SQLite adapter (Steps 4-14)** - NOT STARTED
+    - [ ] Add `sqlite(config: { filename: string })` with Migrator (runs bootstrap + timer migrations)
+    - [ ] Define TimerRow Model.Class (maps to full timer_schedules schema)
+    - [ ] RED: Copy in-memory tests → sqlite tests (16 tests, all failing, `:memory:` runs both migrations)
+    - [ ] GREEN: Implement operations one-by-one (save, find, findScheduledTimer, findDue, markFired, delete)
+    - [ ] GREEN: All 16 sqlite tests passing
+    - [ ] REFACTOR: Extract helpers, document bootstrap + module schema split
+  - **Phase 2: Deprecate HashMap adapter (Steps 15-17)** - NOT STARTED
+    - [ ] Migrate existing tests from `inMemory` → `sqlite({ filename: ':memory:' })`
+    - [ ] Delete deprecated `inMemory` HashMap implementation (single source of truth)
+    - [ ] Export and verify integration
+- **Completed Work** (Nov 12, 2025):
+  - [x] Platform database infrastructure (SQL.Live, SQL.Test layers)
+  - [x] Bootstrap migration (0001_bootstrap_schema.ts) with 5 tables
+  - [x] Migration validation tests (300 total tests passing)
+  - [x] Migration scripts (db:migrate, db:reset) with .env support
+  - [x] Path resolution fix (workspace root execution)
 - **Key Architectural Decision** (Nov 11, 2025):
   - **APPROVED**: Replace HashMap `inMemory` adapter with SQLite `:memory:` configuration
   - **Rationale**: Single codebase (no divergence), tests validate production SQL path, negligible speed difference (1-2ms)
@@ -116,10 +127,12 @@ Prioritized queue.
   - TimerRow (Model.Class) ↔ TimerEntry (Schema.TaggedClass) mapping at adapter boundary
   - Migrations: Bootstrap (platform) + module schemas (timer/orchestration/execution)
   - Migration discovery: Glob pattern `packages/*/src/migrations/*.ts` (filename order)
-  - Database: ./data/event_service.db (shared with Orchestration per ADR-0004)
-  - Production: `sqlite({ filename: './data/event_service.db' })`
+  - Database: ./data/db.sqlite (shared with Orchestration per ADR-0004)
+  - Production: `sqlite({ filename: './data/db.sqlite' })`
   - Tests: `sqlite({ filename: ':memory:' })` (runs bootstrap + module migrations)
-- **Next Action**: Start with Step 1 (add dependencies)
+  - Migration scripts: Workspace root (db:migrate, db:reset) for correct CWD
+  - Environment: .env at workspace root with relative paths (./data/db.sqlite)
+- **Next Action**: Create Timer migration (0003_timer_schedules_schema.ts) with domain fields
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
