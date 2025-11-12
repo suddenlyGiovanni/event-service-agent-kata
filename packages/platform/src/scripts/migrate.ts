@@ -10,8 +10,7 @@
  * - CI/CD pipelines (pre-deployment schema updates)
  *
  * Usage:
- *   bun run migrate                    # From platform package (loads .env from workspace root)
- *   bun --filter @event-service-agent/platform migrate  # From workspace root
+ *   bun run db:migrate                 # From workspace root
  *
  * Environment Variables (.env or shell):
  *   DB_PATH        - Database file path (default: <workspace>/data/db.sqlite)
@@ -20,6 +19,7 @@
  * Environment File:
  *   Scripts automatically load <workspace>/.env if present.
  *   See .env.example for available configuration options.
+ *   Relative paths in .env work correctly when running from workspace root.
  *
  * Exit Codes:
  *   0 - Migrations completed successfully
