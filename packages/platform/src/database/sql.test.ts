@@ -39,13 +39,18 @@ describe('SQL Platform Client', () => {
 					name: string
 				}>`SELECT migration_id AS migrationId, name FROM effect_sql_migrations ORDER BY migration_id`
 
-				// Verify bootstrap migration was executed
-				expect(migrations).toHaveLength(1)
+				// Verify all migrations were executed (bootstrap + timer)
+				expect(migrations.length).toBeGreaterThanOrEqual(2)
 
-				const firstMigration = migrations[0]
-				expect(firstMigration).toBeDefined()
-				expect(firstMigration?.migrationId).toBe(1)
-				expect(firstMigration?.name).toBe('bootstrap_schema')
+				const bootstrap = migrations[0]
+				expect(bootstrap).toBeDefined()
+				expect(bootstrap?.migrationId).toBe(1)
+				expect(bootstrap?.name).toBe('bootstrap_schema')
+
+				const timer = migrations[1]
+				expect(timer).toBeDefined()
+				expect(timer?.migrationId).toBe(3)
+				expect(timer?.name).toBe('timer_schedules_schema')
 			}).pipe(Effect.provide(testLayer)),
 		)
 	})
