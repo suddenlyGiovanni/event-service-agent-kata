@@ -127,6 +127,121 @@ describe('Platform Database Migrations', () => {
 				expect(bootstrap?.['name']).toBe('bootstrap_schema')
 			}).pipe(Effect.provide(TestLayer)),
 		)
+
+		it.effect('should discover and execute migrations from all packages', () =>
+			Effect.gen(function* () {
+				const sql = yield* Sql.SqlClient.SqlClient
+
+				const migrations = yield* sql`
+					SELECT migration_id, name 
+					FROM effect_sql_migrations
+					ORDER BY migration_id
+				`
+
+				// Should have both bootstrap (0001) and timer (0003) migrations
+				expect(migrations.length).toBeGreaterThanOrEqual(2)
+
+				// Verify bootstrap migration
+				const bootstrap = migrations.find(m => m['name'] === 'bootstrap_schema')
+				expect(bootstrap).toBeDefined()
+				expect(bootstrap?.['migrationId']).toBe(1)
+
+				// Verify timer migration
+				const timer = migrations.find(m => m['name'] === 'timer_schedules_schema')
+				expect(timer).toBeDefined()
+				expect(timer?.['migrationId']).toBe(3)
+			}).pipe(Effect.provide(TestLayer)),
+		)
+	})
+
+	describe('Timer Migration (0003_timer_schedules_schema.ts)', () => {
+		it.effect('should add domain columns to timer_schedules', () =>
+			Effect.gen(function* () {
+				const sql = yield* Sql.SqlClient.SqlClient
+
+				const columns = yield* sql`
+					SELECT name, type, "notnull", dflt_value
+					FROM pragma_table_info('timer_schedules')
+				`
+
+				const columnNames = columns.map(c => c['name'])
+
+				// Verify all Timer domain columns were added
+				expect(columnNames).toContain('correlation_id')
+				expect(columnNames).toContain('due_at')
+				expect(columnNames).toContain('registered_at')
+				expect(columnNames).toContain('reached_at')
+				expect(columnNames).toContain('state')
+
+				// Verify NOT NULL constraints
+				const correlationId = columns.find(c => c['name'] === 'correlation_id')
+				expect(correlationId?.['notnull']).toBe(1)
+
+				const dueAt = columns.find(c => c['name'] === 'due_at')
+				expect(dueAt?.['notnull']).toBe(1)
+
+				const state = columns.find(c => c['name'] === 'state')
+				expect(state?.['notnull']).toBe(1)
+				expect(state?.['dfltValue']).toBe("'Scheduled'")
+			}).pipe(Effect.provide(TestLayer)),
+		)
+
+		it.effect('should create polling index on (tenant_id, state, due_at)', () =>
+			Effect.gen(function* () {
+				const sql = yield* Sql.SqlClient.SqlClient
+
+				const indexes = yield* sql`
+					SELECT name 
+					FROM sqlite_master 
+					WHERE type='index' 
+					AND tbl_name='timer_schedules'
+					AND name='idx_timer_schedules_due_at'
+				`
+
+				expect(indexes).toHaveLength(1)
+			}).pipe(Effect.provide(TestLayer)),
+		)
+
+		it.effect('should create correlation_id index', () =>
+			Effect.gen(function* () {
+				const sql = yield* Sql.SqlClient.SqlClient
+
+				const indexes = yield* sql`
+					SELECT name 
+					FROM sqlite_master 
+					WHERE type='index' 
+					AND tbl_name='timer_schedules'
+					AND name='idx_timer_schedules_correlation_id'
+				`
+
+				expect(indexes).toHaveLength(1)
+			}).pipe(Effect.provide(TestLayer)),
+		)
+
+		it.effect('should enforce state CHECK constraint', () =>
+			Effect.gen(function* () {
+				const sql = yield* Sql.SqlClient.SqlClient
+
+				// Insert valid service_call first
+				yield* sql`
+					INSERT INTO service_calls (tenant_id, service_call_id)
+					VALUES ('tenant-123', 'call-123')
+				`
+
+				// Try to insert timer with invalid state
+				const result = yield* Effect.either(
+					sql`
+						INSERT INTO timer_schedules 
+						(tenant_id, service_call_id, correlation_id, due_at, registered_at, state)
+						VALUES 
+						('tenant-123', 'call-123', 'corr-123', '2025-01-01T00:00:00Z', '2025-01-01T00:00:00Z', 'InvalidState')
+					`,
+				)
+
+				// Should fail due to CHECK constraint
+				expect(result._tag).toBe('Left')
+			}).pipe(Effect.provide(TestLayer)),
+		)
 	})
 
 	describe('Table Structure Validation', () => {
@@ -279,15 +394,17 @@ describe('Platform Database Migrations', () => {
 					VALUES ('tenant-123', 'call-123')
 				`
 
-				// Then insert timer referencing it
+				// Then insert timer referencing it (with required Timer columns)
 				yield* sql`
-					INSERT INTO timer_schedules (tenant_id, service_call_id)
-					VALUES ('tenant-123', 'call-123')
+					INSERT INTO timer_schedules 
+					(tenant_id, service_call_id, correlation_id, due_at, registered_at, state)
+					VALUES 
+					('tenant-123', 'call-123', 'corr-123', '2025-01-01T00:00:00Z', '2025-01-01T00:00:00Z', 'Scheduled')
 				`
 
 				// Verify insertion
 				const timers = yield* sql`
-					SELECT tenant_id, service_call_id 
+					SELECT tenant_id, service_call_id, correlation_id, state
 					FROM timer_schedules
 					WHERE tenant_id = 'tenant-123'
 				`
@@ -295,6 +412,8 @@ describe('Platform Database Migrations', () => {
 				expect(timers).toHaveLength(1)
 				expect(timers[0]?.['tenantId']).toBe('tenant-123')
 				expect(timers[0]?.['serviceCallId']).toBe('call-123')
+				expect(timers[0]?.['correlationId']).toBe('corr-123')
+				expect(timers[0]?.['state']).toBe('Scheduled')
 			}).pipe(Effect.provide(TestLayer)),
 		)
 	})
