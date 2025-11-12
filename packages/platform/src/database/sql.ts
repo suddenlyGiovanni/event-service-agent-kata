@@ -146,20 +146,12 @@ export class SQL {
 			const path = yield* Path.Path
 
 			// Resolve workspace root from package.json location
-			// packages/platform/src/database → workspace root (4 levels up)
 			const workspaceRoot = yield* path.fromFileUrl(new URL('../../../..', import.meta.url))
 
 			yield* Effect.logDebug('Workspace root resolved', { workspaceRoot })
 
-			// Find all migration files across packages using Bun.Glob + Effect Stream
-			// Pattern includes both standard location (packages/*/src/migrations/*.ts)
-			// and platform's database-specific location (packages/platform/src/database/migrations/*.ts)
-			const glob1 = new Bun.Glob('packages/*/src/migrations/*.ts')
-			const glob2 = new Bun.Glob('packages/platform/src/database/migrations/*.ts')
-
-			// Convert AsyncIterableIterator to Effect Stream for composability
-			const files1 = Stream.fromAsyncIterable(
-				glob1.scan({ cwd: workspaceRoot }),
+			const packagesMigrations = Stream.fromAsyncIterable(
+				new Bun.Glob('packages/*/src/migrations/*.ts').scan({ cwd: workspaceRoot }),
 				error =>
 					new Platform.Error.SystemError({
 						cause: error,
@@ -170,8 +162,9 @@ export class SQL {
 						reason: 'Unknown',
 					}),
 			)
-			const files2 = Stream.fromAsyncIterable(
-				glob2.scan({ cwd: workspaceRoot }),
+
+			const platformMigrations = Stream.fromAsyncIterable(
+				new Bun.Glob('packages/platform/src/database/migrations/*.ts').scan({ cwd: workspaceRoot }),
 				error =>
 					new Platform.Error.SystemError({
 						cause: error,
@@ -184,7 +177,7 @@ export class SQL {
 			)
 
 			// Merge both streams and collect into array
-			const migrationFiles = yield* Stream.merge(files1, files2).pipe(
+			const migrationFiles = yield* Stream.merge(packagesMigrations, platformMigrations).pipe(
 				Stream.runCollect,
 				Effect.map(chunk => Array.from(chunk)),
 			)
