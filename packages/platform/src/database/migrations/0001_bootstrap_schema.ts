@@ -2,8 +2,16 @@ import { SqlClient } from '@effect/sql'
 import * as Effect from 'effect/Effect'
 
 /**
- * Bootstrap migration - Minimal database structure + FK relationships
+ * Bootstrap migration - SQLite configuration + minimal database structure
  *
+ * Part 1: Database-Level Pragmas (persistent, survive connection close)
+ * - journal_mode: WAL for read/write concurrency (ADR-0004)
+ *
+ * Note: Session-level pragmas (foreign_keys, synchronous, etc.) must be set
+ * on client initialization, NOT in migrations (cannot change mid-transaction).
+ * See client.ts for session pragma configuration.
+ *
+ * Part 2: Schema Structure + FK Relationships
  * Philosophy:
  * - Platform owns table structure and FK constraints ONLY
  * - Modules own domain-specific columns (see module migrations)
@@ -26,6 +34,13 @@ import * as Effect from 'effect/Effect'
 export default Effect.flatMap(SqlClient.SqlClient, sql =>
 	Effect.all(
 		[
+			/**
+			 * WAL mode for read/write concurrency (ADR-0004)
+			 * Persistent setting (survives connection close)
+			 * Safe to set in migration (database-level, not session-level)
+			 */
+			sql`PRAGMA journal_mode = WAL`,
+
 			/**
 			 * service_calls: Stub table for FK target
 			 * Orchestration module will add domain-specific columns (status, created_at, etc.)
