@@ -44,4 +44,4 @@ CREATE INDEX idx_outbox_unpublished
 				WHERE published_at IS NULL
 			;
 
-INSERT INTO effect_sql_migrations VALUES(1,'2025-11-12 17:57:37','bootstrap_schema');
+INSERT INTO effect_sql_migrations VALUES(1,'2025-11-12 18:16:46','bootstrap_schema');

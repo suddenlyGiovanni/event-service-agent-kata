@@ -13,8 +13,7 @@
  *     Use only for local development, never in production.
  *
  * Usage:
- *   bun run reset                      # From platform package (loads .env from workspace root)
- *   bun --filter @event-service-agent/platform reset  # From workspace root
+ *   bun run db:reset                   # From workspace root
  *
  * Environment Variables (.env or shell):
  *   DB_PATH        - Database file path (default: <workspace>/data/db.sqlite)
@@ -23,6 +22,7 @@
  * Environment File:
  *   Scripts automatically load <workspace>/.env if present.
  *   See .env.example for available configuration options.
+ *   Relative paths in .env work correctly when running from workspace root.
  *
  * Exit Codes:
  *   0 - Reset completed successfully
@@ -91,19 +91,19 @@ const program = Effect.gen(function* () {
 	}
 
 	yield* Effect.logInfo('Database reset complete')
-	yield* Effect.logInfo('Run "bun run migrate" to recreate schema')
+	yield* Effect.logInfo('Run "bun run db:migrate" to recreate schema')
 })
 
 // Provide production database layer + platform dependencies
 // Note: Migrations will NOT run during this program (we want to drop tables first)
-// User must run "bun run migrate" after reset to recreate schema
+// User must run "bun run db:migrate" after reset to recreate schema
 const layer = SQL.Live.pipe(Layer.provide(PlatformBun.BunContext.layer))
 
 // Execute program with error handling
 Effect.runPromise(program.pipe(Effect.provide(layer)))
 	.then(() => {
 		console.log('\n✓ Database reset completed successfully')
-		console.log('ℹ️  Run "bun run migrate" to recreate schema')
+		console.log('ℹ️  Run "bun run db:migrate" to recreate schema')
 		process.exit(0)
 	})
 	.catch(error => {

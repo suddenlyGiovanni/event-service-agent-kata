@@ -58,6 +58,8 @@
 	"scripts": {
 		"check": "biome check --write .",
 		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
+		"db:migrate": "bun --env-file=.env run packages/platform/src/scripts/migrate.ts",
+		"db:reset": "bun --env-file=.env run packages/platform/src/scripts/reset.ts",
 		"docs:build": "echo \"no-op docs build (MVP)\"",
 		"docs:check": "deno task docs:check",
 		"docs:lint": "bunx --bun markdownlint-cli2 --fix docs/**/*.md",
