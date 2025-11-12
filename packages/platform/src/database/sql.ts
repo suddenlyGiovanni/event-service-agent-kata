@@ -1,9 +1,10 @@
-/** biome-ignore-all lint/style/useNamingConvention: <explanation> */
+/** biome-ignore-all lint/style/useNamingConvention: SQL is conventional abbreviation (matches Effect examples) */
 import type * as Platform from '@effect/platform'
 import * as PlatformBun from '@effect/platform-bun'
-import type * as Sql from '@effect/sql'
+import * as Sql from '@effect/sql'
 import * as SqliteBun from '@effect/sql-sqlite-bun'
 import type { ConfigError } from 'effect/ConfigError'
+import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as StringModule from 'effect/String'
 
@@ -12,8 +13,13 @@ import * as StringModule from 'effect/String'
  *
  * Layer composition:
  * 1. SqliteClient.layer provides SqliteClient + SqlClient tags
- * 2. SqliteMigrator.layer runs migrations from ALL modules via glob import
- * 3. provideMerge ensures sequential execution: Client → Migrator → Export both
+ * 2. Custom setup executes session-level PRAGMAs (foreign_keys, etc.)
+ * 3. SqliteMigrator.layer runs migrations from ALL modules via glob import
+ * 4. provideMerge ensures sequential execution: Client → Migrator → Export both
+ *
+ * SQLite Pragmas Strategy:
+ * - Database-level pragmas (journal_mode=WAL): Set in migration 0001_bootstrap_schema.ts
+ * - Session-level pragmas (foreign_keys, synchronous, etc.): Set here on client initialization
  *
  * Migrations:
  * - Discovers migrations from: packages/platform/src/database/migrations/*.ts
@@ -68,23 +74,39 @@ export class SQL {
 	 *
 	 * - Consistent column name transformation (camelCase ↔ snake_case)
 	 * - WAL mode enabled for concurrency
+	 * - Session pragmas configured on initialization
 	 *
 	 * @param filename - Database path ('./data/db.sqlite' for persistent, ':memory:' for in-memory)
 	 * @internal Factory for Live and Test client layers (migrations composed separately)
 	 */
 	private static readonly makeClient: (
-		filename: ':memory:' | (string & {}),
+		filename: (string & {}) | ':memory:',
 	) => Layer.Layer<
 		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient,
 		Sql.SqlError.SqlError | ConfigError,
 		never
-	> = filename =>
-		SqliteBun.SqliteClient.layer({
+	> = filename => {
+		const client = SqliteBun.SqliteClient.layer({
 			disableWAL: false,
 			filename,
 			transformQueryNames: StringModule.camelToSnake,
 			transformResultNames: StringModule.snakeToCamel,
 		})
+
+		// Execute session pragmas after client creation
+		const pragmaSetup = Layer.effectDiscard(
+			Effect.gen(function* () {
+				const sql = yield* Sql.SqlClient.SqlClient
+				yield* sql`PRAGMA foreign_keys = ON` // CRITICAL: Enable FK constraints
+				yield* sql`PRAGMA synchronous = NORMAL` // Balance safety/performance
+				yield* sql`PRAGMA temp_store = MEMORY` // Faster temp tables
+				yield* sql`PRAGMA cache_size = -64000` // 64MB cache
+			}),
+		).pipe(Layer.provide(client))
+
+		// Merge: export client + run pragma setup (both need client from baseClient)
+		return Layer.merge(client, pragmaSetup)
+	}
 
 	/**
 	 * Production SQLite client layer.
@@ -92,6 +114,7 @@ export class SQL {
 	 * - Database path: `./data/db.sqlite` (relative to workspace root)
 	 * - Runs migrations from platform/migrations directory
 	 * - Persistent storage
+	 * - Session pragmas configured (foreign_keys, synchronous, etc.)
 	 *
 	 * Requires: `Platform.Path.Path` from context (provide `BunContext.layer`)
 	 */
@@ -106,7 +129,7 @@ export class SQL {
 	 *
 	 * - Database: `:memory:` (destroyed when layer released)
 	 * - Runs same migrations as production (platform migrations)
-	 * - Identical schema to production
+	 * - Identical schema and pragma configuration to production
 	 *
 	 * Requires: `Platform.Path.Path` from context (provide `BunContext.layer`)
 	 */
