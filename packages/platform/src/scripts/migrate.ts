@@ -33,6 +33,7 @@
 import * as PlatformBun from '@effect/platform-bun'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import * as Logger from 'effect/Logger'
 
 import { SQL } from '../database/sql.ts'
 
@@ -58,7 +59,7 @@ const program = Effect.gen(function* () {
 })
 
 // Provide production database layer + platform dependencies
-const layer = SQL.Live.pipe(Layer.provide(PlatformBun.BunContext.layer))
+const layer = SQL.Live.pipe(Layer.provide(PlatformBun.BunContext.layer), Layer.provide(Logger.pretty))
 
 // Execute program with error handling
 Effect.runPromise(program.pipe(Effect.provide(layer)))
