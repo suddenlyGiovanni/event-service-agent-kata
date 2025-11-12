@@ -9,15 +9,6 @@ CREATE TABLE service_calls (
 					PRIMARY KEY (tenant_id, service_call_id)
 				) STRICT
 			;
-CREATE TABLE timer_schedules (
-					tenant_id TEXT NOT NULL,
-					service_call_id TEXT NOT NULL,
-					PRIMARY KEY (tenant_id, service_call_id),
-					FOREIGN KEY (tenant_id, service_call_id) 
-						REFERENCES service_calls(tenant_id, service_call_id)
-						ON DELETE CASCADE
-				) STRICT
-			;
 CREATE TABLE http_execution_log (
 					tenant_id TEXT NOT NULL,
 					service_call_id TEXT NOT NULL,
@@ -38,10 +29,31 @@ CREATE TABLE outbox (
 					published_at TEXT
 				) STRICT
 			;
-
 CREATE INDEX idx_outbox_unpublished
 				ON outbox(published_at, created_at)
 				WHERE published_at IS NULL
 			;
+CREATE TABLE IF NOT EXISTS "timer_schedules" (
+			tenant_id TEXT NOT NULL,
+			service_call_id TEXT NOT NULL,
+			correlation_id TEXT NOT NULL,
+			due_at TEXT NOT NULL,
+			registered_at TEXT NOT NULL,
+			reached_at TEXT,
+			state TEXT NOT NULL DEFAULT 'Scheduled',
+			PRIMARY KEY (tenant_id, service_call_id),
+			FOREIGN KEY (tenant_id, service_call_id) 
+				REFERENCES service_calls(tenant_id, service_call_id) 
+				ON DELETE CASCADE,
+			CHECK (state IN ('Scheduled', 'Reached'))
+		) STRICT
+	;
+CREATE INDEX idx_timer_schedules_due_at
+		ON timer_schedules(tenant_id, state, due_at)
+	;
+CREATE INDEX idx_timer_schedules_correlation_id
+		ON timer_schedules(correlation_id)
+	;
 
-INSERT INTO effect_sql_migrations VALUES(1,'2025-11-12 18:16:46','bootstrap_schema');
+INSERT INTO effect_sql_migrations VALUES(1,'2025-11-12 22:23:28','bootstrap_schema');
+INSERT INTO effect_sql_migrations VALUES(3,'2025-11-12 22:23:28','timer_schedules_schema');
