@@ -4,6 +4,8 @@
 *.db-wal
 *.sqlite
 *.sqlite3
+*.sqlite-wal
+*.sqlite-shm
 
 # SQLite temporary files
 *.db-journal
