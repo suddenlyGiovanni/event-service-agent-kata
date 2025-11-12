@@ -78,28 +78,36 @@ export class SQL {
 		ConfigError | Platform.Error.BadArgument,
 		Platform.Path.Path
 	> = Effect.gen(function* () {
+		yield* Effect.logInfo('Initializing database configuration')
+
 		const path = yield* Path.Path
 
 		// 1. Calculate workspace root URL (4 levels up from this file)
 		// packages/platform/src/database/sql.ts → workspace root
 		const workspaceRootURL = new URL('../../../../', import.meta.url)
+		yield* Effect.logTrace('Workspace root URL created', { url: workspaceRootURL.href })
 
 		// 2. Convert file:// URL to platform-specific path string
 		// Effect-based: handles errors and cross-platform differences
 		const workspaceRoot = yield* path.fromFileUrl(workspaceRootURL)
-
-		yield* Effect.logDebug(`WORKSPACE_ROOT: ${workspaceRoot}`)
+		yield* Effect.logDebug('Workspace root resolved', { workspaceRoot })
 
 		// 3. Use Effect Path.join for cross-platform path concatenation
 		const dataDirectory = path.join(workspaceRoot, 'data')
+		yield* Effect.logDebug('Data directory computed', { dataDirectory })
 
-		yield* Effect.logDebug(`Data Directory: ${dataDirectory}`)
-
-		return yield* Config.all({
+		const config = yield* Config.all({
 			filename: Config.string('DB_PATH').pipe(Config.withDefault(path.join(dataDirectory, 'db.sqlite'))),
 			schemaDirectory: Config.string('DB_SCHEMA_DIR').pipe(Config.withDefault(dataDirectory)),
 		})
-	})
+
+		yield* Effect.logInfo('Database configuration loaded', {
+			filename: config.filename,
+			schemaDirectory: config.schemaDirectory,
+		})
+
+		return config
+	}).pipe(Effect.withSpan('SQL.DatabaseConfig'))
 
 	/**
 	 * Shared migrator layer for both Live and Test environments.
@@ -117,17 +125,25 @@ export class SQL {
 		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient
 	> = Layer.unwrapEffect(
 		Effect.gen(function* () {
+			yield* Effect.logInfo('Initializing database migrator')
+
 			const config = yield* SQL.DatabaseConfig
 			const path = yield* Path.Path
 
 			const migrationsPath = yield* path.fromFileUrl(new URL('./migrations', import.meta.url))
+			yield* Effect.logDebug('Migrations path resolved', { migrationsPath })
+
+			yield* Effect.logInfo('Creating migrator layer', {
+				schemaDirectory: config.schemaDirectory,
+				table: 'effect_sql_migrations',
+			})
 
 			return SqliteBun.SqliteMigrator.layer({
 				loader: SqliteBun.SqliteMigrator.fromFileSystem(migrationsPath),
 				schemaDirectory: config.schemaDirectory,
 				table: 'effect_sql_migrations',
 			}).pipe(Layer.provide(PlatformBun.BunContext.layer))
-		}).pipe(Effect.provide(PlatformBun.BunPath.layer)),
+		}).pipe(Effect.withSpan('SQL.Migrator'), Effect.provide(PlatformBun.BunPath.layer)),
 	)
 
 	/**
@@ -157,12 +173,24 @@ export class SQL {
 		// Execute session pragmas after client creation
 		const pragmaSetup = Layer.effectDiscard(
 			Effect.gen(function* () {
+				yield* Effect.logInfo('Configuring SQLite session pragmas', { filename })
+
 				const sql = yield* Sql.SqlClient.SqlClient
+
+				yield* Effect.logDebug('Setting PRAGMA foreign_keys = ON')
 				yield* sql`PRAGMA foreign_keys = ON` // CRITICAL: Enable FK constraints
+
+				yield* Effect.logDebug('Setting PRAGMA synchronous = NORMAL')
 				yield* sql`PRAGMA synchronous = NORMAL` // Balance safety/performance
+
+				yield* Effect.logDebug('Setting PRAGMA temp_store = MEMORY')
 				yield* sql`PRAGMA temp_store = MEMORY` // Faster temp tables
+
+				yield* Effect.logDebug('Setting PRAGMA cache_size = -64000')
 				yield* sql`PRAGMA cache_size = -64000` // 64MB cache
-			}),
+
+				yield* Effect.logInfo('SQLite session pragmas configured successfully')
+			}).pipe(Effect.withSpan('SQL.pragmaSetup', { attributes: { filename } })),
 		).pipe(Layer.provide(client))
 
 		// Merge: export client + run pragma setup (both need client from baseClient)
@@ -189,9 +217,17 @@ export class SQL {
 		Platform.Path.Path
 	> = Layer.unwrapEffect(
 		Effect.gen(function* () {
+			yield* Effect.logInfo('Initializing production SQLite client')
+
 			const config = yield* SQL.DatabaseConfig
+
+			yield* Effect.logInfo('Creating production database layer', {
+				filename: config.filename,
+				mode: 'persistent',
+			})
+
 			return Layer.provideMerge(SQL.Migrator, SQL.makeClient(config.filename))
-		}),
+		}).pipe(Effect.withSpan('SQL.Live')),
 	)
 
 	/**
@@ -207,5 +243,16 @@ export class SQL {
 		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient,
 		Sql.Migrator.MigrationError | Sql.SqlError.SqlError | ConfigError | Platform.Error.BadArgument,
 		Platform.Path.Path
-	> = Layer.provideMerge(SQL.Migrator, SQL.makeClient(':memory:'))
+	> = Layer.unwrapEffect(
+		Effect.gen(function* () {
+			yield* Effect.logInfo('Initializing test SQLite client (in-memory)')
+
+			yield* Effect.logInfo('Creating test database layer', {
+				filename: ':memory:',
+				mode: 'in-memory',
+			})
+
+			return Layer.provideMerge(SQL.Migrator, SQL.makeClient(':memory:'))
+		}).pipe(Effect.withSpan('SQL.Test')),
+	)
 }
