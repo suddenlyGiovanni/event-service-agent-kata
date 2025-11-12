@@ -9,6 +9,7 @@ import * as Config from 'effect/Config'
 import type { ConfigError } from 'effect/ConfigError'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import * as Record from 'effect/Record'
 import * as Stream from 'effect/Stream'
 import * as StringModule from 'effect/String'
 
@@ -176,28 +177,26 @@ export class SQL {
 					}),
 			)
 
-			// Merge both streams and collect into array
-			const migrationFiles = yield* Stream.merge(packagesMigrations, platformMigrations).pipe(
+			// Discover migrations across all packages using glob patterns
+			// - Stream.merge combines both glob results
+			// - Stream.runCollect gathers all file paths into a Chunk
+			// - Record.fromIterableWith transforms paths into the loader format
+			// - fromGlob expects: Record<absolutePath, () => Promise<module>>
+			// - fromGlob handles sorting internally (extracts ID from filename)
+			const migrationsRecord = yield* Stream.merge(packagesMigrations, platformMigrations).pipe(
 				Stream.runCollect,
-				Effect.map(chunk => Array.from(chunk)),
+				Effect.map(
+					Record.fromIterableWith((relativePath: string) => {
+						const absolutePath = `${workspaceRoot}/${relativePath}`
+						return [absolutePath, () => import(absolutePath)] as const
+					}),
+				),
 			)
 
-			// Sort by filename to ensure deterministic execution order
-			// Example order: 0001_bootstrap_schema.ts, 0003_timer_schedules_schema.ts, ...
-			const sortedMigrations = migrationFiles.sort()
-
 			yield* Effect.logInfo('Discovered migrations', {
-				count: sortedMigrations.length,
-				files: sortedMigrations,
+				count: Object.keys(migrationsRecord).length,
+				files: Object.keys(migrationsRecord),
 			})
-
-			// Load migrations from all discovered files
-			// Convert relative paths to absolute paths for dynamic import
-			const migrationPaths = sortedMigrations.map(file => `${workspaceRoot}/${file}`)
-
-			// Create loader compatible with fromGlob signature: Record<string, () => Promise<any>>
-			// Each entry is a migration file path with a dynamic import function
-			const migrationsRecord = Object.fromEntries(migrationPaths.map(path => [path, () => import(path)]))
 
 			const loader = SqliteBun.SqliteMigrator.fromGlob(migrationsRecord)
 
