@@ -1,9 +1,7 @@
 /** biome-ignore-all lint/style/useNamingConvention: SQL is conventional abbreviation (matches Effect examples) */
 
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-
 import type * as Platform from '@effect/platform'
+import * as Path from '@effect/platform/Path'
 import * as PlatformBun from '@effect/platform-bun'
 import * as Sql from '@effect/sql'
 import * as SqliteBun from '@effect/sql-sqlite-bun'
@@ -12,51 +10,6 @@ import type { ConfigError } from 'effect/ConfigError'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as StringModule from 'effect/String'
-
-/**
- * Database configuration with environment variable overrides.
- *
- * Environment variables:
- * - `DB_PATH`: Database file path (default: '<workspace>/data/db.sqlite')
- * - `DB_SCHEMA_DIR`: Schema dump directory (default: '<workspace>/data')
- *
- * Defaults use workspace root (not CWD), so paths are consistent regardless
- * of where commands are executed (workspace root, package dir, etc.).
- *
- * Local dev: No configuration needed, uses workspace-root 'data/' directory
- * Production: Override via env vars (e.g., DB_PATH=/var/lib/myapp/db.sqlite)
- * Testing: Override to ':memory:' or temp paths
- *
- * @internal Used by Migrator and Live layers
- */
-const DatabaseConfig = (() => {
-	// 1. Calculate the absolute URL of the workspace root directory.
-	// The trailing slash in the relative path ('../../../../') is important
-	// to ensure the resulting URL is treated as a directory.
-	const workspaceRootURL = new URL('../../../../', import.meta.url)
-
-	// 2. Convert the URL to a clean, platform-specific string path.
-	// This removes the 'file://' prefix and handles the OS-specific separators.
-	const WORKSPACE_ROOT = fileURLToPath(workspaceRootURL)
-
-	// Note: WORKSPACE_ROOT will now be a string like:
-	// '/Users/suddenlygiovanni/repos/coding-challenges/event-service-agent-kata/'
-	// or 'C:\Users\...\event-service-agent-kata\' on Windows.
-
-	console.debug('WORKSPACE_ROOT:', WORKSPACE_ROOT)
-
-	// 3. Use path.join to cleanly append subsequent segments.
-	// path.join handles redundant or missing slashes seamlessly.
-	const dataDirectory = path.join(WORKSPACE_ROOT, 'data')
-
-	console.debug('Data Directory:', dataDirectory)
-
-	return Config.all({
-		// path.join ensures the concatenation is clean.
-		filename: Config.string('DB_PATH').pipe(Config.withDefault(path.join(dataDirectory, 'db.sqlite'))),
-		schemaDirectory: Config.string('DB_SCHEMA_DIR').pipe(Config.withDefault(dataDirectory)),
-	})
-})()
 
 /**
  * SQLite client layers with automatic migration execution.
@@ -105,6 +58,50 @@ const DatabaseConfig = (() => {
  */
 export class SQL {
 	/**
+	 * Database configuration with environment variable overrides.
+	 *
+	 * Environment variables:
+	 * - `DB_PATH`: Database file path (default: '<workspace>/data/db.sqlite')
+	 * - `DB_SCHEMA_DIR`: Schema dump directory (default: '<workspace>/data')
+	 *
+	 * Defaults use workspace root (not CWD), so paths are consistent regardless
+	 * of where commands are executed (workspace root, package dir, etc.).
+	 *
+	 * Local dev: No configuration needed, uses workspace-root 'data/' directory
+	 * Production: Override via env vars (e.g., DB_PATH=/var/lib/myapp/db.sqlite)
+	 * Testing: Override to ':memory:' or temp paths
+	 *
+	 * @internal Used by Migrator and Live layers
+	 */
+	private static readonly DatabaseConfig: Effect.Effect<
+		{ readonly filename: string; readonly schemaDirectory: string },
+		ConfigError | Platform.Error.BadArgument,
+		Platform.Path.Path
+	> = Effect.gen(function* () {
+		const path = yield* Path.Path
+
+		// 1. Calculate workspace root URL (4 levels up from this file)
+		// packages/platform/src/database/sql.ts → workspace root
+		const workspaceRootURL = new URL('../../../../', import.meta.url)
+
+		// 2. Convert file:// URL to platform-specific path string
+		// Effect-based: handles errors and cross-platform differences
+		const workspaceRoot = yield* path.fromFileUrl(workspaceRootURL)
+
+		yield* Effect.logDebug(`WORKSPACE_ROOT: ${workspaceRoot}`)
+
+		// 3. Use Effect Path.join for cross-platform path concatenation
+		const dataDirectory = path.join(workspaceRoot, 'data')
+
+		yield* Effect.logDebug(`Data Directory: ${dataDirectory}`)
+
+		return yield* Config.all({
+			filename: Config.string('DB_PATH').pipe(Config.withDefault(path.join(dataDirectory, 'db.sqlite'))),
+			schemaDirectory: Config.string('DB_SCHEMA_DIR').pipe(Config.withDefault(dataDirectory)),
+		})
+	})
+
+	/**
 	 * Shared migrator layer for both Live and Test environments.
 	 *
 	 * - Discovers migrations from: packages/platform/src/database/migrations/*.ts
@@ -114,15 +111,23 @@ export class SQL {
 	 *
 	 * @internal Shared between Live and Test to ensure identical schema
 	 */
-	private static readonly Migrator = Layer.unwrapEffect(
+	private static readonly Migrator: Layer.Layer<
+		never,
+		ConfigError | Platform.Error.BadArgument | Sql.Migrator.MigrationError | Sql.SqlError.SqlError,
+		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient
+	> = Layer.unwrapEffect(
 		Effect.gen(function* () {
-			const config = yield* DatabaseConfig
+			const config = yield* SQL.DatabaseConfig
+			const path = yield* Path.Path
+
+			const migrationsPath = yield* path.fromFileUrl(new URL('./migrations', import.meta.url))
+
 			return SqliteBun.SqliteMigrator.layer({
-				loader: SqliteBun.SqliteMigrator.fromFileSystem(new URL('./migrations', import.meta.url).pathname),
+				loader: SqliteBun.SqliteMigrator.fromFileSystem(migrationsPath),
 				schemaDirectory: config.schemaDirectory,
 				table: 'effect_sql_migrations',
 			}).pipe(Layer.provide(PlatformBun.BunContext.layer))
-		}),
+		}).pipe(Effect.provide(PlatformBun.BunPath.layer)),
 	)
 
 	/**
@@ -184,7 +189,7 @@ export class SQL {
 		Platform.Path.Path
 	> = Layer.unwrapEffect(
 		Effect.gen(function* () {
-			const config = yield* DatabaseConfig
+			const config = yield* SQL.DatabaseConfig
 			return Layer.provideMerge(SQL.Migrator, SQL.makeClient(config.filename))
 		}),
 	)
