@@ -1,10 +1,11 @@
+// biome-ignore lint/correctness/noUndeclaredDependencies: vitest is hoisted from root workspace
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
 	test: {
-		name: 'ui',
 		environment: 'node',
-		passWithNoTests: true,
 		include: ['src/**/*.{test,spec}.{ts,tsx}'],
+		name: 'ui',
+		passWithNoTests: true,
 	},
 })

@@ -1,6 +1,6 @@
+import { describe, expect, it } from '@effect/vitest'
 import * as DateTime from 'effect/DateTime'
 import * as Option from 'effect/Option'
-import { describe, expect, it } from 'vitest'
 
 import type * as Message from '@event-service-agent/schemas/messages'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
