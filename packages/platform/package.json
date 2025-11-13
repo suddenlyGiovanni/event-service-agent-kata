@@ -1,7 +1,7 @@
 {
 	"dependencies": {
-		"effect": "catalog:effect",
-		"@event-service-agent/schemas": "workspace:*"
+		"@event-service-agent/schemas": "workspace:*",
+		"effect": "catalog:effect"
 	},
 	"description": "Platform infrastructure - Message types, port interfaces, and shared routing for cross-module communication",
 	"devDependencies": {
