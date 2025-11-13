@@ -167,7 +167,7 @@ flowchart LR
 **Preview:**
 
 - GitHub renders Mermaid diagrams automatically in markdown files
-- Published docs (GitHub Pages) render diagrams using the same rendering engine
+- Published docs (GitHub Pages) render diagrams client-side using Mermaid.js (similar output to GitHub's rendering)
 - Local markdown previews may or may not support Mermaid depending on your editor
 
 **Examples:** See existing ADRs in `docs/decisions/` for real-world examples of Mermaid diagrams.

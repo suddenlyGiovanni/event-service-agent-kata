@@ -18,12 +18,10 @@ description: Event-driven, multi-tenant service-call agent kata
 # Plugins (GitHub Pages safe)
 
 plugins:
-
-- jekyll-relative-links
-- jekyll-optional-front-matter
-- jekyll-readme-index
-- jekyll-github-metadata
-
+  - jekyll-relative-links
+  - jekyll-optional-front-matter
+  - jekyll-readme-index
+  - jekyll-github-metadata
 # Allow markdown files without YAML front matter
 
 optional_front_matter:
@@ -44,6 +42,5 @@ relative_links:
 # Exclude from processing
 
 exclude:
-
-- Gemfile
-- Gemfile.lock
+  - Gemfile
+  - Gemfile.lock

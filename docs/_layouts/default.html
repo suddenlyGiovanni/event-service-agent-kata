@@ -37,7 +37,7 @@
     <script type="module">
       // Process code blocks with language-mermaid class
       // Kramdown generates: <pre><code class="language-mermaid">...</code></pre>
-      // We need to transform these into <pre class="mermaid">...</pre>
+      // We need to transform these into <div class="mermaid">...</div>
       document.querySelectorAll('pre > code.language-mermaid').forEach((codeElement) => {
         const pre = codeElement.parentElement;
         const mermaidDiv = document.createElement('div');
@@ -46,12 +46,12 @@
         pre.replaceWith(mermaidDiv);
       });
 
-      
+
       // Import and initialize Mermaid
       import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 
       mermaid.initialize({ 
-        securityLevel: 'loose', 
+        securityLevel: 'strict', 
         startOnLoad: true,
         theme: 'default'
       });
