@@ -54,7 +54,8 @@
 		}
 	},
 	"files": {
-		"ignoreUnknown": true
+		"ignoreUnknown": true,
+		"includes": ["**/*", "!docs/_layouts/**/*.html"]
 	},
 	"formatter": {
 		"attributePosition": "auto",
@@ -125,6 +126,7 @@
 			},
 			"correctness": {
 				"noUndeclaredDependencies": {
+					"level": "error",
 					"options": {
 						"devDependencies": ["**/*.test.ts", "**/*.spec.ts"]
 					}
