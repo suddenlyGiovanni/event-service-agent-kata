@@ -4,8 +4,8 @@
  * Validates Schema.brand implementation for service call identifiers.
  */
 
+import { describe, expect, test } from '@effect/vitest'
 import * as Schema from 'effect/Schema'
-import { describe, expect, test } from 'vitest'
 
 import { ServiceCallId } from './service-call-id.schema.ts'
 

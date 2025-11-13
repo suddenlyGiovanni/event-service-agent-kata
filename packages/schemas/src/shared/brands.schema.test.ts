@@ -4,7 +4,7 @@
  * Validates brand accumulation and type safety across different branded types.
  */
 
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test } from '@effect/vitest'
 
 import { ServiceCallId } from './service-call-id.schema.ts'
 import { TenantId } from './tenant-id.schema.ts'

@@ -1,11 +1,11 @@
 {
 	"dependencies": {
+		"@event-service-agent/platform": "workspace:*",
 		"effect": "catalog:effect"
 	},
 	"description": "Effect Schema definitions for all domain messages and foundational types",
 	"devDependencies": {
 		"@effect/vitest": "catalog:test",
-		"@event-service-agent/platform": "workspace:*",
 		"@event-service-agent/typescript": "workspace:*",
 		"@total-typescript/ts-reset": "catalog:types",
 		"@types/bun": "catalog:types",
