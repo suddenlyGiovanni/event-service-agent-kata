@@ -6,6 +6,12 @@ on:
     paths:
       - 'docs/**'
       - '.github/workflows/publish-docs.yml'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Optional note for manual run'
+        required: false
+        type: string
 
 permissions:
   contents: read
