@@ -1,7 +1,9 @@
 # GitHub Pages Jekyll Configuration
+
 # Minimal configuration to render markdown files as HTML
 
 # Markdown processing with GitHub Flavored Markdown
+
 markdown: kramdown
 kramdown:
   input: GFM
@@ -9,31 +11,39 @@ kramdown:
   hard_wrap: false
 
 # Site settings
+
 title: Event Service Agent Kata
 description: Event-driven, multi-tenant service-call agent kata
 
 # Plugins (GitHub Pages safe)
+
 plugins:
-  - jekyll-relative-links
-  - jekyll-optional-front-matter
-  - jekyll-readme-index
-  - jekyll-github-metadata
+
+- jekyll-relative-links
+- jekyll-optional-front-matter
+- jekyll-readme-index
+- jekyll-github-metadata
 
 # Allow markdown files without YAML front matter
+
 optional_front_matter:
   enabled: true
 
 # Treat README.md as index in directories
+
 readme_index:
   enabled: true
   remove_originals: false
 
 # Convert relative links
+
 relative_links:
   enabled: true
   collections: false
 
 # Exclude from processing
+
 exclude:
-  - Gemfile
-  - Gemfile.lock
+
+- Gemfile
+- Gemfile.lock

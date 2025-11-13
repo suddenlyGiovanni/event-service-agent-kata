@@ -4,7 +4,6 @@
 
 ---
 
-
 Minimal domain-facing ports to keep the system simple and broker/storage agnostic. Adapters implement these interfaces.
 
 ## Shared Types

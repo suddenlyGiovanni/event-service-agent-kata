@@ -4,7 +4,6 @@
 
 ---
 
-
 ## Purpose
 
 - Canonical catalog of commands and events across contexts.

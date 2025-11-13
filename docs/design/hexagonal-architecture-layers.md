@@ -4,7 +4,6 @@
 
 ---
 
-
 This document explains how database, repositories, ports, adapters, and dependency injection work together in our hexagonal architecture.
 
 ## The Relationship Map
@@ -445,7 +444,7 @@ const program = submitServiceCall(request).pipe(
 ## Architecture Benefits
 
 | Concept                        | Benefit                                      |
-|--------------------------------|----------------------------------------------|
+| ------------------------------ | -------------------------------------------- |
 | **Ports (Interfaces)**         | Domain isolated from infrastructure changes  |
 | **Adapters (Implementations)** | Swap implementations without domain changes  |
 | **Repository Pattern**         | Encapsulate data access, hide SQL complexity |
@@ -548,12 +547,12 @@ const envelope = new MessageEnvelope({
 ### **Benefits**
 
 | Aspect               | Before (Timer, firedAt params)                                               | After (Pure Domain Events)                          |
-| -------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------- |
+|----------------------|------------------------------------------------------------------------------|-----------------------------------------------------|
 | **Port signature**   | `publishDueTimeReached(timer: ScheduledTimer, firedAt: DateTime.Utc)`        | `publishDueTimeReached(event: DueTimeReached.Type)` |
 | **Workflow concern** | Pass timer aggregate + timestamp                                             | Construct domain event                              |
 | **Testability**      | Mock expects timer+timestamp                                                 | Mock expects domain event                           |
-| **Domain purity**    | ❌ Workflow knows about port's implementation detail (needs timer aggregate) | ✅ Workflow works with pure domain concept (event)  |
-| **Symmetry**         | ❌ Asymmetric: publish (timer) vs subscribe (event)                          | ✅ Symmetric: publish (event) / subscribe (event)   |
+| **Domain purity**    | 🔴 Workflow knows about port's implementation detail (needs timer aggregate) | 🟢 Workflow works with pure domain concept (event)  |
+| **Symmetry**         | 🔴 Asymmetric: publish (timer) vs subscribe (event)                          | 🟢 Symmetric: publish (event) / subscribe (event)   |
 
 ### **Comparison with Alternatives**
 
