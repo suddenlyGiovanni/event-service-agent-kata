@@ -126,7 +126,7 @@ Prioritized queue.
   - Keep `Schema.TaggedClass` in domain (pure state machine: Scheduled → Reached)
   - TimerRow (Model.Class) ↔ TimerEntry (Schema.TaggedClass) mapping at adapter boundary
   - Migrations: Bootstrap (platform) + module schemas (timer/orchestration/execution)
-  - Migration discovery: Glob pattern `packages/*/src/migrations/*.ts` (filename order)
+  - Migration discovery: Glob pattern `packages/*/src/database/migrations/*.ts` (filename order)
   - Database: ./data/db.sqlite (shared with Orchestration per ADR-0004)
   - Production: `sqlite({ filename: './data/db.sqlite' })`
   - Tests: `sqlite({ filename: ':memory:' })` (runs bootstrap + module migrations)

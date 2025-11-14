@@ -75,5 +75,5 @@ CREATE INDEX idx_timer_schedules_correlation_id
 		ON timer_schedules(correlation_id)
 	;
 
-INSERT INTO effect_sql_migrations VALUES(1,'2025-11-14 12:21:35','bootstrap_schema');
-INSERT INTO effect_sql_migrations VALUES(3,'2025-11-14 12:21:35','timer_schedules_schema');
+INSERT INTO effect_sql_migrations VALUES(1,'2025-11-14 12:58:45','bootstrap_schema');
+INSERT INTO effect_sql_migrations VALUES(3,'2025-11-14 12:58:45','timer_schedules_schema');
