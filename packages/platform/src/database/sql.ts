@@ -139,59 +139,57 @@ export class SQL {
 		| Sql.Migrator.MigrationError
 		| Sql.SqlError.SqlError,
 		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient
-	> = Layer.unwrapEffect(
-		Effect.gen(function* () {
-			yield* Effect.logInfo('Initializing database migrator')
+	> = Effect.gen(function* () {
+		yield* Effect.logInfo('Initializing database migrator')
 
-			const config = yield* SQL.DatabaseConfig
-			const path = yield* Path.Path
+		const config = yield* SQL.DatabaseConfig
+		const path = yield* Path.Path
 
-			// Resolve workspace root from package.json location
-			const workspaceRoot = yield* path.fromFileUrl(new URL('../../../..', import.meta.url))
+		// Resolve workspace root from package.json location
+		const workspaceRoot = yield* path.fromFileUrl(new URL('../../../..', import.meta.url))
 
-			yield* Effect.logDebug('Workspace root resolved', { workspaceRoot })
+		yield* Effect.logDebug('Workspace root resolved', { workspaceRoot })
 
-			const migrationsRecord = yield* pipe(
-				Stream.fromAsyncIterable(
-					new Bun.Glob('packages/*/src/database/migrations/*.ts').scan({ cwd: workspaceRoot }),
-					error =>
-						new Platform.Error.SystemError({
-							cause: error,
-							description: String(error),
-							method: 'glob.scan',
-							module: 'FileSystem',
-							pathOrDescriptor: workspaceRoot,
-							reason: 'Unknown',
-						}),
-				),
-				Stream.runCollect,
-				Effect.map(
-					Record.fromIterableWith((relativePath: string) => {
-						const absolutePath = `${workspaceRoot}/${relativePath}`
-						return [absolutePath, () => import(absolutePath)] as const
+		const migrationsRecord = yield* pipe(
+			Stream.fromAsyncIterable(
+				new Bun.Glob('packages/*/src/database/migrations/*.ts').scan({ cwd: workspaceRoot }),
+				error =>
+					new Platform.Error.SystemError({
+						cause: error,
+						description: String(error),
+						method: 'glob.scan',
+						module: 'FileSystem',
+						pathOrDescriptor: workspaceRoot,
+						reason: 'Unknown',
 					}),
-				),
-			)
+			),
+			Stream.runCollect,
+			Effect.map(
+				Record.fromIterableWith((relativePath: string) => {
+					const absolutePath = `${workspaceRoot}/${relativePath}`
+					return [absolutePath, () => import(absolutePath)] as const
+				}),
+			),
+		)
 
-			yield* Effect.logInfo('Discovered migrations', {
-				count: Object.keys(migrationsRecord).length,
-				files: Object.keys(migrationsRecord),
-			})
+		yield* Effect.logInfo('Discovered migrations', {
+			count: Object.keys(migrationsRecord).length,
+			files: Object.keys(migrationsRecord),
+		})
 
-			const loader = SqliteBun.SqliteMigrator.fromGlob(migrationsRecord)
+		const loader = SqliteBun.SqliteMigrator.fromGlob(migrationsRecord)
 
-			yield* Effect.logInfo('Creating migrator layer', {
-				schemaDirectory: config.schemaDirectory,
-				table: 'effect_sql_migrations',
-			})
+		yield* Effect.logInfo('Creating migrator layer', {
+			schemaDirectory: config.schemaDirectory,
+			table: 'effect_sql_migrations',
+		})
 
-			return SqliteBun.SqliteMigrator.layer({
-				loader,
-				schemaDirectory: config.schemaDirectory,
-				table: 'effect_sql_migrations',
-			}).pipe(Layer.provide(PlatformBun.BunContext.layer))
-		}).pipe(Effect.withSpan('SQL.Migrator'), Effect.provide(PlatformBun.BunPath.layer)),
-	)
+		return SqliteBun.SqliteMigrator.layer({
+			loader,
+			schemaDirectory: config.schemaDirectory,
+			table: 'effect_sql_migrations',
+		}).pipe(Layer.provide(PlatformBun.BunContext.layer))
+	}).pipe(Effect.withSpan('SQL.Migrator'), Effect.provide(PlatformBun.BunPath.layer), Layer.unwrapEffect)
 
 	/**
 	 * Creates a SQLite client layer with the specified database filename.
@@ -266,20 +264,18 @@ export class SQL {
 		| Platform.Error.BadArgument
 		| Platform.Error.SystemError,
 		Platform.Path.Path
-	> = Layer.unwrapEffect(
-		Effect.gen(function* () {
-			yield* Effect.logInfo('Initializing production SQLite client')
+	> = Effect.gen(function* () {
+		yield* Effect.logInfo('Initializing production SQLite client')
 
-			const config = yield* SQL.DatabaseConfig
+		const config = yield* SQL.DatabaseConfig
 
-			yield* Effect.logInfo('Creating production database layer', {
-				filename: config.filename,
-				mode: 'persistent',
-			})
+		yield* Effect.logInfo('Creating production database layer', {
+			filename: config.filename,
+			mode: 'persistent',
+		})
 
-			return Layer.provideMerge(SQL.Migrator, SQL.makeClient(config.filename))
-		}).pipe(Effect.withSpan('SQL.Live')),
-	)
+		return Layer.provideMerge(SQL.Migrator, SQL.makeClient(config.filename))
+	}).pipe(Effect.withSpan('SQL.Live'), Layer.unwrapEffect)
 
 	/**
 	 * Test SQLite client layer (in-memory).
@@ -298,16 +294,14 @@ export class SQL {
 		| Platform.Error.BadArgument
 		| Platform.Error.SystemError,
 		Platform.Path.Path
-	> = Layer.unwrapEffect(
-		Effect.gen(function* () {
-			yield* Effect.logInfo('Initializing test SQLite client (in-memory)')
+	> = Effect.gen(function* () {
+		yield* Effect.logInfo('Initializing test SQLite client (in-memory)')
 
-			yield* Effect.logInfo('Creating test database layer', {
-				filename: ':memory:',
-				mode: 'in-memory',
-			})
+		yield* Effect.logInfo('Creating test database layer', {
+			filename: ':memory:',
+			mode: 'in-memory',
+		})
 
-			return Layer.provideMerge(SQL.Migrator, SQL.makeClient(':memory:'))
-		}).pipe(Effect.withSpan('SQL.Test')),
-	)
+		return Layer.provideMerge(SQL.Migrator, SQL.makeClient(':memory:'))
+	}).pipe(Effect.withSpan('SQL.Test'), Layer.unwrapEffect)
 }
