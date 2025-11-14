@@ -8,6 +8,7 @@ import * as SqliteBun from '@effect/sql-sqlite-bun'
 import * as Config from 'effect/Config'
 import type { ConfigError } from 'effect/ConfigError'
 import * as Effect from 'effect/Effect'
+import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import * as Record from 'effect/Record'
 import * as Stream from 'effect/Stream'
@@ -27,8 +28,7 @@ import * as StringModule from 'effect/String'
  * - Session-level pragmas (foreign_keys, synchronous, etc.): Set here on client initialization
  *
  * Migrations:
- * - Discovers migrations from: packages/platform/src/database/migrations/*.ts
- * - Future: Will discover from all modules when glob import.meta.glob is configured
+ * - Discovers migrations from: packages/*\/src/database/migrations/*.ts (platform + modules)
  * - Runs migrations on layer initialization (before app code executes)
  * - Tracks executed migrations in effect_sql_migrations table
  *
@@ -125,7 +125,7 @@ export class SQL {
 	 * - Bootstrap migration (0001) in platform package creates table skeletons
 	 * - Module migrations (0003+) add domain-specific columns and constraints
 	 * - Filename-based ordering ensures bootstrap runs before module migrations
-	 * - Each module owns its schema evolution via migrations in its src/migrations/
+	 * - Each module owns its schema evolution via migrations in its src/database/migrations/
 	 *
 	 * @see ADR-0005 for schema design (bootstrap + module evolution pattern)
 	 * @see ADR-0012 for package structure (module ownership)
@@ -151,39 +151,19 @@ export class SQL {
 
 			yield* Effect.logDebug('Workspace root resolved', { workspaceRoot })
 
-			const packagesMigrations = Stream.fromAsyncIterable(
-				new Bun.Glob('packages/*/src/migrations/*.ts').scan({ cwd: workspaceRoot }),
-				error =>
-					new Platform.Error.SystemError({
-						cause: error,
-						description: String(error),
-						method: 'glob.scan',
-						module: 'FileSystem',
-						pathOrDescriptor: workspaceRoot,
-						reason: 'Unknown',
-					}),
-			)
-
-			const platformMigrations = Stream.fromAsyncIterable(
-				new Bun.Glob('packages/platform/src/database/migrations/*.ts').scan({ cwd: workspaceRoot }),
-				error =>
-					new Platform.Error.SystemError({
-						cause: error,
-						description: String(error),
-						method: 'glob.scan',
-						module: 'FileSystem',
-						pathOrDescriptor: workspaceRoot,
-						reason: 'Unknown',
-					}),
-			)
-
-			// Discover migrations across all packages using glob patterns
-			// - Stream.merge combines both glob results
-			// - Stream.runCollect gathers all file paths into a Chunk
-			// - Record.fromIterableWith transforms paths into the loader format
-			// - fromGlob expects: Record<absolutePath, () => Promise<module>>
-			// - fromGlob handles sorting internally (extracts ID from filename)
-			const migrationsRecord = yield* Stream.merge(packagesMigrations, platformMigrations).pipe(
+			const migrationsRecord = yield* pipe(
+				Stream.fromAsyncIterable(
+					new Bun.Glob('packages/*/src/database/migrations/*.ts').scan({ cwd: workspaceRoot }),
+					error =>
+						new Platform.Error.SystemError({
+							cause: error,
+							description: String(error),
+							method: 'glob.scan',
+							module: 'FileSystem',
+							pathOrDescriptor: workspaceRoot,
+							reason: 'Unknown',
+						}),
+				),
 				Stream.runCollect,
 				Effect.map(
 					Record.fromIterableWith((relativePath: string) => {
