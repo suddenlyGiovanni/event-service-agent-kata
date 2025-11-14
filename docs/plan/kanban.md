@@ -91,11 +91,12 @@ Prioritized queue.
       - [x] Native Bun .env support (--env-file flag)
       - [x] Scripts at workspace root (correct CWD for relative paths)
       - [x] .env.example documentation
-    - **Next**: Create Timer schema migration (0003_timer_schedules_schema.ts)
-      - [ ] Add Timer domain fields (correlation_id, due_at, registered_at, reached_at, state)
-      - [ ] Add CHECK constraints and indexes
+    - [x] Timer schema migration (0003_timer_schedules_schema.ts)
+      - [x] Add Timer domain fields (correlation_id, due_at, registered_at, reached_at, state)
+      - [x] Add CHECK constraints and indexes
+      - [x] Add `timer-database.test.ts` invariants (well-formed insert + 3 constraint failures via `SQL.Test` layer)
   - **Phase 1: Add SQLite adapter (Steps 4-14)** - NOT STARTED
-    - [ ] Add `sqlite(config: { filename: string })` with Migrator (runs bootstrap + timer migrations)
+    - [x] Add `sqlite(config: { filename: string })` with Migrator (runs bootstrap + timer migrations)
     - [ ] Define TimerRow Model.Class (maps to full timer_schedules schema)
     - [ ] RED: Copy in-memory tests → sqlite tests (16 tests, all failing, `:memory:` runs both migrations)
     - [ ] GREEN: Implement operations one-by-one (save, find, findScheduledTimer, findDue, markFired, delete)
@@ -132,7 +133,7 @@ Prioritized queue.
   - Tests: `sqlite({ filename: ':memory:' })` (runs bootstrap + module migrations)
   - Migration scripts: Workspace root (db:migrate, db:reset) for correct CWD
   - Environment: .env at workspace root with relative paths (./data/db.sqlite)
-- **Next Action**: Create Timer migration (0003_timer_schedules_schema.ts) with domain fields
+- **Next Action**: Phase 1 kickoff — implement SQLite persistence adapter (TimerPersistence.sqlite) and port in-memory tests over `SQL.Test`
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
