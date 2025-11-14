@@ -16,16 +16,36 @@ export default Effect.gen(function* () {
 		CREATE TABLE timer_schedules_new (
 			tenant_id TEXT NOT NULL,
 			service_call_id TEXT NOT NULL,
-			correlation_id TEXT NOT NULL,
-			due_at TEXT NOT NULL,
-			registered_at TEXT NOT NULL,
-			reached_at TEXT,
-			state TEXT NOT NULL DEFAULT 'Scheduled',
+			correlation_id TEXT NOT NULL
+				CHECK (correlation_id <> ''),
+			due_at TEXT NOT NULL
+				CHECK (
+					due_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
+					AND length(due_at) BETWEEN 20 AND 35
+				),
+			registered_at TEXT NOT NULL
+				CHECK (
+					registered_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
+					AND length(registered_at) BETWEEN 20 AND 35
+				),
+			reached_at TEXT
+				CHECK (
+					reached_at IS NULL
+						OR (
+							reached_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
+							AND length(reached_at) BETWEEN 20 AND 35
+						)
+				),
+			state TEXT NOT NULL DEFAULT 'Scheduled'
+				CHECK (state IN ('Scheduled', 'Reached')),
+			CHECK (
+				(state = 'Scheduled' AND reached_at IS NULL)
+					OR (state = 'Reached' AND reached_at IS NOT NULL)
+			),
 			PRIMARY KEY (tenant_id, service_call_id),
 			FOREIGN KEY (tenant_id, service_call_id) 
 				REFERENCES service_calls(tenant_id, service_call_id) 
-				ON DELETE CASCADE,
-			CHECK (state IN ('Scheduled', 'Reached'))
+				ON DELETE CASCADE
 		) STRICT
 	`
 
@@ -34,12 +54,19 @@ export default Effect.gen(function* () {
 		INSERT INTO timer_schedules_new 
 			(tenant_id, service_call_id, correlation_id, due_at, registered_at, reached_at, state)
 		SELECT 
-			tenant_id, service_call_id, 
-			COALESCE(correlation_id, ''), 
-			COALESCE(due_at, '1970-01-01T00:00:00Z'), 
-			COALESCE(registered_at, '1970-01-01T00:00:00Z'), 
-			reached_at, 
-			COALESCE(state, 'Scheduled')
+			tenant_id,
+			service_call_id,
+			COALESCE(NULLIF(correlation_id, ''), service_call_id) AS correlation_id,
+			COALESCE(due_at, '1970-01-01T00:00:00.000Z') AS due_at,
+			COALESCE(registered_at, '1970-01-01T00:00:00.000Z') AS registered_at,
+			CASE
+				WHEN COALESCE(state, 'Scheduled') = 'Reached' AND reached_at IS NOT NULL THEN reached_at
+				ELSE NULL
+			END AS reached_at,
+			CASE
+				WHEN COALESCE(state, 'Scheduled') = 'Reached' AND reached_at IS NULL THEN 'Scheduled'
+				ELSE COALESCE(state, 'Scheduled')
+			END AS state
 		FROM timer_schedules
 	`
 
