@@ -11,6 +11,7 @@ This section contains domain models, architecture patterns, and module specifica
 ### Core Design
 
 - **[Domain Model](domain.md)** - Core domain concepts, entities, and multi-tenancy model
+- **[Database Schema](database-schema.md)** - Entity relationships, indexes, and multi-tenancy patterns
 - **[Hexagonal Architecture Layers](hexagonal-architecture-layers.md)** - Layering strategy and port/adapter patterns
 - **[Messages](messages.md)** - Commands, events, and message envelope specifications
 - **[Modules & Interactions](modules-and-interactions.md)** - Module boundaries and async communication patterns
