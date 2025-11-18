@@ -21,8 +21,9 @@ import * as Data from 'effect/Data'
 import type * as DateTime from 'effect/DateTime'
 import type * as Effect from 'effect/Effect'
 import type * as Option from 'effect/Option'
+import * as Schema from 'effect/Schema'
 
-import type { ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
+import { ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import type { TimerEntry } from '../domain/timer-entry.domain.ts'
 
@@ -45,6 +46,29 @@ export class TimerNotFoundError extends Data.TaggedError('TimerNotFoundError')<{
 	readonly tenantId: TenantId.Type
 	readonly serviceCallId: ServiceCallId.Type
 }> {}
+
+/**
+ * TimerScheduleKey - Composite identity for timer persistence operations
+ *
+ * All persistence queries use (tenantId, serviceCallId) as the idempotent key.
+ * Keeping the Schema definition in the port layer ensures adapters/tests share
+ * the same structural contract without depending on adapter internals.
+ */
+export const TimerScheduleKey = Schema.Struct({
+	/**
+	 * Service call identifier - unique per timer
+	 */
+	serviceCallId: ServiceCallId,
+
+	/**
+	 * Tenant identifier - supports multi-tenant isolation
+	 */
+	tenantId: TenantId,
+})
+
+export declare namespace TimerScheduleKey {
+	type Type = typeof TimerScheduleKey.Type
+}
 
 /**
  * TimerPersistencePort - Timer storage port interface

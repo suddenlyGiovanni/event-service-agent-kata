@@ -9,7 +9,7 @@ import * as Layer from 'effect/Layer'
 import { SQL } from '@event-service-agent/platform/database'
 import { UUID7 } from '@event-service-agent/platform/uuid7'
 
-const TestLayer = Layer.merge(SQL.Test.pipe(Layer.provide(PlatformBun.BunContext.layer)), UUID7.Default)
+const TestLayer = Layer.merge(Layer.provide(SQL.Test, PlatformBun.BunPath.layer), UUID7.Default)
 
 const insertServiceCall = (tenantId: string, serviceCallId: string) =>
 	Effect.gen(function* () {
