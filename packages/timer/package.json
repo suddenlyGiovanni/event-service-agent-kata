@@ -1,5 +1,6 @@
 {
 	"dependencies": {
+		"@effect/platform-bun": "catalog:effect",
 		"@effect/sql": "catalog:effect",
 		"@effect/sql-sqlite-bun": "catalog:effect",
 		"@event-service-agent/platform": "workspace:*",
@@ -8,7 +9,6 @@
 	},
 	"description": "Timer module - Durable scheduling and DueTimeReached events",
 	"devDependencies": {
-		"@effect/platform-bun": "catalog:effect",
 		"@effect/vitest": "catalog:test",
 		"@event-service-agent/typescript": "workspace:*",
 		"@total-typescript/ts-reset": "catalog:types",
