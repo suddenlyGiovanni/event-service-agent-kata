@@ -1,4 +1,3 @@
-import * as PlatformBun from '@effect/platform-bun'
 import * as Sql from '@effect/sql'
 import { describe, expect, it } from '@effect/vitest'
 import { assertNone, assertTrue } from '@effect/vitest/utils'
@@ -13,6 +12,7 @@ import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
 import { SQL } from '@event-service-agent/platform/database'
+import { UUID7 } from '@event-service-agent/platform/uuid7'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import * as Domain from '../domain/timer-entry.domain.ts'
@@ -490,21 +490,16 @@ describe('TimerPersistenceAdapter', () => {
 					Sql.SqlSchema.void({
 						execute: request =>
 							sql`
-              INSERT INTO service_calls (tenant_id, service_call_id)
-              VALUES (${request.tenantId},
-                      ${request.serviceCallId});
-					`,
+                  INSERT INTO service_calls (tenant_id, service_call_id)
+                  VALUES (${request.tenantId},
+                          ${request.serviceCallId});
+							`,
 						Request: Ports.TimerScheduleKey,
 					}),
 				)
 			})
 
-		const TestLayer = Layer.mergeAll(
-			Adapters.TimerPersistence.Test,
-			Adapters.ClockPortLive,
-			Layer.provide(SQL.Test, PlatformBun.BunPath.layer),
-		)
-
+		const TestLayer = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.ClockPortTest, UUID7.Default, SQL.Test)
 		const mocks = {
 			tenantA: {
 				correlationId: CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9c1'),
@@ -546,7 +541,10 @@ describe('TimerPersistenceAdapter', () => {
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* withServiceCall({
+					serviceCallId,
+					tenantId,
+				})
 				const persistence = yield* Ports.TimerPersistencePort
 				const scheduledTimer = makeScheduledTimer({
 					correlationId,
@@ -556,7 +554,10 @@ describe('TimerPersistenceAdapter', () => {
 					tenantId,
 				})
 				yield* persistence.save(scheduledTimer)
-				return { now, timer: scheduledTimer }
+				return {
+					now,
+					timer: scheduledTimer,
+				}
 			})
 
 		describe('save', () => {
@@ -565,7 +566,10 @@ describe('TimerPersistenceAdapter', () => {
 					// Arrange
 					const clock = yield* Ports.ClockPort
 					const now = yield* clock.now()
-					yield* withServiceCall({ serviceCallId: mocks.tenantA.serviceCallId, tenantId: mocks.tenantA.tenantId })
+					yield* withServiceCall({
+						serviceCallId: mocks.tenantA.serviceCallId,
+						tenantId: mocks.tenantA.tenantId,
+					})
 					const persistence = yield* Ports.TimerPersistencePort
 					const scheduledTimer = makeScheduledTimer({
 						correlationId: mocks.tenantA.correlationId,
@@ -795,7 +799,10 @@ describe('TimerPersistenceAdapter', () => {
 					const persistence = yield* Ports.TimerPersistencePort
 
 					// Create timer with dueAt === now (0 minutes offset)
-					yield* withServiceCall({ serviceCallId: mocks.tenantA.serviceCallId, tenantId: mocks.tenantA.tenantId })
+					yield* withServiceCall({
+						serviceCallId: mocks.tenantA.serviceCallId,
+						tenantId: mocks.tenantA.tenantId,
+					})
 					const timer = makeScheduledTimer({
 						correlationId: mocks.tenantA.correlationId,
 						dueIn: '0 minutes',

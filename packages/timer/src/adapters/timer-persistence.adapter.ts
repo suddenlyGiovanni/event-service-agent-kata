@@ -1,5 +1,4 @@
 /** biome-ignore-all lint/style/useNamingConvention:  explanation: Capitalized identifiers follow Effect service conventions */
-import * as PlatformBun from '@effect/platform-bun'
 import { Model, SqlClient, SqlSchema } from '@effect/sql'
 import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
@@ -124,10 +123,11 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, SqlClient.SqlClient
 				}),
 				SqlSchema.void({
 					execute: ({ tenantId, serviceCallId }) =>
-						sql`DELETE
-                      FROM timer_schedules
-                      WHERE ${sql.and([sql`tenant_id = ${tenantId}`, sql`service_call_id = ${serviceCallId}`])};
-									`,
+						sql`
+                DELETE
+                FROM timer_schedules
+                WHERE ${sql.and([sql`tenant_id = ${tenantId}`, sql`service_call_id = ${serviceCallId}`])};
+						`,
 					Request: Ports.TimerScheduleKey,
 				}),
 				mapSqlError('delete'),
@@ -158,10 +158,10 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, SqlClient.SqlClient
 				SqlSchema.findOne({
 					execute: ({ tenantId, serviceCallId }) =>
 						sql`
-                        SELECT *
-                        FROM timer_schedules
-                        WHERE ${sql.and([sql`tenant_id = ${tenantId}`, sql`service_call_id = ${serviceCallId}`])};
-										`,
+                SELECT *
+                FROM timer_schedules
+                WHERE ${sql.and([sql`tenant_id = ${tenantId}`, sql`service_call_id = ${serviceCallId}`])};
+						`,
 					Request: Ports.TimerScheduleKey,
 					Result: TimerModel,
 				}),
@@ -192,16 +192,16 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, SqlClient.SqlClient
 				SqlSchema.findAll({
 					execute: now =>
 						sql`
-                        SELECT *
-                        FROM timer_schedules
-                        WHERE ${sql.and([sql`state = 'Scheduled'`, sql`due_at <= ${now}`])}
-                        ORDER BY due_at
-                            ASC,
-                                 registered_at
-                            ASC,
-                                 service_call_id
-                            ASC;
-										`,
+                SELECT *
+                FROM timer_schedules
+                WHERE ${sql.and([sql`state = 'Scheduled'`, sql`due_at <= ${now}`])}
+                ORDER BY due_at
+                    ASC,
+                         registered_at
+                    ASC,
+                         service_call_id
+                    ASC;
+						`,
 					Request: Schema.DateTimeUtc,
 					Result: TimerModel,
 				}),
@@ -243,14 +243,14 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, SqlClient.SqlClient
 				SqlSchema.findOne({
 					execute: ({ tenantId, serviceCallId }) =>
 						sql`
-                        SELECT *
-                        FROM timer_schedules
-                        WHERE ${sql.and([
-													sql`tenant_id = ${tenantId}`,
-													sql`service_call_id = ${serviceCallId}`,
-													sql`state = 'Scheduled'`,
-												])};
-										`,
+                SELECT *
+                FROM timer_schedules
+                WHERE ${sql.and([
+									sql`tenant_id = ${tenantId}`,
+									sql`service_call_id = ${serviceCallId}`,
+									sql`state = 'Scheduled'`,
+								])};
+						`,
 					Request: Ports.TimerScheduleKey,
 					Result: TimerModel,
 				}),
@@ -295,15 +295,15 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, SqlClient.SqlClient
 				SqlSchema.void({
 					execute: ({ reachedAt, tenantId, serviceCallId }) =>
 						sql`
-                        UPDATE timer_schedules
-                        SET state      = 'Reached',
-                            reached_at = ${reachedAt}
-                        WHERE ${sql.and([
-													sql`tenant_id = ${tenantId}`,
-													sql`service_call_id = ${serviceCallId}`,
-													sql`state = 'Scheduled'`,
-												])};
-										`,
+                UPDATE timer_schedules
+                SET state      = 'Reached',
+                    reached_at = ${reachedAt}
+                WHERE ${sql.and([
+									sql`tenant_id = ${tenantId}`,
+									sql`service_call_id = ${serviceCallId}`,
+									sql`state = 'Scheduled'`,
+								])};
+						`,
 					Request: Schema.Struct({
 						...Ports.TimerScheduleKey.fields,
 						reachedAt: Schema.DateTimeUtc,
@@ -596,10 +596,7 @@ export class TimerPersistence {
 	/**
 	 * Live Layer using SQLite with file-backed database
 	 */
-	static readonly Live = Layer.provide(
-		Layer.effect(Ports.TimerPersistencePort, make),
-		Layer.provide(SQL.Live, PlatformBun.BunPath.layer),
-	)
+	static readonly Live = Layer.provide(Layer.effect(Ports.TimerPersistencePort, make), SQL.Live)
 
 	/**
 	 * Test Layer using SQLite with in-memory database
@@ -607,8 +604,5 @@ export class TimerPersistence {
 	 * Provides realistic persistence behavior without external dependencies.
 	 * Uses SQLite in-memory mode for fast, isolated tests.
 	 */
-	static readonly Test = Layer.provide(
-		Layer.effect(Ports.TimerPersistencePort, make),
-		Layer.provide(SQL.Test, PlatformBun.BunPath.layer),
-	)
+	static readonly Test = Layer.provide(Layer.effect(Ports.TimerPersistencePort, make), SQL.Test)
 }

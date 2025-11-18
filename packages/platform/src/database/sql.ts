@@ -36,9 +36,7 @@ import * as StringModule from 'effect/String'
  * ```typescript
  * import { SQL } from '@event-service-agent/platform/database'
  * import * as Effect from 'effect/Effect'
- * import * as Layer from 'effect/Layer'
  * import * as Sql from '@effect/sql'
- * import * as PlatformBun from '@effect/platform-bun'
  *
  * const program = Effect.gen(function* () {
  *   const sql = yield* Sql.SqlClient.SqlClient
@@ -46,13 +44,11 @@ import * as StringModule from 'effect/String'
  *   return result
  * })
  *
- * // Production layer
- * const layer = SQL.Live.pipe(Layer.provide(PlatformBun.BunContext.layer))
- * Effect.provide(program, layer)
+ * // Production layer (self-contained, no dependencies)
+ * Effect.provide(program, SQL.Live)
  *
- * // Test layer (in-memory)
- * const testLayer = SQL.Test.pipe(Layer.provide(PlatformBun.BunContext.layer))
- * Effect.provide(program, testLayer)
+ * // Test layer (in-memory, self-contained)
+ * Effect.provide(program, SQL.Test)
  * ```
  *
  * @see ADR-0004 for database structure decisions
@@ -262,7 +258,7 @@ export class SQL {
 	 * - DB_PATH: Database file path (default: '<workspace>/data/db.sqlite')
 	 * - DB_SCHEMA_DIR: Schema dump directory (default: '<workspace>/data')
 	 *
-	 * Requires: `Platform.Path.Path` from context (provide `BunContext.layer`)
+	 * Self-contained: Provides all dependencies internally (no external requirements)
 	 */
 	static readonly Live: Layer.Layer<
 		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient,
@@ -271,7 +267,7 @@ export class SQL {
 		| ConfigError
 		| Platform.Error.BadArgument
 		| Platform.Error.SystemError,
-		Platform.Path.Path
+		never
 	> = Effect.gen(function* () {
 		yield* Effect.logInfo('Initializing production SQLite client')
 
@@ -283,8 +279,27 @@ export class SQL {
 			schemaDirectory: config.schemaDirectory,
 		})
 
-		return Layer.provideMerge(SQL.makeMigrator(config.schemaDirectory), SQL.makeClient(config.filename))
-	}).pipe(Effect.withSpan('SQL.Live'), Layer.unwrapEffect)
+		/*
+		 * Layer composition strategy:
+		 * 1. makeClient creates SqlClient (with pragma setup)
+		 * 2. makeMigrator requires SqlClient (runs migrations)
+		 * 3. Layer.provide: give migrator the client it needs
+		 * 4. Layer.merge: export both client and migrator services
+		 *
+		 * Scope nesting:
+		 *   Application Scope
+		 *     └─ makeClient Scope (SqlClient connection + pragmas)
+		 *         └─ makeMigrator Scope (runs migrations using SqlClient)
+		 */
+		const clientLayer = SQL.makeClient(config.filename)
+		const migratorLayer = SQL.makeMigrator(config.schemaDirectory).pipe(Layer.provide(clientLayer))
+
+		return Layer.merge(clientLayer, migratorLayer)
+	}).pipe(
+		Effect.withSpan('SQL.Live'),
+		Effect.provide(PlatformBun.BunPath.layer), // Provide Path.Path internally
+		Layer.unwrapEffect,
+	)
 
 	/**
 	 * Test SQLite client layer (in-memory).
@@ -293,7 +308,7 @@ export class SQL {
 	 * - Runs same migrations as production (platform migrations)
 	 * - Identical schema and pragma configuration to production
 	 *
-	 * Requires: `Platform.Path.Path` from context (provide `BunContext.layer`)
+	 * Self-contained: Provides all dependencies internally (no external requirements)
 	 */
 	static readonly Test: Layer.Layer<
 		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient,
@@ -302,7 +317,7 @@ export class SQL {
 		| ConfigError
 		| Platform.Error.BadArgument
 		| Platform.Error.SystemError,
-		Platform.Path.Path
+		never
 	> = Effect.gen(function* () {
 		yield* Effect.logInfo('Initializing test SQLite client (in-memory)')
 
@@ -312,6 +327,25 @@ export class SQL {
 			schemaDirectory: '<none>',
 		})
 
-		return Layer.provideMerge(SQL.makeMigrator(), SQL.makeClient(':memory:'))
-	}).pipe(Effect.withSpan('SQL.Test'), Layer.unwrapEffect)
+		/*
+		 * Layer composition strategy:
+		 * 1. makeClient creates SqlClient (with pragma setup)
+		 * 2. makeMigrator requires SqlClient (runs migrations)
+		 * 3. Layer.provide: give migrator the client it needs
+		 * 4. Layer.merge: export both client and migrator services
+		 *
+		 * Scope nesting:
+		 *   Test Scope
+		 *     └─ makeClient Scope (SqlClient :memory: + pragmas)
+		 *         └─ makeMigrator Scope (runs migrations using SqlClient)
+		 */
+		const clientLayer = SQL.makeClient(':memory:')
+		const migratorLayer = SQL.makeMigrator().pipe(Layer.provide(clientLayer))
+
+		return Layer.merge(clientLayer, migratorLayer)
+	}).pipe(
+		Effect.withSpan('SQL.Test'),
+		Effect.provide(PlatformBun.BunPath.layer), // Provide Path.Path internally
+		Layer.unwrapEffect,
+	)
 }
