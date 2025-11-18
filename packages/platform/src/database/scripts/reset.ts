@@ -54,19 +54,20 @@ import { SQL } from '../sql.ts'
  */
 const program = Effect.gen(function* () {
 	yield* Effect.logInfo('Starting database reset')
-	yield* Effect.logWarning('⚠️  This will DESTROY ALL DATA in the database')
+	yield* Effect.logWarning('⚠️ This will DESTROY ALL DATA in the database')
 
 	const sql = yield* Sql.SqlClient.SqlClient
 
 	// 1. Get all user tables (exclude sqlite_* system tables)
 	yield* Effect.logInfo('Discovering tables to drop')
-	const tables = yield* sql<{ name: string }>`
-    SELECT name 
-    FROM sqlite_master 
-    WHERE type='table' 
-      AND name NOT LIKE 'sqlite_%'
-    ORDER BY name
-  `
+	const tables = yield* sql<{
+		name: string
+	}>`SELECT name
+     FROM sqlite_master
+     WHERE type = 'table'
+       AND name NOT LIKE 'sqlite_%'
+     ORDER BY name;
+	`
 
 	const tableNames = tables.map(t => t.name)
 	yield* Effect.logInfo('Found tables', { tables: tableNames })
