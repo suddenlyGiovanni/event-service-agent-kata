@@ -112,14 +112,13 @@ export class SQL {
 	}).pipe(Effect.withSpan('SQL.DatabaseConfig'))
 
 	/**
-	 * Shared migrator layer for both Live and Test environments.
+	 * Creates a migrator layer with optional schema dump directory.
 	 *
 	 * Discovery strategy:
 	 * - Finds all migration files across all packages in the monorepo
 	 * - Uses Bun.Glob with pattern to discover package migration directories
 	 * - Sorts by filename for deterministic execution order
 	 * - Tracks executed migrations in effect_sql_migrations table
-	 * - Schema directory: Workspace-root data/ (configurable via DB_SCHEMA_DIR env var)
 	 *
 	 * Migration Organization:
 	 * - Bootstrap migration (0001) in platform package creates table skeletons
@@ -127,11 +126,20 @@ export class SQL {
 	 * - Filename-based ordering ensures bootstrap runs before module migrations
 	 * - Each module owns its schema evolution via migrations in its src/database/migrations/
 	 *
+	 * Schema Dump Behavior:
+	 * - If schemaDirectory provided: dumps schema to _schema.sql after migrations
+	 * - If schemaDirectory undefined: skips schema dump (test environments)
+	 *
+	 * @param schemaDirectory - Optional directory path for schema dump file
+	 * @returns Migrator layer with migration execution + optional schema dump
+	 *
 	 * @see ADR-0005 for schema design (bootstrap + module evolution pattern)
 	 * @see ADR-0012 for package structure (module ownership)
-	 * @internal Shared between Live and Test to ensure identical schema
+	 * @internal Factory for Live (with dump) and Test (no dump) migrators
 	 */
-	private static readonly Migrator: Layer.Layer<
+	private static readonly makeMigrator: (
+		schemaDirectory?: string,
+	) => Layer.Layer<
 		never,
 		| ConfigError
 		| Platform.Error.BadArgument
@@ -139,11 +147,10 @@ export class SQL {
 		| Sql.Migrator.MigrationError
 		| Sql.SqlError.SqlError,
 		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient
-	> = Layer.unwrapEffect(
+	> = schemaDirectory =>
 		Effect.gen(function* () {
-			yield* Effect.logInfo('Initializing database migrator')
+			yield* Effect.logInfo('Initializing database migrator', { schemaDirectory })
 
-			const config = yield* SQL.DatabaseConfig
 			const path = yield* Path.Path
 
 			// Resolve workspace root from package.json location
@@ -181,17 +188,16 @@ export class SQL {
 			const loader = SqliteBun.SqliteMigrator.fromGlob(migrationsRecord)
 
 			yield* Effect.logInfo('Creating migrator layer', {
-				schemaDirectory: config.schemaDirectory,
+				schemaDirectory: schemaDirectory ?? '<none>',
 				table: 'effect_sql_migrations',
 			})
 
 			return SqliteBun.SqliteMigrator.layer({
 				loader,
-				schemaDirectory: config.schemaDirectory,
+				schemaDirectory: schemaDirectory ?? (undefined as never),
 				table: 'effect_sql_migrations',
 			}).pipe(Layer.provide(PlatformBun.BunContext.layer))
-		}).pipe(Effect.withSpan('SQL.Migrator'), Effect.provide(PlatformBun.BunPath.layer)),
-	)
+		}).pipe(Effect.withSpan('SQL.makeMigrator'), Effect.provide(PlatformBun.BunPath.layer), Layer.unwrapEffect)
 
 	/**
 	 * Creates a SQLite client layer with the specified database filename.
@@ -266,20 +272,19 @@ export class SQL {
 		| Platform.Error.BadArgument
 		| Platform.Error.SystemError,
 		Platform.Path.Path
-	> = Layer.unwrapEffect(
-		Effect.gen(function* () {
-			yield* Effect.logInfo('Initializing production SQLite client')
+	> = Effect.gen(function* () {
+		yield* Effect.logInfo('Initializing production SQLite client')
 
-			const config = yield* SQL.DatabaseConfig
+		const config = yield* SQL.DatabaseConfig
 
-			yield* Effect.logInfo('Creating production database layer', {
-				filename: config.filename,
-				mode: 'persistent',
-			})
+		yield* Effect.logInfo('Creating production database layer', {
+			filename: config.filename,
+			mode: 'persistent',
+			schemaDirectory: config.schemaDirectory,
+		})
 
-			return Layer.provideMerge(SQL.Migrator, SQL.makeClient(config.filename))
-		}).pipe(Effect.withSpan('SQL.Live')),
-	)
+		return Layer.provideMerge(SQL.makeMigrator(config.schemaDirectory), SQL.makeClient(config.filename))
+	}).pipe(Effect.withSpan('SQL.Live'), Layer.unwrapEffect)
 
 	/**
 	 * Test SQLite client layer (in-memory).
@@ -298,16 +303,15 @@ export class SQL {
 		| Platform.Error.BadArgument
 		| Platform.Error.SystemError,
 		Platform.Path.Path
-	> = Layer.unwrapEffect(
-		Effect.gen(function* () {
-			yield* Effect.logInfo('Initializing test SQLite client (in-memory)')
+	> = Effect.gen(function* () {
+		yield* Effect.logInfo('Initializing test SQLite client (in-memory)')
 
-			yield* Effect.logInfo('Creating test database layer', {
-				filename: ':memory:',
-				mode: 'in-memory',
-			})
+		yield* Effect.logInfo('Creating test database layer', {
+			filename: ':memory:',
+			mode: 'in-memory',
+			schemaDirectory: '<none>',
+		})
 
-			return Layer.provideMerge(SQL.Migrator, SQL.makeClient(':memory:'))
-		}).pipe(Effect.withSpan('SQL.Test')),
-	)
+		return Layer.provideMerge(SQL.makeMigrator(), SQL.makeClient(':memory:'))
+	}).pipe(Effect.withSpan('SQL.Test'), Layer.unwrapEffect)
 }
