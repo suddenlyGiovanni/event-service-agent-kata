@@ -97,11 +97,11 @@ Prioritized queue.
       - [x] Add `timer-database.test.ts` invariants (well-formed insert + 3 constraint failures via `SQL.Test` layer)
   - **Phase 1: Add SQLite adapter (Steps 4-14)** - NOT STARTED
     - [x] Add `sqlite(config: { filename: string })` with Migrator (runs bootstrap + timer migrations)
-    - [ ] Define TimerRow Model.Class (maps to full timer_schedules schema)
-    - [ ] RED: Copy in-memory tests → sqlite tests (16 tests, all failing, `:memory:` runs both migrations)
-    - [ ] GREEN: Implement operations one-by-one (save, find, findScheduledTimer, findDue, markFired, delete)
-    - [ ] GREEN: All 16 sqlite tests passing
-    - [ ] REFACTOR: Extract helpers, document bootstrap + module schema split
+    - [x] Define TimerRow Model.Class (maps to full timer_schedules schema)
+    - [x] RED: Copy in-memory tests → sqlite tests (16 tests, all failing, `:memory:` runs both migrations)
+    - [x] GREEN: Implement operations one-by-one (save, find, findScheduledTimer, findDue, markFired, delete)
+    - [x] GREEN: All 16 sqlite tests passing
+    - [x] REFACTOR: Extract helpers, document bootstrap + module schema split
   - **Phase 2: Deprecate HashMap adapter (Steps 15-17)** - NOT STARTED
     - [ ] Migrate existing tests from `inMemory` → `sqlite({ filename: ':memory:' })`
     - [ ] Delete deprecated `inMemory` HashMap implementation (single source of truth)
