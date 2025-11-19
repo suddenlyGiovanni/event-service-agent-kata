@@ -12,41 +12,40 @@ export default Effect.gen(function* () {
 	yield* sql`ALTER TABLE timer_schedules ADD COLUMN state TEXT DEFAULT 'Scheduled'`
 
 	// Step 2: Create new table with all constraints
-	yield* sql`
-		CREATE TABLE timer_schedules_new (
-			tenant_id TEXT NOT NULL,
-			service_call_id TEXT NOT NULL,
-			correlation_id TEXT NOT NULL
-				CHECK (correlation_id <> ''),
-			due_at TEXT NOT NULL
-				CHECK (
-					due_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
-					AND length(due_at) BETWEEN 20 AND 35
-				),
-			registered_at TEXT NOT NULL
-				CHECK (
-					registered_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
-					AND length(registered_at) BETWEEN 20 AND 35
-				),
-			reached_at TEXT
-				CHECK (
-					reached_at IS NULL
-						OR (
-							reached_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
-							AND length(reached_at) BETWEEN 20 AND 35
-						)
-				),
-			state TEXT NOT NULL DEFAULT 'Scheduled'
-				CHECK (state IN ('Scheduled', 'Reached')),
-			CHECK (
-				(state = 'Scheduled' AND reached_at IS NULL)
-					OR (state = 'Reached' AND reached_at IS NOT NULL)
-			),
-			PRIMARY KEY (tenant_id, service_call_id),
-			FOREIGN KEY (tenant_id, service_call_id) 
-				REFERENCES service_calls(tenant_id, service_call_id) 
-				ON DELETE CASCADE
-		) STRICT
+	yield* sql`CREATE TABLE timer_schedules_new
+(
+    tenant_id       TEXT NOT NULL,
+    service_call_id TEXT NOT NULL,
+    correlation_id  TEXT,
+    due_at          TEXT NOT NULL
+        CHECK (
+            due_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
+                AND length(due_at) BETWEEN 20 AND 35
+            ),
+    registered_at   TEXT NOT NULL
+        CHECK (
+            registered_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
+                AND length(registered_at) BETWEEN 20 AND 35
+            ),
+    reached_at      TEXT
+        CHECK (
+            reached_at IS NULL
+                OR (
+                reached_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
+                    AND length(reached_at) BETWEEN 20 AND 35
+                )
+            ),
+    state           TEXT NOT NULL DEFAULT 'Scheduled'
+        CHECK (state IN ('Scheduled', 'Reached')),
+    CHECK (
+        (state = 'Scheduled' AND reached_at IS NULL)
+            OR (state = 'Reached' AND reached_at IS NOT NULL)
+        ),
+    PRIMARY KEY (tenant_id, service_call_id),
+    FOREIGN KEY (tenant_id, service_call_id)
+        REFERENCES service_calls (tenant_id, service_call_id)
+        ON DELETE CASCADE
+) STRICT;
 	`
 
 	// Step 3: Copy data from old table to new (if any exists)
@@ -56,7 +55,7 @@ export default Effect.gen(function* () {
 		SELECT 
 			tenant_id,
 			service_call_id,
-			COALESCE(NULLIF(correlation_id, ''), service_call_id) AS correlation_id,
+			correlation_id,
 			COALESCE(due_at, '1970-01-01T00:00:00.000Z') AS due_at,
 			COALESCE(registered_at, '1970-01-01T00:00:00.000Z') AS registered_at,
 			CASE

@@ -63,40 +63,6 @@ layer(TestLayer)('Timer database invariants', it => {
 		}),
 	)
 
-	it.scoped('rejects timers with blank correlation_id', () =>
-		Effect.gen(function* () {
-			const sql = yield* Sql.SqlClient.SqlClient
-			const uuid = yield* UUID7
-
-			const serviceCallId = yield* uuid.randomUUIDv7()
-			const tenantId = yield* uuid.randomUUIDv7()
-			const now = yield* DateTime.now
-			const registeredAt = DateTime.formatIso(now)
-			const dueAt = DateTime.formatIso(DateTime.add(now, { hours: 1 }))
-
-			yield* insertServiceCall(tenantId, serviceCallId)
-
-			const exit = yield* Effect.exit(
-				sql`
-            INSERT INTO timer_schedules (tenant_id,
-                                         service_call_id,
-                                         correlation_id,
-                                         due_at,
-                                         registered_at,
-                                         state)
-            VALUES (${tenantId},
-                    ${serviceCallId},
-                    '',
-                    ${dueAt},
-                    ${registeredAt},
-                    'Scheduled')
-				`,
-			)
-
-			expect(Exit.isFailure(exit)).toBe(true)
-		}),
-	)
-
 	it.scoped('rejects timers with non ISO8601 due_at', () =>
 		Effect.gen(function* () {
 			const sql = yield* Sql.SqlClient.SqlClient
