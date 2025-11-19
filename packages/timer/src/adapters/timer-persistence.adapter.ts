@@ -97,6 +97,9 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	 * Helper: Map SQL errors to domain PersistenceError
 	 *
 	 * Provides consistent error handling across all SQL operations.
+	 * Preserves full error context (stack traces, nested errors) via Schema.Defect.
+	 * Extracts human-readable message from Error objects for observability.
+	 *
 	 * Only SQL-level errors (connection, syntax, constraint violations) become PersistenceError.
 	 * Application-level errors (like validation) should fail with their specific error types.
 	 */
@@ -104,7 +107,8 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 		Effect.mapError(
 			(error: unknown) =>
 				new Ports.PersistenceError({
-					cause: error as string, // FIXME: PersistenceError.cause should be of type Schema.Defect?
+					cause: error,
+					message: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
 					operation,
 				}),
 		)

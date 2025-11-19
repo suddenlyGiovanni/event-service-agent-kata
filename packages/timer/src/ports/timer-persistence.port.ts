@@ -17,7 +17,6 @@
 
 import type * as Chunk from 'effect/Chunk'
 import * as Context from 'effect/Context'
-import * as Data from 'effect/Data'
 import type * as DateTime from 'effect/DateTime'
 import type * as Effect from 'effect/Effect'
 import type * as Option from 'effect/Option'
@@ -28,24 +27,36 @@ import { ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 import type { TimerEntry } from '../domain/timer-entry.domain.ts'
 
 /**
- * PersistenceError - Generic error when storage operations fail
+ * PersistenceError - Storage operation failure
  *
- * Adapter maps storage-specific errors (connection failure, constraint
- * violations, query errors, etc.) to this generic error. Specific details
- * are logged by the adapter for observability.
+ * Preserves full diagnostic context from underlying storage layer.
+ * The `cause` field contains the raw error (with stack trace, nested errors, etc.)
+ * for debugging and observability. The `message` field provides a human-readable
+ * summary extracted from the cause.
+ *
+ * Follows Effect Platform error pattern (see @effect/platform/Error).
  */
-export class PersistenceError extends Data.TaggedError('PersistenceError')<{
-	readonly cause: string
-	readonly operation: keyof TimerPersistencePort
-}> {}
+export class PersistenceError extends Schema.TaggedError<PersistenceError>()('PersistenceError', {
+	/** Raw error from storage layer (preserves stack, message, code, etc.) */
+	cause: Schema.optional(Schema.Defect),
+	/** Human-readable description of what failed */
+	message: Schema.optional(Schema.String),
+	/** Which persistence operation failed */
+	operation: Schema.Literal('save', 'find', 'findScheduledTimer', 'findDue', 'markFired', 'delete'),
+}) {
+	/** Format error for logs/debugging */
+	get formattedMessage(): string {
+		return `PersistenceError.${this.operation}${this.message ? `: ${this.message}` : ''}`
+	}
+}
 
 /**
  * TimerNotFoundError - Thrown when a timer cannot be found
  */
-export class TimerNotFoundError extends Data.TaggedError('TimerNotFoundError')<{
-	readonly tenantId: TenantId.Type
-	readonly serviceCallId: ServiceCallId.Type
-}> {}
+export class TimerNotFoundError extends Schema.TaggedError<TimerNotFoundError>()('TimerNotFoundError', {
+	serviceCallId: ServiceCallId,
+	tenantId: TenantId,
+}) {}
 
 /**
  * TimerScheduleKey - Composite identity for timer persistence operations
