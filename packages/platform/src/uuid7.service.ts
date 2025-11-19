@@ -37,7 +37,7 @@ import * as Ports from './ports/index.ts'
  *
  * @example
  *
- * ```typescript
+ * ```typescript ignore
  * import { Effect } from 'effect'
  * import { UUID7 } from '@event-service-agent/platform'
  *
@@ -70,7 +70,7 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 			 *
 			 * @example
 			 *
-			 * ```typescript
+			 * ```typescript ignore
 			 * // Generate with current time - dependencies satisfied automatically
 			 * const id = yield * UUID7Service.randomUUIDv7()
 			 *
@@ -102,7 +102,7 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 *
 	 * @example
 	 *
-	 * ```typescript
+	 * ```typescript ignore
 	 * import { Effect } from 'effect'
 	 * import { UUID7 } from '@event-service-agent/platform'
 	 *
@@ -135,7 +135,7 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 *
 	 * @example
 	 *
-	 * ```typescript
+	 * ```typescript ignore
 	 * import { Effect } from 'effect'
 	 * import { UUID7 } from '@event-service-agent/platform'
 	 *
