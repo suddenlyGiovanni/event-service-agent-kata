@@ -76,9 +76,9 @@ CREATE TABLE IF NOT EXISTS "timer_schedules"
               ON DELETE CASCADE
       ) STRICT;
 CREATE INDEX idx_timer_schedules_due_at
-          ON timer_schedules (tenant_id, state, due_at);
+          ON timer_schedules (state, due_at, tenant_id);
 CREATE INDEX idx_timer_schedules_correlation_id
           ON timer_schedules (correlation_id);
 
-INSERT INTO effect_sql_migrations VALUES(1,'2025-11-19 12:07:51','bootstrap_schema');
-INSERT INTO effect_sql_migrations VALUES(3,'2025-11-19 12:07:51','timer_schedules_schema');
+INSERT INTO effect_sql_migrations VALUES(1,'2025-11-19 12:33:24','bootstrap_schema');
+INSERT INTO effect_sql_migrations VALUES(3,'2025-11-19 12:33:24','timer_schedules_schema');

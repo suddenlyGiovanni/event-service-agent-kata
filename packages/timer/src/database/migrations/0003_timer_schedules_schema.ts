@@ -16,7 +16,9 @@ import * as Effect from 'effect/Effect'
 const migration: Effect.Effect<void, Sql.SqlError.SqlError, Sql.SqlClient.SqlClient> = Effect.gen(function* () {
 	const sql = yield* Sql.SqlClient.SqlClient
 
-	// Step 1: Add new columns to existing table
+	/**
+	 * Step 1: Add new columns to existing table
+	 */
 	yield* sql`
       ALTER TABLE timer_schedules
           ADD COLUMN correlation_id TEXT;
@@ -42,7 +44,9 @@ const migration: Effect.Effect<void, Sql.SqlError.SqlError, Sql.SqlClient.SqlCli
           ADD COLUMN state TEXT DEFAULT 'Scheduled';
 	`
 
-	// Step 2: Create new table with all constraints
+	/**
+	 * Step 2: Create new table with all constraints
+	 */
 	yield* sql`
       CREATE TABLE timer_schedules_new
       (
@@ -88,7 +92,9 @@ const migration: Effect.Effect<void, Sql.SqlError.SqlError, Sql.SqlClient.SqlCli
       ) STRICT;
 	`
 
-	// Step 3: Copy data from old table to new (if any exists)
+	/**
+	 * Step 3: Copy data from old table to new (if any exists)
+	 */
 	yield* sql`
       INSERT INTO timer_schedules_new
       (tenant_id,
@@ -116,21 +122,32 @@ const migration: Effect.Effect<void, Sql.SqlError.SqlError, Sql.SqlClient.SqlCli
       FROM timer_schedules;
 	`
 
-	// Step 4: Drop old table
+	/**
+	 * Step 4: Drop old table
+	 */
 	yield* sql`
       DROP TABLE timer_schedules;
 	`
 
-	// Step 5: Rename new table to original name
+	/**
+	 * Step 5: Rename new table to original name
+	 */
 	yield* sql`
       ALTER TABLE timer_schedules_new
           RENAME TO timer_schedules;
 	`
 
-	// Step 6: Create indexes
+	/**
+	 * Step 6: Create indexes
+	 * Index optimized for global polling query: WHERE state = 'Scheduled' AND due_at <= ?
+	 * Leading with state allows SQLite to quickly filter out 'Reached' timers,
+	 * then scan by due_at for chronological ordering, with tenant_id included
+	 * for covering index benefits (avoids table lookup).
+	 * See: ADR-0003 (global polling pattern), findDue implementation in adapter
+	 */
 	yield* sql`
       CREATE INDEX idx_timer_schedules_due_at
-          ON timer_schedules (tenant_id, state, due_at);
+          ON timer_schedules (state, due_at, tenant_id);
 	`
 
 	yield* sql`
