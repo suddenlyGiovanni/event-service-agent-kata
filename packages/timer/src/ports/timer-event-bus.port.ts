@@ -47,16 +47,35 @@ export interface TimerEventBusPort {
 	 * @returns Effect that succeeds when event is published
 	 * @throws PublishError - When broker publish fails
 	 * @requires MessageMetadata - Context providing correlationId/causationId
-	 *
 	 * @example
-	 * ```typescript ignore
-	 * // Workflow provisions context
-	 * yield* eventBus.publishDueTimeReached(event).pipe(
-	 *   Effect.provideService(MessageMetadata, {
-	 *     correlationId: timer.correlationId,
-	 *     causationId: Option.none()
-	 *   })
-	 * )
+	 * ```typescript
+	 * import * as Effect from 'effect/Effect'
+	 * import * as Option from 'effect/Option'
+	 * import { MessageMetadata } from '@event-service-agent/platform/context'
+	 * import { TimerEventBusPort } from '@event-service-agent/timer/ports'
+	 * import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
+	 * import type { Messages } from '@event-service-agent/schemas/messages'
+	 *
+	 * // Example: Workflow provisions context when publishing
+	 * const publishWorkflow = Effect.gen(function* () {
+	 * 	const eventBus = yield* TimerEventBusPort
+	 * 	const correlationId = yield* CorrelationId.makeUUID7()
+	 *
+	 * 	// Build domain event
+	 * 	const event: Messages.Timer.Events.DueTimeReached.Type = {
+	 * 		tenantId: TenantId.make('tenant-123'),
+	 * 		serviceCallId: yield* ServiceCallId.makeUUID7(),
+	 * 		reachedAt: new Date().toISOString(),
+	 * 	}
+	 *
+	 * 	// Provision metadata context for publishing
+	 * 	yield* eventBus.publishDueTimeReached(event).pipe(
+	 * 		Effect.provideService(MessageMetadata, {
+	 * 			correlationId: Option.some(correlationId),
+	 * 			causationId: Option.none(),
+	 * 		})
+	 * 	)
+	 * })
 	 * ```
 	 */
 	readonly publishDueTimeReached: (
@@ -92,17 +111,31 @@ export interface TimerEventBusPort {
 	 * @throws E - When handler fails (propagated for error handling)
 	 *
 	 * @example
-	 * ```typescript ignore
-	 * // Command Handler usage
-	 * yield* eventBus.subscribeToScheduleTimerCommands((command, metadata) =>
-	 *   Effect.gen(function* () {
-	 *     // Metadata passed directly as parameter
-	 *     yield* scheduleTimerWorkflow({
-	 *       command,
-	 *       correlationId: metadata.correlationId
-	 *     })
-	 *   })
-	 * )
+	 * ```typescript
+	 * import * as Effect from 'effect/Effect'
+	 * import * as Option from 'effect/Option'
+	 * import { TimerEventBusPort } from '@event-service-agent/timer/ports'
+	 * import type { MessageMetadata } from '@event-service-agent/platform/context'
+	 * import type { Messages } from '@event-service-agent/schemas/messages'
+	 *
+	 * // Example: Command Handler subscribes to ScheduleTimer commands
+	 * const commandHandler = Effect.gen(function* () {
+	 * 	const eventBus = yield* TimerEventBusPort
+	 *
+	 * 	yield* eventBus.subscribeToScheduleTimerCommands(
+	 * 		(
+	 * 			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
+	 * 			metadata: MessageMetadata.Type
+	 * 		) =>
+	 * 			Effect.gen(function* () {
+	 * 				// Metadata passed directly as parameter
+	 * 				console.log('Processing command with correlation:', metadata.correlationId)
+	 *
+	 * 				// Invoke workflow with command and metadata
+	 * 				yield* Effect.succeed(undefined) // Simplified workflow
+	 * 			})
+	 * 	)
+	 * })
 	 * ```
 	 */
 	readonly subscribeToScheduleTimerCommands: <E, R>(

@@ -13,61 +13,94 @@
  * ## Usage Pattern
  *
  * ### In Workflows (Context Provisioning)
- * ```typescript ignore
- * // Extract correlationId from aggregate
- * const correlationId = timer.correlationId
+ * ```typescript
+ * import * as Effect from 'effect/Effect'
+ * import * as Option from 'effect/Option'
+ * import type { CorrelationId } from '@event-service-agent/schemas/shared'
+ * import { MessageMetadata } from '@event-service-agent/platform/context'
  *
- * // Wrap port call with context
- * yield* eventBus.publishDueTimeReached(event).pipe(
- *   Effect.provideService(MessageMetadata, {
- *     correlationId,
- *     causationId: Option.none()
- *   })
- * )
+ * // Example: Workflow provisions context for port operations
+ * const publishEventWorkflow = (correlationId: Option.Option<CorrelationId.Type>) =>
+ * 	Effect.gen(function* () {
+ * 		// Provision context with correlation metadata
+ * 		const metadata: MessageMetadata.Type = {
+ * 			correlationId,
+ * 			causationId: Option.none(),
+ * 		}
+ *
+ * 		// Use Effect.provideService to inject context
+ * 		yield* Effect.succeed(undefined).pipe(
+ * 			Effect.provideService(MessageMetadata, metadata)
+ * 		)
+ * 	})
  * ```
  *
  * ### In Ports (Requirement Declaration)
- * ```typescript ignore
+ * ```typescript
+ * import * as Context from 'effect/Context'
+ * import type * as Effect from 'effect/Effect'
+ * import { MessageMetadata } from '@event-service-agent/platform/context'
+ *
+ * // Example: Port declares MessageMetadata requirement via R parameter
  * class TimerEventBusPort extends Context.Tag('TimerEventBusPort')<
- *   TimerEventBusPort,
- *   {
- *     readonly publishDueTimeReached: (
- *       event: DueTimeReached
- *     ) => Effect.Effect<void, PublishError, MessageMetadata>
- *     //                                      ^^^^^^^^^^^^^^^^
- *     //                                      Requires context
- *   }
+ * 	TimerEventBusPort,
+ * 	{
+ * 		readonly publishDueTimeReached: (
+ * 			event: unknown
+ * 		) => Effect.Effect<void, Error, MessageMetadata>
+ * 		//                              ^^^^^^^^^^^^^^^^
+ * 		//                              Requires context
+ * 	}
  * >() {}
  * ```
  *
  * ### In Adapters (Context Consumption)
- * ```typescript ignore
- * publishDueTimeReached: (event) => Effect.gen(function* () {
- *   const metadata = yield* MessageMetadata
- *   //    ^^^^^^^^ Extract from context
+ * ```typescript
+ * import * as Effect from 'effect/Effect'
+ * import { MessageMetadata } from '@event-service-agent/platform/context'
  *
- *   const envelope = new MessageEnvelope({
- *     correlationId: metadata.correlationId,  // From context
- *     causationId: metadata.causationId,      // From context
- *     // ...
- *   })
- * })
+ * // Example: Adapter extracts metadata from context
+ * const publishDueTimeReachedAdapter = (event: unknown) =>
+ * 	Effect.gen(function* () {
+ * 		const metadata = yield* MessageMetadata
+ * 		//    ^^^^^^^^ Extract from Effect context
+ *
+ * 		// Use metadata to construct envelope
+ * 		const envelope = {
+ * 			correlationId: metadata.correlationId, // From context
+ * 			causationId: metadata.causationId, // From context
+ * 			payload: event,
+ * 		}
+ *
+ * 		return envelope
+ * 	})
  * ```
  *
  * ### In Tests (Test Data Provisioning)
- * ```typescript ignore
- * it.effect('should propagate correlationId', () =>
- *   Effect.gen(function* () {
- *     const correlationId = yield* CorrelationId.makeUUID7()
+ * ```typescript
+ * import { describe, expect, it } from '@effect/vitest'
+ * import * as Effect from 'effect/Effect'
+ * import * as Option from 'effect/Option'
+ * import { CorrelationId } from '@event-service-agent/schemas/shared'
+ * import { MessageMetadata } from '@event-service-agent/platform/context'
  *
- *     yield* workflow().pipe(
- *       Effect.provideService(MessageMetadata, {
- *         correlationId: Option.some(correlationId),
- *         causationId: Option.none()
- *       })
- *     )
- *   })
- * )
+ * describe('MessageMetadata', () => {
+ * 	it.effect('should propagate correlationId', () =>
+ * 		Effect.gen(function* () {
+ * 			const correlationId = yield* CorrelationId.makeUUID7()
+ *
+ * 			// Provision context for test
+ * 			const result = yield* Effect.succeed('test').pipe(
+ * 				Effect.provideService(MessageMetadata, {
+ * 					correlationId: Option.some(correlationId),
+ * 					causationId: Option.none(),
+ * 				})
+ * 			)
+ *
+ * 			expect(result).toBe('test')
+ * 		})
+ * 	)
+ * })
  * ```
  *
  * ## Design Rationale

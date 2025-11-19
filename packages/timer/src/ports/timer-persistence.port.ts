@@ -210,20 +210,29 @@ export interface TimerPersistencePort {
 	 *
 	 * @example Testing state transitions
 	 * ```typescript ignore
-	 * const program = Effect.gen(function* () {
-	 *   yield* persistence.markFired({
+	 * import { describe, expect, it } from '@effect/vitest'
+	 * import * as Effect from 'effect/Effect'
+	 * import * as Option from 'effect/Option'
+	 *
+	 * // Example: Verify timer state transitions in tests
+	 * it.effect('should mark timer as fired', () =>
+	 * 	Effect.gen(function* () {
+	 * 		const persistence = yield* TimerPersistencePort
+	 *
+	 *  yield* persistence.markFired({
 	 *     key: { tenantId, serviceCallId },
 	 *     reachedAt: now
 	 *   })
 	 *
-	 *   // Verify state transition happened (testing concern)
-	 *   const result = yield* persistence.find({ tenantId, serviceCallId })
-	 *   expect(Option.getOrThrow(result)._tag).toBe('Reached')
+	 * 		// Verify state transition happened (testing concern)
+	 * 		const result = yield* persistence.find({ tenantId, serviceCallId })
+	 * 		expect(Option.getOrThrow(result)._tag).toBe('Reached')
 	 *
-	 *   // Verify domain behavior (no longer active)
+	 *  // Verify domain behavior (no longer active)
 	 *   const scheduled = yield* persistence.findScheduledTimer({ tenantId, serviceCallId })
 	 *   expect(Option.isNone(scheduled)).toBe(true)
-	 * })
+	 * 	})
+	 * )
 	 * ```
 	 */
 	readonly find: (key: TimerScheduleKey.Type) => Effect.Effect<Option.Option<TimerEntry.Type>, PersistenceError>

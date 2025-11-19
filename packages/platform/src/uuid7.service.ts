@@ -36,9 +36,8 @@ import * as Ports from './ports/index.ts'
  * not suffixed with "Service" (like Random, Clock, Console).
  *
  * @example
- *
  * ```typescript ignore
- * import { Effect } from 'effect'
+ * import * as Effect from 'effect/Effect'
  * import { UUID7 } from '@event-service-agent/platform'
  *
  * // Production usage with accessor
@@ -67,22 +66,32 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 			 *
 			 * Calls the UUID port to generate a raw UUID string, then validates
 			 * and brands it using the UUID7 schema.
-			 *
 			 * @example
-			 *
 			 * ```typescript ignore
+			 * import * as DateTime from 'effect/DateTime'
+			 * import * as Effect from 'effect/Effect'
+			 * import { UUID7 } from '@event-service-agent/platform'
+			 *
 			 * // Generate with current time - dependencies satisfied automatically
-			 * const id = yield * UUID7Service.randomUUIDv7()
+			 * const example1 = Effect.gen(function* () {
+			 * 	const id = yield* UUID7.randomUUIDv7()
+			 * 	return id
+			 * }).pipe(Effect.provide(UUID7.Default))
 			 *
 			 * // Generate with specific time
-			 * const now = yield * DateTime.now
-			 * const id = yield * UUID7Service.randomUUIDv7(now)
+			 * const example2 = Effect.gen(function* () {
+			 * 	const now = yield* DateTime.now
+			 * 	const id = yield* UUID7.randomUUIDv7(now)
+			 * 	return id
+			 * }).pipe(Effect.provide(UUID7.Default))
 			 *
-			 * // yield the service
-			 * const uuid7 = yield * UUID7Service
-			 * // Generate with specific time
-			 * const now = yield * DateTime.now
-			 * const id = yield * uuid7.randomUUIDv7(now)
+			 * // Or yield the service and use it
+			 * const example3 = Effect.gen(function* () {
+			 * 	const uuid7 = yield* UUID7
+			 * 	const now = yield* DateTime.now
+			 * 	const id = yield* uuid7.randomUUIDv7(now)
+			 * 	return id
+			 * }).pipe(Effect.provide(UUID7.Default))
 			 * ```
 			 *
 			 * @param time - Optional DateTime for deterministic generation
@@ -101,9 +110,8 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 * dependency.
 	 *
 	 * @example
-	 *
 	 * ```typescript ignore
-	 * import { Effect } from 'effect'
+	 * import * as Effect from 'effect/Effect'
 	 * import { UUID7 } from '@event-service-agent/platform'
 	 *
 	 * const testProgram = Effect.gen(function* () {
@@ -134,9 +142,8 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 * 000000000000.
 	 *
 	 * @example
-	 *
 	 * ```typescript ignore
-	 * import { Effect } from 'effect'
+	 * import * as Effect from 'effect/Effect'
 	 * import { UUID7 } from '@event-service-agent/platform'
 	 *
 	 * const testProgram = Effect.gen(function* () {
