@@ -232,10 +232,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 			serviceCallId: ServiceCallId.Type,
 		): Effect.Effect<Option.Option<TimerEntry.ScheduledTimer>, Ports.PersistenceError> =>
 			pipe(
-				Ports.TimerScheduleKey.make({
-					serviceCallId,
-					tenantId,
-				}),
+				Ports.TimerScheduleKey.make({ serviceCallId, tenantId }),
 				Sql.SqlSchema.findOne({
 					execute: ({ tenantId, serviceCallId }) =>
 						sql`
@@ -251,20 +248,9 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 					Result: TimerScheduleRow,
 				}),
 				mapSqlError('findScheduledTimer'),
-				Effect.tap(
-					Effect.annotateCurrentSpan({
-						serviceCallId,
-						tenantId,
-					}),
-				),
+				Effect.tap(Effect.annotateCurrentSpan({ serviceCallId, tenantId })),
 				Effect.map(Option.map(timerRecordToTimerEntry)),
 				Effect.map(Option.filter(TimerEntry.isScheduled)),
-				Effect.tap(
-					Effect.annotateCurrentSpan({
-						serviceCallId,
-						tenantId,
-					}),
-				),
 			),
 	)
 
@@ -283,11 +269,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 			reachedAt: DateTime.Utc,
 		): Effect.Effect<void, Ports.PersistenceError> =>
 			pipe(
-				{
-					reachedAt,
-					serviceCallId,
-					tenantId,
-				},
+				{ reachedAt, serviceCallId, tenantId },
 				Sql.SqlSchema.void({
 					execute: ({ reachedAt, tenantId, serviceCallId }) =>
 						sql`
