@@ -29,7 +29,7 @@ import * as Workflows from './poll-due-timers.workflow.ts'
  * - TimerPersistence.Test: In-memory SQLite persistence adapter
  * - SQL.Test: In-memory SQLite database
  *
- * CRITICAL: Using `it.scoped()` instead of `it.scoped()` ensures each test gets
+ * CRITICAL: Using `it.scoped()` instead of `it.effect()` ensures each test gets
  * a FRESH layer scope with its own database instance. This prevents test pollution
  * where data from one test affects another.
  *
@@ -283,27 +283,15 @@ describe('pollDueTimersWorkflow', () => {
 		})
 
 		/**
-		 * TODO(PL-24): Re-enable correlationId propagation test
+		 * Verifies correlationId propagation from timer aggregate to published event.
 		 *
-		 * This test is marked as .todo() because the workflow currently cannot
-		 * pass correlationId from timer aggregate to published event (P0 CRITICAL).
+		 * The workflow provisions MessageMetadata Context with the timer's correlationId
+		 * before calling publishDueTimeReached. The adapter then accesses this context
+		 * to populate the envelope's correlationId field.
 		 *
-		 * Current blocker: Port signature changed to `publishDueTimeReached(event)`
-		 * where event is pure domain type (no correlationId). Workflow has no way
-		 * to provision MessageMetadata Context with correlationId extracted from
-		 * timer aggregate.
+		 * This ensures correlation chains remain intact across module boundaries.
 		 *
-		 * Once PL-24 Phase 3 is complete, this test should:
-		 * 1. Extract correlationId from timer aggregate: timer.correlationId
-		 * 2. Wrap publishDueTimeReached with Effect.provideService(MessageMetadata, ...)
-		 * 3. Verify adapter receives context and populates envelope.correlationId
-		 * 4. Re-enable assertions at end (currently commented out)
-		 *
-		 * Test currently only verifies event was published (line 308), not that
-		 * correlationId propagated correctly (lines 311-312 commented).
-		 *
-		 * See: docs/decisions/ADR-0013-correlation-propagation.md
-		 * See: docs/plan/correlation-context-implementation.md (Phase 3: PL-24.7)
+		 * @see ADR-0013 for correlation propagation strategy
 		 */
 		it.scoped('propagates correlationId from timer to event via MessageMetadata Context', () => {
 			/**
@@ -637,17 +625,7 @@ describe('pollDueTimersWorkflow', () => {
 						}),
 					),
 				)
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(
-						Adapters.TimerPersistence.Test,
-						Adapters.ClockPortTest,
-						TimerEventBusTest,
-						UUID7.Default,
-						SQL.Test,
-					),
-				),
-			)
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 	})
 
@@ -812,17 +790,7 @@ describe('pollDueTimersWorkflow', () => {
 				)
 
 				// End of test case
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(
-						Adapters.TimerPersistence.Test,
-						Adapters.ClockPortTest,
-						TimerEventBusTest,
-						UUID7.Default,
-						SQL.Test,
-					),
-				),
-			)
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 	})
 
