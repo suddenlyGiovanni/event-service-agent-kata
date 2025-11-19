@@ -165,8 +165,7 @@ describe('pollDueTimersWorkflow', () => {
 				const registeredAt = yield* clock.now()
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
-				// need to yield* withServiceCall({ serviceCallId, tenantId }) for each serviceCallId
-
+				
 				// Create and save timers using iteration
 				const timers = serviceCallIds.map(serviceCallId =>
 					Domain.ScheduledTimer.make({
@@ -177,11 +176,12 @@ describe('pollDueTimersWorkflow', () => {
 						tenantId,
 					}),
 				)
-
+				
 				yield* Effect.forEach(
 					timers,
 					t =>
 						Effect.andThen(
+							// Ensure each serviceCallId has a corresponding service_calls row before saving.
 							withServiceCall({
 								serviceCallId: t.serviceCallId,
 								tenantId: t.tenantId,
