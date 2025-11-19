@@ -1,7 +1,19 @@
-import { SqlClient } from '@effect/sql'
+import { SqlClient, type SqlError } from '@effect/sql'
 import * as Effect from 'effect/Effect'
 
-export default Effect.gen(function* () {
+/**
+ * Migration 0003: Extend timer_schedules with timer domain columns, constraints, and indexes
+ *
+ * Steps:
+ * 1. Add new nullable columns to the existing table
+ * 2. Create timer_schedules_new with NOT NULL, CHECK, FK, and STRICT constraints
+ * 3. Copy and normalize existing data into timer_schedules_new
+ * 4. Drop the old timer_schedules and rename the new table
+ * 5. Create polling and correlation_id indexes
+ *
+ * @see packages/timer/docs/schema.md for detailed schema documentation
+ */
+const migration: Effect.Effect<void, SqlError.SqlError, SqlClient.SqlClient> = Effect.gen(function* () {
 	const sql = yield* SqlClient.SqlClient
 
 	// Step 1: Add new columns to existing table
@@ -86,3 +98,5 @@ export default Effect.gen(function* () {
 		ON timer_schedules(correlation_id)
 	`
 })
+
+export default migration

@@ -46,11 +46,11 @@ import { SQL } from '../sql.ts'
  * Reset program.
  *
  * Steps:
- * 1. Connect to database (without running migrations)
+ * 1. Connect to database (SQL.Live runs migrations automatically on init)
  * 2. Query all tables from sqlite_master
- * 3. Drop each table (CASCADE to handle FKs)
- * 4. Disconnect and reconnect with migrations enabled
- * 5. Migrations run automatically on reconnect
+ * 3. Drop each table including effect_sql_migrations (to clear migration state)
+ * 4. Exit program (database is now empty)
+ * 5. User must run "bun run db:migrate" to recreate schema from scratch
  */
 const program = Effect.gen(function* () {
 	yield* Effect.logInfo('Starting database reset')
@@ -98,8 +98,9 @@ const program = Effect.gen(function* () {
 })
 
 // Provide production database layer + platform dependencies
-// Note: Migrations will NOT run during this program (we want to drop tables first)
-// User must run "bun run db:migrate" after reset to recreate schema
+// Note: SQL.Live runs migrations on initialization (before we drop tables)
+// This is acceptable - we drop everything including effect_sql_migrations table
+// User must run "bun run db:migrate" after reset to recreate schema from scratch
 const layer = SQL.Live.pipe(
 	Layer.provide(PlatformBun.BunContext.layer),
 	Layer.provide(Logger.minimumLogLevel(LogLevel.All)),

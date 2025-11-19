@@ -9,7 +9,7 @@ import * as Effect from 'effect/Effect'
  *
  * Note: Session-level pragmas (foreign_keys, synchronous, etc.) must be set
  * on client initialization, NOT in migrations (cannot change mid-transaction).
- * See client.ts for session pragma configuration.
+ * See sql.ts for session pragma configuration.
  *
  * Part 2: Schema Structure + FK Relationships
  * Philosophy:
