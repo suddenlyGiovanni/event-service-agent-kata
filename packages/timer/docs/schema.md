@@ -281,7 +281,7 @@ DO UPDATE SET
 
 ### 2. Find Due Timers (Polling)
 
-```sql
+```sqlite
 -- Domain: Poll for timers ready to fire (per-tenant)
 SELECT 
     tenant_id,
@@ -324,7 +324,7 @@ SEARCH timer_schedules USING INDEX idx_timer_schedules_due_at
 
 ### 3. Mark Timer Fired (Update)
 
-```sql
+```sqlite
 -- Domain: Transition timer to Reached state after publishing event
 UPDATE timer_schedules
 SET state = 'Reached',
@@ -364,7 +364,7 @@ WHERE tenant_id = ?
 
 ### 4. Find Timers by Correlation (Observability)
 
-```sql
+```sqlite
 -- Observability: Trace request flow
 SELECT 
     tenant_id,
@@ -402,7 +402,7 @@ SEARCH timer_schedules USING INDEX idx_timer_schedules_correlation_id (correlati
 
 **Port interface enforces tenant scoping:**
 
-```typescript
+```typescript ignore
 export interface TimerPersistencePort {
 	// Tenant ID required as first parameter
 	findDue(
@@ -426,18 +426,21 @@ export interface TimerPersistencePort {
 
 **Query implementation pattern:**
 
-```typescript
+```typescript ignore
+namespace CorrectExamples {
 // ✅ Correct: Tenant-scoped query (all WHERE clauses include tenant_id)
-const timers = await db.query(
-	'SELECT * FROM timer_schedules WHERE tenant_id = ? AND state = ?',
-	[tenantId, 'Scheduled']
-)
-
-// ❌ Wrong: Global query (would leak cross-tenant data)
-const timers = await db.query(
-	'SELECT * FROM timer_schedules WHERE state = ?',
-	['Scheduled']
-)
+	const timers = await db.query(
+			'SELECT * FROM timer_schedules WHERE tenant_id = ? AND state = ?',
+			[tenantId, 'Scheduled'],
+	)
+}
+namespace WrongExamples {
+	// ❌ Wrong: Global query (would leak cross-tenant data)
+	const timers = await db.query(
+			'SELECT * FROM timer_schedules WHERE state = ?',
+			['Scheduled'],
+	)
+}
 ```
 
 **Why this matters for Timer:**
@@ -454,7 +457,7 @@ const timers = await db.query(
 
 ### Multi-Tenant Isolation Test
 
-```typescript
+```typescript ignore
 it.effect('should not return timers from other tenants', () =>
 	Effect.gen(function* () {
 		const persistence = yield* TimerPersistencePort
@@ -497,7 +500,7 @@ it.effect('should not return timers from other tenants', () =>
 
 ### Index Coverage Test (EXPLAIN QUERY PLAN)
 
-```typescript
+```typescript ignore
 it.effect('should use index for polling query', () =>
 	Effect.gen(function* () {
 		const sql = yield* SqlClient.SqlClient
@@ -522,7 +525,7 @@ it.effect('should use index for polling query', () =>
 
 ### FK Constraint Test
 
-```typescript
+```typescript ignore
 it.effect('should cascade delete timer when ServiceCall deleted', () =>
 	Effect.gen(function* () {
 		const persistence = yield* TimerPersistencePort
@@ -568,12 +571,12 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 
 ### Query Complexity
 
-| Query                  | Index Used                         | Complexity     | Notes                                  |
-| ---------------------- | ---------------------------------- | -------------- | -------------------------------------- |
-| Schedule Timer (upsert) | PK `(tenant_id, service_call_id)` | O(log N)       | B-tree insert/update                   |
-| Find Due Timers        | `idx_timer_schedules_due_at`       | O(log N + K)   | K = LIMIT (bounded)                    |
-| Mark Fired             | PK `(tenant_id, service_call_id)` | O(log N)       | Single-row update                      |
-| Find by Correlation    | `idx_timer_schedules_correlation_id` | O(log N + M) | M = timers per correlation (typically 1) |
+| Query                   | Index Used                           | Complexity   | Notes                                    |
+|-------------------------|--------------------------------------|--------------|------------------------------------------|
+| Schedule Timer (upsert) | PK `(tenant_id, service_call_id)`    | O(log N)     | B-tree insert/update                     |
+| Find Due Timers         | `idx_timer_schedules_due_at`         | O(log N + K) | K = LIMIT (bounded)                      |
+| Mark Fired              | PK `(tenant_id, service_call_id)`    | O(log N)     | Single-row update                        |
+| Find by Correlation     | `idx_timer_schedules_correlation_id` | O(log N + M) | M = timers per correlation (typically 1) |
 
 ### Scaling Assumptions
 
@@ -631,7 +634,7 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 
 **Migration Pattern:**
 
-```typescript
+```typescript ignore
 // Step 1: Create new table with full schema
 yield* sql`CREATE TABLE timer_schedules_new (...)`
 
