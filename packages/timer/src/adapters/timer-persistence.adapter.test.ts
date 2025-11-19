@@ -337,7 +337,7 @@ describe('TimerPersistenceAdapter', () => {
 				})
 				yield* withScheduledTimer({
 					correlationId: mocks.tenantA.otherCorrelationId,
-					dueIn: 9,
+					dueIn: '9 minutes',
 					serviceCallId: mocks.tenantA.otherServiceCallId,
 					tenantId: mocks.tenantA.tenantId,
 				})
