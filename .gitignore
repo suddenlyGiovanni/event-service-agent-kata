@@ -40,3 +40,5 @@ bun.lockb
 
 #nix
 /.direnv
+
+.github/prompts/

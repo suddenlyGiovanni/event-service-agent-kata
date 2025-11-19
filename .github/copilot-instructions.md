@@ -954,6 +954,42 @@ export const scheduleTimer = (
 - Avoid pseudo-code or simplified examples that wouldn't compile
 - Test examples locally before committing: `bun run docs:type-check && bun run docs:test`
 
+**How Doc Tests Work**:
+
+Deno extracts code blocks from JSDoc/markdown and transforms them into standalone test modules:
+
+- Each `@example` block becomes a `Deno.test()` case
+- The test module lives in the same directory as the documented file
+- **Exported items are automatically imported**: Any functions, classes, or values exported from the documented module are available in the example without explicit imports
+- For type-checking only (no execution): Use `deno check --doc` (JSDoc) or `deno check --doc-only` (markdown)
+
+**Example transformation**:
+
+````typescript
+// In your source file:
+export function add(a: number, b: number) { return a + b }
+export const ONE = 1
+
+/**
+ * @example
+ * ```ts
+ * import { assertEquals } from "jsr:@std/assert/equals"
+ * // No need to import 'add' or 'ONE' - they're auto-imported!
+ * const sum = add(ONE, 2)
+ * assertEquals(sum, 3)
+ * ```
+ */
+
+// Deno transforms this into:
+import { assertEquals } from "jsr:@std/assert/equals"
+import { add, ONE } from "file:///path/to/your/file.ts"
+
+Deno.test("your-file.ts$10-15.ts", async () => {
+  const sum = add(ONE, 2)
+  assertEquals(sum, 3)
+})
+````
+
 **Deno Test Environment Constraints**:
 
 Documentation examples run in **Deno** (not Bun/Vitest), which means:
@@ -982,6 +1018,35 @@ Documentation examples run in **Deno** (not Bun/Vitest), which means:
  * // ❌ Bad: Vitest-specific (won't work in Deno)
  * // expect(result.id).toBeDefined()
  * // expect(result.state).toBe("Scheduled")
+ * ```
+ */
+````
+
+**Supported Language Identifiers**:
+
+Deno recognizes the following language identifiers for code blocks:
+
+- TypeScript: `ts`, `typescript`, `mts`, `cts`, `tsx`
+- JavaScript: `js`, `javascript`, `mjs`, `cjs`, `jsx`
+- If no language identifier is specified, the language is inferred from the source file's media type
+
+**Handling Incomplete Examples (Ignore Attribute)**:
+
+Since `deno check --doc` validates `@example` blocks, you must explicitly use the `ignore` attribute for incomplete code (e.g., pseudo-code, missing variables) to avoid CI failures:
+
+- **`typescript ignore`** (space-separated): Skips type-checking AND execution (preserves syntax highlighting). Use this for "todo" or partial code that won't compile.
+- **`text`**: Skips everything (no highlighting, no type-checking). Use this for abstract concepts, raw output, or non-code content.
+
+**Note**: The `ignore` keyword is an **attribute**, not part of the language identifier. Use a space (not comma) between language and attribute: `typescript ignore`, not `typescript, ignore`.
+
+**Example**:
+
+````typescript
+/**
+ * @example
+ * ```typescript ignore
+ * // This pseudo-code is skipped by Deno checks
+ * const result = await partialImplementation(...)
  * ```
  */
 ````
@@ -1061,6 +1126,23 @@ const workflow = Effect.gen(function* () {
 - ❌ Pseudo-code that won't compile
 - ❌ Using `...` to indicate omitted code (use actual code or skip the example)
 - ❌ Referencing undefined variables
+
+**Handling Incomplete Code Blocks**:
+
+If a code block in a markdown file is intentionally incomplete or pseudo-code, you must prevent `deno check --doc-only` from failing:
+
+- **Supported language identifiers**: `ts`, `typescript`, `mts`, `cts`, `tsx`, `js`, `javascript`, `mjs`, `cjs`, `jsx`
+- **Use `ignore` attribute**: Append a space and `ignore` to the language (e.g., `typescript ignore`) to skip type-checking and testing while maintaining syntax highlighting.
+- **Use `text`**: For non-code blocks or raw output (no syntax highlighting, no type-checking).
+
+**Example**:
+
+````markdown
+```typescript ignore
+// This pseudo-code is skipped by Deno checks
+const result = await partialImplementation(...)
+```
+````
 
 **Iterative validation workflow**:
 
