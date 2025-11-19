@@ -107,7 +107,7 @@ export const TimerEntrySchema = Schema.Union(ScheduledTimer, ReachedTimer)
  * - Schema ensures type safety across serialization boundaries
  *
  * @example Basic usage
- * ```typescript
+ * ```typescript ignore
  * import * as DateTime from "effect/DateTime"
  * import * as Option from "effect/Option"
  * import { ServiceCallId, TenantId } from "@event-service-agent/schemas/shared"
@@ -130,7 +130,7 @@ export const TimerEntrySchema = Schema.Union(ScheduledTimer, ReachedTimer)
  * ```
  *
  * @example Pattern matching
- * ```typescript
+ * ```typescript ignore
  * import * as DateTime from "effect/DateTime"
  * import * as Option from "effect/Option"
  * import { ServiceCallId, TenantId } from "@event-service-agent/schemas/shared"

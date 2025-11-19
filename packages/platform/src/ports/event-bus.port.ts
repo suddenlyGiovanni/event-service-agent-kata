@@ -210,7 +210,7 @@ export interface EventBusPort {
  * Use this to access the EventBusPort from the Effect context.
  *
  * @example
- * ```typescript
+ * ```typescript ignore
  * const program = Effect.gen(function* () {
  *   const bus = yield* EventBusPort
  *

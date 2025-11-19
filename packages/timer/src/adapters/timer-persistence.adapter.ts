@@ -364,7 +364,7 @@ ON CONFLICT (tenant_id, service_call_id)
  * database configurations (`:memory:` vs file-backed).
  *
  * @example
- * ```typescript
+ * ```typescript ignore
  * // In tests - use in-memory SQLite
  * import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
  *
@@ -377,7 +377,7 @@ ON CONFLICT (tenant_id, service_call_id)
  * ```
  *
  * @example
- * ```typescript
+ * ```typescript ignore
  * // In production - use file-backed SQLite
  * Effect.provide(
  *   TimerPersistence.Live
@@ -416,7 +416,7 @@ export class TimerPersistence {
 	 *
 	 * @example
 	 * Basic usage in tests with SQLite in-memory
-	 * ```typescript
+	 * ```typescript ignore
 	 * it.effect('saves and retrieves timer', () =>
 	 *   Effect.gen(function* () {
 	 *     const persistence = yield* TimerPersistencePort

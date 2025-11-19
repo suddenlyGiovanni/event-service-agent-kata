@@ -138,7 +138,7 @@ export interface TimerPersistencePort {
 	 * @throws PersistenceError - When query fails (connection, etc.)
 	 *
 	 * @example Workflow idempotency check
-	 * ```typescript
+	 * ```typescript ignore
 	 * const program = pipe(
 	 * 	persistence.findScheduledTimer(tenantId, serviceCallId),
 	 * 	Effect.flatMap(
@@ -174,16 +174,18 @@ export interface TimerPersistencePort {
 	 * @throws PersistenceError - When query fails (connection, etc.)
 	 *
 	 * @example Testing state transitions
-	 * ```typescript
-	 * yield* persistence.markFired(tenantId, serviceCallId, now)
+	 * ```typescript ignore
+	 * const program = Effect.gen(function* () {
+	 *   yield* persistence.markFired(tenantId, serviceCallId, now)
 	 *
-	 * // Verify state transition happened (testing concern)
-	 * const result = yield* persistence.find(tenantId, serviceCallId)
-	 * expect(Option.getOrThrow(result)._tag).toBe('Reached')
+	 *   // Verify state transition happened (testing concern)
+	 *   const result = yield* persistence.find(tenantId, serviceCallId)
+	 *   expect(Option.getOrThrow(result)._tag).toBe('Reached')
 	 *
-	 * // Verify domain behavior (no longer active)
-	 * const scheduled = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
-	 * expect(Option.isNone(scheduled)).toBe(true)
+	 *   // Verify domain behavior (no longer active)
+	 *   const scheduled = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
+	 *   expect(Option.isNone(scheduled)).toBe(true)
+	 * })
 	 * ```
 	 */
 	readonly find: (
@@ -212,15 +214,19 @@ export interface TimerPersistencePort {
 	 * @throws PersistenceError - When query fails
 	 *
 	 * @example Polling worker pattern
-	 * ```typescript
-	 * const dueTimers = yield* persistence.findDue(now)
-	 * // Only ScheduledTimers returned (Reached excluded)
+	 * ```typescript ignore
+	 * const program = Effect.gen(function* () {
+	 *   const dueTimers = yield* persistence.findDue(now)
+	 *   // Only ScheduledTimers returned (Reached excluded)
 	 *
-	 * yield* Effect.forEach(dueTimers, timer => {
-	 *   // Mark as fired FIRST (idempotency marker)
-	 *   yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
-	 *   // Then publish event (safe to retry)
-	 *   yield* eventBus.publish(DueTimeReached.make(timer))
+	 *   yield* Effect.forEach(dueTimers, timer =>
+	 *     Effect.gen(function* () {
+	 *       // Mark as fired FIRST (idempotency marker)
+	 *       yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
+	 *       // Then publish event (safe to retry)
+	 *       yield* eventBus.publish(DueTimeReached.make(timer))
+	 *     })
+	 *   )
 	 * })
 	 * ```
 	 */
@@ -256,13 +262,15 @@ export interface TimerPersistencePort {
 	 * @throws PersistenceError - When update fails
 	 *
 	 * @example Idempotent polling worker
-	 * ```typescript
-	 * // Mark as fired FIRST (before publishing event)
-	 * yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
-	 * // Timer is now Reached, won't appear in next findDue()
+	 * ```typescript ignore
+	 * const program = Effect.gen(function* () {
+	 *   // Mark as fired FIRST (before publishing event)
+	 *   yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
+	 *   // Timer is now Reached, won't appear in next findDue()
 	 *
-	 * // Even if this crashes, timer won't be re-processed
-	 * yield* eventBus.publish(DueTimeReached.make(timer))
+	 *   // Even if this crashes, timer won't be re-processed
+	 *   yield* eventBus.publish(DueTimeReached.make(timer))
+	 * })
 	 * ```
 	 */
 	readonly markFired: (

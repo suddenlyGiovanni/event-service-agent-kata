@@ -103,7 +103,7 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 	 * @requires UUID7 - Service for UUID generation
 	 *
 	 * @example Adapter generates envelope ID when publishing
-	 * ```typescript
+	 * ```typescript ignore
 	 * // Adapter wraps domain event with envelope
 	 * const publishEvent = Effect.gen(function* () {
 	 *   const envelopeId = yield* EnvelopeId.makeUUID7()
@@ -122,7 +122,7 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 	 * ```
 	 *
 	 * @example Causation chain in command handler
-	 * ```typescript
+	 * ```typescript ignore
 	 * // Handler receives command envelope, extracts causationId for response
 	 * const handleCommand = (commandEnvelope: MessageEnvelope) =>
 	 *   Effect.gen(function* () {

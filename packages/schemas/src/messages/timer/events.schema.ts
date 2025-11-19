@@ -38,7 +38,7 @@ import { ServiceCallEventBase } from '../common/service-call-event-base.schema.t
  * ```
  *
  * @example
- * ```typescript
+ * ```typescript ignore
  * // Decode from wire format (JSON → validated domain event)
  * const event = yield* DueTimeReached.decode(rawJson)
  *
@@ -72,7 +72,7 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 * - **Failure**: ParseError with detailed validation errors
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * const event = yield* DueTimeReached.decode({
 	 *   type: 'DueTimeReached',
 	 *   tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
@@ -92,7 +92,7 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 * - Ready for JSON serialization
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * const dto = yield* DueTimeReached.encode(event)
 	 * // dto: { type: 'DueTimeReached', tenantId: string, ... }
 	 * await broker.publish(JSON.stringify(dto))

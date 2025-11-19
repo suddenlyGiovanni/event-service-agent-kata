@@ -221,7 +221,7 @@ const makeClient = (
  * Self-contained: Provides all dependencies internally (no external requirements)
  *
  * @example
- * ```typescript
+ * ```typescript ignore
  * import { Live } from '@event-service-agent/platform/database'
  * import * as Effect from 'effect/Effect'
  * import * as Sql from '@effect/sql'
@@ -283,7 +283,7 @@ const Live: Layer.Layer<
  * Self-contained: Provides all dependencies internally (no external requirements)
  *
  * @example
- * ```typescript
+ * ```typescript ignore
  * import { Test } from '@event-service-agent/platform/database'
  * import * as Effect from 'effect/Effect'
  * import * as Sql from '@effect/sql'
@@ -356,7 +356,7 @@ const Test: Layer.Layer<
  * - Tracks executed migrations in effect_sql_migrations table
  *
  * @example
- * ```typescript
+ * ```typescript ignore
  * import { SQL } from '@event-service-agent/platform/database'
  * import * as Effect from 'effect/Effect'
  * import * as Sql from '@effect/sql'

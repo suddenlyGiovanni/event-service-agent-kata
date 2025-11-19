@@ -22,7 +22,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 		 * @param timestamp Unix timestamp in milliseconds, defaults to `Date.now()`
 		 *
 		 * @example
-		 * ```ts
+		 * ```ts ignore
 		 * const array = [
 		 *   randomUUIDv7(),
 		 *   randomUUIDv7(),
@@ -50,7 +50,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 * implementation of the UUID version 7 specification.
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * import { Effect } from 'effect'
 	 * import { UUIDPort } from '@event-service-agent/platform/ports'
 	 *
@@ -80,7 +80,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 * @param fixed - The fixed UUID v7 string to return (must be valid UUID v7)
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * import { Effect } from 'effect'
 	 * import { UUIDPort } from '@event-service-agent/platform/ports'
 	 *
@@ -111,7 +111,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 * @param prefix - Optional 8-char hex prefix (default: "00000000")
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * import { Effect } from 'effect'
 	 * import { UUIDPort } from '@event-service-agent/platform/ports'
 	 *

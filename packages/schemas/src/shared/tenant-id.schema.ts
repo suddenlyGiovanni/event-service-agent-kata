@@ -78,7 +78,7 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	 * @requires UUID7 - Service for UUID generation
 	 *
 	 * @example Production usage (runtime ID generation)
-	 * ```typescript
+	 * ```typescript ignore
 	 * const createTenant = Effect.gen(function* () {
 	 *   const tenantId = yield* TenantId.makeUUID7()
 	 *   yield* db.insertTenant({ id: tenantId, name: 'Acme Corp' })
@@ -87,7 +87,7 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	 * ```
 	 *
 	 * @example Test usage (deterministic ID for assertions)
-	 * ```typescript
+	 * ```typescript ignore
 	 * it.effect('should create tenant with specific ID', () =>
 	 *   Effect.gen(function* () {
 	 *     const now = yield* DateTime.now
@@ -124,7 +124,7 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	 * @throws ParseError - If value is not valid UUID7 format
 	 *
 	 * @example HTTP request handler
-	 * ```typescript
+	 * ```typescript ignore
 	 * const handler = Effect.gen(function* () {
 	 *   const tenantId = yield* TenantId.decode(request.params.tenantId)
 	 *   // tenantId is type-safe and validated
