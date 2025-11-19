@@ -213,21 +213,8 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 				mapSqlError('findDue'),
 				Effect.tap(Effect.annotateCurrentSpan({ now })),
 				Effect.map(Chunk.fromIterable),
-				Effect.map(
-					Chunk.filterMap(timerRow =>
-						timerRow.state === 'Scheduled'
-							? Option.some(
-									new ScheduledTimer({
-										correlationId: timerRow.correlationId,
-										dueAt: timerRow.dueAt,
-										registeredAt: timerRow.registeredAt,
-										serviceCallId: timerRow.serviceCallId,
-										tenantId: timerRow.tenantId,
-									}),
-								)
-							: Option.none(),
-					),
-				),
+				Effect.map(Chunk.map(timerRecordToTimerEntry)),
+				Effect.map(Chunk.filter(TimerEntry.isScheduled)),
 			),
 	)
 
