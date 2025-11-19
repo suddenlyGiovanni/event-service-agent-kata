@@ -78,32 +78,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- **PL-4.6 IN PROGRESS** (Nov 19, 2025): SQLite persistence adapter for Timer. Branch `timer/pl-4.6-sqlite-persistence`.
-- **Phase Progress**:
-  - **Phase 0: Bootstrap prerequisite (Steps 1-3)** - ✅ **COMPLETE**
-  - **Phase 1: Add SQLite adapter (Steps 4-14)** - ✅ **COMPLETE**
-  - **Phase 2: Consolidate test suite (Steps 15-17)** - 🔄 **IN PROGRESS**
-    - [x] Migrate existing tests from `inMemory` → `Adapters.TimerPersistence.Test` (SQLite :memory:)
-    - [x] Delete deprecated `inMemory` HashMap implementation (189 lines removed)
-    - [x] Export `Adapters.TimerPersistence.Test` and verify integration (325 tests passing)
-    - [x] **NEXT**: Remove duplicate `inMemory` describe block from test file
-    - [x] **NEXT**: Consolidate into single `Test` describe block (SQLite :memory: only)
-    - [x] **NEXT**: Verify full test coverage maintained (currently 33 tests in persistence suite)
-- **Completed Work** (Nov 19, 2025):
-  - Made correlationId optional in schema (aligns with domain Option type)
-  - Created `withServiceCall` test fixture helper (idempotent FK insertion)
-  - Migrated all tests to `it.scoped()` pattern (54 tests across 4 files)
-  - Removed HashMap adapter implementation (single source of truth: SQLite)
-  - Removed obsolete skipped tests (decode errors, invalid dueAt format)
-  - Fixed Effect.fn return type syntax in workflows
-  - 8 atomic commits preserving git history
-- **Current State**:
-  - `timer-persistence.adapter.test.ts` has TWO describe blocks:
-    - `describe('inMemory')` - 13 tests using BaseTestLayers (SQL.Test)
-    - `describe('Test')` - 20 tests using BaseTestLayers (SQL.Test)
-  - Both test suites now use identical infrastructure (SQLite :memory:)
-  - Duplication exists for safety (ensuring coverage during migration)
-- **Next Action**: Consolidate test suite by removing `inMemory` describe block, verify all 33 test cases covered in unified `Test` suite
+- **PL-4.6 COMPLETE** ✅ (Nov 19, 2025): SQLite persistence adapter finished. All 3 phases complete (Bootstrap, SQLite Adapter, Test Consolidation). Branch `timer/pl-4.6-sqlite-persistence` ready for review/merge.
+- **Next logical work**: **PL-4.4** — Poll-based timer worker implementation. This is the missing piece to make timers actually fire. Depends on completed PL-4.6 (persistence) and existing workflows. Natural progression in Timer module completion.
+- **Alternative consideration**: Could tackle **PL-2** (Orchestration domain model) or **PL-3** (Broker adapter) to unblock multi-module integration, but PL-4.4 provides immediate value (end-to-end timer functionality).
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
