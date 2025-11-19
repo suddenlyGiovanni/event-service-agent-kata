@@ -94,7 +94,10 @@ describe('pollDueTimersWorkflow', () => {
 				}) // Get persistence and save timer
 
 				const persistence = yield* Ports.TimerPersistencePort
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* withServiceCall({
+					serviceCallId,
+					tenantId,
+				})
 				yield* persistence.save(scheduledTimer)
 
 				// Verify timer is not due yet
@@ -178,10 +181,17 @@ describe('pollDueTimersWorkflow', () => {
 				yield* Effect.forEach(
 					timers,
 					t =>
-						Effect.andThen(withServiceCall({ serviceCallId: t.serviceCallId, tenantId: t.tenantId }), _ =>
-							persistence.save(t),
+						Effect.andThen(
+							withServiceCall({
+								serviceCallId: t.serviceCallId,
+								tenantId: t.tenantId,
+							}),
+							_ => persistence.save(t),
 						),
-					{ concurrency: 1, discard: true },
+					{
+						concurrency: 1,
+						discard: true,
+					},
 				)
 
 				// Act: Advance time to make all timers due
@@ -250,7 +260,10 @@ describe('pollDueTimersWorkflow', () => {
 					serviceCallId,
 					tenantId,
 				})
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* withServiceCall({
+					serviceCallId,
+					tenantId,
+				})
 
 				yield* basePersistence.save(scheduledTimer)
 
@@ -330,7 +343,10 @@ describe('pollDueTimersWorkflow', () => {
 					tenantId,
 				})
 
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* withServiceCall({
+					serviceCallId,
+					tenantId,
+				})
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Advance time to make timer due
@@ -389,7 +405,10 @@ describe('pollDueTimersWorkflow', () => {
 					serviceCallId,
 					tenantId,
 				}) // Save the future timer
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* withServiceCall({
+					serviceCallId,
+					tenantId,
+				})
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Advance time to while timer is still not due
@@ -486,7 +505,10 @@ describe('pollDueTimersWorkflow', () => {
 					tenantId,
 				})
 
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* withServiceCall({
+					serviceCallId,
+					tenantId,
+				})
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Execute workflow (timer should be due)
@@ -544,7 +566,10 @@ describe('pollDueTimersWorkflow', () => {
 					tenantId,
 				})
 
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* withServiceCall({
+					serviceCallId,
+					tenantId,
+				})
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Execute workflow (timer should NOT be due yet)
@@ -603,7 +628,10 @@ describe('pollDueTimersWorkflow', () => {
 					tenantId,
 				})
 
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* withServiceCall({
+					serviceCallId,
+					tenantId,
+				})
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Advance time to 15 minutes (timer is now 10 minutes overdue)
@@ -657,7 +685,10 @@ describe('pollDueTimersWorkflow', () => {
 					serviceCallId,
 					tenantId,
 				})
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* withServiceCall({
+					serviceCallId,
+					tenantId,
+				})
 
 				yield* persistence.save(scheduledTimer)
 
@@ -732,8 +763,18 @@ describe('pollDueTimersWorkflow', () => {
 
 				yield* Effect.forEach(
 					timers,
-					t => Effect.andThen(withServiceCall({ serviceCallId: t.serviceCallId, tenantId }), () => persistence.save(t)),
-					{ concurrency: 1, discard: true },
+					t =>
+						Effect.andThen(
+							withServiceCall({
+								serviceCallId: t.serviceCallId,
+								tenantId,
+							}),
+							() => persistence.save(t),
+						),
+					{
+						concurrency: 1,
+						discard: true,
+					},
 				)
 
 				// Act: Advance time to make all timers due
@@ -834,7 +875,10 @@ describe('pollDueTimersWorkflow', () => {
 					serviceCallId,
 					tenantId,
 				}) // Use base persistence for save, then provide a mock that fails markFired
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* withServiceCall({
+					serviceCallId,
+					tenantId,
+				})
 				const basePersistence = yield* Ports.TimerPersistencePort
 				yield* basePersistence.save(scheduledTimer)
 
@@ -885,17 +929,7 @@ describe('pollDueTimersWorkflow', () => {
 						}),
 					),
 				)
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(
-						Adapters.TimerPersistence.Test,
-						Adapters.ClockPortTest,
-						TimerEventBusTest,
-						UUID7.Default,
-						SQL.Test,
-					),
-				),
-			)
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 	})
 
@@ -946,11 +980,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: No events should have been published
 				expect(publishedEvents).toHaveLength(0)
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(TestPersistence, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default, SQL.Test),
-				),
-			)
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest, TestPersistence)))
 		})
 	})
 })
