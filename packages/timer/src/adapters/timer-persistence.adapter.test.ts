@@ -54,25 +54,24 @@ const makeScheduledTimer = ({
 const BaseTestLayers = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.ClockPortTest, UUID7.Default, SQL.Test)
 
 describe('TimerPersistenceAdapter', () => {
-	describe('Test', () => {
-		const mocks = {
-			tenantA: {
-				correlationId: CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9c1'),
-				otherCorrelationId: CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9c2'),
-				otherServiceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9b2'),
-				serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9b1'),
-				tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
-			},
-			tenantB: {
-				correlationId: CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9d1'),
-				serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9e1'),
-				tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a9'),
-			},
-		}
+	const mocks = {
+		tenantA: {
+			correlationId: CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9c1'),
+			otherCorrelationId: CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9c2'),
+			otherServiceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9b2'),
+			serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9b1'),
+			tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0'),
+		},
+		tenantB: {
+			correlationId: CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9d1'),
+			serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9e1'),
+			tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a9'),
+		},
+	}
 
-		/**
-		 * Test helper: Creates and persists a scheduled timer with a service call record.
-		 *
+	/**
+	 * Test helper: Creates and persists a scheduled timer with a service call record.
+	 *
 		 * This helper combines service call insertion and timer creation/persistence
 		 * for the Live (SQLite) adapter tests, respecting foreign key constraints.
 		 *
@@ -508,5 +507,4 @@ describe('TimerPersistenceAdapter', () => {
 				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
-	})
 })
