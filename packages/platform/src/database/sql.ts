@@ -170,7 +170,7 @@ export class SQL {
 				Stream.runCollect,
 				Effect.map(
 					Record.fromIterableWith((relativePath: string) => {
-						const absolutePath = `${workspaceRoot}/${relativePath}`
+						const absolutePath = path.join(workspaceRoot, relativePath)
 						return [absolutePath, () => import(absolutePath)] as const
 					}),
 				),
@@ -190,6 +190,8 @@ export class SQL {
 
 			return SqliteBun.SqliteMigrator.layer({
 				loader,
+				// Cast required due to exactOptionalPropertyTypes: true in tsconfig
+				// schemaDirectory is optional but cannot be explicitly undefined
 				schemaDirectory: schemaDirectory ?? (undefined as never),
 				table: 'effect_sql_migrations',
 			}).pipe(Layer.provide(PlatformBun.BunContext.layer))
