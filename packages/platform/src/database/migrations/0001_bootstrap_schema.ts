@@ -1,4 +1,4 @@
-import { SqlClient } from '@effect/sql'
+import * as Sql from '@effect/sql'
 import * as Effect from 'effect/Effect'
 
 /**
@@ -31,21 +31,22 @@ import * as Effect from 'effect/Effect'
  * @see ADR-0005 for schema design patterns
  * @see docs/plan/kanban.md for migration strategy (minimal bootstrap approach)
  */
-export default Effect.flatMap(SqlClient.SqlClient, sql =>
-	Effect.all(
-		[
-			/**
-			 * WAL mode for read/write concurrency (ADR-0004)
-			 * Persistent setting (survives connection close)
-			 * Safe to set in migration (database-level, not session-level)
-			 */
-			sql`PRAGMA journal_mode = WAL`,
+const migration: Effect.Effect<(readonly Sql.SqlConnection.Row[])[], Sql.SqlError.SqlError, Sql.SqlClient.SqlClient> =
+	Effect.flatMap(Sql.SqlClient.SqlClient, sql =>
+		Effect.all(
+			[
+				/**
+				 * WAL mode for read/write concurrency (ADR-0004)
+				 * Persistent setting (survives connection close)
+				 * Safe to set in migration (database-level, not session-level)
+				 */
+				sql`PRAGMA journal_mode = WAL`,
 
-			/**
-			 * service_calls: Stub table for FK target
-			 * Orchestration module will add domain-specific columns (status, created_at, etc.)
-			 */
-			sql`
+				/**
+				 * service_calls: Stub table for FK target
+				 * Orchestration module will add domain-specific columns (status, created_at, etc.)
+				 */
+				sql`
 				CREATE TABLE IF NOT EXISTS service_calls (
 					tenant_id TEXT NOT NULL,
 					service_call_id TEXT NOT NULL,
@@ -53,11 +54,11 @@ export default Effect.flatMap(SqlClient.SqlClient, sql =>
 				) STRICT
 			`,
 
-			/**
-			 * timer_schedules: Skeleton table with FK to service_calls
-			 * Timer module will add domain columns in 0003_timer_schedules_schema.ts
-			 */
-			sql`
+				/**
+				 * timer_schedules: Skeleton table with FK to service_calls
+				 * Timer module will add domain columns in 0003_timer_schedules_schema.ts
+				 */
+				sql`
 				CREATE TABLE IF NOT EXISTS timer_schedules (
 					tenant_id TEXT NOT NULL,
 					service_call_id TEXT NOT NULL,
@@ -67,11 +68,11 @@ export default Effect.flatMap(SqlClient.SqlClient, sql =>
 						ON DELETE CASCADE
 				) STRICT
 			`,
-			/**
-			 * http_execution_log: Skeleton table with FK to service_calls
-			 * Execution module will add domain columns (request_url, response_status, etc.)
-			 */
-			sql`
+				/**
+				 * http_execution_log: Skeleton table with FK to service_calls
+				 * Execution module will add domain columns (request_url, response_status, etc.)
+				 */
+				sql`
 				CREATE TABLE IF NOT EXISTS http_execution_log (
 					tenant_id TEXT NOT NULL,
 					service_call_id TEXT NOT NULL,
@@ -83,11 +84,11 @@ export default Effect.flatMap(SqlClient.SqlClient, sql =>
 				) STRICT
 			`,
 
-			/**
-			 * outbox: Event publication queue (shared infrastructure, not module-owned)
-			 * Platform manages outbox schema (ADR-0008 outbox pattern)
-			 */
-			sql`
+				/**
+				 * outbox: Event publication queue (shared infrastructure, not module-owned)
+				 * Platform manages outbox schema (ADR-0008 outbox pattern)
+				 */
+				sql`
 				CREATE TABLE IF NOT EXISTS outbox (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					tenant_id TEXT NOT NULL,
@@ -99,15 +100,17 @@ export default Effect.flatMap(SqlClient.SqlClient, sql =>
 				) STRICT
 			`,
 
-			/**
-			 * Index for outbox polling (unpublished events)
-			 */
-			sql`
+				/**
+				 * Index for outbox polling (unpublished events)
+				 */
+				sql`
 				CREATE INDEX IF NOT EXISTS idx_outbox_unpublished
 				ON outbox(published_at, created_at)
 				WHERE published_at IS NULL
 			`,
-		],
-		{ concurrency: 1 },
-	),
-)
+			],
+			{ concurrency: 1 },
+		),
+	)
+
+export default migration

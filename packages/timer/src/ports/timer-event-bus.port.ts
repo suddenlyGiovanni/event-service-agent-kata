@@ -113,4 +113,10 @@ export interface TimerEventBusPort {
 	) => Effect.Effect<void, Ports.SubscribeError | E, R>
 }
 
-export const TimerEventBusPort = Context.GenericTag<TimerEventBusPort>('@event-service-agent/timer/TimerEventBusPort')
+/**
+ * TimerEventBusPort service tag for event bus operations
+ *
+ * Provides access to TimerEventBusPort from the Effect context.
+ */
+export const TimerEventBusPort: Context.Tag<TimerEventBusPort, TimerEventBusPort> =
+	Context.GenericTag<TimerEventBusPort>('@event-service-agent/timer/TimerEventBusPort')
