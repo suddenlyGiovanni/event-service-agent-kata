@@ -19,21 +19,22 @@ import { SQL } from './sql.ts'
 
 describe('Platform Database Migrations', () => {
 	/**
-	 * Test layer: In-memory database with platform migrations
+	 * Base test layers with SQL.Test for fresh database per test.
+	 * Using it.scoped() ensures each test gets isolated database instance.
 	 */
-	const TestLayer = SQL.Test.pipe(Layer.provide(PlatformBun.BunContext.layer))
+	const BaseTestLayers = SQL.Test.pipe(Layer.provide(PlatformBun.BunContext.layer))
 
 	describe('Bootstrap Migration (0001_bootstrap_schema.ts)', () => {
-		it.effect('should execute without errors', () =>
+		it.scoped('should execute without errors', () =>
 			Effect.gen(function* () {
 				// If we get here, migrations succeeded
 				const sql = yield* Sql.SqlClient.SqlClient
 				const result = yield* sql`SELECT 1 as test`
 				expect(result).toHaveLength(1)
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should create service_calls table', () =>
+		it.scoped('should create service_calls table', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -46,10 +47,10 @@ describe('Platform Database Migrations', () => {
 
 				expect(tables).toHaveLength(1)
 				expect(tables[0]?.['name']).toBe('service_calls')
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should create timer_schedules table', () =>
+		it.scoped('should create timer_schedules table', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -61,10 +62,10 @@ describe('Platform Database Migrations', () => {
 
 				expect(tables).toHaveLength(1)
 				expect(tables[0]?.['name']).toBe('timer_schedules')
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should create http_execution_log table', () =>
+		it.scoped('should create http_execution_log table', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -76,10 +77,10 @@ describe('Platform Database Migrations', () => {
 
 				expect(tables).toHaveLength(1)
 				expect(tables[0]?.['name']).toBe('http_execution_log')
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should create outbox table', () =>
+		it.scoped('should create outbox table', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -91,10 +92,10 @@ describe('Platform Database Migrations', () => {
 
 				expect(tables).toHaveLength(1)
 				expect(tables[0]?.['name']).toBe('outbox')
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should create effect_sql_migrations tracking table', () =>
+		it.scoped('should create effect_sql_migrations tracking table', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -106,10 +107,10 @@ describe('Platform Database Migrations', () => {
 
 				expect(tables).toHaveLength(1)
 				expect(tables[0]?.['name']).toBe('effect_sql_migrations')
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should track bootstrap migration as executed', () =>
+		it.scoped('should track bootstrap migration as executed', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -125,10 +126,10 @@ describe('Platform Database Migrations', () => {
 				const bootstrap = migrations[0]
 				expect(bootstrap?.['migrationId']).toBe(1)
 				expect(bootstrap?.['name']).toBe('bootstrap_schema')
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should discover and execute migrations from all packages', () =>
+		it.scoped('should discover and execute migrations from all packages', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -150,12 +151,12 @@ describe('Platform Database Migrations', () => {
 				const timer = migrations.find(m => m['name'] === 'timer_schedules_schema')
 				expect(timer).toBeDefined()
 				expect(timer?.['migrationId']).toBe(3)
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
 	describe('Timer Migration (0003_timer_schedules_schema.ts)', () => {
-		it.effect('should add domain columns to timer_schedules', () =>
+		it.scoped('should add domain columns to timer_schedules', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -174,8 +175,9 @@ describe('Platform Database Migrations', () => {
 				expect(columnNames).toContain('state')
 
 				// Verify NOT NULL constraints
+				// correlation_id is nullable (Option<CorrelationId> in domain model)
 				const correlationId = columns.find(c => c['name'] === 'correlation_id')
-				expect(correlationId?.['notnull']).toBe(1)
+				expect(correlationId?.['notnull']).toBe(0)
 
 				const dueAt = columns.find(c => c['name'] === 'due_at')
 				expect(dueAt?.['notnull']).toBe(1)
@@ -183,10 +185,10 @@ describe('Platform Database Migrations', () => {
 				const state = columns.find(c => c['name'] === 'state')
 				expect(state?.['notnull']).toBe(1)
 				expect(state?.['dfltValue']).toBe("'Scheduled'")
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should create polling index on (tenant_id, state, due_at)', () =>
+		it.scoped('should create polling index on (tenant_id, state, due_at)', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -199,10 +201,10 @@ describe('Platform Database Migrations', () => {
 				`
 
 				expect(indexes).toHaveLength(1)
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should create correlation_id index', () =>
+		it.scoped('should create correlation_id index', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -215,10 +217,10 @@ describe('Platform Database Migrations', () => {
 				`
 
 				expect(indexes).toHaveLength(1)
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should enforce state CHECK constraint', () =>
+		it.scoped('should enforce state CHECK constraint', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -240,12 +242,12 @@ describe('Platform Database Migrations', () => {
 
 				// Should fail due to CHECK constraint
 				expect(result._tag).toBe('Left')
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
 	describe('Table Structure Validation', () => {
-		it.effect('service_calls should have correct primary key', () =>
+		it.scoped('service_calls should have correct primary key', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -261,10 +263,10 @@ describe('Platform Database Migrations', () => {
 				expect(columns).toHaveLength(2)
 				expect(columns[0]?.['name']).toBe('tenant_id')
 				expect(columns[1]?.['name']).toBe('service_call_id')
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('timer_schedules should have foreign key to service_calls', () =>
+		it.scoped('timer_schedules should have foreign key to service_calls', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -289,10 +291,10 @@ describe('Platform Database Migrations', () => {
 				expect(fromColumns).toContain('service_call_id')
 				expect(toColumns).toContain('tenant_id')
 				expect(toColumns).toContain('service_call_id')
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('outbox should have correct primary key and index', () =>
+		it.scoped('outbox should have correct primary key and index', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -314,12 +316,12 @@ describe('Platform Database Migrations', () => {
 					AND name LIKE '%published%'
 				`
 				expect(indexes.length).toBeGreaterThanOrEqual(1)
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
 	describe('SQLite Pragma Configuration', () => {
-		it.effect('should enable foreign key constraints', () =>
+		it.scoped('should enable foreign key constraints', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -327,10 +329,10 @@ describe('Platform Database Migrations', () => {
 
 				expect(result).toHaveLength(1)
 				expect(result[0]?.['foreignKeys']).toBe(1) // 1 = ON
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should have MEMORY journal mode (in-memory database)', () =>
+		it.scoped('should have MEMORY journal mode (in-memory database)', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -340,10 +342,10 @@ describe('Platform Database Migrations', () => {
 				// WAL mode (set in bootstrap migration) only applies to persistent databases
 				expect(result).toHaveLength(1)
 				expect(result[0]?.['journalMode']?.toString().toLowerCase()).toBe('memory')
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should have NORMAL synchronous mode', () =>
+		it.scoped('should have NORMAL synchronous mode', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -351,10 +353,10 @@ describe('Platform Database Migrations', () => {
 
 				expect(result).toHaveLength(1)
 				expect(result[0]?.['synchronous']).toBe(1) // 1 = NORMAL
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should have MEMORY temp_store', () =>
+		it.scoped('should have MEMORY temp_store', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -362,12 +364,12 @@ describe('Platform Database Migrations', () => {
 
 				expect(result).toHaveLength(1)
 				expect(result[0]?.['tempStore']).toBe(2) // 2 = MEMORY
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
 	describe('Data Integrity', () => {
-		it.effect('should enforce foreign key constraints', () =>
+		it.scoped('should enforce foreign key constraints', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -381,10 +383,10 @@ describe('Platform Database Migrations', () => {
 
 				// Should fail due to FK constraint
 				expect(result._tag).toBe('Left')
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should allow valid insertions', () =>
+		it.scoped('should allow valid insertions', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -414,7 +416,7 @@ describe('Platform Database Migrations', () => {
 				expect(timers[0]?.['serviceCallId']).toBe('call-123')
 				expect(timers[0]?.['correlationId']).toBe('corr-123')
 				expect(timers[0]?.['state']).toBe('Scheduled')
-			}).pipe(Effect.provide(TestLayer)),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 })
