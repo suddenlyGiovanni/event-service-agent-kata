@@ -806,7 +806,7 @@ yield * persistence.markFired(timer.tenantId, timer.serviceCallId, now)
      * - Timer is persisted in database (durable)
      * - Will fire when clock reaches dueAt timestamp
      * - Can be canceled before firing
-     * - Transitions to Reached when fired, or Cancelled if explicitly canceled
+     * - Transitions to Reached when fired, or Canceled if explicitly canceled
      */
     export class ScheduledTimer {
     	/*...*/
@@ -967,7 +967,9 @@ Deno extracts code blocks from JSDoc/markdown and transforms them into standalon
 
 ````typescript
 // In your source file:
-export function add(a: number, b: number) { return a + b }
+export function add(a: number, b: number) {
+	return a + b
+}
 export const ONE = 1
 
 /**
@@ -981,12 +983,12 @@ export const ONE = 1
  */
 
 // Deno transforms this into:
-import { assertEquals } from "jsr:@std/assert/equals"
-import { add, ONE } from "file:///path/to/your/file.ts"
+import { assertEquals } from 'jsr:@std/assert/equals'
+import { add, ONE } from 'file:///path/to/your/file.ts'
 
-Deno.test("your-file.ts$10-15.ts", async () => {
-  const sum = add(ONE, 2)
-  assertEquals(sum, 3)
+Deno.test('your-file.ts$10-15.ts', async () => {
+	const sum = add(ONE, 2)
+	assertEquals(sum, 3)
 })
 ````
 

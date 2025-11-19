@@ -137,7 +137,7 @@ ON timer_schedules(correlation_id);
 - **`Scheduled`**: Timer awaiting due time, will be polled by scheduler
 - **`Reached`**: Timer fired, `DueTimeReached` event published, no further processing
 
-**Why no `Cancelled` state:**
+**Why no `Canceled` state:**
 
 - Out of scope per domain requirements (ADR-0003)
 - Cancellation handled by deleting timer row (CASCADE from ServiceCall deletion)
