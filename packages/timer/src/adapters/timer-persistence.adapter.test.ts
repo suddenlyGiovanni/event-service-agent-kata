@@ -1,11 +1,9 @@
-import * as Sql from '@effect/sql'
 import { describe, expect, it } from '@effect/vitest'
 import { assertNone, assertTrue } from '@effect/vitest/utils'
 import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
 import type * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
-import * as Either from 'effect/Either'
 import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
@@ -17,6 +15,7 @@ import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/sch
 
 import * as Domain from '../domain/timer-entry.domain.ts'
 import * as Ports from '../ports/index.ts'
+import { withServiceCall } from '../test/service-call.fixture.ts'
 import * as Adapters from './index.ts'
 
 /**
@@ -48,17 +47,28 @@ const makeScheduledTimer = ({
 		tenantId,
 	})
 
+/**
+ * Base test layers with SQL.Test for fresh database per test.
+ * Using it.scoped() ensures each test gets isolated database instance.
+ */
+const BaseTestLayers = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.ClockPortTest, UUID7.Default, SQL.Test)
+
 describe('TimerPersistenceAdapter', () => {
 	describe('inMemory', () => {
 		const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
 		const serviceCallId = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
+		const correlationId = CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9c0')
 
 		describe('save', () => {
-			it.effect('persists timer successfully', () =>
+			it.scoped('persists timer successfully', () =>
 				Effect.gen(function* () {
 					// Arrange: Create a timer with a dueAt in the future
+
+					yield* withServiceCall({ serviceCallId, tenantId })
+
 					const now = yield* DateTime.now
 					const scheduledTimer = makeScheduledTimer({
+						correlationId,
 						now,
 						serviceCallId,
 						tenantId,
@@ -78,15 +88,18 @@ describe('TimerPersistenceAdapter', () => {
 					expect(timer.tenantId).toBe(tenantId)
 					expect(timer.serviceCallId).toBe(serviceCallId)
 					expect(timer._tag).toBe('Scheduled')
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
 
 		describe('findScheduledTimer', () => {
-			it.effect('returns None when timer is Reached', () =>
+			it.scoped('returns None when timer is Reached', () =>
 				Effect.gen(function* () {
+					// Arrange: Create and save a timer, then mark it as fired
+					yield* withServiceCall({ serviceCallId, tenantId })
 					const now = yield* DateTime.now
 					const scheduledTimer = makeScheduledTimer({
+						correlationId,
 						now,
 						serviceCallId,
 						tenantId,
@@ -107,26 +120,28 @@ describe('TimerPersistenceAdapter', () => {
 					const rawFound = yield* persistence.find(tenantId, serviceCallId)
 					expect(Option.isSome(rawFound)).toBe(true)
 					expect(Option.getOrThrow(rawFound)._tag).toBe('Reached')
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('returns None when timer does not exist', () =>
+			it.scoped('returns None when timer does not exist', () =>
 				Effect.gen(function* () {
 					const persistence = yield* Ports.TimerPersistencePort
 
 					// Should return None for non-existent timer
 					const found = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
 					expect(Option.isNone(found)).toBe(true)
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(Adapters.TimerPersistence.Test)),
 			)
 
-			it.effect('returns Some when timer is Scheduled', () =>
+			it.scoped('returns Some when timer is Scheduled', () =>
 				Effect.gen(function* () {
+					yield* withServiceCall({ serviceCallId, tenantId })
 					const now = yield* DateTime.now
 					const scheduledTimer = makeScheduledTimer({
-						now: now,
-						serviceCallId: serviceCallId,
-						tenantId: tenantId,
+						correlationId,
+						now,
+						serviceCallId,
+						tenantId,
 					})
 
 					const persistence = yield* Ports.TimerPersistencePort
@@ -140,16 +155,18 @@ describe('TimerPersistenceAdapter', () => {
 					expect(timer._tag).toBe('Scheduled')
 					expect(timer.tenantId).toBe(tenantId)
 					expect(timer.serviceCallId).toBe(serviceCallId)
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
 
 		describe('find', () => {
-			it.effect('returns Some when timer exists', () =>
+			it.scoped('returns Some when timer exists', () =>
 				Effect.gen(function* () {
 					// Arrange: Create a timer with a dueAt in the future
+					yield* withServiceCall({ serviceCallId, tenantId })
 					const now = yield* DateTime.now
 					const scheduledTimer = makeScheduledTimer({
+						correlationId,
 						now,
 						serviceCallId,
 						tenantId,
@@ -168,17 +185,22 @@ describe('TimerPersistenceAdapter', () => {
 					expect(timer.tenantId).toBe(tenantId)
 					expect(timer.serviceCallId).toBe(serviceCallId)
 					expect(timer._tag).toBe('Scheduled')
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('returns None when timer does not exist', () =>
+			it.scoped('returns None when timer does not exist', () =>
 				Effect.gen(function* () {
+					const serviceCallId2 = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
+
 					// Arrange: Create a timer with a different serviceCallId
+					yield* withServiceCall({ serviceCallId: serviceCallId2, tenantId })
+
 					const now = yield* DateTime.now
 					const scheduledTimer = makeScheduledTimer({
+						correlationId,
 						now,
 						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2'),
-						tenantId: TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3'),
+						tenantId,
 					})
 
 					// Act: Save a different timer
@@ -190,16 +212,18 @@ describe('TimerPersistenceAdapter', () => {
 					const found = yield* persistence.find(tenantId, serviceCallId)
 
 					expect(Option.isNone(found)).toBe(true)
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
 
 		describe('findDue', () => {
-			it.effect('returns empty chunk when no timers are due', () =>
+			it.scoped('returns empty chunk when no timers are due', () =>
 				Effect.gen(function* () {
 					// Arrange: Create a timer with a dueAt in the future
 					const now = yield* DateTime.now
+					yield* withServiceCall({ serviceCallId, tenantId })
 					const scheduledTimer = makeScheduledTimer({
+						correlationId,
 						now,
 						serviceCallId,
 						tenantId,
@@ -215,14 +239,16 @@ describe('TimerPersistenceAdapter', () => {
 					const dueTimers = yield* persistence.findDue(yield* DateTime.now)
 
 					expect(Chunk.isEmpty(dueTimers)).toBe(true)
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('returns timers that are due', () =>
+			it.scoped('returns timers that are due', () =>
 				Effect.gen(function* () {
 					// Arrange: Create a timer with a dueAt in the future
 					const now = yield* DateTime.now
+					yield* withServiceCall({ serviceCallId, tenantId })
 					const scheduledTimer = makeScheduledTimer({
+						correlationId,
 						now,
 						serviceCallId,
 						tenantId,
@@ -240,23 +266,27 @@ describe('TimerPersistenceAdapter', () => {
 					const timer = Chunk.unsafeGet(dueTimers, 0)
 					expect(timer.tenantId).toBe(tenantId)
 					expect(timer.serviceCallId).toBe(serviceCallId)
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('returns multiple due timers', () =>
+			it.scoped('returns multiple due timers', () =>
 				Effect.gen(function* () {
 					// Arrange: Create timers with different due times
 					const now = yield* DateTime.now
 					const serviceCallId1 = serviceCallId
 					const serviceCallId2 = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
+					yield* withServiceCall({ serviceCallId: serviceCallId1, tenantId })
+					yield* withServiceCall({ serviceCallId: serviceCallId2, tenantId })
 
 					const timer1 = makeScheduledTimer({
+						correlationId,
 						dueIn: '5 minutes',
 						now,
 						serviceCallId: serviceCallId1,
 						tenantId,
 					})
 					const timer2 = makeScheduledTimer({
+						correlationId: CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9c1'),
 						dueIn: '9 minutes',
 						now,
 						serviceCallId: serviceCallId2,
@@ -273,13 +303,15 @@ describe('TimerPersistenceAdapter', () => {
 					const dueTimers = yield* persistence.findDue(yield* DateTime.now)
 
 					expect(Chunk.size(dueTimers)).toBe(2)
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('returns timer when dueAt equals now', () =>
+			it.scoped('returns timer when dueAt equals now', () =>
 				Effect.gen(function* () {
 					const now = yield* DateTime.now
+					yield* withServiceCall({ serviceCallId, tenantId })
 					const scheduledTimer = makeScheduledTimer({
+						correlationId,
 						dueIn: '0 minutes',
 						now,
 						serviceCallId,
@@ -292,15 +324,17 @@ describe('TimerPersistenceAdapter', () => {
 					const dueTimers = yield* persistence.findDue(now)
 
 					expect(Chunk.size(dueTimers)).toBe(1)
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
 
 		describe('markFired', () => {
-			it.effect('transitions timer from Scheduled to Reached', () =>
+			it.scoped('transitions timer from Scheduled to Reached', () =>
 				Effect.gen(function* () {
 					const now = yield* DateTime.now
+					yield* withServiceCall({ serviceCallId, tenantId })
 					const scheduledTimer = makeScheduledTimer({
+						correlationId,
 						now,
 						serviceCallId,
 						tenantId,
@@ -338,13 +372,15 @@ describe('TimerPersistenceAdapter', () => {
 					// Verify timer no longer appears in findDue
 					const dueAfterFired = yield* persistence.findDue(yield* DateTime.now)
 					expect(Chunk.isEmpty(dueAfterFired)).toBe(true)
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('idempotent (preserves original reachedAt on retry)', () =>
+			it.scoped('idempotent (preserves original reachedAt on retry)', () =>
 				Effect.gen(function* () {
+					yield* withServiceCall({ serviceCallId, tenantId })
 					const now = yield* DateTime.now
 					const scheduledTimer = makeScheduledTimer({
+						correlationId,
 						now,
 						serviceCallId,
 						tenantId,
@@ -374,10 +410,10 @@ describe('TimerPersistenceAdapter', () => {
 						// Should NOT equal secondReachedAt
 						expect(DateTime.Equivalence(timer.reachedAt, secondReachedAt)).toBe(false)
 					}
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('markFired - idempotent (succeeds even if timer does not exist)', () =>
+			it.scoped('markFired - idempotent (succeeds even if timer does not exist)', () =>
 				Effect.gen(function* () {
 					const now = yield* DateTime.now
 					const persistence = yield* Ports.TimerPersistencePort
@@ -388,15 +424,17 @@ describe('TimerPersistenceAdapter', () => {
 					// Verify nothing was created
 					const result = yield* persistence.find(tenantId, serviceCallId)
 					expect(Option.isNone(result)).toBe(true)
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
 
 		describe('delete', () => {
-			it.effect('removes timer from storage', () =>
+			it.scoped('removes timer from storage', () =>
 				Effect.gen(function* () {
+					yield* withServiceCall({ serviceCallId, tenantId })
 					const now = yield* DateTime.now
 					const scheduledTimer = makeScheduledTimer({
+						correlationId,
 						now,
 						serviceCallId,
 						tenantId,
@@ -415,91 +453,21 @@ describe('TimerPersistenceAdapter', () => {
 					// Verify timer is removed
 					const afterDelete = yield* persistence.find(tenantId, serviceCallId)
 					expect(Option.isNone(afterDelete)).toBe(true)
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('idempotent (succeeds even if timer does not exist)', () =>
+			it.scoped('idempotent (succeeds even if timer does not exist)', () =>
 				Effect.gen(function* () {
 					const persistence = yield* Ports.TimerPersistencePort
 
 					// Should not fail when deleting non-existent timer
 					yield* persistence.delete(tenantId, serviceCallId)
-				}).pipe(Effect.provide(Adapters.TimerPersistence.inMemory)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
-
-		it.effect('acquireRelease - cleanup executes even when operations fail', () =>
-			Effect.gen(function* () {
-				/**
-				 * This test verifies the safety guarantee of Effect.acquireRelease:
-				 * cleanup (Ref.set to empty) executes even if operations fail after acquisition.
-				 *
-				 * This is important because it ensures:
-				 * 1. No resource leaks on error paths
-				 * 2. Storage is always cleaned up when scope closes
-				 * 3. Error handling doesn't prevent cleanup
-				 */
-				const now = yield* DateTime.now
-
-				const result = yield* Effect.scoped(
-					Effect.gen(function* () {
-						const persistence = yield* Effect.provide(Ports.TimerPersistencePort, Adapters.TimerPersistence.inMemory)
-						const timer = makeScheduledTimer({
-							now,
-							serviceCallId,
-							tenantId,
-						})
-
-						yield* persistence.save(timer)
-
-						// Simulate error after successful save
-						return yield* Effect.fail(new Error('Simulated error'))
-					}),
-				).pipe(Effect.either)
-
-				// Verify the effect failed as expected
-				if (Either.isLeft(result)) {
-					expect(result.left.message).toBe('Simulated error')
-				} else {
-					throw new Error('Expected failure but got success')
-				}
-
-				// If we reach here, cleanup executed successfully
-				// (if cleanup failed or hung, the test would timeout/error)
-			}),
-		)
 	})
 
 	describe('Test', () => {
-		/**
-		 * Test helper: Inserts a service call record into the database.
-		 *
-		 * This is required before saving timers in the Live (SQLite) adapter tests,
-		 * as timers have a foreign key constraint to the service_calls table.
-		 *
-		 * @param tenantId - The tenant identifier for the service call
-		 * @param serviceCallId - The service call identifier to insert
-		 * @returns An Effect that inserts the service call record
-		 */
-		const withServiceCall = (key: Ports.TimerScheduleKey.Type) =>
-			Effect.gen(function* () {
-				const sql = yield* Sql.SqlClient.SqlClient
-
-				return yield* pipe(
-					key,
-					Sql.SqlSchema.void({
-						execute: request =>
-							sql`
-                  INSERT INTO service_calls (tenant_id, service_call_id)
-                  VALUES (${request.tenantId},
-                          ${request.serviceCallId});
-							`,
-						Request: Ports.TimerScheduleKey,
-					}),
-				)
-			})
-
-		const TestLayer = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.ClockPortTest, UUID7.Default, SQL.Test)
 		const mocks = {
 			tenantA: {
 				correlationId: CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9c1'),
@@ -561,7 +529,7 @@ describe('TimerPersistenceAdapter', () => {
 			})
 
 		describe('save', () => {
-			it.effect('persists timer using sqlite backend', () =>
+			it.scoped('persists timer using sqlite backend', () =>
 				Effect.gen(function* () {
 					// Arrange
 					const clock = yield* Ports.ClockPort
@@ -590,12 +558,12 @@ describe('TimerPersistenceAdapter', () => {
 					expect(timerEntry._tag).toBe('Scheduled')
 					expect(timerEntry.tenantId).toBe(mocks.tenantA.tenantId)
 					expect(timerEntry.serviceCallId).toBe(mocks.tenantA.serviceCallId)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
 
 		describe('find', () => {
-			it.effect('returns Some when timer exists', () =>
+			it.scoped('returns Some when timer exists', () =>
 				Effect.gen(function* () {
 					// Arrange
 					const persistence = yield* Ports.TimerPersistencePort
@@ -610,10 +578,10 @@ describe('TimerPersistenceAdapter', () => {
 					expect(timer.tenantId).toBe(mocks.tenantA.tenantId)
 					expect(timer.serviceCallId).toBe(mocks.tenantA.serviceCallId)
 					expect(timer._tag).toBe('Scheduled')
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('returns None when timer does not exist', () =>
+			it.scoped('returns None when timer does not exist', () =>
 				Effect.gen(function* () {
 					// Arrange
 					const persistence = yield* Ports.TimerPersistencePort
@@ -626,10 +594,10 @@ describe('TimerPersistenceAdapter', () => {
 					// Assert
 
 					assertNone(found)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('does not return timers from other tenants (tenant isolation)', () =>
+			it.scoped('does not return timers from other tenants (tenant isolation)', () =>
 				Effect.gen(function* () {
 					// Arrange: Create timer for tenantA
 					const persistence = yield* Ports.TimerPersistencePort
@@ -646,12 +614,12 @@ describe('TimerPersistenceAdapter', () => {
 
 					// Assert: Should return None (tenant isolation enforced)
 					assertNone(found)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
 
 		describe('findScheduledTimer', () => {
-			it.effect('returns None when timer does not exist', () =>
+			it.scoped('returns None when timer does not exist', () =>
 				Effect.gen(function* () {
 					// Arrange
 					const persistence = yield* Ports.TimerPersistencePort
@@ -664,10 +632,10 @@ describe('TimerPersistenceAdapter', () => {
 
 					// Assert
 					assertNone(found)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('returns Some when timer is Scheduled', () =>
+			it.scoped('returns Some when timer is Scheduled', () =>
 				Effect.gen(function* () {
 					// Arrange
 					const persistence = yield* Ports.TimerPersistencePort
@@ -681,10 +649,10 @@ describe('TimerPersistenceAdapter', () => {
 					expect(timer._tag).toBe('Scheduled')
 					expect(timer.tenantId).toBe(mocks.tenantA.tenantId)
 					expect(timer.serviceCallId).toBe(mocks.tenantA.serviceCallId)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('excludes reached timers', () =>
+			it.scoped('excludes reached timers', () =>
 				Effect.gen(function* () {
 					// Arrange
 					const persistence = yield* Ports.TimerPersistencePort
@@ -703,10 +671,10 @@ describe('TimerPersistenceAdapter', () => {
 					const raw = yield* persistence.find(mocks.tenantA.tenantId, mocks.tenantA.serviceCallId)
 					expect(Option.isSome(raw)).toBe(true)
 					expect(Option.getOrThrow(raw)._tag).toBe('Reached')
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('does not return timers from other tenants (tenant isolation)', () =>
+			it.scoped('does not return timers from other tenants (tenant isolation)', () =>
 				Effect.gen(function* () {
 					// Arrange: Create timer for tenantA
 					const persistence = yield* Ports.TimerPersistencePort
@@ -723,12 +691,12 @@ describe('TimerPersistenceAdapter', () => {
 
 					// Assert: Should return None (tenant isolation enforced)
 					assertNone(found)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
 
 		describe('findDue', () => {
-			it.effect('returns empty chunk when no timers are due', () =>
+			it.scoped('returns empty chunk when no timers are due', () =>
 				Effect.gen(function* () {
 					// Arrange
 					const persistence = yield* Ports.TimerPersistencePort
@@ -741,10 +709,10 @@ describe('TimerPersistenceAdapter', () => {
 
 					// Assert
 					expect(Chunk.isEmpty(dueTimers)).toBe(true)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('returns timers that are due', () =>
+			it.scoped('returns timers that are due', () =>
 				Effect.gen(function* () {
 					// Arrange
 					const persistence = yield* Ports.TimerPersistencePort
@@ -760,10 +728,10 @@ describe('TimerPersistenceAdapter', () => {
 					const timer = Chunk.unsafeGet(dueTimers, 0)
 					expect(timer.tenantId).toBe(mocks.tenantA.tenantId)
 					expect(timer.serviceCallId).toBe(mocks.tenantA.serviceCallId)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('returns due timers ordered by due date', () =>
+			it.scoped('returns due timers ordered by due date', () =>
 				Effect.gen(function* () {
 					// Arrange
 					const persistence = yield* Ports.TimerPersistencePort
@@ -789,10 +757,10 @@ describe('TimerPersistenceAdapter', () => {
 					const first = Chunk.unsafeGet(dueTimers, 0)
 					const second = Chunk.unsafeGet(dueTimers, 1)
 					expect(DateTime.lessThanOrEqualTo(first.dueAt, second.dueAt)).toBe(true)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('returns timer when dueAt equals now (inclusive)', () =>
+			it.scoped('returns timer when dueAt equals now (inclusive)', () =>
 				Effect.gen(function* () {
 					const clock = yield* Ports.ClockPort
 					const now = yield* clock.now()
@@ -816,10 +784,10 @@ describe('TimerPersistenceAdapter', () => {
 					const dueTimers = yield* persistence.findDue(now)
 
 					expect(Chunk.size(dueTimers)).toBe(1)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('returns timers from all tenants (global polling behavior)', () =>
+			it.scoped('returns timers from all tenants (global polling behavior)', () =>
 				Effect.gen(function* () {
 					// Arrange: Create timers for two different tenants
 					const persistence = yield* Ports.TimerPersistencePort
@@ -853,12 +821,12 @@ describe('TimerPersistenceAdapter', () => {
 					)
 					expect(timerIds).toContain(mocks.tenantA.serviceCallId)
 					expect(timerIds).toContain(mocks.tenantB.serviceCallId)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
 
 		describe('markFired', () => {
-			it.effect('transitions scheduled timers to reached state', () =>
+			it.scoped('transitions scheduled timers to reached state', () =>
 				Effect.gen(function* () {
 					// Arrange
 					const { timer } = yield* withScheduledTimer()
@@ -875,10 +843,10 @@ describe('TimerPersistenceAdapter', () => {
 					expect(Option.isSome(found)).toBe(true)
 					const reached = Option.getOrThrow(found)
 					expect(reached._tag).toBe('Reached')
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('idempotent (preserves original reachedAt on retry)', () =>
+			it.scoped('idempotent (preserves original reachedAt on retry)', () =>
 				Effect.gen(function* () {
 					const { timer } = yield* withScheduledTimer()
 					const persistence = yield* Ports.TimerPersistencePort
@@ -900,10 +868,10 @@ describe('TimerPersistenceAdapter', () => {
 					assertTrue(reached._tag === 'Reached')
 					expect(DateTime.Equivalence(reached.reachedAt, firstReachedAt)).toBe(true)
 					expect(DateTime.Equivalence(reached.reachedAt, secondReachedAt)).toBe(false)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('succeeds even if timer does not exist', () =>
+			it.scoped('succeeds even if timer does not exist', () =>
 				Effect.gen(function* () {
 					const persistence = yield* Ports.TimerPersistencePort
 					const now = yield* DateTime.now
@@ -921,12 +889,12 @@ describe('TimerPersistenceAdapter', () => {
 						ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'),
 					)
 					expect(Option.isNone(result)).toBe(true)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
 
 		describe('delete', () => {
-			it.effect('removes timers from sqlite store', () =>
+			it.scoped('removes timers from sqlite store', () =>
 				Effect.gen(function* () {
 					// Arrange
 					const persistence = yield* Ports.TimerPersistencePort
@@ -938,10 +906,10 @@ describe('TimerPersistenceAdapter', () => {
 					// Assert
 					const afterDelete = yield* persistence.find(mocks.tenantA.tenantId, mocks.tenantA.serviceCallId)
 					expect(Option.isNone(afterDelete)).toBe(true)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 
-			it.effect('idempotent (succeeds even if timer does not exist)', () =>
+			it.scoped('idempotent (succeeds even if timer does not exist)', () =>
 				Effect.gen(function* () {
 					const persistence = yield* Ports.TimerPersistencePort
 
@@ -950,7 +918,7 @@ describe('TimerPersistenceAdapter', () => {
 						mocks.tenantA.tenantId,
 						ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'), // non-existent
 					)
-				}).pipe(Effect.provide(TestLayer)),
+				}).pipe(Effect.provide(BaseTestLayers)),
 			)
 		})
 	})

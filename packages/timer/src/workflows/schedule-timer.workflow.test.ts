@@ -9,12 +9,14 @@ import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
 import { MessageMetadata } from '@event-service-agent/platform/context'
+import { SQL } from '@event-service-agent/platform/database'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import * as Adapters from '../adapters/index.ts'
 import * as Domain from '../domain/timer-entry.domain.ts'
 import * as Ports from '../ports/index.ts'
+import { withServiceCall } from '../test/service-call.fixture.ts'
 import * as Workflows from './schedule-timer.workflow.ts'
 
 describe('scheduleTimerWorkflow', () => {
@@ -22,12 +24,18 @@ describe('scheduleTimerWorkflow', () => {
 	const serviceCallId = ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1')
 	const correlationId = CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
 
+	/**
+	 * Base test layers with SQL.Test for fresh database per test.
+	 * Using it.scoped() ensures each test gets isolated database instance.
+	 */
+	const BaseTestLayers = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.ClockPortTest, SQL.Test)
+
 	describe('Happy Path', () => {
 		// Given: Valid ScheduleTimer command
 		// When: Workflow executes
 		// Then: TimerEntry persisted with correct values
 
-		it.effect('should create and persist timer entry', () =>
+		it.scoped('should create and persist timer entry', () =>
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
@@ -45,6 +53,7 @@ describe('scheduleTimerWorkflow', () => {
 
 				// Arrange: Mock dependencies (ClockPort, TimerPersistencePort)
 				const persistence = yield* Ports.TimerPersistencePort
+				yield* withServiceCall({ serviceCallId, tenantId })
 
 				// Act: Execute workflow
 				yield* Workflows.scheduleTimerWorkflow(command).pipe(
@@ -68,11 +77,11 @@ describe('scheduleTimerWorkflow', () => {
 				expect(DateTime.Equivalence(timer.dueAt, DateTime.unsafeMake(dueAt))).toBe(true)
 			}).pipe(
 				// Merge layers to avoid lifecycle issues
-				Effect.provide(Layer.merge(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest)),
+				Effect.provide(BaseTestLayers),
 			),
 		)
 
-		it.effect('should use current time for registeredAt', () =>
+		it.scoped('should use current time for registeredAt', () =>
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
@@ -88,6 +97,7 @@ describe('scheduleTimerWorkflow', () => {
 					})
 
 				const persistence = yield* Ports.TimerPersistencePort
+				yield* withServiceCall({ serviceCallId, tenantId })
 
 				// Act
 				yield* Workflows.scheduleTimerWorkflow(command).pipe(
@@ -103,10 +113,10 @@ describe('scheduleTimerWorkflow', () => {
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 
 				expect(DateTime.Equivalence(timer.registeredAt, now)).toBe(true)
-			}).pipe(Effect.provide(Layer.merge(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest))),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should set status to `Scheduled`', () =>
+		it.scoped('should set status to `Scheduled`', () =>
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
@@ -120,6 +130,7 @@ describe('scheduleTimerWorkflow', () => {
 						tenantId,
 					})
 
+				yield* withServiceCall({ serviceCallId, tenantId })
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act
@@ -137,7 +148,7 @@ describe('scheduleTimerWorkflow', () => {
 
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 				expect(Domain.TimerEntry.isScheduled(timer)).toBe(true)
-			}).pipe(Effect.provide(Layer.merge(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest))),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
@@ -146,7 +157,7 @@ describe('scheduleTimerWorkflow', () => {
 		// When: Workflow executes
 		// Then: CorrelationId included in persisted entry
 
-		it.effect('should include correlationId when provided', () =>
+		it.scoped('should include correlationId when provided', () =>
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
@@ -160,6 +171,7 @@ describe('scheduleTimerWorkflow', () => {
 						tenantId,
 					})
 
+				yield* withServiceCall({ serviceCallId, tenantId })
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act: Provide MessageMetadata with correlationId
@@ -177,10 +189,10 @@ describe('scheduleTimerWorkflow', () => {
 
 				expect(Option.isSome(timer.correlationId)).toBe(true)
 				expect(Option.getOrThrow(timer.correlationId)).toBe(correlationId)
-			}).pipe(Effect.provide(Layer.merge(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest))),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
-		it.effect('should work without correlationId', () =>
+		it.scoped('should work without correlationId', () =>
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
@@ -194,6 +206,7 @@ describe('scheduleTimerWorkflow', () => {
 						tenantId,
 					})
 
+				yield* withServiceCall({ serviceCallId, tenantId })
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act: Provide MessageMetadata without correlationId (Option.none())
@@ -210,7 +223,7 @@ describe('scheduleTimerWorkflow', () => {
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 
 				expect(Option.isNone(timer.correlationId)).toBe(true)
-			}).pipe(Effect.provide(Layer.merge(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest))),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
@@ -219,7 +232,7 @@ describe('scheduleTimerWorkflow', () => {
 		// When: Workflow executes
 		// Then: Timer still persisted (no fast-path logic)
 
-		it.effect('should persist timer even if already due', () =>
+		it.scoped('should persist timer even if already due', () =>
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const persistence = yield* Ports.TimerPersistencePort
@@ -236,6 +249,7 @@ describe('scheduleTimerWorkflow', () => {
 						tenantId,
 					})
 
+				yield* withServiceCall({ serviceCallId, tenantId })
 				yield* Workflows.scheduleTimerWorkflow(command).pipe(
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
@@ -249,7 +263,7 @@ describe('scheduleTimerWorkflow', () => {
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 				expect(timer._tag).toBe('Scheduled')
 				expect(DateTime.lessThan(timer.dueAt, now)).toBe(true) // Verify dueAt is in past
-			}).pipe(Effect.provide(Layer.merge(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest))),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
@@ -258,7 +272,7 @@ describe('scheduleTimerWorkflow', () => {
 		// When: Both workflow invocations run
 		// Then: Both succeed (port handles upsert)
 
-		it.effect('should succeed when called multiple times (idempotency)', () =>
+		it.scoped('should succeed when called multiple times (idempotency)', () =>
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
@@ -272,6 +286,7 @@ describe('scheduleTimerWorkflow', () => {
 						tenantId,
 					})
 
+				yield* withServiceCall({ serviceCallId, tenantId })
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act: Execute workflow TWICE with same command
@@ -301,7 +316,7 @@ describe('scheduleTimerWorkflow', () => {
 				assertNone(timer.correlationId) // correlationId should be None as the second call didn't pass it and it overrides the first call's value
 
 				expect(DateTime.Equivalence(timer.registeredAt, DateTime.add(now, { seconds: 1 }))).toBe(true)
-			}).pipe(Effect.provide(Layer.merge(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest))),
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
@@ -309,7 +324,7 @@ describe('scheduleTimerWorkflow', () => {
 		// Given: Ports.TimerPersistencePort throws PersistenceError
 		// When: Workflow executes
 		// Then: Error propagates to caller
-		it.effect('should propagate PersistenceError when save fails', () =>
+		it.scoped('should propagate PersistenceError when save fails', () =>
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
@@ -366,14 +381,5 @@ describe('scheduleTimerWorkflow', () => {
 				),
 			),
 		)
-
-		// Given: Invalid ISO8601 dueAt
-		// When: Workflow tries to create TimerEntry
-		// Then: Domain model validation fails
-		// NOTE: This test is skipped because DateTime.unsafeMake throws on invalid input.
-		//       To properly handle this, we'd need to add Schema validation to the workflow input
-		//       or use DateTime.make (safe constructor) in TimerEntry.make.
-		//       Tracking as TODO in workflow implementation.
-		it.skip('should fail on invalid dueAt format', () => {})
 	})
 })

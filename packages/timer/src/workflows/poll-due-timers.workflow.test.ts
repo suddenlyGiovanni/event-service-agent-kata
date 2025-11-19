@@ -1,4 +1,4 @@
-import { assert, describe, expect, layer } from '@effect/vitest'
+import { assert, describe, expect, it } from '@effect/vitest'
 import { assertNone, assertSome } from '@effect/vitest/utils'
 import * as Cause from 'effect/Cause'
 import * as Chunk from 'effect/Chunk'
@@ -11,6 +11,7 @@ import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
 import { MessageMetadata } from '@event-service-agent/platform/context'
+import { SQL } from '@event-service-agent/platform/database'
 import { UUID7 } from '@event-service-agent/platform/uuid7'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
@@ -18,17 +19,29 @@ import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/sch
 import * as Adapters from '../adapters/index.ts'
 import * as Domain from '../domain/timer-entry.domain.ts'
 import * as Ports from '../ports/index.ts'
+import { withServiceCall } from '../test/service-call.fixture.ts'
 import * as Workflows from './poll-due-timers.workflow.ts'
 
 /**
  * Base test layers - static resources shared across most tests:
  * - ClockPortTest: TestClock for time manipulation
  * - UUID7.Default: Deterministic UUID generation
- * - TimerPersistence.inMemory: In-memory persistence adapter
+ * - TimerPersistence.Test: In-memory SQLite persistence adapter
+ * - SQL.Test: In-memory SQLite database
+ *
+ * CRITICAL: Using `it.scoped()` instead of `it.scoped()` ensures each test gets
+ * a FRESH layer scope with its own database instance. This prevents test pollution
+ * where data from one test affects another.
+ *
+ * Why scoped?
+ * - Each test gets a fresh SQLite `:memory:` database
+ * - No data persists between tests (full isolation)
+ * - Tests can use the same IDs without conflicts
+ * - Layers are properly cleaned up after each test
  *
  * Tests add dynamic resources (custom EventBus mocks) via Layer.mergeAll
  */
-const BaseTestLayers = Layer.mergeAll(Adapters.ClockPortTest, UUID7.Default, Adapters.TimerPersistence.inMemory)
+const BaseTestLayers = Layer.mergeAll(Adapters.ClockPortTest, UUID7.Default, Adapters.TimerPersistence.Test, SQL.Test)
 
 /**
  * Test suite for pollDueTimersWorkflow
@@ -41,9 +54,9 @@ const BaseTestLayers = Layer.mergeAll(Adapters.ClockPortTest, UUID7.Default, Ada
  * - Idempotency (duplicate processing attempts)
  * - Observability (spans, logs, context propagation)
  */
-layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
+describe('pollDueTimersWorkflow', () => {
 	describe('Happy Path', () => {
-		it.effect('processes due timers successfully', () => {
+		it.scoped('processes due timers successfully', () => {
 			// Mock EventBus to track published events
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
@@ -81,6 +94,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				}) // Get persistence and save timer
 
 				const persistence = yield* Ports.TimerPersistencePort
+				yield* withServiceCall({ serviceCallId, tenantId })
 				yield* persistence.save(scheduledTimer)
 
 				// Verify timer is not due yet
@@ -110,10 +124,10 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				// Assert: Timer should no longer appear in findDue
 				const afterFired = yield* persistence.findDue(yield* clock.now())
 				expect(Chunk.isEmpty(afterFired)).toBe(true)
-			}).pipe(Effect.provide(TimerEventBusTest))
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 
-		it.effect('processes multiple due timers sequentially', () => {
+		it.scoped('processes multiple due timers sequentially', () => {
 			/**
 			 * GIVEN three timers that are due
 			 * WHEN pollDueTimersWorkflow executes
@@ -148,6 +162,8 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				const registeredAt = yield* clock.now()
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
+				// need to yield* withServiceCall({ serviceCallId, tenantId }) for each serviceCallId
+
 				// Create and save timers using iteration
 				const timers = serviceCallIds.map(serviceCallId =>
 					Domain.ScheduledTimer.make({
@@ -159,10 +175,14 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					}),
 				)
 
-				yield* Effect.forEach(timers, persistence.save, {
-					concurrency: 1,
-					discard: true,
-				})
+				yield* Effect.forEach(
+					timers,
+					t =>
+						Effect.andThen(withServiceCall({ serviceCallId: t.serviceCallId, tenantId: t.tenantId }), _ =>
+							persistence.save(t),
+						),
+					{ concurrency: 1, discard: true },
+				)
 
 				// Act: Advance time to make all timers due
 				yield* TestClock.adjust('6 minutes')
@@ -192,10 +212,10 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 
 				// Assert: All operations should have occurred (3 publishes)
 				expect(operations.filter(op => op.startsWith('publish:'))).toHaveLength(serviceCallIds.length)
-			}).pipe(Effect.provide(TimerEventBusTest))
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 
-		it.effect('publishes event before marking timer as fired', () => {
+		it.scoped('publishes event before marking timer as fired', () => {
 			/**
 			 * GIVEN a timer that is due
 			 * WHEN pollDueTimersWorkflow executes
@@ -230,6 +250,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					serviceCallId,
 					tenantId,
 				})
+				yield* withServiceCall({ serviceCallId, tenantId })
 
 				yield* basePersistence.save(scheduledTimer)
 
@@ -258,7 +279,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				// Assert: publish should happen before markFired
 				expect(operations[0]).toBe(`publish:${serviceCallId}`)
 				expect(operations[1]).toBe(`markFired:${serviceCallId}`)
-			}).pipe(Effect.provide(TimerEventBusTest))
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 
 		/**
@@ -284,7 +305,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 		 * See: docs/decisions/ADR-0013-correlation-propagation.md
 		 * See: docs/plan/correlation-context-implementation.md (Phase 3: PL-24.7)
 		 */
-		it.effect('propagates correlationId from timer to event via MessageMetadata Context', () => {
+		it.scoped('propagates correlationId from timer to event via MessageMetadata Context', () => {
 			/**
 			 * GIVEN a timer with a correlationId
 			 * WHEN pollDueTimersWorkflow executes with MessageMetadata Context provisioning
@@ -321,6 +342,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					tenantId,
 				})
 
+				yield* withServiceCall({ serviceCallId, tenantId })
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Advance time to make timer due
@@ -338,12 +360,12 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 
 				// Assert: causationId should be None (time-triggered, not command-caused)
 				assertNone(publishedMetadata.causationId)
-			}).pipe(Effect.provide(TimerEventBusTest))
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 	})
 
 	describe('Edge Cases - Empty Results', () => {
-		it.effect('completes successfully when no timers are due', () => {
+		it.scoped('completes successfully when no timers are due', () => {
 			/**
 			 * GIVEN no timers are due (findDue returns empty Chunk)
 			 * WHEN pollDueTimersWorkflow executes
@@ -379,6 +401,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					serviceCallId,
 					tenantId,
 				}) // Save the future timer
+				yield* withServiceCall({ serviceCallId, tenantId })
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Advance time to while timer is still not due
@@ -401,10 +424,10 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 
 				// Assert: Workflow completed successfully (no errors)
 				// (implicit - if we reach here, no exceptions were thrown)
-			}).pipe(Effect.provide(TimerEventBusTest))
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 
-		it.effect('completes successfully when persistence is empty', () => {
+		it.scoped('completes successfully when persistence is empty', () => {
 			/**
 			 * GIVEN persistence has no timers at all
 			 * WHEN pollDueTimersWorkflow executes
@@ -437,12 +460,12 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 
 				// Assert: Workflow completed successfully
 				// (implicit - if we reach here, no exceptions were thrown)
-			}).pipe(Effect.provide(TimerEventBusTest))
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 	})
 
 	describe('Edge Cases - Timing Boundaries', () => {
-		it.effect('processes timer exactly at dueAt time', () => {
+		it.scoped('processes timer exactly at dueAt time', () => {
 			/**
 			 * GIVEN a timer with dueAt exactly equal to current time (now === dueAt)
 			 * WHEN pollDueTimersWorkflow executes
@@ -475,6 +498,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					tenantId,
 				})
 
+				yield* withServiceCall({ serviceCallId, tenantId })
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Execute workflow (timer should be due)
@@ -493,10 +517,10 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 						}),
 					),
 				)
-			}).pipe(Effect.provide(TimerEventBusTest))
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 
-		it.effect('does not process timer scheduled in the future', () => {
+		it.scoped('does not process timer scheduled in the future', () => {
 			/**
 			 * GIVEN a timer with dueAt > now (future timer)
 			 * WHEN pollDueTimersWorkflow executes
@@ -532,6 +556,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					tenantId,
 				})
 
+				yield* withServiceCall({ serviceCallId, tenantId })
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Execute workflow (timer should NOT be due yet)
@@ -550,10 +575,10 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 						}),
 					),
 				)
-			}).pipe(Effect.provide(TimerEventBusTest))
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 
-		it.effect('processes timer that is overdue', () => {
+		it.scoped('processes timer that is overdue', () => {
 			/**
 			 * GIVEN a timer scheduled for 5 minutes from now
 			 *   AND time advances 15 minutes (timer is 10 minutes overdue)
@@ -590,6 +615,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					tenantId,
 				})
 
+				yield* withServiceCall({ serviceCallId, tenantId })
 				yield* persistence.save(scheduledTimer)
 
 				// Act: Advance time to 15 minutes (timer is now 10 minutes overdue)
@@ -613,7 +639,13 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				)
 			}).pipe(
 				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
+					Layer.mergeAll(
+						Adapters.TimerPersistence.Test,
+						Adapters.ClockPortTest,
+						TimerEventBusTest,
+						UUID7.Default,
+						SQL.Test,
+					),
 				),
 			)
 		})
@@ -647,6 +679,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					serviceCallId,
 					tenantId,
 				})
+				yield* withServiceCall({ serviceCallId, tenantId })
 
 				yield* persistence.save(scheduledTimer)
 
@@ -655,10 +688,10 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 
 				// Execute workflow with TimerEventBusTest - should fail with BatchProcessingError
 				yield* Workflows.pollDueTimersWorkflow()
-			}).pipe(Effect.provide(TimerEventBusTest))
+			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 
-		it.effect('propagates batch failure when some timers fail', () => {
+		it.scoped('propagates batch failure when some timers fail', () => {
 			/**
 			 * GIVEN three timers that are due
 			 *   AND the second timer's publish will fail
@@ -719,10 +752,11 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					}),
 				)
 
-				yield* Effect.forEach(timers, persistence.save, {
-					concurrency: 1,
-					discard: true,
-				})
+				yield* Effect.forEach(
+					timers,
+					t => Effect.andThen(withServiceCall({ serviceCallId: t.serviceCallId, tenantId }), () => persistence.save(t)),
+					{ concurrency: 1, discard: true },
+				)
 
 				// Act: Advance time to make all timers due
 				yield* TestClock.adjust('6 minutes')
@@ -780,14 +814,20 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				// End of test case
 			}).pipe(
 				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
+					Layer.mergeAll(
+						Adapters.TimerPersistence.Test,
+						Adapters.ClockPortTest,
+						TimerEventBusTest,
+						UUID7.Default,
+						SQL.Test,
+					),
 				),
 			)
 		})
 	})
 
 	describe('Error Handling - Persistence Failures', () => {
-		it.effect('propagates batch failure when markFired fails', () => {
+		it.scoped('propagates batch failure when markFired fails', () => {
 			/**
 			 * GIVEN a timer that is due
 			 *   AND eventBus.publish succeeds
@@ -826,6 +866,7 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 					serviceCallId,
 					tenantId,
 				}) // Use base persistence for save, then provide a mock that fails markFired
+				yield* withServiceCall({ serviceCallId, tenantId })
 				const basePersistence = yield* Ports.TimerPersistencePort
 				yield* basePersistence.save(scheduledTimer)
 
@@ -878,14 +919,20 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 				)
 			}).pipe(
 				Effect.provide(
-					Layer.mergeAll(Adapters.TimerPersistence.inMemory, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default),
+					Layer.mergeAll(
+						Adapters.TimerPersistence.Test,
+						Adapters.ClockPortTest,
+						TimerEventBusTest,
+						UUID7.Default,
+						SQL.Test,
+					),
 				),
 			)
 		})
 	})
 
 	describe('Error Handling - Query Failures', () => {
-		it.effect('propagates error when findDue fails', () => {
+		it.scoped('propagates error when findDue fails', () => {
 			/**
 			 * GIVEN persistence.findDue will fail with PersistenceError
 			 * WHEN pollDueTimersWorkflow executes
@@ -931,7 +978,11 @@ layer(BaseTestLayers)('pollDueTimersWorkflow', it => {
 
 				// Assert: No events should have been published
 				expect(publishedEvents).toHaveLength(0)
-			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(TestPersistence, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default, SQL.Test),
+				),
+			)
 		})
 	})
 })
