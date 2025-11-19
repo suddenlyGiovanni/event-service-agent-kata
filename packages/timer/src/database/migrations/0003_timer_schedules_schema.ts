@@ -4,6 +4,11 @@ import * as Effect from 'effect/Effect'
 /**
  * Migration 0003: Extend timer_schedules with timer domain columns, constraints, and indexes
  *
+ * **Transaction Safety**: This migration executes as a single atomic transaction.
+ * The @effect/sql Migrator automatically wraps all migration steps in `sql.withTransaction()`,
+ * ensuring all-or-nothing semantics. If any step fails (e.g., ALTER, CREATE, INSERT, DROP),
+ * the entire migration rolls back, preventing partial schema states.
+ *
  * Steps:
  * 1. Add new nullable columns to the existing table
  * 2. Create timer_schedules_new with NOT NULL, CHECK, FK, and STRICT constraints
@@ -12,6 +17,7 @@ import * as Effect from 'effect/Effect'
  * 5. Create polling and correlation_id indexes
  *
  * @see packages/timer/docs/schema.md for detailed schema documentation
+ * @see @effect/sql/Migrator - Migration runner with transaction wrapping
  */
 const migration: Effect.Effect<void, Sql.SqlError.SqlError, Sql.SqlClient.SqlClient> = Effect.gen(function* () {
 	const sql = yield* Sql.SqlClient.SqlClient
