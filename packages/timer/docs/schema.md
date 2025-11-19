@@ -501,14 +501,16 @@ it.effect('should not return timers from other tenants', () =>
 ### Index Coverage Test (EXPLAIN QUERY PLAN)
 
 ```typescript ignore
-it.effect('should use index for polling query', () =>
-	Effect.gen(function* () {
-		const sql = yield* SqlClient.SqlClient
+import { SqlClient } from '@effect/sql'
 
-		// Query plan for polling query
-		const plan = yield* sql<{
-			detail: string
-		}>`EXPLAIN QUERY PLAN
+it.effect('should use index for polling query', () =>
+		Effect.gen(function* () {
+			const sql = yield* SqlClient.SqlClient
+
+			// Query plan for polling query
+			const plan = yield* sql<{
+				detail: string
+			}>`EXPLAIN QUERY PLAN
             SELECT * FROM timer_schedules
             WHERE tenant_id = 'tenant-a'
               AND state = 'Scheduled'
@@ -516,10 +518,10 @@ it.effect('should use index for polling query', () =>
             ORDER BY due_at ASC
             LIMIT 100`
 
-		// Assert: Index scan (not table scan)
-		expect(plan[0].detail).toContain('USING INDEX idx_timer_schedules_due_at')
-		expect(plan[0].detail).not.toContain('SCAN') // No full table scan
-	})
+			// Assert: Index scan (not table scan)
+			expect(plan[0].detail).toContain('USING INDEX idx_timer_schedules_due_at')
+			expect(plan[0].detail).not.toContain('SCAN') // No full table scan
+		}),
 )
 ```
 
@@ -535,8 +537,10 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 		const tenantId = TenantId.make('tenant-a')
 		const serviceCallId = ServiceCallId.make()
 
-		yield* sql`INSERT INTO service_calls (tenant_id, service_call_id) 
-                   VALUES (${tenantId}, ${serviceCallId})`
+		yield* sql`
+		INSERT INTO service_calls (tenant_id, service_call_id) 
+        VALUES (${tenantId}, ${serviceCallId});
+		`
 
 		yield* persistence.scheduleTimer(
 			new TimerEntry({
@@ -549,16 +553,20 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 		)
 
 		// Act: Delete ServiceCall
-		yield* sql`DELETE FROM service_calls 
-                   WHERE tenant_id = ${tenantId} 
-                     AND service_call_id = ${serviceCallId}`
+		yield* sql`
+		DELETE FROM service_calls 
+        WHERE tenant_id = ${tenantId} 
+        AND service_call_id = ${serviceCallId};
+		`
 
 		// Assert: Timer automatically deleted (CASCADE)
 		const timers = yield* sql<{
 			count: number
-		}>`SELECT COUNT(*) as count FROM timer_schedules 
-                                WHERE tenant_id = ${tenantId} 
-                                  AND service_call_id = ${serviceCallId}`
+		}>`
+		SELECT COUNT(*) as count FROM timer_schedules 
+        WHERE tenant_id = ${tenantId} 
+        AND service_call_id = ${serviceCallId};
+		`
 
 		expect(timers[0].count).toBe(0)
 	})
