@@ -165,7 +165,6 @@ describe('pollDueTimersWorkflow', () => {
 				const registeredAt = yield* clock.now()
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
-				
 				// Create and save timers using iteration
 				const timers = serviceCallIds.map(serviceCallId =>
 					Domain.ScheduledTimer.make({
@@ -176,7 +175,7 @@ describe('pollDueTimersWorkflow', () => {
 						tenantId,
 					}),
 				)
-				
+
 				yield* Effect.forEach(
 					timers,
 					t =>
@@ -658,7 +657,7 @@ describe('pollDueTimersWorkflow', () => {
 	})
 
 	describe('Error Handling - Publish Failures', () => {
-		it.effect.fails('propagates batch failure when publish fails', () => {
+		it.scoped('propagates batch failure when publish fails', () => {
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: () =>
 					Effect.fail(
@@ -696,7 +695,16 @@ describe('pollDueTimersWorkflow', () => {
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow with TimerEventBusTest - should fail with BatchProcessingError
-				yield* Workflows.pollDueTimersWorkflow()
+				const exit = yield* Effect.exit(Workflows.pollDueTimersWorkflow())
+
+				// Assert: Should fail with BatchProcessingError
+				expect(Exit.isFailure(exit)).toBe(true)
+				if (Exit.isFailure(exit)) {
+					expect(Cause.isFailType(exit.cause)).toBe(true)
+					if (Cause.isFailType(exit.cause)) {
+						expect(exit.cause.error).toBeInstanceOf(Workflows.BatchProcessingError)
+					}
+				}
 			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 
