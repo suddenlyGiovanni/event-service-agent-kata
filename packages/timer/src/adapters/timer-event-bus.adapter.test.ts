@@ -356,10 +356,7 @@ describe('TimerEventBus', () => {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
-					) =>
-						Effect.gen(function* () {
-							yield* handler(envelope)
-						}) as Effect.Effect<void, E, R>,
+					) => handler(envelope),
 				})
 
 				const TimerEventBusLive = Layer.provide(
@@ -415,10 +412,7 @@ describe('TimerEventBus', () => {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
-					) =>
-						Effect.gen(function* () {
-							yield* handler(envelope)
-						}) as Effect.Effect<void, E, R>,
+					) => handler(envelope),
 				})
 
 				const TimerEventBusLive = Layer.provide(
@@ -467,10 +461,7 @@ describe('TimerEventBus', () => {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
-					) =>
-						Effect.gen(function* () {
-							yield* handler(envelope)
-						}) as Effect.Effect<void, E, R>,
+					) => handler(envelope),
 				})
 
 				const TimerEventBusLive = Layer.provide(
@@ -518,10 +509,7 @@ describe('TimerEventBus', () => {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
-					) =>
-						Effect.gen(function* () {
-							yield* handler(envelope)
-						}) as Effect.Effect<void, E, R>,
+					) => handler(envelope),
 				})
 
 				const TimerEventBusLive = Layer.provide(
