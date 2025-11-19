@@ -1032,37 +1032,17 @@ Deno recognizes the following language identifiers for code blocks:
 - JavaScript: `js`, `javascript`, `mjs`, `cjs`, `jsx`
 - If no language identifier is specified, the language is inferred from the source file's media type
 
-**Handling Incomplete Examples (Ignore Attribute)**:
+**Handling Incomplete Examples**:
 
-Since `deno check --doc` validates `@example` blocks, you must explicitly use the `ignore` attribute for incomplete code (e.g., pseudo-code, missing variables) to avoid CI failures:
-
-- **`typescript ignore`** (space-separated): Skips type-checking AND execution (preserves syntax highlighting). Use this for "todo" or partial code that won't compile.
-- **`text`**: Skips everything (no highlighting, no type-checking). Use this for abstract concepts, raw output, or non-code content.
-
-**Note**: The `ignore` keyword is an **attribute**, not part of the language identifier. Use a space (not comma) between language and attribute: `typescript ignore`, not `typescript, ignore`.
-
-**Example**:
-
-````typescript
-/**
- * @example
- * ```typescript ignore
- * // This pseudo-code is skipped by Deno checks
- * const result = await partialImplementation(...)
- * ```
- */
-````
+See the [Handling Incomplete Code Examples](#handling-incomplete-code-examples) section below for guidance on using `ignore` attributes and `text` language identifiers.
 
 **Iterative validation workflow**:
 
-When adding/updating TSDoc examples across multiple files:
+See the [Documentation Validation Workflow](#documentation-validation-workflow) section below for the incremental validation pattern. For TSDoc:
 
-1. **Check one file at a time**: `deno check --doc packages/timer/src/domain/timer.ts`
-2. **Fix errors incrementally**: Broken examples in one file won't block checking others
-3. **Run full suite when clean**: `bun run docs:type-check && bun run docs:test`
-4. **Use file-scoped test**: `deno test --doc packages/timer/src/domain/timer.ts`
-
-This avoids noise from broken examples in unrelated files during development.
+- **Single file check**: `deno check --doc packages/timer/src/domain/timer.ts`
+- **File-scoped test**: `deno test --doc packages/timer/src/domain/timer.ts`
+- **Full suite**: `bun run docs:type-check && bun run docs:test`
 
 **Template for domain models**:
 
@@ -1131,13 +1111,48 @@ const workflow = Effect.gen(function* () {
 
 **Handling Incomplete Code Blocks**:
 
-If a code block in a markdown file is intentionally incomplete or pseudo-code, you must prevent `deno check --doc-only` from failing:
+See the [Handling Incomplete Code Examples](#handling-incomplete-code-examples) section below for guidance on using `ignore` attributes in markdown code blocks.
 
-- **Supported language identifiers**: `ts`, `typescript`, `mts`, `cts`, `tsx`, `js`, `javascript`, `mjs`, `cjs`, `jsx`
-- **Use `ignore` attribute**: Append a space and `ignore` to the language (e.g., `typescript ignore`) to skip type-checking and testing while maintaining syntax highlighting.
-- **Use `text`**: For non-code blocks or raw output (no syntax highlighting, no type-checking).
+**Iterative validation workflow**:
 
-**Example**:
+See the [Documentation Validation Workflow](#documentation-validation-workflow) section below for the incremental validation pattern. For Markdown:
+
+- **Single file check**: `deno check --doc-only docs/design/timer.md`
+- **Directory check**: `deno check --doc-only docs/design/*.md`
+- **Full suite**: `bun run docs:type-check:md`
+
+---
+
+### Handling Incomplete Code Examples
+
+**Applies to**: Both TSDoc `@example` blocks and Markdown code blocks
+
+Since `deno check --doc` and `deno check --doc-only` validate code examples, you must explicitly skip type-checking for incomplete or pseudo-code to avoid CI failures.
+
+**Supported Language Identifiers**:
+
+Deno recognizes: `ts`, `typescript`, `mts`, `cts`, `tsx`, `js`, `javascript`, `mjs`, `cjs`, `jsx`
+
+**Skip Type-Checking Options**:
+
+- **`typescript ignore`** (space-separated): Skips type-checking AND execution while preserving syntax highlighting. Use for "todo" or partial code that won't compile.
+- **`text`**: Skips everything (no highlighting, no type-checking). Use for abstract concepts, raw output, or non-code content.
+
+**Note**: The `ignore` keyword is an **attribute**, not part of the language identifier. Use a space (not comma): `typescript ignore`, not `typescript, ignore`.
+
+**TSDoc Example**:
+
+````typescript
+/**
+ * @example
+ * ```typescript ignore
+ * // This pseudo-code is skipped by Deno checks
+ * const result = await partialImplementation(...)
+ * ```
+ */
+````
+
+**Markdown Example**:
 
 ````markdown
 ```typescript ignore
@@ -1146,23 +1161,53 @@ const result = await partialImplementation(...)
 ```
 ````
 
-**Iterative validation workflow**:
+---
 
-When adding/updating markdown code blocks across multiple files:
+### Documentation Validation Workflow
 
-1. **Check one file at a time**: `deno check --doc-only docs/design/timer.md`
-2. **Fix errors incrementally**: Broken code blocks in one file won't block checking others
-3. **Run full suite when clean**: `bun run docs:type-check:md`
-4. **Use focused validation**: Check specific directories: `deno check --doc-only docs/design/*.md`
+**Applies to**: Both TSDoc and Markdown documentation
 
-This avoids noise from broken code blocks in unrelated files during development.
+When adding/updating code examples across multiple files, use this incremental validation pattern to avoid noise from broken examples in unrelated files:
 
-**Common mistakes to avoid**:
+**Workflow Pattern**:
 
-- ❌ Incomplete imports (missing Effect, Schema, etc.)
-- ❌ Pseudo-code that won't compile
-- ❌ Using `...` to indicate omitted code (use actual code or skip the example)
-- ❌ Referencing undefined variables
+1. **Check one file at a time**: Fix errors in isolation without noise from other files
+2. **Fix errors incrementally**: Broken examples in one file won't block progress on others
+3. **Run full suite when clean**: Validate everything works together
+4. **Use focused validation**: Target specific files or directories during development
+
+**TSDoc-Specific Commands**:
+
+```bash
+# Single file type-check
+deno check --doc packages/timer/src/domain/timer.ts
+
+# Single file test execution
+deno test --doc packages/timer/src/domain/timer.ts
+
+# Full suite (all TSDoc examples)
+bun run docs:type-check  # Type-check only
+bun run docs:test        # Type-check + execute
+```
+
+**Markdown-Specific Commands**:
+
+```bash
+# Single file check
+deno check --doc-only docs/design/timer.md
+
+# Directory check
+deno check --doc-only docs/design/*.md
+
+# Full suite (all markdown code blocks)
+bun run docs:type-check:md
+```
+
+**Why This Works**:
+
+- Isolated file checks provide fast feedback loops
+- Incremental fixes prevent overwhelming error output
+- Full suite validation ensures no regressions before committing
 
 ---
 
