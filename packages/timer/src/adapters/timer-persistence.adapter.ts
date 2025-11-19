@@ -19,9 +19,10 @@ import { ReachedTimer, ScheduledTimer, TimerEntry } from '../domain/timer-entry.
 import * as Ports from '../ports/index.ts'
 
 /**
- * FIXME: find a more correct name
+ * Database row representation for timer_schedules table.
+ * Maps to both Scheduled and Reached timer states via the state column.
  */
-class TimerModel extends Sql.Model.Class<TimerModel>('TimerModel')({
+class TimerScheduleRow extends Sql.Model.Class<TimerScheduleRow>('TimerScheduleRow')({
 	correlationId: Sql.Model.FieldOption(CorrelationId),
 	dueAt: Schema.DateTimeUtc,
 	reachedAt: Sql.Model.FieldOption(Schema.DateTimeUtc),
@@ -48,7 +49,7 @@ class TimerModel extends Sql.Model.Class<TimerModel>('TimerModel')({
  * Helper: Convert Timer DB row to TimerEntry domain type
  * Handles both Scheduled and Reached states based on state column.
  */
-const timerRecordToTimerEntry: (timer: TimerModel) => TimerEntry.Type = Match.type<TimerModel>().pipe(
+const timerRecordToTimerEntry: (timer: TimerScheduleRow) => TimerEntry.Type = Match.type<TimerScheduleRow>().pipe(
 	Match.withReturnType<TimerEntry.Type>(),
 	Match.when(
 		row => row.state === 'Scheduled',
@@ -79,8 +80,8 @@ const timerRecordToTimerEntry: (timer: TimerModel) => TimerEntry.Type = Match.ty
 /**
  * Helper: Convert ScheduledTimer domain type to Timer DB row
  */
-const scheduledTimerToTimerRecord = (scheduledTimer: TimerEntry.ScheduledTimer): TimerModel =>
-	new TimerModel({
+const scheduledTimerToTimerRecord = (scheduledTimer: TimerEntry.ScheduledTimer): TimerScheduleRow =>
+	new TimerScheduleRow({
 		correlationId: scheduledTimer.correlationId,
 		dueAt: scheduledTimer.dueAt,
 		reachedAt: Option.none(),
@@ -167,7 +168,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
                 WHERE ${sql.and([sql`tenant_id = ${tenantId}`, sql`service_call_id = ${serviceCallId}`])};
 						`,
 					Request: Ports.TimerScheduleKey,
-					Result: TimerModel,
+					Result: TimerScheduleRow,
 				}),
 				mapSqlError('find'),
 				Effect.tap(
@@ -207,7 +208,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
                     ASC;
 						`,
 					Request: Schema.DateTimeUtc,
-					Result: TimerModel,
+					Result: TimerScheduleRow,
 				}),
 				mapSqlError('findDue'),
 				Effect.tap(Effect.annotateCurrentSpan({ now })),
@@ -256,7 +257,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 								])};
 						`,
 					Request: Ports.TimerScheduleKey,
-					Result: TimerModel,
+					Result: TimerScheduleRow,
 				}),
 				mapSqlError('findScheduledTimer'),
 				Effect.tap(
@@ -359,7 +360,7 @@ ON CONFLICT (tenant_id, service_call_id)
                   reached_at     = EXCLUDED.reached_at,
                   state          = EXCLUDED.state;
 								`,
-					Request: TimerModel.insert,
+					Request: TimerScheduleRow.insert,
 				}),
 				mapSqlError('save'),
 				Effect.tap(Effect.annotateCurrentSpan({ ...entry })),
