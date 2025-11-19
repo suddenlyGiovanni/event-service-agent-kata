@@ -44,8 +44,6 @@ Prioritized queue.
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
-- (PL-4.6) SQLite persistence adapter [Timer] — Consolidate test suite: remove duplicate `inMemory` describe block, keep only `Test` (SQLite :memory:)
-
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
 ## Blocked
@@ -56,6 +54,7 @@ Prioritized queue.
 
 ## Done (recent)
 
+- (PL-4.6) SQLite persistence adapter [Timer] — **COMPLETE**: 3-phase implementation with TDD discipline. **Phase 0 (Bootstrap)**: Created test-driven SQLite adapter foundation with migrations, FK constraints, and dual-layer pattern (Live/Test). **Phase 1 (SQLite Adapter)**: Implemented full CRUD operations (save, find, findScheduledTimer, findDue, markFired, delete) with idempotency, tenant isolation, and state transitions. Removed HashMap `inMemory` adapter (189 lines). Migrated all 54 tests to `it.scoped()` pattern with SQL.Test layers. Created `withServiceCall()` fixture for FK constraint satisfaction. Made `correlation_id` optional in schema (migration 0003). Fixed `Effect.fn.Return<A, E, R>` signatures in workflows. **Phase 2 (Test Consolidation)**: Line-by-line coverage verification confirmed all 13 `inMemory` tests were duplicates or superseded by `Test` suite's 20 tests (including unique tenant isolation, ordering, global polling scenarios). Deleted duplicate `inMemory` suite (413 lines, 33→20 tests). Flattened test structure (removed nested `describe('Test')` wrapper). Final state: 20 adapter tests (310 total suite), all passing in 3.52s. **Commits**: 5147052, edb8035
 - (PL-24) Implement MessageMetadata Context for correlationId propagation [Timer] [platform] [docs] [adr: [ADR-0013]] — **COMPLETE**: PR#37 merged (Nov 6, 2025). Option E (Ambient Context) implementation. Created `MessageMetadata` Context.Tag with `correlationId`/`causationId` fields. Updated `TimerEventBusPort` signatures to require `MessageMetadata` in R parameter (asymmetric pattern). Refactored both workflows (`pollDueTimersWorkflow`, `scheduleTimerWorkflow`) to provision Context. Updated 22 tests, activated 2 correlation propagation tests. Fixed broken distributed tracing after PL-23. Removed false `makeEnvelope` references from 6 docs (ADR-0011, ADR-0009, 4 design docs). Updated to dual-level observability strategy (Phase 1 complete, Phase 2 planned). 280/282 tests passing. **Commit**: 3d49ca6
 - (PL-23) Refactor EventBusPort to use pure domain types [Timer] [architecture] — **COMPLETE**: Option B2 implementation with 15 commits across 4 phases. Port accepts pure domain events (`DueTimeReached`), adapter wraps in `MessageEnvelope`. Test layer refactoring (Phase 1-3): fixed composition → extracted base layers → migrated to `@effect/vitest layer()`. Workflow updated (TDD RED-GREEN): construct domain events before publishing. Final REFACTOR phase: extracted BaseTestLayers (10/13 tests simplified, 3 kept explicit for test isolation). All 282 tests passing. **Branch**: `timer/pl-23-pure-domain-events-at-port` (ready for merge).
 - (PL-15) Migrate to Schema.DateTimeUtc [schemas, timer, platform] — PR #34 (draft): Completed all 5 migrations (DateTime.Utc, Option<T>, branded types, cross-field validation, naming consistency). 282 tests passing, backward compatible wire format, comprehensive documentation updates.
@@ -87,9 +86,9 @@ Prioritized queue.
     - [x] Migrate existing tests from `inMemory` → `Adapters.TimerPersistence.Test` (SQLite :memory:)
     - [x] Delete deprecated `inMemory` HashMap implementation (189 lines removed)
     - [x] Export `Adapters.TimerPersistence.Test` and verify integration (325 tests passing)
-    - [ ] **NEXT**: Remove duplicate `inMemory` describe block from test file
-    - [ ] **NEXT**: Consolidate into single `Test` describe block (SQLite :memory: only)
-    - [ ] **NEXT**: Verify full test coverage maintained (currently 33 tests in persistence suite)
+    - [x] **NEXT**: Remove duplicate `inMemory` describe block from test file
+    - [x] **NEXT**: Consolidate into single `Test` describe block (SQLite :memory: only)
+    - [x] **NEXT**: Verify full test coverage maintained (currently 33 tests in persistence suite)
 - **Completed Work** (Nov 19, 2025):
   - Made correlationId optional in schema (aligns with domain Option type)
   - Created `withServiceCall` test fixture helper (idempotent FK insertion)
