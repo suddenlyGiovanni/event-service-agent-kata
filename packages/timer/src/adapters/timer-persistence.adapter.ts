@@ -189,6 +189,10 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	 *   1. dueAt ASC (earliest first)
 	 *   2. registeredAt ASC (first-come-first-served for same dueAt)
 	 *   3. serviceCallId ASC (UUID7 has embedded timestamp, provides deterministic tiebreaker)
+	 *
+	 * Performance: Query is optimized by idx_timer_schedules_due_at (state, due_at, tenant_id)
+	 * which provides efficient filtering and range scan for polling worker.
+	 * @see 0003_timer_schedules_schema.ts - Index definition
 	 */
 	const findDue = Effect.fn('TimerPersistence.Live.findDue')(
 		(now: DateTime.Utc): Effect.Effect<Chunk.Chunk<TimerEntry.ScheduledTimer>, Ports.PersistenceError> =>
