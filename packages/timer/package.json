@@ -1,5 +1,6 @@
 {
 	"dependencies": {
+		"@effect/platform": "catalog:effect",
 		"@effect/platform-bun": "catalog:effect",
 		"@effect/sql": "catalog:effect",
 		"@effect/sql-sqlite-bun": "catalog:effect",

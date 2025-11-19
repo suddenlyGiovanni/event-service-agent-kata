@@ -105,6 +105,7 @@
       "name": "@event-service-agent/timer",
       "version": "0.0.1",
       "dependencies": {
+        "@effect/platform": "catalog:effect",
         "@effect/platform-bun": "catalog:effect",
         "@effect/sql": "catalog:effect",
         "@effect/sql-sqlite-bun": "catalog:effect",

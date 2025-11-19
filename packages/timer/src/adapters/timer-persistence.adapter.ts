@@ -1,6 +1,9 @@
 /** biome-ignore-all lint/style/useNamingConvention:  explanation: Capitalized identifiers follow Effect service conventions */
-import { Model, SqlClient, SqlSchema } from '@effect/sql'
+
+import type * as Platform from '@effect/platform'
+import * as Sql from '@effect/sql'
 import * as Chunk from 'effect/Chunk'
+import type { ConfigError } from 'effect/ConfigError'
 import type * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import { pipe } from 'effect/Function'
@@ -18,17 +21,17 @@ import * as Ports from '../ports/index.ts'
 /**
  * FIXME: find a more correct name
  */
-class TimerModel extends Model.Class<TimerModel>('TimerModel')({
-	correlationId: Model.FieldOption(CorrelationId),
+class TimerModel extends Sql.Model.Class<TimerModel>('TimerModel')({
+	correlationId: Sql.Model.FieldOption(CorrelationId),
 	dueAt: Schema.DateTimeUtc,
-	reachedAt: Model.FieldOption(Schema.DateTimeUtc),
+	reachedAt: Sql.Model.FieldOption(Schema.DateTimeUtc),
 	registeredAt: Schema.DateTimeUtc,
 
 	/**
 	 * Service Call ID associated with this timer
 	 * Primary key component
 	 */
-	serviceCallId: Model.GeneratedByApp(ServiceCallId),
+	serviceCallId: Sql.Model.GeneratedByApp(ServiceCallId),
 
 	state: Schema.propertySignature(Schema.Literal('Scheduled', 'Reached')).pipe(
 		Schema.withConstructorDefault(() => 'Scheduled' as const),
@@ -38,7 +41,7 @@ class TimerModel extends Model.Class<TimerModel>('TimerModel')({
 	 * Tenant ID for multi-tenant isolation
 	 * Primary key component
 	 */
-	tenantId: Model.GeneratedByApp(TenantId),
+	tenantId: Sql.Model.GeneratedByApp(TenantId),
 }) {}
 
 /**
@@ -87,8 +90,8 @@ const scheduledTimerToTimerRecord = (scheduledTimer: TimerEntry.ScheduledTimer):
 		tenantId: scheduledTimer.tenantId,
 	})
 
-const make: Effect.Effect<Ports.TimerPersistencePort, never, SqlClient.SqlClient> = Effect.gen(function* () {
-	const sql = yield* SqlClient.SqlClient
+const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlClient> = Effect.gen(function* () {
+	const sql = yield* Sql.SqlClient.SqlClient
 
 	/**
 	 * Helper: Map SQL errors to domain PersistenceError
@@ -118,7 +121,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, SqlClient.SqlClient
 					serviceCallId,
 					tenantId,
 				}),
-				SqlSchema.void({
+				Sql.SqlSchema.void({
 					execute: ({ tenantId, serviceCallId }) =>
 						sql`
                 DELETE
@@ -152,7 +155,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, SqlClient.SqlClient
 					serviceCallId,
 					tenantId,
 				}),
-				SqlSchema.findOne({
+				Sql.SqlSchema.findOne({
 					execute: ({ tenantId, serviceCallId }) =>
 						sql`
                 SELECT *
@@ -186,7 +189,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, SqlClient.SqlClient
 		(now: DateTime.Utc): Effect.Effect<Chunk.Chunk<TimerEntry.ScheduledTimer>, Ports.PersistenceError> =>
 			pipe(
 				now,
-				SqlSchema.findAll({
+				Sql.SqlSchema.findAll({
 					execute: now =>
 						sql`
                 SELECT *
@@ -237,7 +240,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, SqlClient.SqlClient
 					serviceCallId,
 					tenantId,
 				}),
-				SqlSchema.findOne({
+				Sql.SqlSchema.findOne({
 					execute: ({ tenantId, serviceCallId }) =>
 						sql`
                 SELECT *
@@ -289,7 +292,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, SqlClient.SqlClient
 					serviceCallId,
 					tenantId,
 				},
-				SqlSchema.void({
+				Sql.SqlSchema.void({
 					execute: ({ reachedAt, tenantId, serviceCallId }) =>
 						sql`
                 UPDATE timer_schedules
@@ -327,7 +330,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, SqlClient.SqlClient
 			pipe(
 				entry,
 				scheduledTimerToTimerRecord,
-				SqlSchema.void({
+				Sql.SqlSchema.void({
 					execute: timerRecord =>
 						sql`
 -- Upsert timer: insert new or update existing on conflict
@@ -410,7 +413,15 @@ export class TimerPersistence {
 	/**
 	 * Live Layer using SQLite with file-backed database
 	 */
-	static readonly Live = Layer.provide(Layer.effect(Ports.TimerPersistencePort, make), SQL.Live)
+	static readonly Live: Layer.Layer<
+		Ports.TimerPersistencePort,
+		| Sql.SqlError.SqlError
+		| Sql.Migrator.MigrationError
+		| ConfigError
+		| Platform.Error.BadArgument
+		| Platform.Error.SystemError,
+		never
+	> = Layer.provide(Layer.effect(Ports.TimerPersistencePort, make), SQL.Live)
 
 	/**
 	 * Test Layer using SQLite with in-memory database
@@ -439,5 +450,13 @@ export class TimerPersistence {
 	 * )
 	 * ```
 	 */
-	static readonly Test = Layer.provide(Layer.effect(Ports.TimerPersistencePort, make), SQL.Test)
+	static readonly Test: Layer.Layer<
+		Ports.TimerPersistencePort,
+		| Sql.SqlError.SqlError
+		| Sql.Migrator.MigrationError
+		| ConfigError
+		| Platform.Error.BadArgument
+		| Platform.Error.SystemError,
+		never
+	> = Layer.provide(Layer.effect(Ports.TimerPersistencePort, make), SQL.Test)
 }
