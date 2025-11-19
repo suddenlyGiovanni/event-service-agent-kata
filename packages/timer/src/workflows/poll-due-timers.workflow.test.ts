@@ -988,7 +988,9 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: No events should have been published
 				expect(publishedEvents).toHaveLength(0)
-			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest, TestPersistence)))
+			}).pipe(
+				Effect.provide(Layer.mergeAll(TestPersistence, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default)),
+			)
 		})
 	})
 })
