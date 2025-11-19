@@ -34,45 +34,51 @@ CREATE INDEX idx_outbox_unpublished
 				WHERE published_at IS NULL
 			;
 CREATE TABLE IF NOT EXISTS "timer_schedules"
-(
-    tenant_id       TEXT NOT NULL,
-    service_call_id TEXT NOT NULL,
-    correlation_id  TEXT,
-    due_at          TEXT NOT NULL
-        CHECK (
-            due_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
-                AND length(due_at) BETWEEN 20 AND 35
-            ),
-    registered_at   TEXT NOT NULL
-        CHECK (
-            registered_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
-                AND length(registered_at) BETWEEN 20 AND 35
-            ),
-    reached_at      TEXT
-        CHECK (
-            reached_at IS NULL
-                OR (
-                reached_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
-                    AND length(reached_at) BETWEEN 20 AND 35
-                )
-            ),
-    state           TEXT NOT NULL DEFAULT 'Scheduled'
-        CHECK (state IN ('Scheduled', 'Reached')),
-    CHECK (
-        (state = 'Scheduled' AND reached_at IS NULL)
-            OR (state = 'Reached' AND reached_at IS NOT NULL)
-        ),
-    PRIMARY KEY (tenant_id, service_call_id),
-    FOREIGN KEY (tenant_id, service_call_id)
-        REFERENCES service_calls (tenant_id, service_call_id)
-        ON DELETE CASCADE
-) STRICT;
+      (
+          tenant_id       TEXT NOT NULL,
+          service_call_id TEXT NOT NULL,
+          correlation_id  TEXT,
+          due_at          TEXT NOT NULL
+              CHECK (
+                  due_at GLOB
+                  '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
+                      AND
+                  length(due_at) BETWEEN 20 AND 35
+                  ),
+          registered_at   TEXT NOT NULL
+              CHECK (
+                  registered_at GLOB
+                  '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
+                      AND
+                  length(registered_at) BETWEEN 20 AND 35
+                  ),
+          reached_at      TEXT
+              CHECK (
+                  reached_at IS NULL
+                      OR
+                  (
+                      reached_at GLOB
+                      '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]*Z'
+                          AND
+                      length(reached_at) BETWEEN 20 AND 35
+                      )
+                  ),
+          state           TEXT NOT NULL DEFAULT 'Scheduled'
+              CHECK (state IN ('Scheduled', 'Reached')),
+          CHECK (
+              (state = 'Scheduled' AND reached_at IS NULL)
+                  OR
+              (state = 'Reached' AND reached_at IS NOT NULL)
+              ),
+          PRIMARY KEY (tenant_id, service_call_id),
+          FOREIGN KEY (tenant_id, service_call_id)
+              REFERENCES service_calls (tenant_id, service_call_id)
+              ON DELETE CASCADE
+      ) STRICT;
 CREATE INDEX idx_timer_schedules_due_at
-		ON timer_schedules(tenant_id, state, due_at)
-	;
+          ON timer_schedules (tenant_id, state, due_at);
 CREATE INDEX idx_timer_schedules_correlation_id
-		ON timer_schedules(correlation_id)
-	;
+          ON timer_schedules (correlation_id);
 
-INSERT INTO effect_sql_migrations VALUES(1,'2025-11-19 00:01:13','bootstrap_schema');
-INSERT INTO effect_sql_migrations VALUES(3,'2025-11-19 00:01:13','timer_schedules_schema');
+INSERT INTO effect_sql_migrations VALUES(1,'2025-11-19 12:07:51','bootstrap_schema');
+INSERT INTO effect_sql_migrations VALUES(3,'2025-11-19 12:07:51','timer_schedules_schema');
