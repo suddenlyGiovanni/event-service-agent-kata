@@ -44,7 +44,7 @@ Prioritized queue.
 
 <!-- Only what you're actively working on. Move one item at a time. -->
 
-- (PL-4.6) SQLite persistence adapter [Timer] — Replace in-memory adapter with `@effect/sql-sqlite-bun`
+- (PL-4.6) SQLite persistence adapter [Timer] — Consolidate test suite: remove duplicate `inMemory` describe block, keep only `Test` (SQLite :memory:)
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
@@ -79,61 +79,32 @@ Prioritized queue.
 
 ## Notes (today)
 
-- **PL-4.6 IN PROGRESS** (Nov 12, 2025): SQLite persistence adapter for Timer. Branch `timer/pl-4.6-sqlite-persistence`.
-- **Implementation Plan** (17 steps tracked in TODO list):
-  - **Phase 0: Bootstrap prerequisite (Steps 1-3)** - **COMPLETE**
-    - [x] Add dependencies to timer + platform (@effect/sql, @effect/sql-sqlite-bun)
-    - [x] Create bootstrap migration (0001_bootstrap_schema.ts) - Platform responsibility
-      - [x] Minimal table structure: service_calls (stub), timer_schedules (skeleton), http_execution_log, outbox
-      - [x] FK relationships ONLY (no domain fields)
-      - [x] Migration validation tests (15 tests): table creation, structure, pragmas, data integrity
-    - [x] Migration scripts for local DX: `bun run db:migrate`, `bun run db:reset`
-      - [x] Native Bun .env support (--env-file flag)
-      - [x] Scripts at workspace root (correct CWD for relative paths)
-      - [x] .env.example documentation
-    - [x] Timer schema migration (0003_timer_schedules_schema.ts)
-      - [x] Add Timer domain fields (correlation_id, due_at, registered_at, reached_at, state)
-      - [x] Add CHECK constraints and indexes
-      - [x] Add `timer-database.test.ts` invariants (well-formed insert + 3 constraint failures via `SQL.Test` layer)
-  - **Phase 1: Add SQLite adapter (Steps 4-14)** - NOT STARTED
-    - [x] Add `sqlite(config: { filename: string })` with Migrator (runs bootstrap + timer migrations)
-    - [x] Define TimerRow Model.Class (maps to full timer_schedules schema)
-    - [x] RED: Copy in-memory tests → sqlite tests (16 tests, all failing, `:memory:` runs both migrations)
-    - [x] GREEN: Implement operations one-by-one (save, find, findScheduledTimer, findDue, markFired, delete)
-    - [x] GREEN: All 16 sqlite tests passing
-    - [x] REFACTOR: Extract helpers, document bootstrap + module schema split
-  - **Phase 2: Deprecate HashMap adapter (Steps 15-17)** - NOT STARTED
-    - [ ] Migrate existing tests from `inMemory` → `sqlite({ filename: ':memory:' })`
-    - [ ] Delete deprecated `inMemory` HashMap implementation (single source of truth)
-    - [ ] Export and verify integration
-- **Completed Work** (Nov 12, 2025):
-  - [x] Platform database infrastructure (SQL.Live, SQL.Test layers)
-  - [x] Bootstrap migration (0001_bootstrap_schema.ts) with 5 tables
-  - [x] Migration validation tests (300 total tests passing)
-  - [x] Migration scripts (db:migrate, db:reset) with .env support
-  - [x] Path resolution fix (workspace root execution)
-- **Key Architectural Decision** (Nov 11, 2025):
-  - **APPROVED**: Replace HashMap `inMemory` adapter with SQLite `:memory:` configuration
-  - **Rationale**: Single codebase (no divergence), tests validate production SQL path, negligible speed difference (1-2ms)
-  - **Migration**: Keep `inMemory` temporarily (@deprecated), migrate tests in Phase 2, then delete
-- **Key Architectural Decision - Migration Strategy** (Nov 11, 2025):
-  - **APPROVED**: Minimal bootstrap + module-owned schema evolution
-  - **Bootstrap** (0001_bootstrap_schema.ts in platform): Table structure + FK relationships ONLY (no domain fields)
-  - **Module evolution** (0003_timer_schedules_schema.ts in timer): Domain-specific fields, constraints, indexes
-  - **Rationale**: Bootstrap minimal coupling, modules own full schema, clear separation of concerns
-  - **For Timer**: service_calls stub (FK target) + timer_schedules skeleton → Timer adds domain fields
-- **Key Technical Decisions**:
-  - Use `Model.Class` in adapter layer for field helpers (DateTimeInsertFromDate, FieldOption)
-  - Keep `Schema.TaggedClass` in domain (pure state machine: Scheduled → Reached)
-  - TimerRow (Model.Class) ↔ TimerEntry (Schema.TaggedClass) mapping at adapter boundary
-  - Migrations: Bootstrap (platform) + module schemas (timer/orchestration/execution)
-  - Migration discovery: Glob pattern `packages/*/src/database/migrations/*.ts` (filename order)
-  - Database: ./data/db.sqlite (shared with Orchestration per ADR-0004)
-  - Production: `sqlite({ filename: './data/db.sqlite' })`
-  - Tests: `sqlite({ filename: ':memory:' })` (runs bootstrap + module migrations)
-  - Migration scripts: Workspace root (db:migrate, db:reset) for correct CWD
-  - Environment: .env at workspace root with relative paths (./data/db.sqlite)
-- **Next Action**: Phase 1 kickoff — implement SQLite persistence adapter (TimerPersistence.sqlite) and port in-memory tests over `SQL.Test`
+- **PL-4.6 IN PROGRESS** (Nov 19, 2025): SQLite persistence adapter for Timer. Branch `timer/pl-4.6-sqlite-persistence`.
+- **Phase Progress**:
+  - **Phase 0: Bootstrap prerequisite (Steps 1-3)** - ✅ **COMPLETE**
+  - **Phase 1: Add SQLite adapter (Steps 4-14)** - ✅ **COMPLETE**
+  - **Phase 2: Consolidate test suite (Steps 15-17)** - 🔄 **IN PROGRESS**
+    - [x] Migrate existing tests from `inMemory` → `Adapters.TimerPersistence.Test` (SQLite :memory:)
+    - [x] Delete deprecated `inMemory` HashMap implementation (189 lines removed)
+    - [x] Export `Adapters.TimerPersistence.Test` and verify integration (325 tests passing)
+    - [ ] **NEXT**: Remove duplicate `inMemory` describe block from test file
+    - [ ] **NEXT**: Consolidate into single `Test` describe block (SQLite :memory: only)
+    - [ ] **NEXT**: Verify full test coverage maintained (currently 33 tests in persistence suite)
+- **Completed Work** (Nov 19, 2025):
+  - Made correlationId optional in schema (aligns with domain Option type)
+  - Created `withServiceCall` test fixture helper (idempotent FK insertion)
+  - Migrated all tests to `it.scoped()` pattern (54 tests across 4 files)
+  - Removed HashMap adapter implementation (single source of truth: SQLite)
+  - Removed obsolete skipped tests (decode errors, invalid dueAt format)
+  - Fixed Effect.fn return type syntax in workflows
+  - 8 atomic commits preserving git history
+- **Current State**:
+  - `timer-persistence.adapter.test.ts` has TWO describe blocks:
+    - `describe('inMemory')` - 13 tests using BaseTestLayers (SQL.Test)
+    - `describe('Test')` - 20 tests using BaseTestLayers (SQL.Test)
+  - Both test suites now use identical infrastructure (SQLite :memory:)
+  - Duplication exists for safety (ensuring coverage during migration)
+- **Next Action**: Consolidate test suite by removing `inMemory` describe block, verify all 33 test cases covered in unified `Test` suite
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
