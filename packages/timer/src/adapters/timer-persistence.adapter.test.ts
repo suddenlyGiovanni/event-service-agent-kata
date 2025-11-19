@@ -48,8 +48,16 @@ const makeScheduledTimer = ({
 	})
 
 /**
- * Base test layers with SQL.Test for fresh database per test.
- * Using it.scoped() ensures each test gets isolated database instance.
+ * Base test layers for all adapter tests.
+ *
+ * Layer composition rationale:
+ * - TimerPersistence.Test: SQLite-backed adapter under test (internally uses SQL.Test for adapter implementation)
+ * - SQL.Test: ALSO needed separately because test fixtures (withServiceCall) require SqlClient directly to insert FK-compliant data
+ * - ClockPort: Test clock for time control
+ * - UUID7: Default UUID generator
+ *
+ * Note: SQL.Test appears in both TimerPersistence.Test (internal) and BaseTestLayers (external).
+ * This is NOT duplication - Layer.mergeAll deduplicates identical layers, so SQL.Test is only initialized once.
  */
 const BaseTestLayers = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.ClockPortTest, UUID7.Default, SQL.Test)
 
