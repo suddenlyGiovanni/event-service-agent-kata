@@ -1,7 +1,6 @@
 /** biome-ignore-all lint/style/useNamingConvention: SQL is conventional abbreviation (matches Effect examples) */
 
 import * as Platform from '@effect/platform'
-import * as Path from '@effect/platform/Path'
 import * as PlatformBun from '@effect/platform-bun'
 import * as Sql from '@effect/sql'
 import * as SqliteBun from '@effect/sql-sqlite-bun'
@@ -78,7 +77,7 @@ export class SQL {
 	> = Effect.gen(function* () {
 		yield* Effect.logInfo('Initializing database configuration')
 
-		const path = yield* Path.Path
+		const path = yield* Platform.Path.Path
 
 		// 1. Calculate workspace root URL (4 levels up from this file)
 		// packages/platform/src/database/sql.ts → workspace root
@@ -147,7 +146,7 @@ export class SQL {
 		Effect.gen(function* () {
 			yield* Effect.logInfo('Initializing database migrator', { schemaDirectory })
 
-			const path = yield* Path.Path
+			const path = yield* Platform.Path.Path
 
 			// Resolve workspace root from package.json location
 			const workspaceRoot = yield* path.fromFileUrl(new URL('../../../..', import.meta.url))
@@ -297,11 +296,7 @@ export class SQL {
 		const migratorLayer = SQL.makeMigrator(config.schemaDirectory).pipe(Layer.provide(clientLayer))
 
 		return Layer.merge(clientLayer, migratorLayer)
-	}).pipe(
-		Effect.withSpan('SQL.Live'),
-		Effect.provide(PlatformBun.BunPath.layer), // Provide Path.Path internally
-		Layer.unwrapEffect,
-	)
+	}).pipe(Effect.withSpan('SQL.Live'), Effect.provide(PlatformBun.BunPath.layer), Layer.unwrapEffect)
 
 	/**
 	 * Test SQLite client layer (in-memory).
