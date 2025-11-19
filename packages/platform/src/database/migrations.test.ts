@@ -22,7 +22,7 @@ describe('Platform Database Migrations', () => {
 	 * Base test layers with SQL.Test for fresh database per test.
 	 * Using it.scoped() ensures each test gets isolated database instance.
 	 */
-	const BaseTestLayers = SQL.Test.pipe(Layer.provide(PlatformBun.BunContext.layer))
+	const BaseTestLayers = Layer.provide(SQL.Test, PlatformBun.BunContext.layer)
 
 	describe('Bootstrap Migration (0001_bootstrap_schema.ts)', () => {
 		it.scoped('should execute without errors', () =>
@@ -338,8 +338,10 @@ describe('Platform Database Migrations', () => {
 
 				const result = yield* sql`PRAGMA journal_mode`
 
-				// In-memory databases always use 'memory' journal mode
-				// WAL mode (set in bootstrap migration) only applies to persistent databases
+				/*
+				 In-memory databases always use 'memory' journal mode
+				 WAL mode (set in bootstrap migration) only applies to persistent databases
+				*/
 				expect(result).toHaveLength(1)
 				expect(result[0]?.['journalMode']?.toString().toLowerCase()).toBe('memory')
 			}).pipe(Effect.provide(BaseTestLayers)),
@@ -373,15 +375,26 @@ describe('Platform Database Migrations', () => {
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
-				// Try to insert timer without corresponding service_call
+				/*
+				 Try to insert timer without corresponding service_call
+				 Include all required columns to ensure failure is due to FK constraint, not NOT NULL
+				*/
 				const result = yield* Effect.either(
 					sql`
-						INSERT INTO timer_schedules (tenant_id, service_call_id)
-						VALUES ('tenant-123', 'nonexistent-service-call-id')
+              INSERT INTO timer_schedules (tenant_id,
+                                           service_call_id,
+                                           due_at,
+                                           registered_at,
+                                           state)
+              VALUES ('tenant-123',
+                      'nonexistent-service-call-id',
+                      '2025-01-01T00:00:00.000Z',
+                      '2025-01-01T00:00:00.000Z',
+                      'Scheduled')
 					`,
 				)
 
-				// Should fail due to FK constraint
+				// Should fail due to FK constraint violation (service_call doesn't exist)
 				expect(result._tag).toBe('Left')
 			}).pipe(Effect.provide(BaseTestLayers)),
 		)
