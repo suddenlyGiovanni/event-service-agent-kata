@@ -48,36 +48,31 @@ import * as Ports from '../ports/index.ts'
  * - Error handling approach
  * - MessageMetadata Context requirements
  */
-export const scheduleTimerWorkflow = Effect.fn('Timer.ScheduleTimer')(function* ({
-	dueAt,
-	serviceCallId,
-	tenantId,
-}: Messages.Orchestration.Commands.ScheduleTimer.Type): Effect.fn.Return<
-	void,
-	Ports.PersistenceError,
-	Ports.ClockPort | Ports.TimerPersistencePort | MessageMetadata
-> {
-	const { causationId, correlationId } = yield* MessageMetadata
-	const clock = yield* Ports.ClockPort
-	const persistence = yield* Ports.TimerPersistencePort
+export const scheduleTimerWorkflow: (
+	command: Messages.Orchestration.Commands.ScheduleTimer,
+) => Effect.Effect<void, Ports.PersistenceError, Ports.TimerPersistencePort | Ports.ClockPort | MessageMetadata> =
+	Effect.fn('Timer.ScheduleTimer')(function* ({ dueAt, serviceCallId, tenantId }) {
+		const { causationId, correlationId } = yield* MessageMetadata
+		const clock = yield* Ports.ClockPort
+		const persistence = yield* Ports.TimerPersistencePort
 
-	yield* Effect.annotateCurrentSpan({
-		causationId,
-		correlationId,
-		dueAt,
-		serviceCallId,
-		tenantId,
+		yield* Effect.annotateCurrentSpan({
+			causationId,
+			correlationId,
+			dueAt,
+			serviceCallId,
+			tenantId,
+		})
+
+		const registeredAt = yield* clock.now()
+
+		const scheduledTimer = new Domain.ScheduledTimer({
+			correlationId,
+			dueAt,
+			registeredAt,
+			serviceCallId,
+			tenantId,
+		})
+
+		yield* persistence.save(scheduledTimer)
 	})
-
-	const registeredAt = yield* clock.now()
-
-	const scheduledTimer = new Domain.ScheduledTimer({
-		correlationId,
-		dueAt,
-		registeredAt,
-		serviceCallId,
-		tenantId,
-	})
-
-	yield* persistence.save(scheduledTimer)
-})
