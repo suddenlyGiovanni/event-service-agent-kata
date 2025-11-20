@@ -14,6 +14,29 @@ import * as Stream from 'effect/Stream'
 import * as StringModule from 'effect/String'
 
 /**
+ * Workspace root path service.
+ *
+ * Resolves the workspace root directory from this file's location.
+ * Used by DatabaseConfig and makeMigrator to consistently locate resources.
+ *
+ * @internal Shared service for workspace-relative path resolution
+ */
+class WorkspaceRoot extends Effect.Service<WorkspaceRoot>()('WorkspaceRoot', {
+	dependencies: [PlatformBun.BunPath.layer],
+	effect: Effect.gen(function* () {
+		yield* Effect.logDebug('Resolving workspace root from file location')
+
+		const path = yield* Platform.Path.Path
+		const workspaceRootURL = new URL('../../../../', import.meta.url)
+		const workspaceRootPath = yield* path.fromFileUrl(workspaceRootURL)
+
+		yield* Effect.logInfo('Workspace root resolved', { workspaceRoot: workspaceRootPath })
+
+		return { path: workspaceRootPath }
+	}),
+}) {}
+
+/**
  * Database configuration with environment variable overrides.
  *
  * Environment variables:
@@ -29,41 +52,31 @@ import * as StringModule from 'effect/String'
  *
  * @internal Used by makeMigrator and Live layer
  */
-const DatabaseConfig: Effect.Effect<
-	{ readonly filename: string; readonly schemaDirectory: string },
-	ConfigError | Platform.Error.BadArgument,
-	Platform.Path.Path
-> = Effect.gen(function* () {
-	yield* Effect.logInfo('Initializing database configuration')
+class DatabaseConfig extends Effect.Service<DatabaseConfig>()('DatabaseConfig', {
+	dependencies: [PlatformBun.BunPath.layer, WorkspaceRoot.Default],
+	effect: Effect.gen(function* () {
+		yield* Effect.logInfo('Initializing database configuration')
 
-	const path = yield* Platform.Path.Path
+		const path = yield* Platform.Path.Path
+		const workspaceRoot = yield* WorkspaceRoot
 
-	// 1. Calculate workspace root URL (4 levels up from this file)
-	// packages/platform/src/database/sql.ts → workspace root
-	const workspaceRootURL = new URL('../../../../', import.meta.url)
-	yield* Effect.logTrace('Workspace root URL created', { url: workspaceRootURL.href })
+		// Use Effect Path.join for cross-platform path concatenation
+		const dataDirectory = path.join(workspaceRoot.path, 'data')
+		yield* Effect.logDebug('Data directory computed', { dataDirectory })
 
-	// 2. Convert file:// URL to platform-specific path string
-	// Effect-based: handles errors and cross-platform differences
-	const workspaceRoot = yield* path.fromFileUrl(workspaceRootURL)
-	yield* Effect.logDebug('Workspace root resolved', { workspaceRoot })
+		const config = yield* Config.all({
+			filename: Config.string('DB_PATH').pipe(Config.withDefault(path.join(dataDirectory, 'db.sqlite'))),
+			schemaDirectory: Config.string('DB_SCHEMA_DIR').pipe(Config.withDefault(dataDirectory)),
+		})
 
-	// 3. Use Effect Path.join for cross-platform path concatenation
-	const dataDirectory = path.join(workspaceRoot, 'data')
-	yield* Effect.logDebug('Data directory computed', { dataDirectory })
+		yield* Effect.logInfo('Database configuration loaded', {
+			filename: config.filename,
+			schemaDirectory: config.schemaDirectory,
+		})
 
-	const config = yield* Config.all({
-		filename: Config.string('DB_PATH').pipe(Config.withDefault(path.join(dataDirectory, 'db.sqlite'))),
-		schemaDirectory: Config.string('DB_SCHEMA_DIR').pipe(Config.withDefault(dataDirectory)),
-	})
-
-	yield* Effect.logInfo('Database configuration loaded', {
-		filename: config.filename,
-		schemaDirectory: config.schemaDirectory,
-	})
-
-	return config
-}).pipe(Effect.withSpan('SQL.DatabaseConfig'))
+		return config
+	}).pipe(Effect.withSpan('DatabaseConfig')),
+}) {}
 
 /**
  * Creates a migrator layer with optional schema dump directory.
@@ -106,30 +119,29 @@ const makeMigrator = (
 		yield* Effect.logInfo('Initializing database migrator', { schemaDirectory })
 
 		const path = yield* Platform.Path.Path
+		const workspaceRoot = yield* WorkspaceRoot
 
-		// Resolve workspace root (repo root) from this file's location
-		// packages/platform/src/database/sql.ts + ../../../.. = workspace root
-		const workspaceRoot = yield* path.fromFileUrl(new URL('../../../..', import.meta.url))
-
-		yield* Effect.logDebug('Workspace root resolved', { workspaceRoot })
+		yield* Effect.logDebug('Using workspace root for migration discovery', {
+			workspaceRoot: workspaceRoot.path,
+		})
 
 		const migrationsRecord = yield* pipe(
 			Stream.fromAsyncIterable(
-				new Bun.Glob('packages/*/src/database/migrations/*.ts').scan({ cwd: workspaceRoot }),
+				new Bun.Glob('packages/*/src/database/migrations/*.ts').scan({ cwd: workspaceRoot.path }),
 				error =>
 					new Platform.Error.SystemError({
 						cause: error,
 						description: String(error),
 						method: 'glob.scan',
 						module: 'FileSystem',
-						pathOrDescriptor: workspaceRoot,
+						pathOrDescriptor: workspaceRoot.path,
 						reason: 'Unknown',
 					}),
 			),
 			Stream.runCollect,
 			Effect.map(
 				Record.fromIterableWith((relativePath: string) => {
-					const absolutePath = path.join(workspaceRoot, relativePath)
+					const absolutePath = path.join(workspaceRoot.path, relativePath)
 					return [absolutePath, () => import(absolutePath)] as const
 				}),
 			),
@@ -148,10 +160,10 @@ const makeMigrator = (
 			return yield* Effect.fail(
 				new Platform.Error.SystemError({
 					cause: new Error('No migration files discovered'),
-					description: `Expected to find migration files matching 'packages/*/src/database/migrations/*.ts' in workspace root '${workspaceRoot}', but found none. This likely indicates a path misconfiguration.`,
+					description: `Expected to find migration files matching 'packages/*/src/database/migrations/*.ts' in workspace root '${workspaceRoot.path}', but found none. This likely indicates a path misconfiguration.`,
 					method: 'glob.scan',
 					module: 'FileSystem',
-					pathOrDescriptor: workspaceRoot,
+					pathOrDescriptor: workspaceRoot.path,
 					reason: 'Unknown',
 				}),
 			)
@@ -171,7 +183,11 @@ const makeMigrator = (
 			schemaDirectory: schemaDirectory ?? (undefined as never),
 			table: 'effect_sql_migrations',
 		}).pipe(Layer.provide(PlatformBun.BunContext.layer))
-	}).pipe(Effect.withSpan('SQL.makeMigrator'), Effect.provide(PlatformBun.BunPath.layer), Layer.unwrapEffect)
+	}).pipe(
+		Effect.withSpan('SQL.makeMigrator'),
+		Effect.provide(Layer.merge(PlatformBun.BunPath.layer, WorkspaceRoot.Default)),
+		Layer.unwrapEffect,
+	)
 
 /**
  * Creates a SQLite client layer with the specified database filename.
@@ -190,15 +206,16 @@ const makeClient = (
 	Sql.SqlError.SqlError | ConfigError,
 	never
 > => {
-	const client = SqliteBun.SqliteClient.layer({
-		disableWAL: false,
-		filename,
-		transformQueryNames: StringModule.camelToSnake,
-		transformResultNames: StringModule.snakeToCamel,
-	})
+	const sqlClientLayer: Layer.Layer<SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient, ConfigError, never> =
+		SqliteBun.SqliteClient.layer({
+			disableWAL: false,
+			filename,
+			transformQueryNames: StringModule.camelToSnake,
+			transformResultNames: StringModule.snakeToCamel,
+		})
 
 	// Execute session pragmas after client creation
-	const pragmaSetup = Layer.effectDiscard(
+	const pragmaSetup: Layer.Layer<never, ConfigError | Sql.SqlError.SqlError, never> = Layer.effectDiscard(
 		Effect.gen(function* () {
 			yield* Effect.logInfo('Configuring SQLite session pragmas', { filename })
 
@@ -218,10 +235,10 @@ const makeClient = (
 
 			yield* Effect.logInfo('SQLite session pragmas configured successfully')
 		}).pipe(Effect.withSpan('SQL.pragmaSetup', { attributes: { filename } })),
-	).pipe(Layer.provide(client))
+	).pipe(Layer.provide(sqlClientLayer))
 
 	// Merge: export client + run pragma setup (both need client from baseClient)
-	return Layer.merge(client, pragmaSetup)
+	return Layer.merge(sqlClientLayer, pragmaSetup)
 }
 
 /**
@@ -289,7 +306,7 @@ const Live: Layer.Layer<
 	const migratorLayer = makeMigrator(config.schemaDirectory).pipe(Layer.provide(clientLayer))
 
 	return Layer.merge(clientLayer, migratorLayer)
-}).pipe(Effect.withSpan('SQL.Live'), Effect.provide(PlatformBun.BunPath.layer), Layer.unwrapEffect)
+}).pipe(Effect.withSpan('SQL.Live'), Effect.provide(DatabaseConfig.Default), Layer.unwrapEffect)
 
 /**
  * Test SQLite client layer (in-memory).
@@ -349,11 +366,7 @@ const Test: Layer.Layer<
 	const migratorLayer = makeMigrator().pipe(Layer.provide(clientLayer))
 
 	return Layer.merge(clientLayer, migratorLayer)
-}).pipe(
-	Effect.withSpan('SQL.Test'),
-	Effect.provide(PlatformBun.BunPath.layer), // Provide Path.Path internally
-	Layer.unwrapEffect,
-)
+}).pipe(Effect.withSpan('SQL.Test'), Layer.unwrapEffect)
 
 /**
  * SQLite client layers with automatic migration execution.
