@@ -147,8 +147,8 @@ const makeMigrator = (
 			),
 		)
 
-		const migrationCount = Object.keys(migrationsRecord).length
-		const migrationFiles = Object.keys(migrationsRecord)
+		const migrationFiles = Record.keys(migrationsRecord)
+		const migrationCount = migrationFiles.length
 
 		yield* Effect.logInfo('Discovered migrations', {
 			count: migrationCount,
@@ -190,6 +190,45 @@ const makeMigrator = (
 	)
 
 /**
+ * SQLite session pragma configuration layer.
+ *
+ * Configures session-level SQLite pragmas after client initialization.
+ * These pragmas apply per-connection and must be set on each session.
+ *
+ * Configured pragmas:
+ * - `foreign_keys = ON`: Enable foreign key constraint enforcement (CRITICAL)
+ * - `synchronous = NORMAL`: Balance durability vs performance (WAL mode)
+ * - `temp_store = MEMORY`: Store temporary tables in RAM for speed
+ * - `cache_size = -64000`: 64MB page cache for better performance
+ *
+ * @see ADR-0005 for pragma strategy (database-level vs session-level)
+ * @internal Used by makeClient to configure session on connection
+ */
+const pragmaSetupLayer: Layer.Layer<never, Sql.SqlError.SqlError, Sql.SqlClient.SqlClient> = Effect.gen(function* () {
+	yield* Effect.logInfo('Configuring SQLite session pragmas')
+
+	const sql = yield* Sql.SqlClient.SqlClient
+
+	yield* Effect.logDebug('Setting PRAGMA foreign_keys = ON')
+	/* CRITICAL: Enable FK constraints */
+	yield* sql`PRAGMA foreign_keys = ON`
+
+	yield* Effect.logDebug('Setting PRAGMA synchronous = NORMAL')
+	/* Balance safety/performance */
+	yield* sql`PRAGMA synchronous = NORMAL`
+
+	yield* Effect.logDebug('Setting PRAGMA temp_store = MEMORY')
+	/* Faster temp tables */
+	yield* sql`PRAGMA temp_store = MEMORY`
+
+	yield* Effect.logDebug('Setting PRAGMA cache_size = -64000')
+	/* 64MB cache */
+	yield* sql`PRAGMA cache_size = -64000`
+
+	yield* Effect.logInfo('SQLite session pragmas configured successfully')
+}).pipe(Effect.withSpan('SQL.pragmaSetup'), Layer.effectDiscard)
+
+/**
  * Creates a SQLite client layer with the specified database filename.
  *
  * - Consistent column name transformation (camelCase ↔ snake_case)
@@ -214,31 +253,16 @@ const makeClient = (
 			transformResultNames: StringModule.snakeToCamel,
 		})
 
-	// Execute session pragmas after client creation
-	const pragmaSetup: Layer.Layer<never, ConfigError | Sql.SqlError.SqlError, never> = Layer.effectDiscard(
-		Effect.gen(function* () {
-			yield* Effect.logInfo('Configuring SQLite session pragmas', { filename })
-
-			const sql = yield* Sql.SqlClient.SqlClient
-
-			yield* Effect.logDebug('Setting PRAGMA foreign_keys = ON')
-			yield* sql`PRAGMA foreign_keys = ON` // CRITICAL: Enable FK constraints
-
-			yield* Effect.logDebug('Setting PRAGMA synchronous = NORMAL')
-			yield* sql`PRAGMA synchronous = NORMAL` // Balance safety/performance
-
-			yield* Effect.logDebug('Setting PRAGMA temp_store = MEMORY')
-			yield* sql`PRAGMA temp_store = MEMORY` // Faster temp tables
-
-			yield* Effect.logDebug('Setting PRAGMA cache_size = -64000')
-			yield* sql`PRAGMA cache_size = -64000` // 64MB cache
-
-			yield* Effect.logInfo('SQLite session pragmas configured successfully')
-		}).pipe(Effect.withSpan('SQL.pragmaSetup', { attributes: { filename } })),
-	).pipe(Layer.provide(sqlClientLayer))
-
-	// Merge: export client + run pragma setup (both need client from baseClient)
-	return Layer.merge(sqlClientLayer, pragmaSetup)
+	/*
+	 * Sequential composition: Client → Pragma Setup → Export Client Only
+	 * 1. sqlClientLayer creates the SQL connection and provides SqlClient service
+	 * 2. Provide client to pragmaSetupLayer (runs PRAGMAs as side effect)
+	 * 3. provideMerge runs pragma layer but only exports the client service
+	 */
+	return Layer.provideMerge(
+		sqlClientLayer,
+		Layer.provide(pragmaSetupLayer, sqlClientLayer)
+	)
 }
 
 /**
