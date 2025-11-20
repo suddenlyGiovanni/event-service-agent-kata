@@ -1032,10 +1032,6 @@ Deno recognizes the following language identifiers for code blocks:
 - JavaScript: `js`, `javascript`, `mjs`, `cjs`, `jsx`
 - If no language identifier is specified, the language is inferred from the source file's media type
 
-**Handling Incomplete Examples**:
-
-See the [Handling Incomplete Code Examples](#handling-incomplete-code-examples) section below for guidance on using `ignore` attributes and `text` language identifiers.
-
 **Iterative validation workflow**:
 
 See the [Documentation Validation Workflow](#documentation-validation-workflow) section below for the incremental validation pattern. For TSDoc:
@@ -1108,10 +1104,6 @@ const workflow = Effect.gen(function* () {
 - ❌ Pseudo-code that won't compile
 - ❌ Using `...` to indicate omitted code (use actual code or skip the example)
 - ❌ Referencing undefined variables
-
-**Handling Incomplete Code Blocks**:
-
-See the [Handling Incomplete Code Examples](#handling-incomplete-code-examples) section below for guidance on using `ignore` attributes in markdown code blocks.
 
 **Iterative validation workflow**:
 
