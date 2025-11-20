@@ -107,7 +107,8 @@ const makeMigrator = (
 
 		const path = yield* Platform.Path.Path
 
-		// Resolve workspace root from package.json location
+		// Resolve workspace root (repo root) from this file's location
+		// packages/platform/src/database/sql.ts + ../../../.. = workspace root
 		const workspaceRoot = yield* path.fromFileUrl(new URL('../../../..', import.meta.url))
 
 		yield* Effect.logDebug('Workspace root resolved', { workspaceRoot })
@@ -134,10 +135,27 @@ const makeMigrator = (
 			),
 		)
 
+		const migrationCount = Object.keys(migrationsRecord).length
+		const migrationFiles = Object.keys(migrationsRecord)
+
 		yield* Effect.logInfo('Discovered migrations', {
-			count: Object.keys(migrationsRecord).length,
-			files: Object.keys(migrationsRecord),
+			count: migrationCount,
+			files: migrationFiles,
 		})
+
+		// Fail fast if no migrations found (likely path misconfiguration)
+		if (migrationCount === 0) {
+			return yield* Effect.fail(
+				new Platform.Error.SystemError({
+					cause: new Error('No migration files discovered'),
+					description: `Expected to find migration files matching 'packages/*/src/database/migrations/*.ts' in workspace root '${workspaceRoot}', but found none. This likely indicates a path misconfiguration.`,
+					method: 'glob.scan',
+					module: 'FileSystem',
+					pathOrDescriptor: workspaceRoot,
+					reason: 'Unknown',
+				}),
+			)
+		}
 
 		const loader = SqliteBun.SqliteMigrator.fromGlob(migrationsRecord)
 
