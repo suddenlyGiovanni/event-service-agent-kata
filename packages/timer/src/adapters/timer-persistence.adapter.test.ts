@@ -482,11 +482,11 @@ describe('TimerPersistenceAdapter', () => {
 
 				// Act: Attempt to save (e.g., duplicate command arrives late)
 				const newScheduledTimer = new Domain.ScheduledTimer({
-					tenantId: timer.tenantId,
-					serviceCallId: timer.serviceCallId,
 					correlationId: timer.correlationId,
 					dueAt: yield* pipe(clock.now(), Effect.map(DateTime.add({ minutes: 5 }))),
 					registeredAt: yield* clock.now(),
+					serviceCallId: timer.serviceCallId,
+					tenantId: timer.tenantId,
 				})
 				yield* persistence.save(newScheduledTimer)
 
