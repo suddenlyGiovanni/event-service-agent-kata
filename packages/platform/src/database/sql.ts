@@ -294,14 +294,17 @@ const ClientLayer: Layer.Layer<
  */
 const Live: Layer.Layer<
 	SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient,
+	| Platform.Error.SystemError
 	| Sql.Migrator.MigrationError
 	| Sql.SqlError.SqlError
-	| ConfigError
 	| Platform.Error.BadArgument
-	| Platform.Error.SystemError,
+	| ConfigError,
 	never
-> = Layer.merge(ClientLayer, MigratorLayer.pipe(Layer.provide(ClientLayer))).pipe(
-	Layer.provide(Layer.mergeAll(DatabaseConfig.Default, WorkspaceRoot.Default, PlatformBun.BunPath.layer)),
+> = MigratorLayer.pipe(
+	Layer.provide(PlatformBun.BunPath.layer),
+	Layer.provide(WorkspaceRoot.Default),
+	Layer.provideMerge(ClientLayer),
+	Layer.provide(DatabaseConfig.Default),
 )
 
 /**
@@ -312,8 +315,8 @@ const Live: Layer.Layer<
  * - Identical schema and pragma configuration to production
  * - No schema dump (schemaDirectory overridden to undefined)
  *
- * Architecture: Same composition as Live (ClientLayer + MigratorLayer),
- * differs only in DatabaseConfig override (Layer.mock for test configuration).
+ * Architecture: Same composition as Live (MigratorLayer.pipe(provideMerge(ClientLayer))),
+ * differs only in DatabaseConfig provision (Layer.succeed for test configuration).
  *
  * Self-contained: Provides all dependencies internally (no external requirements)
  *
@@ -341,18 +344,16 @@ const Test: Layer.Layer<
 	| Platform.Error.BadArgument
 	| Platform.Error.SystemError,
 	never
-> = Layer.merge(ClientLayer, MigratorLayer.pipe(Layer.provide(ClientLayer))).pipe(
+> = MigratorLayer.pipe(
+	Layer.provide(PlatformBun.BunPath.layer),
+	Layer.provide(WorkspaceRoot.Default),
+	Layer.provideMerge(ClientLayer),
 	Layer.provide(
-		Layer.mergeAll(
-			// Override DatabaseConfig for test environment: in-memory DB, no schema dump
-			Layer.succeed(DatabaseConfig, {
-				_tag: 'DatabaseConfig',
-				filename: ':memory:',
-				schemaDirectory: undefined,
-			}),
-			WorkspaceRoot.Default,
-			PlatformBun.BunPath.layer,
-		),
+		Layer.succeed(DatabaseConfig, {
+			_tag: 'DatabaseConfig',
+			filename: ':memory:',
+			schemaDirectory: undefined,
+		}),
 	),
 )
 
@@ -360,12 +361,21 @@ const Test: Layer.Layer<
  * SQLite client layers with automatic migration execution.
  *
  * Layer composition pattern (both Live and Test):
- * 1. ClientLayer reads filename from DatabaseConfig, configures session pragmas
- * 2. MigratorLayer reads schemaDirectory from DatabaseConfig, discovers/runs migrations
- * 3. Layer.merge combines Client + Migrator (Migrator depends on Client)
+ * 1. MigratorLayer requires: DatabaseConfig, WorkspaceRoot, Path, SqlClient
+ * 2. Layer.provideMerge(ClientLayer) satisfies SqlClient requirement AND exports it
+ * 3. Layer.provide(...) satisfies remaining dependencies (Config, WorkspaceRoot, Path)
  * 4. Live vs Test differ only in DatabaseConfig provision:
  *    - Live: DatabaseConfig.Default (env vars + workspace defaults)
- *    - Test: Layer.mock override (in-memory DB, no schema dump)
+ *    - Test: Layer.succeed override (in-memory DB, no schema dump)
+ *
+ * Dependency flow:
+ * ```
+ * Config + WorkspaceRoot + Path (provided at top level)
+ *   └─> ClientLayer (uses Config)
+ *         └─> MigratorLayer (uses all deps + SqlClient from ClientLayer)
+ *
+ * Exports: SqlClient (from ClientLayer via provideMerge)
+ * ```
  *
  * SQLite Pragmas Strategy:
  * - Database-level pragmas (journal_mode=WAL): Set in migration 0001_bootstrap_schema.ts
