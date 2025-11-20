@@ -1,6 +1,10 @@
 import * as Sql from '@effect/sql'
 import { describe, expect, it } from '@effect/vitest'
+import * as Cause from 'effect/Cause'
 import * as Effect from 'effect/Effect'
+import * as Exit from 'effect/Exit'
+import { flow, pipe } from 'effect/Function'
+import * as Option from 'effect/Option'
 
 import { SQL } from './sql.ts'
 
@@ -105,24 +109,34 @@ describe('SQL Platform Client', () => {
 
 				// Attempt to insert timer_schedule referencing non-existent service_call
 				// This MUST fail if FK constraints are enforced
-				const result = yield* sql`
+				const exit = yield* sql`
               INSERT INTO timer_schedules (tenant_id, service_call_id, due_at, state)
               VALUES ('tenant-fk-test', 'nonexistent-call', datetime('now', '+5 minutes'), 'Scheduled');
-					`.pipe(Effect.either) // Catch expected error
+					`.pipe(Effect.exit)
 
-				// Verify FK constraint violation
-				expect(result._tag).toBe('Left')
-				if (result._tag === 'Left') {
-					// Effect SQL wraps SQLiteError in SqlError
-					// The actual FK error is in error.cause.message
-					const causeMessage =
-						result.left.cause instanceof Error ? result.left.cause.message : String(result.left.cause)
-					const isConstraintError =
-						causeMessage.includes('constraint') ||
-						causeMessage.includes('FOREIGN KEY') ||
-						causeMessage.includes('foreign key')
-					expect(isConstraintError).toBe(true)
-				}
+				// Verify FK constraint violation using Exit.match
+				const errorMessage: string = pipe(
+					exit,
+					Exit.match({
+						onFailure: flow(
+							Cause.failureOption,
+							Option.match({
+								onNone: () => '',
+								onSome: error => (error.cause instanceof Error ? error.cause.message : String(error.cause)),
+							}),
+						),
+						onSuccess: () => {
+							throw new Error('Expected FK constraint violation, but INSERT succeeded')
+						},
+					}),
+				)
+
+				// Verify the error is related to foreign key constraints
+				const isConstraintError =
+					errorMessage.includes('constraint') ||
+					errorMessage.includes('FOREIGN KEY') ||
+					errorMessage.includes('foreign key')
+				expect(isConstraintError).toBe(true)
 			}).pipe(Effect.provide(SQL.Test)),
 		)
 	})
