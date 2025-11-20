@@ -960,7 +960,7 @@ Deno extracts code blocks from JSDoc/markdown and transforms them into standalon
 
 - Each `@example` block becomes a `Deno.test()` case
 - The test module lives in the same directory as the documented file
-- **Exported items are automatically imported (TSDoc only)**: For TSDoc `@example` blocks, any functions, classes, or values exported from the documented module are available without explicit imports. Markdown code blocks still require all imports to be explicit.
+- **Exported items are automatically imported (JSDoc/TSDoc in source files)**: For `@example` blocks in JSDoc or TSDoc comments within source files, any functions, classes, or values exported from the documented module are available without explicit imports. This auto-import behavior does NOT apply to standalone `.md` documentation files, which require all imports to be explicit.
 - For type-checking only (no execution): Use `deno check --doc` (JSDoc) or `deno check --doc-only` (markdown)
 
 **Example transformation**:
