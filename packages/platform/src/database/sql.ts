@@ -111,7 +111,11 @@ class DatabaseConfig extends Effect.Service<DatabaseConfig>()('DatabaseConfig', 
  * @see ADR-0012 for package structure (module ownership)
  * @internal Used by Live and Test layers via pure composition
  */
-const MigratorLayer = Effect.gen(function* () {
+const MigratorLayer: Layer.Layer<
+	never,
+	Platform.Error.SystemError | Sql.Migrator.MigrationError | Sql.SqlError.SqlError,
+	WorkspaceRoot | Platform.Path.Path | DatabaseConfig | SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient
+> = Effect.gen(function* () {
 	const config = yield* DatabaseConfig
 	const path = yield* Platform.Path.Path
 	const workspaceRoot = yield* WorkspaceRoot
@@ -195,7 +199,7 @@ const MigratorLayer = Effect.gen(function* () {
  * @see ADR-0005 for pragma strategy (database-level vs session-level)
  * @internal Used by ClientLayer to configure session on connection
  */
-const pragmaSetupLayer: Layer.Layer<never, Sql.SqlError.SqlError, Sql.SqlClient.SqlClient> = Effect.gen(function* () {
+const PragmaLayer: Layer.Layer<never, Sql.SqlError.SqlError, Sql.SqlClient.SqlClient> = Effect.gen(function* () {
 	yield* Effect.logInfo('Configuring SQLite session pragmas')
 
 	const sql = yield* Sql.SqlClient.SqlClient
@@ -217,7 +221,7 @@ const pragmaSetupLayer: Layer.Layer<never, Sql.SqlError.SqlError, Sql.SqlClient.
 	yield* sql`PRAGMA cache_size = -64000`
 
 	yield* Effect.logInfo('SQLite session pragmas configured successfully')
-}).pipe(Effect.withSpan('SQL.pragmaSetup'), Layer.effectDiscard)
+}).pipe(Effect.withSpan('SQL.PragmaLayer'), Layer.effectDiscard)
 
 /**
  * SQLite client layer with automatic configuration from DatabaseConfig.
@@ -232,7 +236,11 @@ const pragmaSetupLayer: Layer.Layer<never, Sql.SqlError.SqlError, Sql.SqlClient.
  *
  * @internal Used by Live and Test layers via pure composition
  */
-const ClientLayer = Effect.gen(function* () {
+const ClientLayer: Layer.Layer<
+	SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient,
+	ConfigError | Sql.SqlError.SqlError,
+	DatabaseConfig
+> = Effect.gen(function* () {
 	const config = yield* DatabaseConfig
 
 	yield* Effect.logInfo('Creating SQLite client', { filename: config.filename })
@@ -251,7 +259,7 @@ const ClientLayer = Effect.gen(function* () {
 	 * 2. Provide client to pragmaSetupLayer (runs PRAGMAs as side effect)
 	 * 3. provideMerge runs pragma layer but only exports the client service
 	 */
-	return Layer.provideMerge(sqlClientLayer, Layer.provide(pragmaSetupLayer, sqlClientLayer))
+	return Layer.provideMerge(sqlClientLayer, Layer.provide(PragmaLayer, sqlClientLayer))
 }).pipe(Effect.withSpan('SQL.ClientLayer'), Layer.unwrapEffect)
 
 /**
