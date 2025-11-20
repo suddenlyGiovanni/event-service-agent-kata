@@ -188,8 +188,7 @@ export interface TimerPersistencePort {
 	 * For domain logic, prefer {@link findScheduledTimer} which returns only
 	 * active timers that workflows can act upon.
 	 *
-	 * @param tenantId - Tenant identifier
-	 * @param serviceCallId - Service call identifier
+	 * @param key - Composite key identifying the timer (tenantId + serviceCallId)
 	 * @returns Effect with Some(timer) in any state if found, None if not found
 	 * @throws PersistenceError - When query fails (connection, etc.)
 	 *
@@ -199,19 +198,16 @@ export interface TimerPersistencePort {
 	 *   yield* persistence.markFired(tenantId, serviceCallId, now)
 	 *
 	 *   // Verify state transition happened (testing concern)
-	 *   const result = yield* persistence.find(tenantId, serviceCallId)
+	 *   const result = yield* persistence.find({ tenantId, serviceCallId })
 	 *   expect(Option.getOrThrow(result)._tag).toBe('Reached')
 	 *
 	 *   // Verify domain behavior (no longer active)
-	 *   const scheduled = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
+	 *   const scheduled = yield* persistence.findScheduledTimer({ tenantId, serviceCallId })
 	 *   expect(Option.isNone(scheduled)).toBe(true)
 	 * })
 	 * ```
 	 */
-	readonly find: (
-		tenantId: TenantId.Type,
-		serviceCallId: ServiceCallId.Type,
-	) => Effect.Effect<Option.Option<TimerEntry.Type>, PersistenceError>
+	readonly find: (key: TimerScheduleKey.Type) => Effect.Effect<Option.Option<TimerEntry.Type>, PersistenceError>
 
 	/**
 	 * Find all timers that are due for firing (scheduled timers only)
@@ -305,12 +301,11 @@ export interface TimerPersistencePort {
 	 * Removes timer from storage. Idempotent: doesn't error if timer doesn't exist.
 	 * Primarily for testing and cleanup. May be used by adapter for markFired().
 	 *
-	 * @param tenantId - Tenant identifier
-	 * @param serviceCallId - Service call identifier
+	 * @param key - Composite key identifying the timer (tenantId + serviceCallId)
 	 * @returns Effect that succeeds when timer is deleted (or already gone)
 	 * @throws PersistenceError - When delete fails
 	 */
-	readonly delete: (tenantId: TenantId.Type, serviceCallId: ServiceCallId.Type) => Effect.Effect<void, PersistenceError>
+	readonly delete: (key: TimerScheduleKey.Type) => Effect.Effect<void, PersistenceError>
 }
 
 /**

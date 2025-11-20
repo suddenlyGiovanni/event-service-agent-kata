@@ -258,7 +258,7 @@ describe('scheduleTimerWorkflow', () => {
 				)
 
 				// Assert: Timer should still be persisted (no fast-path optimization)
-				const maybeScheduledTimer = yield* persistence.find(tenantId, serviceCallId)
+				const maybeScheduledTimer = yield* persistence.find({ serviceCallId, tenantId })
 				expect(Option.isSome(maybeScheduledTimer)).toBe(true)
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 				expect(timer._tag).toBe('Scheduled')

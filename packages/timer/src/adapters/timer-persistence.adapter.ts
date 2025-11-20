@@ -120,12 +120,9 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	 * Idempotent: deleting non-existent entry succeeds.
 	 */
 	const delete_ = Effect.fn('TimerPersistence.Live.delete')(
-		(tenantId: TenantId.Type, serviceCallId: ServiceCallId.Type): Effect.Effect<void, Ports.PersistenceError> => {
+		(key: Ports.TimerScheduleKey.Type): Effect.Effect<void, Ports.PersistenceError> => {
 			return pipe(
-				Ports.TimerScheduleKey.make({
-					serviceCallId,
-					tenantId,
-				}),
+				key,
 				Sql.SqlSchema.void({
 					execute: ({ tenantId, serviceCallId }) =>
 						sql`
@@ -138,8 +135,8 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 				mapSqlError('delete'),
 				Effect.tap(
 					Effect.annotateCurrentSpan({
-						serviceCallId,
-						tenantId,
+						serviceCallId: key.serviceCallId,
+						tenantId: key.tenantId,
 					}),
 				),
 			)
@@ -151,15 +148,9 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	 * Used for observability/debugging.
 	 */
 	const find = Effect.fn('TimerPersistence.Live.find')(
-		(
-			tenantId: TenantId.Type,
-			serviceCallId: ServiceCallId.Type,
-		): Effect.Effect<Option.Option<TimerEntry.Type>, Ports.PersistenceError> =>
+		(key: Ports.TimerScheduleKey.Type): Effect.Effect<Option.Option<TimerEntry.Type>, Ports.PersistenceError> =>
 			pipe(
-				Ports.TimerScheduleKey.make({
-					serviceCallId,
-					tenantId,
-				}),
+				key,
 				Sql.SqlSchema.findOne({
 					execute: ({ tenantId, serviceCallId }) =>
 						sql`
@@ -173,8 +164,8 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 				mapSqlError('find'),
 				Effect.tap(
 					Effect.annotateCurrentSpan({
-						serviceCallId,
-						tenantId,
+						serviceCallId: key.serviceCallId,
+						tenantId: key.tenantId,
 					}),
 				),
 				Effect.map(Option.map(timerRecordToTimerEntry)),
@@ -444,7 +435,7 @@ export class TimerPersistence {
 	 *     const persistence = yield* TimerPersistencePort
 	 *     const timer = ScheduledTimer.make({ tenantId, serviceCallId, dueAt, registeredAt, correlationId })
 	 *     yield* persistence.save(timer)
-	 *     const found = yield* persistence.find(tenantId, serviceCallId)
+	 *     const found = yield* persistence.find({ tenantId, serviceCallId })
 	 *     expect(Option.isSome(found)).toBe(true)
 	 *   }).pipe(Effect.provide(TimerPersistence.Test))
 	 * )

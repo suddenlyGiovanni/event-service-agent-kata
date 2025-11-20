@@ -146,7 +146,10 @@ describe('TimerPersistenceAdapter', () => {
 				yield* persistence.save(scheduledTimer)
 
 				// Assert
-				const maybeTimerEntry = yield* persistence.find(mocks.tenantA.tenantId, mocks.tenantA.serviceCallId)
+				const maybeTimerEntry = yield* persistence.find({
+					serviceCallId: mocks.tenantA.serviceCallId,
+					tenantId: mocks.tenantA.tenantId,
+				})
 				expect(Option.isSome(maybeTimerEntry)).toBe(true)
 
 				const timerEntry = Option.getOrThrow(maybeTimerEntry)
@@ -165,7 +168,10 @@ describe('TimerPersistenceAdapter', () => {
 				yield* withScheduledTimer({})
 
 				// Act
-				const found = yield* persistence.find(mocks.tenantA.tenantId, mocks.tenantA.serviceCallId)
+				const found = yield* persistence.find({
+					serviceCallId: mocks.tenantA.serviceCallId,
+					tenantId: mocks.tenantA.tenantId,
+				})
 
 				// Assert
 				expect(Option.isSome(found)).toBe(true)
@@ -182,12 +188,12 @@ describe('TimerPersistenceAdapter', () => {
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act
-				const found = yield* persistence.find(
-					mocks.tenantA.tenantId,
-					ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'), // non-existent
-				)
-				// Assert
+				const found = yield* persistence.find({
+					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'), // non-existent
+					tenantId: mocks.tenantA.tenantId,
+				})
 
+				// Assert
 				assertNone(found)
 			}).pipe(Effect.provide(BaseTestLayers)),
 		)
@@ -205,7 +211,10 @@ describe('TimerPersistenceAdapter', () => {
 				})
 
 				// Act: Try to find timer using tenantB credentials
-				const found = yield* persistence.find(mocks.tenantB.tenantId, mocks.tenantA.serviceCallId)
+				const found = yield* persistence.find({
+					serviceCallId: mocks.tenantA.serviceCallId,
+					tenantId: mocks.tenantB.tenantId,
+				})
 
 				// Assert: Should return None (tenant isolation enforced)
 				assertNone(found)
@@ -263,7 +272,10 @@ describe('TimerPersistenceAdapter', () => {
 
 				// Assert
 				assertNone(maybeScheduledTimer)
-				const raw = yield* persistence.find(mocks.tenantA.tenantId, mocks.tenantA.serviceCallId)
+				const raw = yield* persistence.find({
+					serviceCallId: mocks.tenantA.serviceCallId,
+					tenantId: mocks.tenantA.tenantId,
+				})
 				expect(Option.isSome(raw)).toBe(true)
 				expect(Option.getOrThrow(raw)._tag).toBe('Reached')
 			}).pipe(Effect.provide(BaseTestLayers)),
@@ -434,7 +446,7 @@ describe('TimerPersistenceAdapter', () => {
 				yield* persistence.markFired(timer.tenantId, timer.serviceCallId, reachedAt)
 
 				// Assert
-				const found = yield* persistence.find(timer.tenantId, timer.serviceCallId)
+				const found = yield* persistence.find({ serviceCallId: timer.serviceCallId, tenantId: timer.tenantId })
 				expect(Option.isSome(found)).toBe(true)
 				const reached = Option.getOrThrow(found)
 				expect(reached._tag).toBe('Reached')
@@ -457,7 +469,7 @@ describe('TimerPersistenceAdapter', () => {
 				yield* persistence.markFired(timer.tenantId, timer.serviceCallId, secondReachedAt)
 
 				// Verify: still uses FIRST reachedAt
-				const result = yield* persistence.find(timer.tenantId, timer.serviceCallId)
+				const result = yield* persistence.find({ serviceCallId: timer.serviceCallId, tenantId: timer.tenantId })
 				const reached = Option.getOrThrow(result)
 
 				assertTrue(reached._tag === 'Reached')
@@ -477,7 +489,7 @@ describe('TimerPersistenceAdapter', () => {
 				yield* persistence.markFired(timer.tenantId, timer.serviceCallId, reachedAt)
 
 				// Verify timer is Reached
-				const beforeSave = yield* persistence.find(timer.tenantId, timer.serviceCallId)
+				const beforeSave = yield* persistence.find({ serviceCallId: timer.serviceCallId, tenantId: timer.tenantId })
 				const reachedTimer = Option.getOrThrow(beforeSave)
 				expect(reachedTimer._tag).toBe('Reached')
 
@@ -501,7 +513,7 @@ describe('TimerPersistenceAdapter', () => {
 				yield* persistence.save(newScheduledTimer)
 
 				// Assert: Timer remains in Reached state (NO resurrection)
-				const afterSave = yield* persistence.find(timer.tenantId, timer.serviceCallId)
+				const afterSave = yield* persistence.find({ serviceCallId: timer.serviceCallId, tenantId: timer.tenantId })
 				const finalTimer = Option.getOrThrow(afterSave)
 				expect(finalTimer._tag).toBe('Reached')
 
@@ -528,10 +540,10 @@ describe('TimerPersistenceAdapter', () => {
 				)
 
 				// Verify nothing was created
-				const result = yield* persistence.find(
-					mocks.tenantA.tenantId,
-					ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'),
-				)
+				const result = yield* persistence.find({
+					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'),
+					tenantId: mocks.tenantA.tenantId,
+				})
 				expect(Option.isNone(result)).toBe(true)
 			}).pipe(Effect.provide(BaseTestLayers)),
 		)
@@ -545,10 +557,13 @@ describe('TimerPersistenceAdapter', () => {
 				yield* withScheduledTimer()
 
 				// Act
-				yield* persistence.delete(mocks.tenantA.tenantId, mocks.tenantA.serviceCallId)
+				yield* persistence.delete({ serviceCallId: mocks.tenantA.serviceCallId, tenantId: mocks.tenantA.tenantId })
 
 				// Assert
-				const afterDelete = yield* persistence.find(mocks.tenantA.tenantId, mocks.tenantA.serviceCallId)
+				const afterDelete = yield* persistence.find({
+					serviceCallId: mocks.tenantA.serviceCallId,
+					tenantId: mocks.tenantA.tenantId,
+				})
 				expect(Option.isNone(afterDelete)).toBe(true)
 			}).pipe(Effect.provide(BaseTestLayers)),
 		)
@@ -558,10 +573,10 @@ describe('TimerPersistenceAdapter', () => {
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Should not fail when deleting non-existent timer
-				yield* persistence.delete(
-					mocks.tenantA.tenantId,
-					ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'), // non-existent
-				)
+				yield* persistence.delete({
+					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'), // non-existent
+					tenantId: mocks.tenantA.tenantId,
+				})
 			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})

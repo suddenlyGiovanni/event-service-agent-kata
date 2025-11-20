@@ -118,7 +118,7 @@ describe('pollDueTimersWorkflow', () => {
 				expect(DateTime.Equivalence(event.reachedAt, DateTime.add(now, { minutes: 6 }))).toBe(true)
 
 				// Assert: Verify timer was marked as Reached
-				const found = yield* persistence.find(tenantId, serviceCallId)
+				const found = yield* persistence.find({ serviceCallId, tenantId })
 				expect(Option.isSome(found)).toBe(true)
 
 				const timer = Option.getOrThrow(found)
@@ -206,7 +206,7 @@ describe('pollDueTimersWorkflow', () => {
 				yield* pipe(
 					serviceCallIds,
 					// biome-ignore lint/suspicious/useIterableCallbackReturn: Ensure proper iteration
-					Effect.forEach(serviceCallId => persistence.find(tenantId, serviceCallId), { concurrency: 1 }),
+					Effect.forEach(serviceCallId => persistence.find({ serviceCallId, tenantId }), { concurrency: 1 }),
 					Effect.tap(foundTimers =>
 						Effect.sync(() => {
 							foundTimers.forEach(found => {
@@ -424,7 +424,7 @@ describe('pollDueTimersWorkflow', () => {
 				expect(publishedEvents).toHaveLength(0)
 
 				// Assert: Timer should still be in Scheduled state (not processed)
-				const found = yield* persistence.find(tenantId, serviceCallId)
+				const found = yield* persistence.find({ serviceCallId, tenantId })
 				expect(Option.isSome(found)).toBe(true)
 				expect(Option.exists(found, Domain.TimerEntry.isScheduled)).toBe(true)
 
@@ -518,7 +518,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: Timer should be marked as Reached
 				yield* pipe(
-					persistence.find(tenantId, serviceCallId),
+					persistence.find({ serviceCallId, tenantId }),
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
@@ -579,7 +579,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: Timer should still be in Scheduled state
 				yield* pipe(
-					persistence.find(tenantId, serviceCallId),
+					persistence.find({ serviceCallId, tenantId }),
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
@@ -644,7 +644,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: Timer should be marked as Reached
 				yield* pipe(
-					persistence.find(tenantId, serviceCallId),
+					persistence.find({ serviceCallId, tenantId }),
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
@@ -809,7 +809,7 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Two events should be published (timers 1 and 3)
 				expect(publishedEvents).toHaveLength(2) // Assert: Timer 1 should be marked as Reached
 				yield* pipe(
-					persistence.find(tenantId, serviceCallId1),
+					persistence.find({ serviceCallId: serviceCallId1, tenantId }),
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
@@ -819,7 +819,7 @@ describe('pollDueTimersWorkflow', () => {
 				)
 				// Assert: Timer 2 should still be Scheduled (publish failed)
 				yield* pipe(
-					persistence.find(tenantId, serviceCallId2),
+					persistence.find({ serviceCallId: serviceCallId2, tenantId }),
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
@@ -829,7 +829,7 @@ describe('pollDueTimersWorkflow', () => {
 				)
 				// Assert: Timer 3 should be marked as Reached
 				yield* pipe(
-					persistence.find(tenantId, serviceCallId3),
+					persistence.find({ serviceCallId: serviceCallId3, tenantId }),
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
@@ -929,7 +929,7 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Event should have been published (will be duplicate on retry)
 				expect(publishedEvents).toHaveLength(1) // Assert: Timer should still be in Scheduled state (markFired failed but collected)
 				yield* pipe(
-					basePersistence.find(tenantId, serviceCallId),
+					basePersistence.find({ serviceCallId, tenantId }),
 					Effect.tap(found =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
