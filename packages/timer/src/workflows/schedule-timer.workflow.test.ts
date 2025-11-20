@@ -66,10 +66,9 @@ describe('scheduleTimerWorkflow', () => {
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: TimerEntry persisted with correct values
-				const maybeScheduledTimer = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
+				const maybeScheduledTimer = yield* persistence.findScheduledTimer({ serviceCallId, tenantId })
 
 				expect(Option.isSome(maybeScheduledTimer)).toBe(true)
-
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 				expect(timer.tenantId).toBe(tenantId)
 				expect(timer.serviceCallId).toBe(serviceCallId)
@@ -109,7 +108,7 @@ describe('scheduleTimerWorkflow', () => {
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: registeredAt should equal clock.now()
-				const maybeScheduledTimer = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
+				const maybeScheduledTimer = yield* persistence.findScheduledTimer({ serviceCallId, tenantId })
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 
 				expect(DateTime.Equivalence(timer.registeredAt, now)).toBe(true)
@@ -143,7 +142,7 @@ describe('scheduleTimerWorkflow', () => {
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: status should be 'Scheduled'
-				const maybeScheduledTimer = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
+				const maybeScheduledTimer = yield* persistence.findScheduledTimer({ serviceCallId, tenantId })
 				expect(Option.isSome(maybeScheduledTimer)).toBe(true)
 
 				const timer = Option.getOrThrow(maybeScheduledTimer)
@@ -184,7 +183,7 @@ describe('scheduleTimerWorkflow', () => {
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: correlationId should be Some(correlationId)
-				const maybeScheduledTimer = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
+				const maybeScheduledTimer = yield* persistence.findScheduledTimer({ serviceCallId, tenantId })
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 
 				expect(Option.isSome(timer.correlationId)).toBe(true)
@@ -219,7 +218,7 @@ describe('scheduleTimerWorkflow', () => {
 				yield* TestClock.adjust('4 minutes')
 
 				// Assert: correlationId should be None
-				const maybeScheduledTimer = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
+				const maybeScheduledTimer = yield* persistence.findScheduledTimer({ serviceCallId, tenantId })
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 
 				expect(Option.isNone(timer.correlationId)).toBe(true)
@@ -307,7 +306,7 @@ describe('scheduleTimerWorkflow', () => {
 				)
 
 				// Assert: Timer exists (second call didn't error)
-				const maybeScheduledTimer = yield* persistence.findScheduledTimer(tenantId, serviceCallId)
+				const maybeScheduledTimer = yield* persistence.findScheduledTimer({ serviceCallId, tenantId })
 
 				expect(Option.isSome(maybeScheduledTimer)).toBe(true)
 

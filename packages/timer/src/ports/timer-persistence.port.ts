@@ -152,30 +152,24 @@ export interface TimerPersistencePort {
 	 * about active timers. This is the operation workflows should use for
 	 * business logic decisions.
 	 *
-	 * @param tenantId - Tenant identifier
-	 * @param serviceCallId - Service call identifier
+	 * @param key - Composite key identifying the timer (tenantId + serviceCallId)
 	 * @returns Effect with Some(ScheduledTimer) if active timer found, None otherwise
 	 * @throws PersistenceError - When query fails (connection, etc.)
 	 *
 	 * @example Workflow idempotency check
 	 * ```typescript ignore
-	 * const program = pipe(
-	 * 	persistence.findScheduledTimer(tenantId, serviceCallId),
-	 * 	Effect.flatMap(
-	 * 		Option.match({
-	 * 			onNone: () => persistence.save(newTimer), // Create new (doesn't exist OR already reached)
-	 * 			onSome: existing => {
-	 * 				const updatedTimer = existing // Update existing scheduled timer
-	 * 				return persistence.save(updatedTimer)
-	 * 			}
-	 * 		}),
-	 * 	),
-	 * )
+	 * const program = Effect.gen(function* () {
+	 *   const existing = yield* persistence.findScheduledTimer({ tenantId, serviceCallId })
+	 *
+	 *   return yield* Option.match(existing, {
+	 *     onNone: () => persistence.save(newTimer), // Create new (doesn't exist OR already reached)
+	 *     onSome: timer => persistence.save(timer), // Update existing scheduled timer
+	 *   })
+	 * })
 	 * ```
 	 */
 	readonly findScheduledTimer: (
-		tenantId: TenantId.Type,
-		serviceCallId: ServiceCallId.Type,
+		key: TimerScheduleKey.Type,
 	) => Effect.Effect<Option.Option<TimerEntry.ScheduledTimer>, PersistenceError>
 
 	/**
@@ -195,7 +189,10 @@ export interface TimerPersistencePort {
 	 * @example Testing state transitions
 	 * ```typescript ignore
 	 * const program = Effect.gen(function* () {
-	 *   yield* persistence.markFired(tenantId, serviceCallId, now)
+	 *   yield* persistence.markFired({
+	 *     key: { tenantId, serviceCallId },
+	 *     reachedAt: now
+	 *   })
 	 *
 	 *   // Verify state transition happened (testing concern)
 	 *   const result = yield* persistence.find({ tenantId, serviceCallId })
@@ -238,7 +235,10 @@ export interface TimerPersistencePort {
 	 *   yield* Effect.forEach(dueTimers, timer =>
 	 *     Effect.gen(function* () {
 	 *       // Mark as fired FIRST (idempotency marker)
-	 *       yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
+	 *       yield* persistence.markFired({
+	 *         key: { tenantId: timer.tenantId, serviceCallId: timer.serviceCallId },
+	 *         reachedAt: now
+	 *       })
 	 *       // Then publish event (safe to retry)
 	 *       yield* eventBus.publish(DueTimeReached.make(timer))
 	 *     })
@@ -271,9 +271,9 @@ export interface TimerPersistencePort {
 	 * `findDue()` or `findScheduledTimer()`, but can still be queried via
 	 * `find()` for debugging/reconciliation purposes.
 	 *
-	 * @param tenantId - Tenant identifier
-	 * @param serviceCallId - Service call identifier
-	 * @param reachedAt - Timestamp when timer was fired (ignored if already Reached)
+	 * @param params - Mark fired parameters
+	 * @param params.key - Composite key identifying the timer (tenantId + serviceCallId)
+	 * @param params.reachedAt - Timestamp when timer was fired (ignored if already Reached)
 	 * @returns Effect that succeeds when state transition completes
 	 * @throws PersistenceError - When update fails
 	 *
@@ -281,7 +281,10 @@ export interface TimerPersistencePort {
 	 * ```typescript ignore
 	 * const program = Effect.gen(function* () {
 	 *   // Mark as fired FIRST (before publishing event)
-	 *   yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
+	 *   yield* persistence.markFired({
+	 *     key: { tenantId: timer.tenantId, serviceCallId: timer.serviceCallId },
+	 *     reachedAt: now
+	 *   })
 	 *   // Timer is now Reached, won't appear in next findDue()
 	 *
 	 *   // Even if this crashes, timer won't be re-processed
@@ -289,11 +292,10 @@ export interface TimerPersistencePort {
 	 * })
 	 * ```
 	 */
-	readonly markFired: (
-		tenantId: TenantId.Type,
-		serviceCallId: ServiceCallId.Type,
-		reachedAt: DateTime.Utc,
-	) => Effect.Effect<void, PersistenceError>
+	readonly markFired: (params: {
+		readonly key: TimerScheduleKey.Type
+		readonly reachedAt: DateTime.Utc
+	}) => Effect.Effect<void, PersistenceError>
 
 	/**
 	 * Delete a timer entry

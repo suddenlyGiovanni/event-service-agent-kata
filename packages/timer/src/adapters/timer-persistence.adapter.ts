@@ -219,11 +219,10 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	 */
 	const findScheduledTimer = Effect.fn('TimerPersistence.Live.findScheduledTimer')(
 		(
-			tenantId: TenantId.Type,
-			serviceCallId: ServiceCallId.Type,
+			key: Ports.TimerScheduleKey.Type,
 		): Effect.Effect<Option.Option<TimerEntry.ScheduledTimer>, Ports.PersistenceError> =>
 			pipe(
-				Ports.TimerScheduleKey.make({ serviceCallId, tenantId }),
+				key,
 				Sql.SqlSchema.findOne({
 					execute: ({ tenantId, serviceCallId }) =>
 						sql`
@@ -239,7 +238,12 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 					Result: TimerScheduleRow,
 				}),
 				mapSqlError('findScheduledTimer'),
-				Effect.tap(Effect.annotateCurrentSpan({ serviceCallId, tenantId })),
+				Effect.tap(
+					Effect.annotateCurrentSpan({
+						serviceCallId: key.serviceCallId,
+						tenantId: key.tenantId,
+					}),
+				),
 				Effect.map(Option.map(timerRecordToTimerEntry)),
 				Effect.map(Option.filter(TimerEntry.isScheduled)),
 			),
@@ -254,13 +258,16 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	 * - NotFound → Success (idempotent)
 	 */
 	const markFired = Effect.fn('TimerPersistence.Live.markFired')(
-		(
-			tenantId: TenantId.Type,
-			serviceCallId: ServiceCallId.Type,
-			reachedAt: DateTime.Utc,
-		): Effect.Effect<void, Ports.PersistenceError> =>
+		(params: {
+			readonly key: Ports.TimerScheduleKey.Type
+			readonly reachedAt: DateTime.Utc
+		}): Effect.Effect<void, Ports.PersistenceError> =>
 			pipe(
-				{ reachedAt, serviceCallId, tenantId },
+				{
+					reachedAt: params.reachedAt,
+					serviceCallId: params.key.serviceCallId,
+					tenantId: params.key.tenantId,
+				},
 				Sql.SqlSchema.void({
 					execute: ({ reachedAt, tenantId, serviceCallId }) =>
 						sql`
@@ -281,9 +288,9 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 				mapSqlError('markFired'),
 				Effect.tap(
 					Effect.annotateCurrentSpan({
-						reachedAt: reachedAt,
-						serviceCallId,
-						tenantId,
+						reachedAt: params.reachedAt,
+						serviceCallId: params.key.serviceCallId,
+						tenantId: params.key.tenantId,
 					}),
 				),
 			),

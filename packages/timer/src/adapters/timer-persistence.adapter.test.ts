@@ -229,12 +229,10 @@ describe('TimerPersistenceAdapter', () => {
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act
-				const found = yield* persistence.findScheduledTimer(
-					mocks.tenantA.tenantId,
-					ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'), // non-existent
-				)
-
-				// Assert
+				const found = yield* persistence.findScheduledTimer({
+					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'), // non-existent
+					tenantId: mocks.tenantA.tenantId,
+				}) // Assert
 				assertNone(found)
 			}).pipe(Effect.provide(BaseTestLayers)),
 		)
@@ -246,7 +244,10 @@ describe('TimerPersistenceAdapter', () => {
 				yield* withScheduledTimer({})
 
 				// Act
-				const found = yield* persistence.findScheduledTimer(mocks.tenantA.tenantId, mocks.tenantA.serviceCallId)
+				const found = yield* persistence.findScheduledTimer({
+					serviceCallId: mocks.tenantA.serviceCallId,
+					tenantId: mocks.tenantA.tenantId,
+				})
 
 				expect(Option.isSome(found)).toBe(true)
 				const timer = Option.getOrThrow(found)
@@ -262,13 +263,16 @@ describe('TimerPersistenceAdapter', () => {
 				const persistence = yield* Ports.TimerPersistencePort
 				yield* withScheduledTimer({})
 				yield* TestClock.adjust('10 minutes')
-				yield* persistence.markFired(mocks.tenantA.tenantId, mocks.tenantA.serviceCallId, yield* DateTime.now)
+				yield* persistence.markFired({
+					key: { serviceCallId: mocks.tenantA.serviceCallId, tenantId: mocks.tenantA.tenantId },
+					reachedAt: yield* DateTime.now,
+				})
 
 				// Act
-				const maybeScheduledTimer = yield* persistence.findScheduledTimer(
-					mocks.tenantA.tenantId,
-					mocks.tenantA.serviceCallId,
-				)
+				const maybeScheduledTimer = yield* persistence.findScheduledTimer({
+					serviceCallId: mocks.tenantA.serviceCallId,
+					tenantId: mocks.tenantA.tenantId,
+				})
 
 				// Assert
 				assertNone(maybeScheduledTimer)
@@ -294,7 +298,10 @@ describe('TimerPersistenceAdapter', () => {
 				})
 
 				// Act: Try to find scheduled timer using tenantB credentials
-				const found = yield* persistence.findScheduledTimer(mocks.tenantB.tenantId, mocks.tenantA.serviceCallId)
+				const found = yield* persistence.findScheduledTimer({
+					serviceCallId: mocks.tenantA.serviceCallId,
+					tenantId: mocks.tenantB.tenantId,
+				})
 
 				// Assert: Should return None (tenant isolation enforced)
 				assertNone(found)
@@ -443,7 +450,10 @@ describe('TimerPersistenceAdapter', () => {
 				const reachedAt = yield* clock.now()
 
 				// Act
-				yield* persistence.markFired(timer.tenantId, timer.serviceCallId, reachedAt)
+				yield* persistence.markFired({
+					key: { serviceCallId: timer.serviceCallId, tenantId: timer.tenantId },
+					reachedAt,
+				})
 
 				// Assert
 				const found = yield* persistence.find({ serviceCallId: timer.serviceCallId, tenantId: timer.tenantId })
@@ -461,12 +471,18 @@ describe('TimerPersistenceAdapter', () => {
 
 				// First markFired
 				const firstReachedAt = yield* DateTime.now
-				yield* persistence.markFired(timer.tenantId, timer.serviceCallId, firstReachedAt)
+				yield* persistence.markFired({
+					key: { serviceCallId: timer.serviceCallId, tenantId: timer.tenantId },
+					reachedAt: firstReachedAt,
+				})
 
 				// Second markFired (should be no-op)
 				yield* TestClock.adjust('1 minute')
 				const secondReachedAt = yield* DateTime.now
-				yield* persistence.markFired(timer.tenantId, timer.serviceCallId, secondReachedAt)
+				yield* persistence.markFired({
+					key: { serviceCallId: timer.serviceCallId, tenantId: timer.tenantId },
+					reachedAt: secondReachedAt,
+				})
 
 				// Verify: still uses FIRST reachedAt
 				const result = yield* persistence.find({ serviceCallId: timer.serviceCallId, tenantId: timer.tenantId })
@@ -486,7 +502,10 @@ describe('TimerPersistenceAdapter', () => {
 				const clock = yield* Ports.ClockPort
 				yield* TestClock.adjust('10 minutes')
 				const reachedAt = yield* DateTime.now
-				yield* persistence.markFired(timer.tenantId, timer.serviceCallId, reachedAt)
+				yield* persistence.markFired({
+					key: { serviceCallId: timer.serviceCallId, tenantId: timer.tenantId },
+					reachedAt,
+				})
 
 				// Verify timer is Reached
 				const beforeSave = yield* persistence.find({ serviceCallId: timer.serviceCallId, tenantId: timer.tenantId })
@@ -533,11 +552,13 @@ describe('TimerPersistenceAdapter', () => {
 				const now = yield* DateTime.now
 
 				// Should not fail when marking non-existent timer as fired
-				yield* persistence.markFired(
-					mocks.tenantA.tenantId,
-					ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'), // non-existent
-					now,
-				)
+				yield* persistence.markFired({
+					key: {
+						serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'), // non-existent
+						tenantId: mocks.tenantA.tenantId,
+					},
+					reachedAt: now,
+				})
 
 				// Verify nothing was created
 				const result = yield* persistence.find({

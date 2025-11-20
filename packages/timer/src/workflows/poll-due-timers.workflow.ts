@@ -146,7 +146,10 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
 		}),
 	)
 
-	yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
+	yield* persistence.markFired({
+		key: { serviceCallId: timer.serviceCallId, tenantId: timer.tenantId },
+		reachedAt: now,
+	})
 
 	yield* Effect.logDebug('Timer fired successfully', {
 		dueAt: DateTime.formatIsoDateUtc(timer.dueAt),

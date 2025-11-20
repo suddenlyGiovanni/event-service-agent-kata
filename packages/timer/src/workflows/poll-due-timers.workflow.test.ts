@@ -271,15 +271,13 @@ describe('pollDueTimersWorkflow', () => {
 					Ports.TimerPersistencePort,
 					Ports.TimerPersistencePort.of({
 						...basePersistence,
-						markFired: (tenantId, serviceCallId, reachedAt) =>
+						markFired: params =>
 							Effect.gen(function* () {
-								operations.push(`markFired:${serviceCallId}`)
-								yield* basePersistence.markFired(tenantId, serviceCallId, reachedAt)
+								operations.push(`markFired:${params.key.serviceCallId}`)
+								yield* basePersistence.markFired(params)
 							}),
 					}),
-				)
-
-				// Act: Advance time to make timer due
+				) // Act: Advance time to make timer due
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow with wrapped persistence
