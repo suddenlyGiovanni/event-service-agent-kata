@@ -105,18 +105,31 @@ export interface TimerPersistencePort {
 	 * Save or update a timer entry
 	 *
 	 * Idempotent upsert operation keyed by (tenantId, serviceCallId).
-	 * - If timer doesn't exist: insert new record
-	 * - If timer exists: update with new values (dueAt, registeredAt, status)
+	 *
+	 * **State transition semantics:**
+	 * - If timer doesn't exist: insert new Scheduled timer
+	 * - If Scheduled timer exists: update with new values (e.g., reschedule with new dueAt)
+	 * - If Reached timer exists: NO-OP (preserves terminal state)
+	 *
+	 * **Terminal state enforcement:**
+	 * Reached is a terminal state per ADR-0003. Once a timer fires and transitions
+	 * to Reached, subsequent save() calls will NOT reset it back to Scheduled.
+	 * This prevents accidental resurrection and preserves the idempotency marker.
 	 *
 	 * The adapter handles:
 	 * - Encoding TimerEntry to storage format
-	 * - UPSERT/INSERT ON CONFLICT logic
+	 * - UPSERT/INSERT ON CONFLICT logic with conditional updates
+	 * - One-way state transition enforcement (Scheduled → Reached only)
 	 * - Constraint validation (unique key, not null)
 	 * - Transaction management
 	 *
+	 * If genuine re-scheduling is needed after firing, use delete() + save().
+	 *
 	 * @param entry - Timer entry to save (ScheduledTimer only)
-	 * @returns Effect that succeeds when timer is persisted
+	 * @returns Effect that succeeds when timer is persisted (or preserved if already Reached)
 	 * @throws PersistenceError - When save operation fails
+	 *
+	 * @see ADR-0003 for timer state machine and terminal state semantics
 	 */
 	readonly save: (entry: TimerEntry.ScheduledTimer) => Effect.Effect<void, PersistenceError>
 

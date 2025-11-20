@@ -302,6 +302,27 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	 * Save or update a timer entry (upsert semantics)
 	 *
 	 * Idempotent: calling multiple times with same key succeeds.
+	 *
+	 * **State transition semantics:**
+	 * - If no timer exists: creates new Scheduled timer
+	 * - If Scheduled timer exists: updates fields (e.g., new dueAt for rescheduling)
+	 * - If Reached timer exists: NO-OP (preserves terminal state)
+	 *
+	 * @remarks
+	 * Reached is a terminal state per ADR-0003. Once a timer fires and
+	 * transitions to Reached, subsequent save() calls will NOT reset it
+	 * back to Scheduled. This prevents accidental resurrection and preserves
+	 * the idempotency marker (reached_at).
+	 *
+	 * The SQL uses conditional UPDATE clauses to enforce one-way state transitions:
+	 * - `COALESCE(timer_schedules.reached_at, EXCLUDED.reached_at)`: Preserves existing
+	 *   reached_at if already set, preventing NULL from overwriting a fired timer's timestamp
+	 * - `CASE WHEN state = 'Reached' THEN 'Reached' ELSE EXCLUDED.state END`: Locks state
+	 *   at Reached once set, blocking any transition back to Scheduled
+	 *
+	 * If genuine re-scheduling is needed after firing, use delete() + save().
+	 *
+	 * @see ADR-0003 for timer state machine and terminal state semantics
 	 */
 	const save = Effect.fn('TimerPersistence.Live.save')(
 		(entry: TimerEntry.ScheduledTimer): Effect.Effect<void, Ports.PersistenceError> =>
@@ -312,6 +333,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 					execute: timerRecord =>
 						sql`
 -- Upsert timer: insert new or update existing on conflict
+-- Preserves terminal Reached state (one-way transition enforcement)
 INSERT INTO timer_schedules (tenant_id,
                              service_call_id,
                              correlation_id,
@@ -330,8 +352,13 @@ ON CONFLICT (tenant_id, service_call_id)
     DO UPDATE SET correlation_id = EXCLUDED.correlation_id,
                   due_at         = EXCLUDED.due_at,
                   registered_at  = EXCLUDED.registered_at,
-                  reached_at     = EXCLUDED.reached_at,
-                  state          = EXCLUDED.state;
+                  -- Preserve existing reached_at if already set (prevents NULL from overwriting fired timer)
+                  reached_at     = COALESCE(timer_schedules.reached_at, EXCLUDED.reached_at),
+                  -- Lock state at Reached once set (enforces terminal state invariant)
+                  state          = CASE
+                                       WHEN timer_schedules.state = 'Reached' THEN 'Reached'
+                                       ELSE EXCLUDED.state
+                      END;
 								`,
 					Request: TimerScheduleRow.insert,
 				}),

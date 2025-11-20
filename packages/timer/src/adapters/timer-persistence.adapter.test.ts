@@ -465,6 +465,43 @@ describe('TimerPersistenceAdapter', () => {
 			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
+		it.scoped('preserves Reached state when save() called after markFired (terminal state invariant)', () =>
+			Effect.gen(function* () {
+				// Arrange: Schedule and fire a timer
+				const { timer } = yield* withScheduledTimer()
+				const persistence = yield* Ports.TimerPersistencePort
+				const clock = yield* Ports.ClockPort
+				yield* TestClock.adjust('10 minutes')
+				const reachedAt = yield* DateTime.now
+				yield* persistence.markFired(timer.tenantId, timer.serviceCallId, reachedAt)
+
+				// Verify timer is Reached
+				const beforeSave = yield* persistence.find(timer.tenantId, timer.serviceCallId)
+				const reachedTimer = Option.getOrThrow(beforeSave)
+				expect(reachedTimer._tag).toBe('Reached')
+
+				// Act: Attempt to save (e.g., duplicate command arrives late)
+				const newScheduledTimer = new Domain.ScheduledTimer({
+					tenantId: timer.tenantId,
+					serviceCallId: timer.serviceCallId,
+					correlationId: timer.correlationId,
+					dueAt: yield* pipe(clock.now(), Effect.map(DateTime.add({ minutes: 5 }))),
+					registeredAt: yield* clock.now(),
+				})
+				yield* persistence.save(newScheduledTimer)
+
+				// Assert: Timer remains in Reached state (NO resurrection)
+				const afterSave = yield* persistence.find(timer.tenantId, timer.serviceCallId)
+				const finalTimer = Option.getOrThrow(afterSave)
+				expect(finalTimer._tag).toBe('Reached')
+
+				// Verify reached_at timestamp preserved (idempotency marker)
+				if (finalTimer._tag === 'Reached') {
+					expect(DateTime.Equivalence(finalTimer.reachedAt, reachedAt)).toBe(true)
+				}
+			}).pipe(Effect.provide(BaseTestLayers)),
+		)
+
 		it.scoped('succeeds even if timer does not exist', () =>
 			Effect.gen(function* () {
 				const persistence = yield* Ports.TimerPersistencePort
