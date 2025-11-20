@@ -4,6 +4,7 @@ import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
 import type * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
+import * as Equal from 'effect/Equal'
 import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
@@ -480,9 +481,18 @@ describe('TimerPersistenceAdapter', () => {
 				const reachedTimer = Option.getOrThrow(beforeSave)
 				expect(reachedTimer._tag).toBe('Reached')
 
-				// Act: Attempt to save (e.g., duplicate command arrives late)
+				// Capture original values before save attempt
+				const originalDueAt = reachedTimer.dueAt
+				const originalRegisteredAt = reachedTimer.registeredAt
+				const originalCorrelationId = reachedTimer.correlationId
+
+				// Act: Attempt to save with DIFFERENT values (e.g., duplicate command arrives late)
+				// This simulates a late-arriving ScheduleTimer command after timer already fired.
+				// We deliberately use DIFFERENT correlation, dueAt, and registeredAt to verify
+				// that the WHERE clause blocks the UPDATE entirely (not just state/reached_at).
+				const newCorrelationId = yield* CorrelationId.makeUUID7()
 				const newScheduledTimer = new Domain.ScheduledTimer({
-					correlationId: timer.correlationId,
+					correlationId: Option.some(newCorrelationId),
 					dueAt: yield* pipe(clock.now(), Effect.map(DateTime.add({ minutes: 5 }))),
 					registeredAt: yield* clock.now(),
 					serviceCallId: timer.serviceCallId,
@@ -495,9 +505,12 @@ describe('TimerPersistenceAdapter', () => {
 				const finalTimer = Option.getOrThrow(afterSave)
 				expect(finalTimer._tag).toBe('Reached')
 
-				// Verify reached_at timestamp preserved (idempotency marker)
+				// Verify ALL columns preserved (full immutability)
 				if (finalTimer._tag === 'Reached') {
 					expect(DateTime.Equivalence(finalTimer.reachedAt, reachedAt)).toBe(true)
+					expect(DateTime.Equivalence(finalTimer.dueAt, originalDueAt)).toBe(true)
+					expect(DateTime.Equivalence(finalTimer.registeredAt, originalRegisteredAt)).toBe(true)
+					expect(Equal.equals(finalTimer.correlationId, originalCorrelationId)).toBe(true)
 				}
 			}).pipe(Effect.provide(BaseTestLayers)),
 		)

@@ -306,19 +306,18 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	 * **State transition semantics:**
 	 * - If no timer exists: creates new Scheduled timer
 	 * - If Scheduled timer exists: updates fields (e.g., new dueAt for rescheduling)
-	 * - If Reached timer exists: NO-OP (preserves terminal state)
+	 * - If Reached timer exists: NO-OP (all columns preserved, no UPDATE performed)
 	 *
 	 * @remarks
 	 * Reached is a terminal state per ADR-0003. Once a timer fires and
-	 * transitions to Reached, subsequent save() calls will NOT reset it
-	 * back to Scheduled. This prevents accidental resurrection and preserves
-	 * the idempotency marker (reached_at).
+	 * transitions to Reached, subsequent save() calls will NOT modify ANY
+	 * columns. This prevents accidental resurrection, preserves the idempotency
+	 * marker (reached_at), and ensures fired timers remain immutable.
 	 *
-	 * The SQL uses conditional UPDATE clauses to enforce one-way state transitions:
-	 * - `COALESCE(timer_schedules.reached_at, EXCLUDED.reached_at)`: Preserves existing
-	 *   reached_at if already set, preventing NULL from overwriting a fired timer's timestamp
-	 * - `CASE WHEN state = 'Reached' THEN 'Reached' ELSE EXCLUDED.state END`: Locks state
-	 *   at Reached once set, blocking any transition back to Scheduled
+	 * The SQL uses a conditional UPDATE clause to enforce full NO-OP:
+	 * - `WHERE timer_schedules.state != 'Reached'`: Blocks UPDATE entirely if
+	 *   existing row is Reached, preserving all columns (state, reached_at, due_at, etc.)
+	 * - Performance: No row writes when timer already fired (early exit)
 	 *
 	 * If genuine re-scheduling is needed after firing, use delete() + save().
 	 *
@@ -331,9 +330,8 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 				scheduledTimerToTimerRecord,
 				Sql.SqlSchema.void({
 					execute: timerRecord =>
-						sql`
--- Upsert timer: insert new or update existing on conflict
--- Preserves terminal Reached state (one-way transition enforcement)
+						sql`-- Upsert timer: insert new or update existing on conflict
+-- Enforces full NO-OP for Reached timers (immutability after firing)
 INSERT INTO timer_schedules (tenant_id,
                              service_call_id,
                              correlation_id,
@@ -352,13 +350,10 @@ ON CONFLICT (tenant_id, service_call_id)
     DO UPDATE SET correlation_id = EXCLUDED.correlation_id,
                   due_at         = EXCLUDED.due_at,
                   registered_at  = EXCLUDED.registered_at,
-                  -- Preserve existing reached_at if already set (prevents NULL from overwriting fired timer)
-                  reached_at     = COALESCE(timer_schedules.reached_at, EXCLUDED.reached_at),
-                  -- Lock state at Reached once set (enforces terminal state invariant)
-                  state          = CASE
-                                       WHEN timer_schedules.state = 'Reached' THEN 'Reached'
-                                       ELSE EXCLUDED.state
-                      END;
+                  reached_at     = EXCLUDED.reached_at,
+                  state          = EXCLUDED.state
+-- Block UPDATE entirely if existing timer already Reached (terminal state)
+WHERE timer_schedules.state != 'Reached';
 								`,
 					Request: TimerScheduleRow.insert,
 				}),

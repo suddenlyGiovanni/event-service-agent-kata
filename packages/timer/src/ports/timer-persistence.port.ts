@@ -115,17 +115,18 @@ export interface TimerPersistencePort {
 	 * **State transition semantics:**
 	 * - If timer doesn't exist: insert new Scheduled timer
 	 * - If Scheduled timer exists: update with new values (e.g., reschedule with new dueAt)
-	 * - If Reached timer exists: NO-OP (preserves terminal state)
+	 * - If Reached timer exists: NO-OP (all columns preserved, no database write)
 	 *
 	 * **Terminal state enforcement:**
 	 * Reached is a terminal state per ADR-0003. Once a timer fires and transitions
-	 * to Reached, subsequent save() calls will NOT reset it back to Scheduled.
-	 * This prevents accidental resurrection and preserves the idempotency marker.
+	 * to Reached, subsequent save() calls will NOT modify ANY columns. The entire
+	 * row becomes immutable, preserving both the idempotency marker (reached_at)
+	 * and all other metadata (due_at, correlation_id, etc.).
 	 *
 	 * The adapter handles:
 	 * - Encoding TimerEntry to storage format
-	 * - UPSERT/INSERT ON CONFLICT logic with conditional updates
-	 * - One-way state transition enforcement (Scheduled → Reached only)
+	 * - UPSERT/INSERT ON CONFLICT logic with conditional UPDATE clause
+	 * - Full immutability enforcement for Reached timers (WHERE state != 'Reached')
 	 * - Constraint validation (unique key, not null)
 	 * - Transaction management
 	 *

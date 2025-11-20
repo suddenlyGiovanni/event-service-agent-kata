@@ -9,9 +9,6 @@
 		// Testing
 		"vitest.explorer",
 
-		// Git
-		"eamodio.gitlens",
-
 		// Nix + direnv (required for this project)
 		"arrterian.nix-env-selector",
 		"jnoortheen.nix-ide",
