@@ -80,10 +80,9 @@ export const TimerScheduleKey: Schema.Struct<{
 	tenantId: TenantId,
 })
 
-/**
- * Branded payload type for `TimerScheduleKey` schema.
- */
+/** Namespace for the branded payload type of `TimerScheduleKey` schema. */
 export declare namespace TimerScheduleKey {
+	/** Branded payload type for `TimerScheduleKey` schema. */
 	type Type = typeof TimerScheduleKey.Type
 }
 
