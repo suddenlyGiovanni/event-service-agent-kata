@@ -338,9 +338,9 @@ const Test: Layer.Layer<
 		Layer.mergeAll(
 			// Override DatabaseConfig for test environment: in-memory DB, no schema dump
 			Layer.mock(DatabaseConfig, {
+				_tag: 'DatabaseConfig',
 				filename: ':memory:',
 				schemaDirectory: undefined,
-				_tag: 'DatabaseConfig',
 			}),
 			WorkspaceRoot.Default,
 			PlatformBun.BunPath.layer,
