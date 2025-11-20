@@ -345,7 +345,7 @@ const Test: Layer.Layer<
 	Layer.provide(
 		Layer.mergeAll(
 			// Override DatabaseConfig for test environment: in-memory DB, no schema dump
-			Layer.mock(DatabaseConfig, {
+			Layer.succeed(DatabaseConfig, {
 				_tag: 'DatabaseConfig',
 				filename: ':memory:',
 				schemaDirectory: undefined,
