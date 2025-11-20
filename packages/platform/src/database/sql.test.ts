@@ -6,7 +6,7 @@ import { SQL } from './sql.ts'
 
 describe('SQL Platform Client', () => {
 	describe('Bootstrap Migration', () => {
-		it.effect('should create bootstrap tables after migration', () =>
+		it.scoped('should create bootstrap tables after migration', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -55,7 +55,7 @@ describe('SQL Platform Client', () => {
 			}).pipe(Effect.provide(SQL.Test)),
 		)
 
-		it.effect('should track migration execution', () =>
+		it.scoped('should track migration execution', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -85,7 +85,7 @@ describe('SQL Platform Client', () => {
 	})
 
 	describe('SQLite Pragma Configuration', () => {
-		it.effect('should enable foreign key constraints (PRAGMA foreign_keys = ON)', () =>
+		it.scoped('should enable foreign key constraints (PRAGMA foreign_keys = ON)', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
@@ -99,16 +99,15 @@ describe('SQL Platform Client', () => {
 			}).pipe(Effect.provide(SQL.Test)),
 		)
 
-		it.effect('should enforce foreign key constraints', () =>
+		it.scoped('should enforce foreign key constraints (Test layer)', () =>
 			Effect.gen(function* () {
 				const sql = yield* Sql.SqlClient.SqlClient
 
 				// Attempt to insert timer_schedule referencing non-existent service_call
 				// This MUST fail if FK constraints are enforced
 				const result = yield* sql`
-              INSERT INTO timer_schedules (tenant_id, service_call_id)
-              VALUES ('tenant-123',
-                      'call-123');
+              INSERT INTO timer_schedules (tenant_id, service_call_id, due_at, state)
+              VALUES ('tenant-fk-test', 'nonexistent-call', datetime('now', '+5 minutes'), 'Scheduled');
 					`.pipe(Effect.either) // Catch expected error
 
 				// Verify FK constraint violation
