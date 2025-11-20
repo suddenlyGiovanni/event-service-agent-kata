@@ -65,7 +65,10 @@ export class TimerNotFoundError extends Schema.TaggedError<TimerNotFoundError>()
  * Keeping the Schema definition in the port layer ensures adapters/tests share
  * the same structural contract without depending on adapter internals.
  */
-export const TimerScheduleKey = Schema.Struct({
+export const TimerScheduleKey: Schema.Struct<{
+	serviceCallId: typeof ServiceCallId
+	tenantId: typeof TenantId
+}> = Schema.Struct({
 	/**
 	 * Service call identifier - unique per timer
 	 */
@@ -77,6 +80,9 @@ export const TimerScheduleKey = Schema.Struct({
 	tenantId: TenantId,
 })
 
+/**
+ * Branded payload type for `TimerScheduleKey` schema.
+ */
 export declare namespace TimerScheduleKey {
 	type Type = typeof TimerScheduleKey.Type
 }
