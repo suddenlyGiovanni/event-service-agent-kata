@@ -104,20 +104,9 @@ class DatabaseConfig extends Effect.Service<DatabaseConfig>()('DatabaseConfig', 
  * @see ADR-0012 for package structure (module ownership)
  * @internal Factory for Live (with dump) and Test (no dump) migrators
  */
-const makeMigrator = (
-	schemaDirectory?: string,
-): Layer.Layer<
-	never,
-	| ConfigError
-	| Platform.Error.BadArgument
-	| Platform.Error.SystemError
-	| Sql.Migrator.MigrationError
-	| Sql.SqlError.SqlError,
-	SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient
-> =>
+const makeMigrator = (schemaDirectory?: string) =>
 	Effect.gen(function* () {
 		yield* Effect.logInfo('Initializing database migrator', { schemaDirectory })
-
 		const path = yield* Platform.Path.Path
 		const workspaceRoot = yield* WorkspaceRoot
 
@@ -183,11 +172,7 @@ const makeMigrator = (
 			schemaDirectory: schemaDirectory ?? (undefined as never),
 			table: 'effect_sql_migrations',
 		}).pipe(Layer.provide(PlatformBun.BunContext.layer))
-	}).pipe(
-		Effect.withSpan('SQL.makeMigrator'),
-		Effect.provide(Layer.merge(PlatformBun.BunPath.layer, WorkspaceRoot.Default)),
-		Layer.unwrapEffect,
-	)
+	}).pipe(Effect.withSpan('SQL.makeMigrator'), Layer.unwrapEffect)
 
 /**
  * SQLite session pragma configuration layer.
@@ -259,10 +244,7 @@ const makeClient = (
 	 * 2. Provide client to pragmaSetupLayer (runs PRAGMAs as side effect)
 	 * 3. provideMerge runs pragma layer but only exports the client service
 	 */
-	return Layer.provideMerge(
-		sqlClientLayer,
-		Layer.provide(pragmaSetupLayer, sqlClientLayer)
-	)
+	return Layer.provideMerge(sqlClientLayer, Layer.provide(pragmaSetupLayer, sqlClientLayer))
 }
 
 /**
@@ -317,17 +299,19 @@ const Live: Layer.Layer<
 	/*
 	 * Layer composition strategy:
 	 * 1. makeClient creates SqlClient (with pragma setup)
-	 * 2. makeMigrator requires SqlClient (runs migrations)
-	 * 3. Layer.provide: give migrator the client it needs
+	 * 2. makeMigrator requires SqlClient + WorkspaceRoot (runs migrations)
+	 * 3. Layer.provide: give migrator the dependencies it needs
 	 * 4. Layer.merge: export both client and migrator services
 	 *
 	 * Scope nesting:
 	 *   Application Scope
 	 *     └─ makeClient Scope (SqlClient connection + pragmas)
-	 *         └─ makeMigrator Scope (runs migrations using SqlClient)
+	 *         └─ makeMigrator Scope (runs migrations using SqlClient + WorkspaceRoot)
 	 */
 	const clientLayer = makeClient(config.filename)
-	const migratorLayer = makeMigrator(config.schemaDirectory).pipe(Layer.provide(clientLayer))
+	const migratorLayer = makeMigrator(config.schemaDirectory).pipe(
+		Layer.provide(Layer.mergeAll(clientLayer, WorkspaceRoot.Default, PlatformBun.BunPath.layer)),
+	)
 
 	return Layer.merge(clientLayer, migratorLayer)
 }).pipe(Effect.withSpan('SQL.Live'), Effect.provide(DatabaseConfig.Default), Layer.unwrapEffect)
@@ -377,17 +361,19 @@ const Test: Layer.Layer<
 	/*
 	 * Layer composition strategy:
 	 * 1. makeClient creates SqlClient (with pragma setup)
-	 * 2. makeMigrator requires SqlClient (runs migrations)
-	 * 3. Layer.provide: give migrator the client it needs
+	 * 2. makeMigrator requires SqlClient + WorkspaceRoot (runs migrations)
+	 * 3. Layer.provide: give migrator the dependencies it needs
 	 * 4. Layer.merge: export both client and migrator services
 	 *
 	 * Scope nesting:
 	 *   Test Scope
 	 *     └─ makeClient Scope (SqlClient :memory: + pragmas)
-	 *         └─ makeMigrator Scope (runs migrations using SqlClient)
+	 *         └─ makeMigrator Scope (runs migrations using SqlClient + WorkspaceRoot)
 	 */
 	const clientLayer = makeClient(':memory:')
-	const migratorLayer = makeMigrator().pipe(Layer.provide(clientLayer))
+	const migratorLayer = makeMigrator().pipe(
+		Layer.provide(Layer.mergeAll(clientLayer, WorkspaceRoot.Default, PlatformBun.BunPath.layer)),
+	)
 
 	return Layer.merge(clientLayer, migratorLayer)
 }).pipe(Effect.withSpan('SQL.Test'), Layer.unwrapEffect)
