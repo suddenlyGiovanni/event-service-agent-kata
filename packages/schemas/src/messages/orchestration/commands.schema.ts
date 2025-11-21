@@ -21,8 +21,8 @@ import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
 /**
  * ScheduleTimer - Request a due signal at/after dueAt
  *
- * **Produced by**: Orchestration
- * **Consumed by**: Timer
+ * **Produced by**: Orchestration.
+ * **Consumed by**: Timer.
  *
  * This command instructs Timer to schedule a delayed signal that fires when the specified `dueAt` timestamp is reached.
  * Timer polls and publishes `DueTimeReached` event to notify Orchestration.
@@ -105,8 +105,8 @@ export declare namespace ScheduleTimer {
 /**
  * StartExecution - Trigger HTTP execution for a scheduled ServiceCall
  *
- * Produced by: Orchestration
- * Consumed by: Execution
+ * Produced by: Orchestration.
+ * Consumed by: Execution.
  *
  * Note: Uses RequestSpecWithoutBody for the command payload. The full request body is stored separately in persistent
  * storage (see storage contract definition) and retrieved by the Execution module using the serviceCallId. This avoids

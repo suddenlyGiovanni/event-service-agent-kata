@@ -3,8 +3,7 @@
  *
  * Branded UUID7 type for distributed request tracing across module boundaries.
  *
- * **Purpose — Distributed Tracing**:
- * CorrelationId links causally-related messages across asynchronous workflows,
+ * **Purpose — Distributed Tracing**: CorrelationId links causally-related messages across asynchronous workflows,
  * enabling end-to-end request tracing even when:
  *
  * - Messages cross module boundaries (API → Orchestration → Timer → Execution)
@@ -38,10 +37,10 @@
  * ```
  *
  * All messages share correlationId=uuid1, enabling query:
- * "Show me all events where correlationId = uuid1" → full request trace
+ * `"Show me all events where correlationId = uuid1" → full request trace`
  *
- * **Why Optional**:
- * CorrelationId is `Option<CorrelationId>` because:
+ * **Why Optional**: CorrelationId is `Option<CorrelationId>` because:
+ *
  * - User-initiated requests have correlation (from HTTP headers or generated)
  * - System-initiated events may lack correlation (background jobs, cron tasks)
  * - Tests often omit correlation for simplicity

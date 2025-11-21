@@ -5,8 +5,8 @@ import * as Context from 'effect/Context'
 /**
  * UUIDPort — UUID generation service
  *
- * Provides UUIDv7 generation for time-ordered unique identifiers.
- * Use for envelope IDs, correlation IDs, and entity identifiers.
+ * Provides UUIDv7 generation for time-ordered unique identifiers. Use for envelope IDs, correlation IDs, and entity
+ * identifiers.
  */
 export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/UUID')<
 	UUIDPort,
@@ -14,9 +14,9 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 		/**
 		 * Generate a UUIDv7, which is a sequential ID based on the current timestamp with a random component.
 		 *
-		 * When the same timestamp is used multiple times, a monotonically increasing counter is appended to allow
-		 * sorting. The final 8 bytes are cryptographically random. When the timestamp changes, the counter resets to a
-		 * pseudo-random integer.
+		 * When the same timestamp is used multiple times, a monotonically increasing counter is appended to allow sorting.
+		 * The final 8 bytes are cryptographically random. When the timestamp changes, the counter resets to a pseudo-random
+		 * integer.
 		 *
 		 * @example
 		 *
@@ -88,7 +88,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 *
 	 * // in test code
 	 * const testable: Effect.Effect<void, never, never> = program.pipe(
-	 * 	Effect.provideService(UUIDPort.Test('fixed-uuid-000-000-000-000'))
+	 * 	Effect.provideService(UUIDPort.Test('fixed-uuid-000-000-000-000')),
 	 * )
 	 *
 	 * // Run the program
@@ -104,8 +104,8 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	/**
 	 * Sequence adapter - Generates sequential UUIDs with incrementing counter (deterministic)
 	 *
-	 * Useful for tests requiring multiple unique but predictable UUIDs. Format: `{prefix}-0000-7000-8000-{counter}`
-	 * where counter increments from 000000000000.
+	 * Useful for tests requiring multiple unique but predictable UUIDs. Format: `{prefix}-0000-7000-8000-{counter}` where
+	 * counter increments from 000000000000.
 	 *
 	 * @example
 	 *

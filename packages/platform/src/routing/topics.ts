@@ -119,8 +119,8 @@ export namespace Topics {
 	/**
 	 * Valid topic type (compile-time validation)
 	 *
-	 * Use this type to validate topic strings at compile time.
-	 * Broker adapters can use this to ensure only valid topics are subscribed to.
+	 * Use this type to validate topic strings at compile time. Broker adapters can use this to ensure only valid topics
+	 * are subscribed to.
 	 *
 	 * @example
 	 *

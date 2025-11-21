@@ -20,8 +20,8 @@ import { ServiceCallEventBase } from '../common/service-call-event-base.schema.t
 /**
  * DueTimeReached - Time to start execution has arrived
  *
- * **Produced by**: Timer (or Orchestration fast-path)
- * **Consumed by**: Orchestration
+ * **Produced by**: Timer (or Orchestration fast-path).
+ * **Consumed by**: Orchestration.
  *
  * This event signals that a scheduled timer has reached its due time and execution should begin. The `reachedAt`
  * timestamp indicates when the polling worker detected the timer was due.
@@ -60,8 +60,8 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	/**
 	 * Timestamp when the due time was detected
 	 *
-	 * Domain type: DateTime.Utc (Effect's immutable datetime)
-	 * Wire format: ISO8601 string (e.g., "2025-10-27T12:00:00.000Z")
+	 * Domain type: DateTime.Utc (Effect's immutable datetime).
+	 * Wire format: ISO8601 string (e.g., "2025-10-27T12:00:00.000Z").
 	 */
 	reachedAt: Schema.DateTimeUtc,
 }) {

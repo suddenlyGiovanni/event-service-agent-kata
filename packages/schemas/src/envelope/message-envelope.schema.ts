@@ -1,14 +1,13 @@
 /**
  * Message Envelope Schema
  *
- * Effect Schema for runtime validation of message envelopes.
- * Provides:
+ * Effect Schema for runtime validation of message envelopes. Provides:
+ *
  * - JSON serialization/deserialization (parseJson/encodeJson)
  * - Envelope structure validation (id, type, tenantId, timestamps)
  * - Typed payload using discriminated union of all domain messages
  *
- * Based on docs/design/ports.md and ADR-0011.
- * Migrated to schemas package per ADR-0012.
+ * Based on docs/design/ports.md and ADR-0011. Migrated to schemas package per ADR-0012.
  */
 
 import * as Effect from 'effect/Effect'
@@ -24,12 +23,11 @@ import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '../shared/in
 /**
  * DomainMessage - Union of all domain messages (events + commands)
  *
- * This centralized union avoids circular dependencies by having all schemas
- * in a single package. The envelope payload has full Effect Schema type power:
- * branded types, pattern matching, and single-phase decode.
+ * This centralized union avoids circular dependencies by having all schemas in a single package. The envelope payload
+ * has full Effect Schema type power: branded types, pattern matching, and single-phase decode.
  *
- * Uses actual Effect Schemas (not DTO shapes), preserving full type power.
- * After decode, envelope.payload will have branded types and pattern matching support.
+ * Uses actual Effect Schemas (not DTO shapes), preserving full type power. After decode, envelope.payload will have
+ * branded types and pattern matching support.
  *
  * @see ADR-0012 for rationale
  */
@@ -66,8 +64,8 @@ export declare namespace DomainMessage {
 /**
  * MessageEnvelope — Transport wrapper for all domain messages
  *
- * Wraps commands and events with routing and correlation metadata for broker transport.
- * Provides partition key, correlation context, and envelope identity for tracing.
+ * Wraps commands and events with routing and correlation metadata for broker transport. Provides partition key,
+ * correlation context, and envelope identity for tracing.
  *
  * @see docs/decisions/ADR-0013-correlation-propagation.md for correlation context design
  * @see docs/decisions/ADR-0010-identity.md for envelope ID generation
@@ -77,9 +75,8 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		/**
 		 * **Aggregate Identifier** — Per-aggregate message ordering key
 		 *
-		 * **Purpose**: Enables strict message ordering for a specific aggregate instance.
-		 * When present, ensures all messages for the same aggregate (ServiceCall) are
-		 * processed in the order they were published.
+		 * **Purpose**: Enables strict message ordering for a specific aggregate instance. When present, ensures all
+		 * messages for the same aggregate (ServiceCall) are processed in the order they were published.
 		 *
 		 * **Semantics**:
 		 *
@@ -91,8 +88,8 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 * **Domain Model**: ServiceCall is the only aggregate in the MVP system. All domain events and commands that
 		 * manipulate ServiceCall state should include this field for consistency and ordering.
 		 *
-		 * **Wire format**: optional/missing field (UUID v7 string when present) **Domain type**:
-		 * `Option<ServiceCallId>` (branded UUID v7)
+		 * **Wire format**: optional/missing field (UUID v7 string when present) **Domain type**: `Option<ServiceCallId>`
+		 * (branded UUID v7)
 		 *
 		 * @example
 		 *
@@ -123,8 +120,8 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 *
 		 * - **Present** (`Option.some(envelopeId)`): This message was created as a direct result of processing another
 		 *   message. Points to the `EnvelopeId` of the causing message.
-		 * - **Absent** (`Option.none()`): This message originates from external input (user request, timer, external
-		 *   system) rather than from another message.
+		 * - **Absent** (`Option.none()`): This message originates from external input (user request, timer, external system)
+		 *   rather than from another message.
 		 *
 		 * **Use Cases**:
 		 *
@@ -187,8 +184,8 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 *
 		 * **Semantics**:
 		 *
-		 * - **Present** (`Option.some(correlationId)`): Message is part of a traced request flow. All related messages
-		 *   share the same correlationId.
+		 * - **Present** (`Option.some(correlationId)`): Message is part of a traced request flow. All related messages share
+		 *   the same correlationId.
 		 * - **Absent** (`Option.none()`): Message is autonomous (system-initiated, background job) with no user request
 		 *   context.
 		 *
@@ -210,8 +207,8 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 * - `correlationId`: Identifies the **entire conversation** (same for all related messages)
 		 * - `causationId`: Points to the **immediate parent** (different at each hop)
 		 *
-		 * **Wire format**: optional/missing field (UUID v7 string when present)
-		 * **Domain type**: `Option<CorrelationId>` (branded UUID v7)
+		 * **Wire format**: optional/missing field (UUID v7 string when present) **Domain type**: `Option<CorrelationId>`
+		 * (branded UUID v7)
 		 *
 		 * @example
 		 *
@@ -259,8 +256,8 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 * - **Acknowledgment**: Track which messages have been processed
 		 * - **Debugging**: Unique identifier for log correlation and message tracing
 		 *
-		 * **Generation**: Created by publisher just before sending message to broker.
-		 * Uses UUID v7 for monotonic ordering properties (timestamp-based prefix).
+		 * **Generation**: Created by publisher just before sending message to broker. Uses UUID v7 for monotonic ordering
+		 * properties (timestamp-based prefix).
 		 *
 		 * **Difference from other IDs**:
 		 *
@@ -269,8 +266,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 * - `correlationId`: Identifies **request flow** (same for all messages in conversation)
 		 * - `causationId`: References **parent message's EnvelopeId** (forms causal chain)
 		 *
-		 * **Wire format**: required field (UUID v7 string)
-		 * **Domain type**: `EnvelopeId` (branded UUID v7, extends UUID7)
+		 * **Wire format**: required field (UUID v7 string) **Domain type**: `EnvelopeId` (branded UUID v7, extends UUID7)
 		 *
 		 * @example
 		 *
@@ -313,8 +309,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		/**
 		 * Producer timestamp (transformed: number ↔ DateTime.Utc)
 		 *
-		 * Wire format: epoch milliseconds (number)
-		 * Domain type: DateTime.Utc (immutable, rich API)
+		 * Wire format: epoch milliseconds (number) Domain type: DateTime.Utc (immutable, rich API)
 		 *
 		 * Used for:
 		 *
@@ -328,8 +323,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		/**
 		 * Message type discriminator (matches payload._tag)
 		 *
-		 * Constrained to valid message tags for type safety.
-		 * This ensures only known message types can be in envelopes.
+		 * Constrained to valid message tags for type safety. This ensures only known message types can be in envelopes.
 		 *
 		 * **Invariant**: Must match `payload._tag` (enforced by schema filter)
 		 */
@@ -356,9 +350,8 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		/**
 		 * **Cross-Field Validation Filter**
 		 *
-		 * Enforces the invariant that `type` must match `payload._tag`.
-		 * This prevents mismatched envelopes where the envelope type doesn't
-		 * correspond to the actual payload type.
+		 * Enforces the invariant that `type` must match `payload._tag`. This prevents mismatched envelopes where the
+		 * envelope type doesn't correspond to the actual payload type.
 		 *
 		 * **When This Runs**:
 		 *
@@ -385,8 +378,8 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	/**
 	 * Decode a JSON string into a validated MessageEnvelope with typed payload.
 	 *
-	 * Performs single-phase decoding: JSON.parse + Schema validation + payload discrimination.
-	 * The resulting envelope.payload is a discriminated union typed by `_tag`.
+	 * Performs single-phase decoding: JSON.parse + Schema validation + payload discrimination. The resulting
+	 * envelope.payload is a discriminated union typed by `_tag`.
 	 *
 	 * **Decoded Types**:
 	 *
@@ -413,13 +406,13 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	 *
 	 * 	// Type-safe pattern matching on payload using matchPayload helper
 	 * 	yield* MessageEnvelope.matchPayload(envelope).pipe(
-	 * 		Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload =>
-	 * 			handleDueTimeReached(payload, envelope.correlationId)
+	 * 		Match.tag(Messages.Timer.Events.DueTimeReached.Tag, (payload) =>
+	 * 			handleDueTimeReached(payload, envelope.correlationId),
 	 * 		),
-	 * 		Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, payload =>
-	 * 			handleScheduleTimer(payload, envelope.correlationId)
+	 * 		Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, (payload) =>
+	 * 			handleScheduleTimer(payload, envelope.correlationId),
 	 * 		),
-	 * 		Match.orElse(() => Effect.logWarning('Unhandled message type', envelope.type))
+	 * 		Match.orElse(() => Effect.logWarning('Unhandled message type', envelope.type)),
 	 * 	)
 	 *
 	 * 	// Or use traditional if/else for simple cases
@@ -499,8 +492,8 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	/**
 	 * Creates a matcher for the envelope's payload discriminated union.
 	 *
-	 * This method provides ergonomic access to Effect's pattern matching API for the envelope payload. It allows
-	 * partial matching on specific message tags without requiring exhaustive handlers.
+	 * This method provides ergonomic access to Effect's pattern matching API for the envelope payload. It allows partial
+	 * matching on specific message tags without requiring exhaustive handlers.
 	 *
 	 * **Why This Helper?**
 	 *
@@ -519,12 +512,12 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	 * ```typescript
 	 * // Test: Partial matching (only care about specific tags)
 	 * const result = MessageEnvelope.matchPayload(envelope).pipe(
-	 * 	Match.tag(Timer.Events.DueTimeReached.Tag, payload => {
+	 * 	Match.tag(Timer.Events.DueTimeReached.Tag, (payload) => {
 	 * 		expect(payload.tenantId).toBe(expectedTenantId)
 	 * 		expect(payload.serviceCallId).toBe(expectedServiceCallId)
 	 * 		return 'timer-handled'
 	 * 	}),
-	 * 	Match.orElse(() => 'other-message')
+	 * 	Match.orElse(() => 'other-message'),
 	 * )
 	 * ```
 	 *
@@ -536,7 +529,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	 * 	Match.tag(Timer.Events.DueTimeReached.Tag, handleTimer),
 	 * 	Match.tag(Orchestration.Events.ServiceCallScheduled.Tag, handleSchedule),
 	 * 	Match.tag(Orchestration.Events.ServiceCallSucceeded.Tag, handleCompletion),
-	 * 	Match.exhaustive // TypeScript error if any tag is missing
+	 * 	Match.exhaustive, // TypeScript error if any tag is missing
 	 * )
 	 * ```
 	 *

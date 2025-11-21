@@ -43,17 +43,16 @@ const migration: Effect.Effect<(readonly Sql.SqlConnection.Row[])[], Sql.SqlErro
 		Effect.all(
 			[
 				/**
-				 * WAL mode for read/write concurrency (ADR-0004).
-				 * Persistent setting (survives connection close).
-				 * Safe to set in migration (database-level, not session-level).
+				 * WAL mode for read/write concurrency (ADR-0004). Persistent setting (survives connection close). Safe to set
+				 * in migration (database-level, not session-level).
 				 */
 				sql`
 					PRAGMA journal_mode = WAL;
 				`,
 
 				/**
-				 * service_calls: Stub table for FK target.
-				 * Orchestration module will add domain-specific columns (status, created_at, etc.)
+				 * service_calls: Stub table for FK target. Orchestration module will add domain-specific columns (status,
+				 * created_at, etc.)
 				 */
 				sql`
 					CREATE TABLE IF NOT EXISTS service_calls (
@@ -64,8 +63,8 @@ const migration: Effect.Effect<(readonly Sql.SqlConnection.Row[])[], Sql.SqlErro
 				`,
 
 				/**
-				 * timer_schedules: Skeleton table with FK to service_calls.
-				 * Timer module will add domain columns in 0003_timer_schedules_schema.ts
+				 * timer_schedules: Skeleton table with FK to service_calls. Timer module will add domain columns in
+				 * 0003_timer_schedules_schema.ts
 				 */
 				sql`
 					CREATE TABLE IF NOT EXISTS timer_schedules (
@@ -76,8 +75,8 @@ const migration: Effect.Effect<(readonly Sql.SqlConnection.Row[])[], Sql.SqlErro
 					) STRICT;
 				`,
 				/**
-				 * http_execution_log: Skeleton table with FK to service_calls.
-				 * Execution module will add domain columns (request_url, response_status, etc.)
+				 * http_execution_log: Skeleton table with FK to service_calls. Execution module will add domain columns
+				 * (request_url, response_status, etc.)
 				 */
 				sql`
 					CREATE TABLE IF NOT EXISTS http_execution_log (
@@ -90,8 +89,8 @@ const migration: Effect.Effect<(readonly Sql.SqlConnection.Row[])[], Sql.SqlErro
 				`,
 
 				/**
-				 * Outbox: Event publication queue (shared infrastructure, not module-owned).
-				 * Platform manages outbox schema (ADR-0008 outbox pattern)
+				 * Outbox: Event publication queue (shared infrastructure, not module-owned). Platform manages outbox schema
+				 * (ADR-0008 outbox pattern)
 				 */
 				sql`
 					CREATE TABLE IF NOT EXISTS outbox (

@@ -7,15 +7,15 @@ import { RequestSpec } from '../http/request-spec.schema.ts'
 /**
  * SubmitServiceCall - Create and schedule a new ServiceCall
  *
- * Produced by: API
- * Consumed by: Orchestration
+ * Produced by: API.
+ * Consumed by: Orchestration.
  */
 export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('SubmitServiceCall', {
 	/**
 	 * Timestamp when execution should start
 	 *
-	 * Domain type: DateTime.Utc
-	 * Wire format: epoch milliseconds
+	 * Domain type: DateTime.Utc .
+	 * Wire format: epoch milliseconds.
 	 */
 	dueAt: Schema.DateTimeUtc,
 

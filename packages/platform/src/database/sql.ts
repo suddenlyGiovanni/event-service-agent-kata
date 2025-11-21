@@ -48,6 +48,7 @@ class WorkspaceRoot extends Effect.Service<WorkspaceRoot>()('WorkspaceRoot', {
  * root, package dir, etc.).
  *
  * Local dev: No configuration needed, uses workspace-root 'data/' directory.
+ *
  * - Production: Override via env vars (e.g., DB_PATH=/var/lib/myapp/db.sqlite)
  * - Testing: Override via Layer.mock (e.g., ':memory:' database, no schema dump)
  *
@@ -404,7 +405,8 @@ const Test: Layer.Layer<
  * - Session-level pragmas (foreign_keys, synchronous, etc.): Set in ClientLayer on initialization
  *
  * Migrations:
- * - Discovers migrations from: packages/*\/src/database/migrations/*.ts (platform + modules)
+ *
+ * - Discovers migrations from: packages/_/src/database/migrations/_.ts (platform + modules)
  * - Runs migrations on layer initialization (before app code executes)
  * - Tracks executed migrations in effect_sql_migrations table
  *

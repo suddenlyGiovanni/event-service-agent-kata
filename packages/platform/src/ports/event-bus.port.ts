@@ -1,9 +1,8 @@
 /**
  * EventBusPort - Message broker abstraction
  *
- * Provides broker-agnostic publish/subscribe interface for command and event
- * distribution across modules. The adapter handles all broker-specific details
- * (streams, consumers, subjects, partitions, etc.).
+ * Provides broker-agnostic publish/subscribe interface for command and event distribution across modules. The adapter
+ * handles all broker-specific details (streams, consumers, subjects, partitions, etc.).
  *
  * Used by: [Orchestration], [Execution], [Timer], [API] (publish only)
  *
@@ -29,9 +28,8 @@ import type { Topics } from '../routing/topics.ts'
 /**
  * PublishError - Generic error when publishing messages fails
  *
- * Adapter maps broker-specific errors (connection failure, stream not found,
- * subject not allowed, etc.) to this generic error. Specific details are
- * logged by the adapter for observability.
+ * Adapter maps broker-specific errors (connection failure, stream not found, subject not allowed, etc.) to this generic
+ * error. Specific details are logged by the adapter for observability.
  */
 export class PublishError extends Data.TaggedError('PublishError')<{
 	readonly cause: string
@@ -40,9 +38,8 @@ export class PublishError extends Data.TaggedError('PublishError')<{
 /**
  * SubscribeError - Generic error when subscribing or consuming messages fails
  *
- * Adapter maps broker-specific errors (consumer creation failure, stream not
- * found, connection failure, etc.) to this generic error. Specific details are
- * logged by the adapter for observability.
+ * Adapter maps broker-specific errors (consumer creation failure, stream not found, connection failure, etc.) to this
+ * generic error. Specific details are logged by the adapter for observability.
  */
 export class SubscribeError extends Data.TaggedError('SubscribeError')<{
 	readonly cause: string
@@ -112,13 +109,13 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  * 	const bus = yield* EventBusPort
  *
  * 	// Subscribe with handler Effect
- * 	yield* bus.subscribe([{ name: 'timer.commands' }], envelope =>
+ * 	yield* bus.subscribe([{ name: 'timer.commands' }], (envelope) =>
  * 		Effect.gen(function* () {
  * 			// Handler processes envelope
  * 			console.log('Received command:', envelope.type)
  * 			// Parse and handle command (simplified)
  * 			return
- * 		})
+ * 		}),
  * 	)
  * })
  * ```
@@ -195,8 +192,8 @@ export interface EventBusPort {
 	 * - NAKs message on handler error (triggers redelivery)
 	 * - Routes to DLQ after max retries (configured in adapter)
 	 *
-	 * Topics are type-safe references from the centralized Topics configuration.
-	 * Use Topics.Timer.Commands, Topics.Orchestration.Events, etc. for type safety.
+	 * Topics are type-safe references from the centralized Topics configuration. Use Topics.Timer.Commands,
+	 * Topics.Orchestration.Events, etc. for type safety.
 	 *
 	 * Adapter maps these logical topics to broker-specific routing:
 	 *
@@ -236,8 +233,8 @@ export interface EventBusPort {
 	 * 			yield* Effect.succeed(undefined)
 	 * 		}).pipe(
 	 * 			// Handler errors cause NAK → redelivery
-	 * 			Effect.catchAll(err => Effect.logError(err))
-	 * 		)
+	 * 			Effect.catchAll((err) => Effect.logError(err)),
+	 * 		),
 	 * 	)
 	 * })
 	 * ```

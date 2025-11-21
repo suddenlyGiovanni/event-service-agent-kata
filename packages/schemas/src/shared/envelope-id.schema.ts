@@ -3,8 +3,8 @@
  *
  * Branded UUID7 type for message envelope identification.
  *
- * **Purpose — Message Identity and Causation Tracking**:
- * EnvelopeId uniquely identifies a message envelope in the system, serving dual purposes:
+ * **Purpose — Message Identity and Causation Tracking**: EnvelopeId uniquely identifies a message envelope in the
+ * system, serving dual purposes:
  *
  * 1. **Deduplication**: Prevents duplicate message processing (broker idempotency)
  * 2. **Causation Chain**: Links child messages to parent (envelope.causationId = parent.envelopeId)
