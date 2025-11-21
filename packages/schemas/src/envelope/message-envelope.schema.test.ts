@@ -56,9 +56,9 @@ describe('MessageEnvelope', () => {
 						expect(DateTime.isUtc(payload.reachedAt)).toBe(true)
 						expect(DateTime.Equivalence(payload.reachedAt, DateTime.unsafeMake(reachedAt))).toBe(true)
 					}),
-					Match.orElseAbsurd,
+					Match.orElseAbsurd
 				)
-			}),
+			})
 		)
 
 		it.effect('decodes envelope without optional fields', () =>
@@ -91,9 +91,9 @@ describe('MessageEnvelope', () => {
 					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
 						expect(payload._tag).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 					}),
-					Match.orElseAbsurd,
+					Match.orElseAbsurd
 				)
-			}),
+			})
 		)
 
 		it.effect('fails with invalid JSON syntax', () =>
@@ -106,7 +106,7 @@ describe('MessageEnvelope', () => {
 
 				// Assert: Fails with parse error
 				expect(Exit.isFailure(result)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('fails with invalid envelope structure', () =>
@@ -122,7 +122,7 @@ describe('MessageEnvelope', () => {
 
 				// Assert: Fails with validation error
 				expect(Exit.isFailure(result)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('fails with invalid payload type', () =>
@@ -145,7 +145,7 @@ describe('MessageEnvelope', () => {
 
 				// Assert: Fails with validation error (payload not in union)
 				expect(Exit.isFailure(result)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('fails when type does not match payload._tag', () =>
@@ -178,7 +178,7 @@ describe('MessageEnvelope', () => {
 					expect(message).toContain('DueTimeReached')
 					expect(message).toContain('ScheduleTimer')
 				}
-			}),
+			})
 		)
 	})
 
@@ -217,7 +217,7 @@ describe('MessageEnvelope', () => {
 				// Validate payload structure (untyped JSON)
 				const payload = parsed['payload'] as { _tag: string }
 				expect(payload._tag).toBe(Messages.Timer.Events.DueTimeReached.Tag)
-			}),
+			})
 		)
 
 		it.effect('round-trips correctly', () =>
@@ -257,9 +257,9 @@ describe('MessageEnvelope', () => {
 					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
 						expect(payload._tag).toBe(original.payload._tag)
 					}),
-					Match.orElseAbsurd,
+					Match.orElseAbsurd
 				)
-			}),
+			})
 		)
 	})
 })

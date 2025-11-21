@@ -18,14 +18,19 @@ import * as Effect from 'effect/Effect'
  * - This migration creates minimal stubs to establish referential integrity
  *
  * Tables created:
- * - service_calls: Stub table (FK target for timer_schedules, http_execution_log)
- *   * Orchestration module adds domain fields in separate migration
- * - timer_schedules: Skeleton table (FK to service_calls)
- *   * Timer module adds domain fields (due_at, state, etc.) in 0003_timer_schedules_schema.ts
- * - http_execution_log: Skeleton table (FK to service_calls)
- *   * Execution module adds domain fields in separate migration
- * - outbox: Event publication queue (shared infrastructure)
- *   * Platform manages outbox schema (not module-specific)
+ *
+ * - Service_calls: Stub table (FK target for timer_schedules, http_execution_log)
+ *
+ *   - Orchestration module adds domain fields in separate migration
+ * - Timer_schedules: Skeleton table (FK to service_calls)
+ *
+ *   - Timer module adds domain fields (due_at, state, etc.) in 0003_timer_schedules_schema.ts
+ * - Http_execution_log: Skeleton table (FK to service_calls)
+ *
+ *   - Execution module adds domain fields in separate migration
+ * - Outbox: Event publication queue (shared infrastructure)
+ *
+ *   - Platform manages outbox schema (not module-specific)
  *
  * @see ADR-0004 for database structure decisions
  * @see ADR-0005 for schema design patterns
@@ -85,7 +90,7 @@ const migration: Effect.Effect<(readonly Sql.SqlConnection.Row[])[], Sql.SqlErro
 			`,
 
 				/**
-				 * outbox: Event publication queue (shared infrastructure, not module-owned)
+				 * Outbox: Event publication queue (shared infrastructure, not module-owned)
 				 * Platform manages outbox schema (ADR-0008 outbox pattern)
 				 */
 				sql`
@@ -109,8 +114,8 @@ const migration: Effect.Effect<(readonly Sql.SqlConnection.Row[])[], Sql.SqlErro
 				WHERE published_at IS NULL
 			`,
 			],
-			{ concurrency: 1 },
-		),
+			{ concurrency: 1 }
+		)
 	)
 
 export default migration

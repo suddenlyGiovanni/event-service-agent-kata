@@ -8,6 +8,7 @@
  * Used by: [Orchestration], [Execution], [Timer], [API] (publish only)
  *
  * Design principles:
+ *
  * - Broker-agnostic: works with NATS JetStream, Kafka, RabbitMQ, or in-memory
  * - Effect-based: all operations return Effect for composability
  * - At-least-once delivery: messages may be delivered multiple times
@@ -51,11 +52,13 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  * EventBusPort - Message broker port interface
  *
  * Responsibilities:
+ *
  * - Publish messages to the broker with idempotency (via envelope.id)
  * - Subscribe to topics and process messages with a handler
  * - Handle errors generically (adapter logs details)
  *
  * Adapter responsibilities (hidden from domain):
+ *
  * - Stream/topic creation and configuration
  * - Consumer creation and management (durable, pull-based, work-sharing)
  * - ACK/NAK handling (ack on success, nak on error)
@@ -65,20 +68,15 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  * - Subject/topic mapping and routing
  * - Deduplication window configuration
  *
- * @example
- * Publishing events and subscribing to commands
- * ```typescript ignore
+ * @example Publishing events and subscribing to commands
+ *
+ * ```typescript
  * import * as DateTime from 'effect/DateTime'
  * import * as Effect from 'effect/Effect'
  * import * as Option from 'effect/Option'
  * import { EventBusPort } from '@event-service-agent/platform/ports'
  * import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
- * import {
- * 	CorrelationId,
- * 	EnvelopeId,
- * 	ServiceCallId,
- * 	TenantId,
- * } from '@event-service-agent/schemas/shared'
+ * import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
  *
  * // Example: Publishing events with self-contained envelope
  * const publishEventsExample = Effect.gen(function* () {
@@ -114,7 +112,7 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  * 	const bus = yield* EventBusPort
  *
  * 	// Subscribe with handler Effect
- * 	yield* bus.subscribe([{ name: 'timer.commands' }], (envelope) =>
+ * 	yield* bus.subscribe([{ name: 'timer.commands' }], envelope =>
  * 		Effect.gen(function* () {
  * 			// Handler processes envelope
  * 			console.log('Received command:', envelope.type)
@@ -129,34 +127,26 @@ export interface EventBusPort {
 	/**
 	 * Publish messages to the event bus
 	 *
-	 * Messages are published to topics derived from the envelope (type, tenantId).
-	 * Routing information (tenantId, aggregateId, correlationId) is extracted from
-	 * each envelope - no separate context needed.
+	 * Messages are published to topics derived from the envelope (type, tenantId). Routing information (tenantId,
+	 * aggregateId, correlationId) is extracted from each envelope - no separate context needed.
 	 *
 	 * The adapter handles:
+	 *
 	 * - Routing to appropriate subjects/topics/queues (using envelope.tenantId + envelope.aggregateId)
 	 * - Deduplication via envelope.id (within broker's deduplication window)
 	 * - Idempotent publish (safe to retry on transient failures)
-	 * - Per-aggregate ordering (via tenantId + aggregateId routing key, e.g., tenant-123.order-456, tenant-123.serviceCallId-789)
+	 * - Per-aggregate ordering (via tenantId + aggregateId routing key, e.g., tenant-123.order-456,
+	 *   tenant-123.serviceCallId-789)
 	 * - Tracing propagation (via envelope.correlationId if present)
 	 *
-	 * @param envelopes - Array of message envelopes to publish (self-contained with all routing metadata)
-	 * @returns Effect that succeeds when all messages are published
-	 * @throws PublishError - When publishing fails (connection, stream errors, etc.)
+	 * @example Publishing a message envelope
 	 *
-	 * @example
-	 * Publishing a message envelope
-	 * ```typescript ignore
+	 * ```typescript
 	 * import * as DateTime from 'effect/DateTime'
 	 * import * as Effect from 'effect/Effect'
 	 * import * as Option from 'effect/Option'
 	 * import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
-	 * import {
-	 * 	CorrelationId,
-	 * 	EnvelopeId,
-	 * 	ServiceCallId,
-	 * 	TenantId,
-	 * } from '@event-service-agent/schemas/shared'
+	 * import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 	 * import { EventBusPort } from '@event-service-agent/platform/ports'
 	 *
 	 * const publishExample = Effect.gen(function* () {
@@ -186,6 +176,11 @@ export interface EventBusPort {
 	 * 	yield* bus.publish([envelope]) // All metadata in envelope!
 	 * })
 	 * ```
+	 *
+	 * @param envelopes - Array of message envelopes to publish (self-contained with all routing metadata)
+	 *
+	 * @returns Effect that succeeds when all messages are published
+	 * @throws PublishError - When publishing fails (connection, stream errors, etc.)
 	 */
 	readonly publish: (envelopes: NonEmptyReadonlyArray<MessageEnvelope.Type>) => Effect.Effect<void, PublishError>
 
@@ -193,6 +188,7 @@ export interface EventBusPort {
 	 * Subscribe to topics and process messages
 	 *
 	 * Creates a durable consumer (or attaches to existing) that:
+	 *
 	 * - Pulls messages from specified topics
 	 * - Processes each message with the handler Effect
 	 * - ACKs message on handler success
@@ -203,28 +199,26 @@ export interface EventBusPort {
 	 * Use Topics.Timer.Commands, Topics.Orchestration.Events, etc. for type safety.
 	 *
 	 * Adapter maps these logical topics to broker-specific routing:
+	 *
 	 * - NATS: subjects (e.g., 'svc.timer.commands')
 	 * - Kafka: topics (e.g., 'timer-commands')
 	 * - RabbitMQ: routing keys + exchanges
 	 *
 	 * Processing semantics:
+	 *
 	 * - Sequential (MVP): processes one message at a time (safe, simple)
 	 * - Handler must be idempotent (messages may be redelivered)
 	 * - Preserves per-aggregate order (via tenantId + aggregateId routing key, e.g., tenant-123.serviceCallId-789)
 	 *
 	 * Work-sharing (multiple instances):
+	 *
 	 * - Multiple instances with same consumer name share work automatically
 	 * - Adapter creates/attaches to durable consumer for load balancing
 	 * - Each message delivered to only one instance
 	 *
-	 * @param topics - Array of type-safe topic references (from Topics namespace)
-	 * @param handler - Effect to process each message (ack on success, nak on error)
-	 * @returns Effect that runs indefinitely, processing messages
-	 * @throws SubscribeError - When subscription fails (consumer creation, connection, etc.)
+	 * @example Subscribing to commands with idempotent handler
 	 *
-	 * @example
-	 * Subscribing to commands with idempotent handler
-	 * ```typescript ignore
+	 * ```typescript
 	 * import * as Effect from 'effect/Effect'
 	 * import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 	 * import { EventBusPort } from '@event-service-agent/platform/ports'
@@ -242,15 +236,21 @@ export interface EventBusPort {
 	 * 			yield* Effect.succeed(undefined)
 	 * 		}).pipe(
 	 * 			// Handler errors cause NAK → redelivery
-	 * 			Effect.catchAll((err) => Effect.logError(err))
+	 * 			Effect.catchAll(err => Effect.logError(err))
 	 * 		)
 	 * 	)
 	 * })
 	 * ```
+	 *
+	 * @param topics - Array of type-safe topic references (from Topics namespace)
+	 * @param handler - Effect to process each message (ack on success, nak on error)
+	 *
+	 * @returns Effect that runs indefinitely, processing messages
+	 * @throws SubscribeError - When subscription fails (consumer creation, connection, etc.)
 	 */
 	readonly subscribe: <E, R>(
 		topics: NonEmptyReadonlyArray<Topics.Type>,
-		handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
+		handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>
 	) => Effect.Effect<void, SubscribeError | E, R>
 }
 
@@ -260,15 +260,20 @@ export interface EventBusPort {
  * Use this to access the EventBusPort from the Effect context.
  *
  * @example
- * ```typescript ignore
+ *
+ * ```typescript
  * const program = Effect.gen(function* () {
- *   const bus = yield* EventBusPort
+ * 	const bus = yield* EventBusPort
  *
- *   const envelope: MessageEnvelope.Type = {
- *     id, type, tenantId, payload, timestampMs
- *   }
+ * 	const envelope: MessageEnvelope.Type = {
+ * 		id,
+ * 		type,
+ * 		tenantId,
+ * 		payload,
+ * 		timestampMs,
+ * 	}
  *
- *   yield* bus.publish([envelope])  // Envelope is self-contained
+ * 	yield* bus.publish([envelope]) // Envelope is self-contained
  * })
  * ```
  */

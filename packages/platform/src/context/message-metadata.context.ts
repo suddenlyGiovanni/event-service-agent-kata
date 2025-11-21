@@ -129,30 +129,32 @@ import type { CorrelationId, EnvelopeId } from '@event-service-agent/schemas/sha
  * parameter).
  *
  * @example
- * 	import * as Effect from 'effect/Effect'
- * 	import * as Option from 'effect/Option'
  *
- * 	import type { CorrelationId, EnvelopeId } from '@event-service-agent/schemas/shared'
+ * ```typescript
+ * import * as Effect from 'effect/Effect'
+ * import * as Option from 'effect/Option'
+ * import type { CorrelationId, EnvelopeId } from '@event-service-agent/schemas/shared'
  *
- * 	// Provision context in workflow
- * 	const program = Effect.gen(function* () {
+ * // Provision context in workflow
+ * const program = Effect.gen(function* () {
  *
- * 	yield* publishEvent(event).pipe(
- * 	  Effect.provideService(MessageMetadata, {
- * 	    correlationId: Option.some(correlationId),
- * 	    causationId: Option.none()
- * 	  })
+ * yield* publishEvent(event).pipe(
+ *   Effect.provideService(MessageMetadata, {
+ *     correlationId: Option.some(correlationId),
+ *     causationId: Option.none()
+ *   })
+ * })
+ *
+ * // Extract in adapter
+ * const adapter = Effect.gen(function* () {
+ * 	const metadata = yield* MessageMetadata
+ *
+ * 	const envelope = new MessageEnvelope({
+ * 		correlationId: metadata.correlationId,
+ *   		causationId: Option.none(),
  * 	})
- *
- * 	// Extract in adapter
- * 	const adapter = Effect.gen(function* () {
- * 		const metadata = yield* MessageMetadata
- *
- * 		const envelope = new MessageEnvelope({
- * 			correlationId: metadata.correlationId,
- * 	  		causationId: Option.none(),
- * 		})
- * 	})
+ * })
+ * ```
  */
 export class MessageMetadata extends Context.Tag('MessageMetadata')<
 	MessageMetadata,
@@ -176,8 +178,7 @@ export class MessageMetadata extends Context.Tag('MessageMetadata')<
 		/**
 		 * Causation identifier (parent message envelope ID)
 		 *
-		 * Links child messages to immediate parent for causality chain
-		 * reconstruction.
+		 * Links child messages to immediate parent for causality chain reconstruction.
 		 *
 		 * - **Some(id)**: Message caused by specific parent message
 		 * - **None**: Message is root cause (no parent)

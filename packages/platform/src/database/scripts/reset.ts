@@ -3,17 +3,15 @@
 /**
  * Database reset script for local development.
  *
- * Drops all tables and re-runs migrations from scratch.
- * Useful for:
+ * Drops all tables and re-runs migrations from scratch. Useful for:
+ *
  * - Testing migrations on clean slate
  * - Fixing corrupted local database
  * - Starting fresh during development
  *
- * ⚠️  WARNING: This script DESTROYS ALL DATA in the database.
- *     Use only for local development, never in production.
+ * ⚠️ WARNING: This script DESTROYS ALL DATA in the database. Use only for local development, never in production.
  *
- * Usage:
- *   bun run db:reset                   # From workspace root
+ * Usage: `bun run db:reset` # From workspace root
  *
  * Environment Variables (.env or shell):
  *   DB_PATH        - Database file path (default: <workspace>/data/db.sqlite)
@@ -25,8 +23,8 @@
  *   Relative paths in .env work correctly when running from workspace root.
  *
  * Exit Codes:
- *   0 - Reset completed successfully
- *   1 - Reset failed (error details logged)
+ *  - 0 - Reset completed successfully
+ *  - 1 - Reset failed (error details logged)
  *
  * @see packages/platform/src/database/sql.ts for migration configuration
  * @see packages/platform/src/database/migrations/ for migration files
@@ -48,6 +46,7 @@ import { SQL } from '../sql.ts'
  * Reset program.
  *
  * Steps:
+ *
  * 1. Connect to database (SQL.Live runs migrations automatically on init)
  * 2. Query all tables from sqlite_master
  * 3. Drop each table including effect_sql_migrations (to clear migration state)
@@ -106,7 +105,7 @@ const program = Effect.gen(function* () {
 const layer = SQL.Live.pipe(
 	Layer.provide(PlatformBun.BunContext.layer),
 	Layer.provide(Logger.minimumLogLevel(LogLevel.All)),
-	Layer.provide(Logger.pretty),
+	Layer.provide(Logger.pretty)
 )
 
 // Execute program with error handling

@@ -53,10 +53,10 @@ describe('SQL Platform Client', () => {
 
 				expect(foreignKeys.length).toBeGreaterThan(0)
 				const serviceCallFk = foreignKeys.find(
-					(fk: { table?: string; from?: string }) => fk.table === 'service_calls' && fk.from === 'service_call_id',
+					(fk: { table?: string; from?: string }) => fk.table === 'service_calls' && fk.from === 'service_call_id'
 				)
 				expect(serviceCallFk).toBeDefined()
-			}).pipe(Effect.provide(SQL.Test)),
+			}).pipe(Effect.provide(SQL.Test))
 		)
 
 		it.scoped('should track migration execution', () =>
@@ -84,7 +84,7 @@ describe('SQL Platform Client', () => {
 				expect(timer).toBeDefined()
 				expect(timer?.migrationId).toBe(3)
 				expect(timer?.name).toBe('timer_schedules_schema')
-			}).pipe(Effect.provide(SQL.Test)),
+			}).pipe(Effect.provide(SQL.Test))
 		)
 	})
 
@@ -100,7 +100,7 @@ describe('SQL Platform Client', () => {
 
 				expect(pragmaResult[0]).toBeDefined()
 				expect(pragmaResult[0]?.foreignKeys).toBe(1) // 1 = ON
-			}).pipe(Effect.provide(SQL.Test)),
+			}).pipe(Effect.provide(SQL.Test))
 		)
 
 		it.scoped('should enforce foreign key constraints (Test layer)', () =>
@@ -123,12 +123,12 @@ describe('SQL Platform Client', () => {
 							Option.match({
 								onNone: () => '',
 								onSome: error => (error.cause instanceof Error ? error.cause.message : String(error.cause)),
-							}),
+							})
 						),
 						onSuccess: () => {
 							throw new Error('Expected FK constraint violation, but INSERT succeeded')
 						},
-					}),
+					})
 				)
 
 				// Verify the error is related to foreign key constraints
@@ -137,7 +137,7 @@ describe('SQL Platform Client', () => {
 					errorMessage.includes('FOREIGN KEY') ||
 					errorMessage.includes('foreign key')
 				expect(isConstraintError).toBe(true)
-			}).pipe(Effect.provide(SQL.Test)),
+			}).pipe(Effect.provide(SQL.Test))
 		)
 	})
 })
