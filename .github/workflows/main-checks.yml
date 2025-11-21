@@ -26,6 +26,16 @@ jobs:
           --max-diagnostics=none \
           --reporter=github
 
+      - name: 💅 Validate comprehensive formatting
+        shell: sh
+        run: |
+          bun run format:all
+          if ! git diff --quiet; then
+            echo "❌ Files need formatting. Run: bun run format:all"
+            git diff --stat
+            exit 1
+          fi
+
   typecheck:
     name: 🔍 Typecheck
     runs-on: ubuntu-latest

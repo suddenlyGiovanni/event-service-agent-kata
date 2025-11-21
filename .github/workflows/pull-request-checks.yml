@@ -25,6 +25,16 @@ jobs:
           --max-diagnostics=none \
           --reporter=github
 
+      - name: 📚 Validate JSDoc formatting
+        shell: sh
+        run: |
+          bun run format:docs:jsdoc
+          if ! git diff --quiet; then
+            echo "❌ JSDoc comments need formatting. Run: bun run format:docs:jsdoc"
+            git diff --stat
+            exit 1
+          fi
+
   typecheck:
     name: 🚨 Typecheck
     runs-on: ubuntu-latest
@@ -61,13 +71,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 📝 Lint Markdown files
-        uses: DavidAnson/markdownlint-cli2-action@v21
-        with:
-          globs: |
-            **/*.md
-            !node_modules/**
-            !**/node_modules/**
+      - name: 🧩 Install dependencies
+        uses: ./.github/actions/setup
+
+      - name: 📝 Validate Markdown formatting
+        shell: sh
+        run: |
+          bun run format:docs:markdown
+          if ! git diff --quiet; then
+            echo "❌ Markdown files need formatting. Run: bun run format:docs:markdown"
+            git diff --stat
+            exit 1
+          fi
 
   tests:
     name: 🧪 Tests
