@@ -42,14 +42,13 @@ jobs:
         run: bun run type-check
 
       - name: 📖 Type-check documentation examples
-        continue-on-error: true
         shell: sh
-        run: bun run docs:type-check
+        run: deno task docs:type-check
 
       - name: 📝 Type-check markdown code blocks
         continue-on-error: true
         shell: sh
-        run: bun run docs:type-check:md
+        run: deno run docs:type-check:md
 
   markdown:
     name: 📋 Markdown
@@ -89,7 +88,7 @@ jobs:
       - name: 📚 Run documentation tests
         continue-on-error: true
         shell: sh
-        run: bun run docs:test
+        run: deno run docs:test
 
   docs:
     name: 📚 Docs
@@ -107,4 +106,4 @@ jobs:
 
       - name: 📚 Validate TSDoc comments
         shell: sh
-        run: bun run docs:check
+        run: deno run docs:check
