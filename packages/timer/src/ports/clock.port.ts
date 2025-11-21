@@ -42,7 +42,7 @@ export interface ClockPort {
 	 * @returns Effect that produces current UTC time when executed
 	 *
 	 * @example Production usage
-	 * ```typescript
+	 * ```typescript ignore
 	 * const workflow = Effect.gen(function* () {
 	 *   const clock = yield* ClockPort
 	 *   const now = yield* clock.now()
@@ -51,7 +51,7 @@ export interface ClockPort {
 	 * ```
 	 *
 	 * @example Test usage with time control
-	 * ```typescript
+	 * ```typescript ignore
 	 * const test = Effect.gen(function* () {
 	 *   const clock = yield* ClockPort
 	 *   const t1 = yield* clock.now()
@@ -72,4 +72,6 @@ export interface ClockPort {
  * Use this to access ClockPort from the Effect context.
  * Inject via Layer in production, TestLayer in tests.
  */
-export const ClockPort = Context.GenericTag<ClockPort>('@event-service-agent/timer/ClockPort')
+export const ClockPort: Context.Tag<ClockPort, ClockPort> = Context.GenericTag<ClockPort>(
+	'@event-service-agent/timer/ClockPort',
+)

@@ -44,6 +44,7 @@
 	},
 	"editor.suggest.preview": true,
 	"files.associations": {
+		".markdownlintignore": "ignore",
 		"*.json": "jsonc"
 	},
 
@@ -67,6 +68,13 @@
 
 	// === Git ===
 	"git.ignoreLimitWarning": true,
+
+	// === Markdown Linting ===
+	"markdownlint.config": {
+		"extends": ".markdownlint.json"
+	},
+	"markdownlint.ignore": [".direnv/**", "node_modules/**", ".git/**"],
+
 	// === Nix + direnv Integration ===
 	// IMPORTANT: Install mkhl.direnv extension for tasks to work correctly
 	// The direnv extension automatically loads .envrc environment (including Bun)

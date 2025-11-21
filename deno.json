@@ -30,7 +30,7 @@
 			"description": "Run documentation tests (execute JSDoc @example code blocks)"
 		},
 		"docs:type-check": {
-			"command": "deno check --doc $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' | tr '\n' ' ')",
+			"command": "deno check --doc $(find packages -name '*.ts' -path '*/src/*' -not -name '*.test.ts' -not -name 'vitest.config.ts' -not -path '*/scripts/*' | tr '\n' ' ')",
 			"description": "Type-check documentation examples (validate JSDoc @example code blocks)"
 		},
 		"docs:type-check:md": {

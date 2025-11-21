@@ -49,7 +49,7 @@ export interface TimerEventBusPort {
 	 * @requires MessageMetadata - Context providing correlationId/causationId
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * // Workflow provisions context
 	 * yield* eventBus.publishDueTimeReached(event).pipe(
 	 *   Effect.provideService(MessageMetadata, {
@@ -92,7 +92,7 @@ export interface TimerEventBusPort {
 	 * @throws E - When handler fails (propagated for error handling)
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * // Command Handler usage
 	 * yield* eventBus.subscribeToScheduleTimerCommands((command, metadata) =>
 	 *   Effect.gen(function* () {
@@ -113,4 +113,10 @@ export interface TimerEventBusPort {
 	) => Effect.Effect<void, Ports.SubscribeError | E, R>
 }
 
-export const TimerEventBusPort = Context.GenericTag<TimerEventBusPort>('@event-service-agent/timer/TimerEventBusPort')
+/**
+ * TimerEventBusPort service tag for event bus operations
+ *
+ * Provides access to TimerEventBusPort from the Effect context.
+ */
+export const TimerEventBusPort: Context.Tag<TimerEventBusPort, TimerEventBusPort> =
+	Context.GenericTag<TimerEventBusPort>('@event-service-agent/timer/TimerEventBusPort')

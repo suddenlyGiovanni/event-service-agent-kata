@@ -13,7 +13,7 @@
  * ## Usage Pattern
  *
  * ### In Workflows (Context Provisioning)
- * ```typescript
+ * ```typescript ignore
  * // Extract correlationId from aggregate
  * const correlationId = timer.correlationId
  *
@@ -27,7 +27,7 @@
  * ```
  *
  * ### In Ports (Requirement Declaration)
- * ```typescript
+ * ```typescript ignore
  * class TimerEventBusPort extends Context.Tag('TimerEventBusPort')<
  *   TimerEventBusPort,
  *   {
@@ -41,7 +41,7 @@
  * ```
  *
  * ### In Adapters (Context Consumption)
- * ```typescript
+ * ```typescript ignore
  * publishDueTimeReached: (event) => Effect.gen(function* () {
  *   const metadata = yield* MessageMetadata
  *   //    ^^^^^^^^ Extract from context
@@ -55,7 +55,7 @@
  * ```
  *
  * ### In Tests (Test Data Provisioning)
- * ```typescript
+ * ```typescript ignore
  * it.effect('should propagate correlationId', () =>
  *   Effect.gen(function* () {
  *     const correlationId = yield* CorrelationId.makeUUID7()

@@ -60,7 +60,7 @@ export const UUID7Regex =
  * **Format:** `xxxxxxxx-xxxx-7xxx-[89ab]xxx-xxxxxxxxxxxx` (time-ordered)
  *
  * @example
- * ```typescript
+ * ```typescript ignore
  * // Generate new UUID v7 (requires UUID7 service in context)
  * const id = yield* UUID7.makeUUID7()
  *

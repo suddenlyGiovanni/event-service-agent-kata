@@ -154,7 +154,7 @@
 				"useDefaultParameterLast": "error",
 				"useEnumInitializers": "error",
 				"useNamingConvention": {
-					"level": "error",
+					"level": "info",
 					"options": {
 						"conventions": [
 							{

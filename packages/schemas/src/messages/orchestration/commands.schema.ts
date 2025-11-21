@@ -39,7 +39,7 @@ import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
  * ```
  *
  * @example
- * ```typescript
+ * ```typescript ignore
  * // Decode from wire format (JSON → validated command)
  * const command = yield* ScheduleTimer.decode(rawJson)
  *

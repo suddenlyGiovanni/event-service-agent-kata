@@ -1,5 +1,9 @@
 {
 	"dependencies": {
+		"@effect/platform": "catalog:effect",
+		"@effect/platform-bun": "catalog:effect",
+		"@effect/sql": "catalog:effect",
+		"@effect/sql-sqlite-bun": "catalog:effect",
 		"@event-service-agent/schemas": "workspace:*",
 		"effect": "catalog:effect"
 	},
@@ -13,6 +17,7 @@
 	},
 	"exports": {
 		"./context": "./src/context/index.ts",
+		"./database": "./src/database/sql.ts",
 		"./ports": "./src/ports/index.ts",
 		"./routing": "./src/routing/index.ts",
 		"./uuid7": "./src/uuid7.service.ts"

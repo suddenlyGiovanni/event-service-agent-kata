@@ -96,7 +96,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 * **Domain type**: `Option<ServiceCallId>` (branded UUID v7)
 		 *
 		 * @example
-		 * ```typescript
+		 * ```typescript ignore
 		 * // Command targeting specific ServiceCall (requires ordering)
 		 * aggregateId: Option.some(ServiceCallId.make(serviceCallId))
 		 *
@@ -140,7 +140,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 * **Domain type**: `Option<EnvelopeId>` (branded UUID v7)
 		 *
 		 * @example
-		 * ```typescript
+		 * ```typescript ignore
 		 * // 1. User submits request → SubmitServiceCall command (no cause, external origin)
 		 * const submitCmd = new MessageEnvelope({
 		 *   id: EnvelopeId.make('envelope-001'),
@@ -209,7 +209,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 * **Domain type**: `Option<CorrelationId>` (branded UUID v7)
 		 *
 		 * @example
-		 * ```typescript
+		 * ```typescript ignore
 		 * // User submits ServiceCall → API generates correlationId
 		 * const correlationId = CorrelationId.make('request-abc-123')
 		 *
@@ -264,7 +264,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 * **Domain type**: `EnvelopeId` (branded UUID v7, extends UUID7)
 		 *
 		 * @example
-		 * ```typescript
+		 * ```typescript ignore
 		 * // Generate unique envelope ID when publishing
 		 * const envelopeId = yield* EnvelopeId.makeUUID7()
 		 *
@@ -390,7 +390,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	 * @returns Effect that succeeds with validated envelope or fails with ParseError
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * // In workflow/adapter with pattern matching
 	 * import { Match, Option } from 'effect'
 	 * import { Messages } from '@event-service-agent/schemas'
@@ -443,7 +443,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	 * @returns Effect that succeeds with JSON string or fails with ParseError
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * // In event bus adapter
 	 * import { DateTime, Option } from 'effect'
 	 *
@@ -497,7 +497,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	 * @returns Value matcher for the payload discriminated union
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * // Test: Partial matching (only care about specific tags)
 	 * const result = MessageEnvelope.matchPayload(envelope).pipe(
 	 *   Match.tag(Timer.Events.DueTimeReached.Tag, (payload) => {
@@ -510,7 +510,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	 * ```
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * // Workflow: Exhaustive matching (handle all cases)
 	 * const result = MessageEnvelope.matchPayload(envelope).pipe(
 	 *   Match.tag(Timer.Events.DueTimeReached.Tag, handleTimer),

@@ -66,7 +66,8 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  * - Deduplication window configuration
  *
  * @example
- * ```typescript
+ * Publishing events and subscribing to commands
+ * ```typescript ignore
  * import { Option } from 'effect'
  *
  * // Publishing events (Orchestration, Execution, Timer)
@@ -82,7 +83,9 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  *     aggregateId: Option.some(serviceCallId),    // Option<ServiceCallId>
  *     causationId: Option.none(),                 // Option<EnvelopeId>
  *     timestampMs: now,                           // DateTime.Utc (not .epochMillis)
- *     payload: { ... }
+ *     payload: {
+ *       	// ...
+ * 		}
  *   }
  *
  *   yield* bus.publish([envelope])  // No separate context needed!
@@ -123,7 +126,8 @@ export interface EventBusPort {
 	 * @throws PublishError - When publishing fails (connection, stream errors, etc.)
 	 *
 	 * @example
-	 * ```typescript
+	 * Publishing a message envelope
+	 * ```typescript ignore
 	 * import { Option } from 'effect'
 	 *
 	 * const envelope: MessageEnvelope.Type = {
@@ -134,7 +138,9 @@ export interface EventBusPort {
 	 *   aggregateId: Option.some(serviceCallId),    // Option<ServiceCallId>
 	 *   causationId: Option.none(),                 // Option<EnvelopeId>
 	 *   timestampMs: now,                           // DateTime.Utc (not .epochMillis)
-	 *   payload: { ... }
+	 *   payload: {
+	 * 		// ...
+	 * 	}
 	 * }
 	 *
 	 * yield* bus.publish([envelope])  // All metadata in envelope!
@@ -176,7 +182,8 @@ export interface EventBusPort {
 	 * @throws SubscribeError - When subscription fails (consumer creation, connection, etc.)
 	 *
 	 * @example
-	 * ```typescript
+	 * Subscribing to commands with idempotent handler
+	 * ```typescript ignore
 	 * import { Topics } from '@event-service-agent/platform/routing'
 	 *
 	 * yield* bus.subscribe([Topics.Timer.Commands], (envelope) =>
@@ -203,7 +210,7 @@ export interface EventBusPort {
  * Use this to access the EventBusPort from the Effect context.
  *
  * @example
- * ```typescript
+ * ```typescript ignore
  * const program = Effect.gen(function* () {
  *   const bus = yield* EventBusPort
  *

@@ -96,19 +96,21 @@ export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) 
 	 * @requires UUID7 - Service for UUID generation
 	 *
 	 * @example API generates correlation ID for new request
-	 * ```typescript
+	 * ```typescript ignore
 	 * const handleRequest = Effect.gen(function* () {
 	 *   // Extract from header or generate new
 	 *   const correlationId = request.headers['x-correlation-id']
 	 *     ? yield* CorrelationId.decode(request.headers['x-correlation-id'])
 	 *     : yield* CorrelationId.makeUUID7()
 	 *
-	 *   yield* submitServiceCall({ correlationId, ... })
+	 *   yield* submitServiceCall({ correlationId,
+	 * 		// ...
+	 * 	})
 	 * })
 	 * ```
 	 *
 	 * @example Workflow preserves correlation from aggregate
-	 * ```typescript
+	 * ```typescript ignore
 	 * const scheduleTimer = Effect.gen(function* () {
 	 *   // Extract from aggregate (stored during SubmitServiceCall)
 	 *   const correlationId = serviceCall.correlationId

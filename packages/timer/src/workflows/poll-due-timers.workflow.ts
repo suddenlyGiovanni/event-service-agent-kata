@@ -146,7 +146,10 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
 		}),
 	)
 
-	yield* persistence.markFired(timer.tenantId, timer.serviceCallId, now)
+	yield* persistence.markFired({
+		key: { serviceCallId: timer.serviceCallId, tenantId: timer.tenantId },
+		reachedAt: now,
+	})
 
 	yield* Effect.logDebug('Timer fired successfully', {
 		dueAt: DateTime.formatIsoDateUtc(timer.dueAt),
@@ -168,7 +171,7 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
 export const pollDueTimersWorkflow: () => Effect.Effect<
 	void,
 	Ports.PersistenceError | BatchProcessingError,
-	Ports.TimerEventBusPort | Ports.TimerPersistencePort | Ports.ClockPort
+	Ports.TimerPersistencePort | Ports.ClockPort | Ports.TimerEventBusPort
 > = Effect.fn('Timer.PollDueTimersWorkflow')(function* () {
 	const persistence = yield* Ports.TimerPersistencePort
 	const clock = yield* Ports.ClockPort

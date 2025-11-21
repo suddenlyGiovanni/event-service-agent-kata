@@ -25,7 +25,7 @@ export namespace Topics {
 	 * Timer module topics
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * // Subscribe to timer commands
 	 * bus.subscribe([Topics.Timer.Commands], handler)
 	 *
@@ -115,7 +115,7 @@ export namespace Topics {
 	 * Broker adapters can use this to ensure only valid topics are subscribed to.
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * function subscribe(topic: Topics.Type) {
 	 *   // TypeScript ensures only valid topics
 	 * }

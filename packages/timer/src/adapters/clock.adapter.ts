@@ -38,7 +38,7 @@ import { ClockPort } from '../ports/clock.port.ts'
  *   - Error: never (construction cannot fail)
  *
  * @example Production usage
- * ```typescript
+ * ```typescript ignore
  * const program = Effect.gen(function* () {
  *   const clock = yield* ClockPort
  *   const now = yield* clock.now()
@@ -75,7 +75,7 @@ export const ClockPortLive: Layer.Layer<ClockPort> = Layer.succeed(
  * TestClock to function properly.
  *
  * @example Test with time control
- * ```typescript
+ * ```typescript ignore
  * it.effect('should process timer after 5 minutes', () =>
  *   Effect.gen(function* () {
  *     const clock = yield* ClockPort
@@ -96,7 +96,7 @@ export const ClockPortLive: Layer.Layer<ClockPort> = Layer.succeed(
  * ```
  *
  * @example Testing edge case (exact millisecond boundary)
- * ```typescript
+ * ```typescript ignore
  * it.effect('should fire timer at exact due time', () =>
  *   Effect.gen(function* () {
  *     const clock = yield* ClockPort

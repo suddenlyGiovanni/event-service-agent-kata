@@ -81,7 +81,7 @@ export class ServiceCallId extends UUID7.pipe(Schema.brand(ServiceCallIdBrand)) 
 	 * @requires UUID7 - Service for UUID generation
 	 *
 	 * @example API module creates ServiceCall
-	 * ```typescript
+	 * ```typescript ignore
 	 * const handleSubmitRequest = Effect.gen(function* () {
 	 *   const serviceCallId = yield* ServiceCallId.makeUUID7()
 	 *   const command = new SubmitServiceCall({

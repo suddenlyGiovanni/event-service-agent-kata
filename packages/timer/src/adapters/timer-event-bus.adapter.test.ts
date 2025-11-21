@@ -356,10 +356,7 @@ describe('TimerEventBus', () => {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
-					) =>
-						Effect.gen(function* () {
-							yield* handler(envelope)
-						}) as Effect.Effect<void, E, R>,
+					) => handler(envelope),
 				})
 
 				const TimerEventBusLive = Layer.provide(
@@ -415,10 +412,7 @@ describe('TimerEventBus', () => {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
-					) =>
-						Effect.gen(function* () {
-							yield* handler(envelope)
-						}) as Effect.Effect<void, E, R>,
+					) => handler(envelope),
 				})
 
 				const TimerEventBusLive = Layer.provide(
@@ -467,10 +461,7 @@ describe('TimerEventBus', () => {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
-					) =>
-						Effect.gen(function* () {
-							yield* handler(envelope)
-						}) as Effect.Effect<void, E, R>,
+					) => handler(envelope),
 				})
 
 				const TimerEventBusLive = Layer.provide(
@@ -518,10 +509,7 @@ describe('TimerEventBus', () => {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
-					) =>
-						Effect.gen(function* () {
-							yield* handler(envelope)
-						}) as Effect.Effect<void, E, R>,
+					) => handler(envelope),
 				})
 
 				const TimerEventBusLive = Layer.provide(
@@ -538,52 +526,6 @@ describe('TimerEventBus', () => {
 
 					// Assert
 					expect(Either.isLeft(result)).toBe(true)
-				}).pipe(Effect.provide(TimerEventBusLive))
-			})
-
-			// TODO: This test is no longer relevant after removing decode logic from adapter
-			// The EventBusPort (platform layer) is now responsible for decoding/validation
-			// The TimerEventBus adapter assumes it receives valid, decoded envelopes
-			it.skip('should map decode errors to SubscribeError', () => {
-				const now = DateTime.unsafeNow()
-
-				// Invalid payload (missing required fields)
-				const envelope = {
-					id: EnvelopeId.make('12345678-0000-7000-8000-000000000000'),
-					payload: {
-						_tag: Messages.Orchestration.Commands.ScheduleTimer.Tag,
-						// Missing dueAt, tenantId, serviceCallId
-					},
-					tenantId,
-					timestampMs: now,
-					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
-				} as MessageEnvelope.Type
-
-				const EventBusTest = Layer.mock(Ports.EventBusPort, {
-					subscribe: <E, R>(
-						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
-					) =>
-						Effect.gen(function* () {
-							yield* handler(envelope)
-						}) as Effect.Effect<void, E, R>,
-				})
-
-				const TimerEventBusLive = Layer.provide(
-					AdaptersTimer.TimerEventBus.Live,
-					Layer.merge(EventBusTest, BaseTestLayers),
-				)
-
-				return Effect.gen(function* () {
-					// Act
-					const timerEventBus = yield* Ports.TimerEventBusPort
-					const result = yield* Effect.either(timerEventBus.subscribeToScheduleTimerCommands(() => Effect.void))
-
-					// Assert
-					expect(Either.isLeft(result)).toBe(true)
-					if (Either.isLeft(result)) {
-						expect(result.left._tag).toBe('SubscribeError')
-					}
 				}).pipe(Effect.provide(TimerEventBusLive))
 			})
 
