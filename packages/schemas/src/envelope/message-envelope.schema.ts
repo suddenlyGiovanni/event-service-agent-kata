@@ -38,7 +38,7 @@ export const DomainMessage = Schema.Union(
 	Messages.Orchestration.Commands.Commands,
 	Messages.Orchestration.Events.Events,
 	Messages.Execution.Events.Events,
-	Messages.Api.Commands.Commands
+	Messages.Api.Commands.Commands,
 )
 
 /**
@@ -110,7 +110,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 */
 		aggregateId: Schema.optionalWith(ServiceCallId, {
 			as: 'Option',
-			exact: true
+			exact: true,
 		}),
 
 		/**
@@ -176,7 +176,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 */
 		causationId: Schema.optionalWith(EnvelopeId, {
 			as: 'Option',
-			exact: true
+			exact: true,
 		}),
 
 		/**
@@ -237,7 +237,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 */
 		correlationId: Schema.optionalWith(CorrelationId, {
 			as: 'Option',
-			exact: true
+			exact: true,
 		}),
 
 		/**
@@ -350,8 +350,8 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 			Messages.Execution.Events.ExecutionSucceeded.Tag,
 			Messages.Execution.Events.ExecutionFailed.Tag,
 			// API Commands
-			Messages.Api.Commands.SubmitServiceCall.Tag
-		)
+			Messages.Api.Commands.SubmitServiceCall.Tag,
+		),
 	}).pipe(
 		/**
 		 * **Cross-Field Validation Filter**
@@ -378,9 +378,9 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 */
 		Schema.filter(
 			({ type, payload }) =>
-				type === payload._tag || `type must match payload._tag: expected "${payload._tag}", got "${type}"`
-		)
-	)
+				type === payload._tag || `type must match payload._tag: expected "${payload._tag}", got "${type}"`,
+		),
+	),
 ) {
 	/**
 	 * Decode a JSON string into a validated MessageEnvelope with typed payload.
@@ -439,7 +439,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	 */
 	static readonly decodeJson: (
 		jsonString: string,
-		options?: SchemaAst.ParseOptions
+		options?: SchemaAst.ParseOptions,
 	) => Effect.Effect<MessageEnvelope.Type, ParseResult.ParseError> = Schema.decode(Schema.parseJson(MessageEnvelope))
 
 	/**
@@ -492,7 +492,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	 */
 	static readonly encodeJson = (
 		envelope: MessageEnvelope.Type,
-		options?: SchemaAst.ParseOptions
+		options?: SchemaAst.ParseOptions,
 	): Effect.Effect<string, ParseResult.ParseError, never> =>
 		pipe(envelope, Schema.encode(MessageEnvelope, options), Effect.map(JSON.stringify))
 
@@ -547,7 +547,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	 * @see ADR-0011 for envelope schema design
 	 */
 	static readonly matchPayload: <T extends MessageEnvelope.Type>(
-		envelope: T
+		envelope: T,
 	) => Match.Matcher<T['payload'], Match.Types.Without<never>, T['payload'], never, T['payload']> = (envelope) =>
 		Match.value(envelope.payload)
 }

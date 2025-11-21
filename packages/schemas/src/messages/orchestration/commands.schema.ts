@@ -58,7 +58,7 @@ import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
 export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()('ScheduleTimer', {
 	...ServiceCallEventBase.fields,
 
-	dueAt: Schema.DateTimeUtc
+	dueAt: Schema.DateTimeUtc,
 }) {
 	/**
 	 * Decode from unknown/wire format to validated command
@@ -121,7 +121,7 @@ export class StartExecution extends Schema.TaggedClass<StartExecution>()('StartE
 	 * The full request body is stored in the database and retrieved by serviceCallId. This keeps command payloads small
 	 * and avoids large messages in the broker.
 	 */
-	requestSpec: RequestSpecWithoutBody
+	requestSpec: RequestSpecWithoutBody,
 }) {
 	/**
 	 * Decode from wire format to validated command

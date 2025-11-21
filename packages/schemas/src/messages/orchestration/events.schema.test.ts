@@ -39,7 +39,7 @@ describe('Orchestration Events Schema', () => {
 
 				expect(DateTime.isDateTime(event.submittedAt)).toBe(true)
 				expect(DateTime.isUtc(event.submittedAt)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('decodes event with optional fields', () =>
@@ -64,7 +64,7 @@ describe('Orchestration Events Schema', () => {
 				expectTypeOf(event).toEqualTypeOf<Orchestration.Events.ServiceCallSubmitted.Type>()
 				expect(event.tags).toEqual(['urgent', 'production'])
 				expect(event.requestSpec.bodySnippet).toBe('Request body preview...')
-			})
+			}),
 		)
 
 		it.effect('rejects invalid submittedAt timestamp', () =>
@@ -80,7 +80,7 @@ describe('Orchestration Events Schema', () => {
 
 				const exit = yield* Effect.exit(Orchestration.Events.ServiceCallSubmitted.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 	})
 
@@ -102,7 +102,7 @@ describe('Orchestration Events Schema', () => {
 				expect(DateTime.isDateTime(event.dueAt)).toBe(true)
 				expect(DateTime.isUtc(event.dueAt)).toBe(true)
 				expect(DateTime.Equivalence(event.dueAt, DateTime.unsafeMake(dto.dueAt))).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('rejects invalid dueAt format', () =>
@@ -116,7 +116,7 @@ describe('Orchestration Events Schema', () => {
 
 				const exit = yield* Effect.exit(Orchestration.Events.ServiceCallScheduled.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('encodes domain instance to DTO', () =>
@@ -135,7 +135,7 @@ describe('Orchestration Events Schema', () => {
 				expectTypeOf(dto).toEqualTypeOf<Orchestration.Events.ServiceCallScheduled.Dto>()
 				expect(dto._tag).toBe(Orchestration.Events.ServiceCallScheduled.Tag)
 				expect(dto.dueAt).toBe(dueAt)
-			})
+			}),
 		)
 	})
 
@@ -157,7 +157,7 @@ describe('Orchestration Events Schema', () => {
 				expect(DateTime.isDateTime(event.startedAt)).toBe(true)
 				expect(DateTime.isUtc(event.startedAt)).toBe(true)
 				expect(DateTime.Equivalence(event.startedAt, DateTime.unsafeMake(dto.startedAt))).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('rejects invalid startedAt timestamp', () =>
@@ -171,7 +171,7 @@ describe('Orchestration Events Schema', () => {
 
 				const exit = yield* Effect.exit(Orchestration.Events.ServiceCallRunning.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 	})
 
@@ -196,7 +196,7 @@ describe('Orchestration Events Schema', () => {
 
 				expect(DateTime.isDateTime(event.finishedAt)).toBe(true)
 				expect(DateTime.isUtc(event.finishedAt)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('decodes event with optional responseMeta fields', () =>
@@ -219,7 +219,7 @@ describe('Orchestration Events Schema', () => {
 				expectTypeOf(event).toEqualTypeOf<Orchestration.Events.ServiceCallSucceeded.Type>()
 				expect(event.responseMeta.latencyMs).toBe(1500)
 				expect(event.responseMeta.bodySnippet).toBe('Success response...')
-			})
+			}),
 		)
 
 		it.effect('rejects invalid status code type', () =>
@@ -236,7 +236,7 @@ describe('Orchestration Events Schema', () => {
 
 				const exit = yield* Effect.exit(Orchestration.Events.ServiceCallSucceeded.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('encodes domain instance to DTO', () =>
@@ -256,7 +256,7 @@ describe('Orchestration Events Schema', () => {
 				expectTypeOf(dto).toEqualTypeOf<Orchestration.Events.ServiceCallSucceeded.Dto>()
 				expect(dto._tag).toBe(Orchestration.Events.ServiceCallSucceeded.Tag)
 				expect(dto.responseMeta.status).toBe(200)
-			})
+			}),
 		)
 	})
 
@@ -283,7 +283,7 @@ describe('Orchestration Events Schema', () => {
 
 				expect(DateTime.isDateTime(event.finishedAt)).toBe(true)
 				expect(DateTime.isUtc(event.finishedAt)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('decodes event with optional errorMeta fields', () =>
@@ -309,7 +309,7 @@ describe('Orchestration Events Schema', () => {
 					retryable: false,
 					statusCode: 500,
 				})
-			})
+			}),
 		)
 
 		it.effect('rejects missing required errorMeta.kind', () =>
@@ -326,7 +326,7 @@ describe('Orchestration Events Schema', () => {
 
 				const exit = yield* Effect.exit(Orchestration.Events.ServiceCallFailed.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('encodes domain instance to DTO', () =>
@@ -349,7 +349,7 @@ describe('Orchestration Events Schema', () => {
 				expectTypeOf(dto).toEqualTypeOf<Orchestration.Events.ServiceCallFailed.Dto>()
 				expect(dto._tag).toBe(Orchestration.Events.ServiceCallFailed.Tag)
 				expect(dto.errorMeta.kind).toBe('Timeout')
-			})
+			}),
 		)
 	})
 
@@ -367,7 +367,7 @@ describe('Orchestration Events Schema', () => {
 
 				const event = yield* Schema.decode(Orchestration.Events.Events)(dto)
 				expect(event._tag).toBe(Orchestration.Events.ServiceCallSubmitted.Tag)
-			})
+			}),
 		)
 
 		it.effect('accepts ServiceCallScheduled', () =>
@@ -381,7 +381,7 @@ describe('Orchestration Events Schema', () => {
 
 				const event = yield* Schema.decode(Orchestration.Events.Events)(dto)
 				expect(event._tag).toBe(Orchestration.Events.ServiceCallScheduled.Tag)
-			})
+			}),
 		)
 
 		it.effect('accepts ServiceCallRunning', () =>
@@ -395,7 +395,7 @@ describe('Orchestration Events Schema', () => {
 
 				const event = yield* Schema.decode(Orchestration.Events.Events)(dto)
 				expect(event._tag).toBe(Orchestration.Events.ServiceCallRunning.Tag)
-			})
+			}),
 		)
 
 		it.effect('accepts ServiceCallSucceeded', () =>
@@ -410,7 +410,7 @@ describe('Orchestration Events Schema', () => {
 
 				const event = yield* Schema.decode(Orchestration.Events.Events)(dto)
 				expect(event._tag).toBe(Orchestration.Events.ServiceCallSucceeded.Tag)
-			})
+			}),
 		)
 
 		it.effect('accepts ServiceCallFailed', () =>
@@ -425,7 +425,7 @@ describe('Orchestration Events Schema', () => {
 
 				const event = yield* Schema.decode(Orchestration.Events.Events)(dto)
 				expect(event._tag).toBe(Orchestration.Events.ServiceCallFailed.Tag)
-			})
+			}),
 		)
 
 		it.effect('rejects invalid _tag', () =>
@@ -439,7 +439,7 @@ describe('Orchestration Events Schema', () => {
 				// @ts-expect-error Testing invalid _tag
 				const exit = yield* Effect.exit(Schema.decode(Orchestration.Events.Events)(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 	})
 })

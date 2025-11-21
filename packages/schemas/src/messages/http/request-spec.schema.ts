@@ -8,7 +8,7 @@ export const RequestSpec = Schema.Struct({
 	body: Schema.optional(Schema.String),
 	headers: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.String })),
 	method: Schema.String,
-	url: Schema.String
+	url: Schema.String,
 })
 
 /**
@@ -25,7 +25,7 @@ export const RequestSpecWithoutBody = Schema.Struct({
 	bodySnippet: Schema.optional(Schema.String),
 	headers: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.String })),
 	method: Schema.String,
-	url: Schema.String
+	url: Schema.String,
 })
 
 /**

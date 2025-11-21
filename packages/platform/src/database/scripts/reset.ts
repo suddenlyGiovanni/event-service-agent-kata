@@ -109,7 +109,7 @@ const program = Effect.gen(function* () {
 const layer = SQL.Live.pipe(
 	Layer.provide(PlatformBun.BunContext.layer),
 	Layer.provide(Logger.minimumLogLevel(LogLevel.All)),
-	Layer.provide(Logger.pretty)
+	Layer.provide(Logger.pretty),
 )
 
 // Execute program with error handling

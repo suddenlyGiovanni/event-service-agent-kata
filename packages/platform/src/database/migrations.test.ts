@@ -20,8 +20,8 @@ import { SQL } from './sql.ts'
 
 describe('Platform Database Migrations', () => {
 	/**
-	 * Base test layers with SQL.Test for fresh database per test.
-	 * Using it.scoped() ensures each test gets isolated database instance.
+	 * Base test layers with SQL.Test for fresh database per test. Using it.scoped() ensures each test gets isolated
+	 * database instance.
 	 */
 	const BaseTestLayers = Layer.provide(SQL.Test, PlatformBun.BunContext.layer)
 
@@ -32,7 +32,7 @@ describe('Platform Database Migrations', () => {
 				const sql = yield* Sql.SqlClient.SqlClient
 				const result = yield* sql`SELECT 1 as test`
 				expect(result).toHaveLength(1)
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should create service_calls table', () =>
@@ -48,7 +48,7 @@ describe('Platform Database Migrations', () => {
 
 				expect(tables).toHaveLength(1)
 				expect(tables[0]?.['name']).toBe('service_calls')
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should create timer_schedules table', () =>
@@ -63,7 +63,7 @@ describe('Platform Database Migrations', () => {
 
 				expect(tables).toHaveLength(1)
 				expect(tables[0]?.['name']).toBe('timer_schedules')
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should create http_execution_log table', () =>
@@ -78,7 +78,7 @@ describe('Platform Database Migrations', () => {
 
 				expect(tables).toHaveLength(1)
 				expect(tables[0]?.['name']).toBe('http_execution_log')
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should create outbox table', () =>
@@ -93,7 +93,7 @@ describe('Platform Database Migrations', () => {
 
 				expect(tables).toHaveLength(1)
 				expect(tables[0]?.['name']).toBe('outbox')
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should create effect_sql_migrations tracking table', () =>
@@ -108,7 +108,7 @@ describe('Platform Database Migrations', () => {
 
 				expect(tables).toHaveLength(1)
 				expect(tables[0]?.['name']).toBe('effect_sql_migrations')
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should track bootstrap migration as executed', () =>
@@ -127,7 +127,7 @@ describe('Platform Database Migrations', () => {
 				const bootstrap = migrations[0]
 				expect(bootstrap?.['migrationId']).toBe(1)
 				expect(bootstrap?.['name']).toBe('bootstrap_schema')
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should discover and execute migrations from all packages', () =>
@@ -144,15 +144,15 @@ describe('Platform Database Migrations', () => {
 				expect(migrations.length).toBeGreaterThanOrEqual(2)
 
 				// Verify bootstrap migration
-				const bootstrap = migrations.find(m => m['name'] === 'bootstrap_schema')
+				const bootstrap = migrations.find((m) => m['name'] === 'bootstrap_schema')
 				expect(bootstrap).toBeDefined()
 				expect(bootstrap?.['migrationId']).toBe(1)
 
 				// Verify timer migration
-				const timer = migrations.find(m => m['name'] === 'timer_schedules_schema')
+				const timer = migrations.find((m) => m['name'] === 'timer_schedules_schema')
 				expect(timer).toBeDefined()
 				expect(timer?.['migrationId']).toBe(3)
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
@@ -166,7 +166,7 @@ describe('Platform Database Migrations', () => {
 					FROM pragma_table_info('timer_schedules')
 				`
 
-				const columnNames = columns.map(c => c['name'])
+				const columnNames = columns.map((c) => c['name'])
 
 				// Verify all Timer domain columns were added
 				expect(columnNames).toContain('correlation_id')
@@ -177,16 +177,16 @@ describe('Platform Database Migrations', () => {
 
 				// Verify NOT NULL constraints
 				// correlation_id is nullable (Option<CorrelationId> in domain model)
-				const correlationId = columns.find(c => c['name'] === 'correlation_id')
+				const correlationId = columns.find((c) => c['name'] === 'correlation_id')
 				expect(correlationId?.['notnull']).toBe(0)
 
-				const dueAt = columns.find(c => c['name'] === 'due_at')
+				const dueAt = columns.find((c) => c['name'] === 'due_at')
 				expect(dueAt?.['notnull']).toBe(1)
 
-				const state = columns.find(c => c['name'] === 'state')
+				const state = columns.find((c) => c['name'] === 'state')
 				expect(state?.['notnull']).toBe(1)
 				expect(state?.['dfltValue']).toBe("'Scheduled'")
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should create polling index on (tenant_id, state, due_at)', () =>
@@ -202,7 +202,7 @@ describe('Platform Database Migrations', () => {
 				`
 
 				expect(indexes).toHaveLength(1)
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should create correlation_id index', () =>
@@ -218,7 +218,7 @@ describe('Platform Database Migrations', () => {
 				`
 
 				expect(indexes).toHaveLength(1)
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should enforce state CHECK constraint', () =>
@@ -238,12 +238,12 @@ describe('Platform Database Migrations', () => {
 						(tenant_id, service_call_id, correlation_id, due_at, registered_at, state)
 						VALUES 
 						('tenant-123', 'call-123', 'corr-123', '2025-01-01T00:00:00Z', '2025-01-01T00:00:00Z', 'InvalidState')
-					`
+					`,
 				)
 
 				// Should fail due to CHECK constraint
 				expect(result._tag).toBe('Left')
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
@@ -264,7 +264,7 @@ describe('Platform Database Migrations', () => {
 				expect(columns).toHaveLength(2)
 				expect(columns[0]?.['name']).toBe('tenant_id')
 				expect(columns[1]?.['name']).toBe('service_call_id')
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('timer_schedules should have foreign key to service_calls', () =>
@@ -283,16 +283,16 @@ describe('Platform Database Migrations', () => {
 				// Verify both columns reference service_calls
 				const fkTable = foreignKeys[0]?.['table']
 				expect(fkTable).toBe('service_calls')
-				expect(foreignKeys.every(fk => fk['table'] === 'service_calls')).toBe(true)
+				expect(foreignKeys.every((fk) => fk['table'] === 'service_calls')).toBe(true)
 
 				// Verify FK columns (order matches definition)
-				const fromColumns = foreignKeys.map(fk => fk['from'])
-				const toColumns = foreignKeys.map(fk => fk['to'])
+				const fromColumns = foreignKeys.map((fk) => fk['from'])
+				const toColumns = foreignKeys.map((fk) => fk['to'])
 				expect(fromColumns).toContain('tenant_id')
 				expect(fromColumns).toContain('service_call_id')
 				expect(toColumns).toContain('tenant_id')
 				expect(toColumns).toContain('service_call_id')
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('outbox should have correct primary key and index', () =>
@@ -317,7 +317,7 @@ describe('Platform Database Migrations', () => {
 					AND name LIKE '%published%'
 				`
 				expect(indexes.length).toBeGreaterThanOrEqual(1)
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
@@ -330,7 +330,7 @@ describe('Platform Database Migrations', () => {
 
 				expect(result).toHaveLength(1)
 				expect(result[0]?.['foreignKeys']).toBe(1) // 1 = ON
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should have MEMORY journal mode (in-memory database)', () =>
@@ -345,7 +345,7 @@ describe('Platform Database Migrations', () => {
 				*/
 				expect(result).toHaveLength(1)
 				expect(result[0]?.['journalMode']?.toString().toLowerCase()).toBe('memory')
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should have NORMAL synchronous mode', () =>
@@ -356,7 +356,7 @@ describe('Platform Database Migrations', () => {
 
 				expect(result).toHaveLength(1)
 				expect(result[0]?.['synchronous']).toBe(1) // 1 = NORMAL
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should have MEMORY temp_store', () =>
@@ -367,7 +367,7 @@ describe('Platform Database Migrations', () => {
 
 				expect(result).toHaveLength(1)
 				expect(result[0]?.['tempStore']).toBe(2) // 2 = MEMORY
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
@@ -392,12 +392,12 @@ describe('Platform Database Migrations', () => {
                       '2025-01-01T00:00:00.000Z',
                       '2025-01-01T00:00:00.000Z',
                       'Scheduled')
-					`
+					`,
 				)
 
 				// Should fail due to FK constraint violation (service_call doesn't exist)
 				expect(result._tag).toBe('Left')
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should allow valid insertions', () =>
@@ -430,7 +430,7 @@ describe('Platform Database Migrations', () => {
 				expect(timers[0]?.['serviceCallId']).toBe('call-123')
 				expect(timers[0]?.['correlationId']).toBe('corr-123')
 				expect(timers[0]?.['state']).toBe('Scheduled')
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 })

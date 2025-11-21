@@ -149,7 +149,7 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 	 * @requires UUID7 - Service for UUID generation
 	 */
 	static readonly makeUUID7: (
-		time?: DateTime.Utc
+		time?: DateTime.Utc,
 	) => Effect.Effect<EnvelopeId.Type, ParseResult.ParseError, Service.UUID7> = (time) =>
 		Service.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
@@ -157,7 +157,7 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 			 * Use make() instead of decode() — UUID7 service already validates.
 			 * Avoids redundant validation for performance.
 			 */
-			Effect.map((uuid7: UUID7.Type): EnvelopeId.Type => EnvelopeId.make(uuid7))
+			Effect.map((uuid7: UUID7.Type): EnvelopeId.Type => EnvelopeId.make(uuid7)),
 		)
 
 	/**

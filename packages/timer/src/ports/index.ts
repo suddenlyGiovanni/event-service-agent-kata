@@ -24,7 +24,7 @@ export {
 	EventBusPort,
 	type EventBusPort as EventBusPortType,
 	PublishError,
-	SubscribeError
+	SubscribeError,
 } from '@event-service-agent/platform/ports'
 
 export * from './clock.port.ts'

@@ -3,27 +3,26 @@
 /**
  * Manual migration runner for local development.
  *
- * Runs pending database migrations without starting the full application.
- * Useful for:
+ * Runs pending database migrations without starting the full application. Useful for:
+ *
  * - Updating local database schema after pulling new code
  * - Testing migrations before committing
  * - CI/CD pipelines (pre-deployment schema updates)
  *
- * Usage:
- *   bun run db:migrate                 # From workspace root
+ * Usage: `bun run db:migrate` # From workspace root
  *
  * Environment Variables (.env or shell):
- *   DB_PATH        - Database file path (default: <workspace>/data/db.sqlite)
- *   DB_SCHEMA_DIR  - Schema dump directory (default: <workspace>/data)
+ *   - `DB_PATH`        - Database file path (default: <workspace>/data/db.sqlite)
+ *   - `DB_SCHEMA_DIR`  - Schema dump directory (default: <workspace>/data)
  *
  * Environment File:
- *   Scripts automatically load <workspace>/.env if present.
- *   See .env.example for available configuration options.
- *   Relative paths in .env work correctly when running from workspace root.
+ *   - Scripts automatically load <workspace>/.env if present.
+ *   - See .env.example for available configuration options.
+ *   - Relative paths in .env work correctly when running from workspace root.
  *
  * Exit Codes:
- *   0 - Migrations completed successfully
- *   1 - Migration failed (error details logged)
+ *   - 0 - Migrations completed successfully
+ *   - 1 - Migration failed (error details logged)
  *
  * @see packages/platform/src/database/sql.ts for migration configuration
  * @see packages/platform/src/database/migrations/ for migration files
@@ -43,8 +42,8 @@ import { SQL } from '../sql.ts'
 /**
  * Migration program.
  *
- * Migrations run automatically when SQL.Live layer is provided.
- * Effect SQL's migrator:
+ * Migrations run automatically when SQL.Live layer is provided. Effect SQL's migrator:
+ *
  * - Discovers migrations from packages/platform/src/database/migrations/
  * - Tracks executed migrations in effect_sql_migrations table
  * - Skips already-executed migrations (idempotent)
@@ -65,7 +64,7 @@ const program = Effect.gen(function* () {
 const layer = SQL.Live.pipe(
 	Layer.provide(PlatformBun.BunContext.layer),
 	Layer.provide(Logger.minimumLogLevel(LogLevel.All)),
-	Layer.provide(Logger.pretty)
+	Layer.provide(Logger.pretty),
 )
 
 // Execute program with error handling

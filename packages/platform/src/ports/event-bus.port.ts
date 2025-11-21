@@ -250,7 +250,7 @@ export interface EventBusPort {
 	 */
 	readonly subscribe: <E, R>(
 		topics: NonEmptyReadonlyArray<Topics.Type>,
-		handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>
+		handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
 	) => Effect.Effect<void, SubscribeError | E, R>
 }
 

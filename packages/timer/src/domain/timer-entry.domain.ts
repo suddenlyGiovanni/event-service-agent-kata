@@ -37,12 +37,12 @@ import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/sch
 export const Timer = Schema.Struct({
 	correlationId: Schema.optionalWith(CorrelationId, {
 		as: 'Option',
-		exact: true
+		exact: true,
 	}),
 	dueAt: Schema.DateTimeUtc,
 	registeredAt: Schema.DateTimeUtc,
 	serviceCallId: ServiceCallId,
-	tenantId: TenantId
+	tenantId: TenantId,
 })
 
 /**
@@ -88,7 +88,7 @@ export class ScheduledTimer extends Schema.TaggedClass<ScheduledTimer>()('Schedu
  */
 export class ReachedTimer extends Schema.TaggedClass<ReachedTimer>()('Reached', {
 	...Timer.fields,
-	reachedAt: Schema.DateTimeUtc
+	reachedAt: Schema.DateTimeUtc,
 }) {}
 
 /**
@@ -171,8 +171,7 @@ export const TimerEntry = {
 	 * Uses inclusive comparison (<=) to catch timers at exact millisecond boundary.
 	 * Clock precision varies across systems, so inclusive comparison prevents missed timers.
 	 */
-	isDue: (entry: TimerEntry.ScheduledTimer, now: DateTime.Utc): boolean =>
-		DateTime.lessThanOrEqualTo(entry.dueAt, now),
+	isDue: (entry: TimerEntry.ScheduledTimer, now: DateTime.Utc): boolean => DateTime.lessThanOrEqualTo(entry.dueAt, now),
 
 	/** Type guard: Runtime check for ReachedTimer variant */
 	isReached: (timerEntry: TimerEntry.Type): timerEntry is TimerEntry.ReachedTimer => timerEntry._tag === 'Reached',
@@ -200,11 +199,11 @@ export const TimerEntry = {
 			reachedAt,
 			registeredAt: timerEntry.registeredAt,
 			serviceCallId: timerEntry.serviceCallId,
-			tenantId: timerEntry.tenantId
+			tenantId: timerEntry.tenantId,
 		}),
 
 	/** Schema for encoding/decoding TimerEntry unions (supports JSON, database, etc.) */
-	schema: TimerEntrySchema
+	schema: TimerEntrySchema,
 } as const
 
 /**

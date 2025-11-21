@@ -100,7 +100,7 @@ export class ServiceCallId extends UUID7.pipe(Schema.brand(ServiceCallIdBrand)) 
 	 * @requires UUID7 - Service for UUID generation
 	 */
 	static readonly makeUUID7: (
-		time?: DateTime.Utc
+		time?: DateTime.Utc,
 	) => Effect.Effect<ServiceCallId.Type, ParseResult.ParseError, Service.UUID7> = (time) =>
 		Service.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
@@ -108,7 +108,7 @@ export class ServiceCallId extends UUID7.pipe(Schema.brand(ServiceCallIdBrand)) 
 			 * Use make() instead of decode() — UUID7 service already validates.
 			 * Avoids redundant validation for performance.
 			 */
-			Effect.map((uuid7: UUID7.Type): ServiceCallId.Type => ServiceCallId.make(uuid7))
+			Effect.map((uuid7: UUID7.Type): ServiceCallId.Type => ServiceCallId.make(uuid7)),
 		)
 
 	/**
@@ -130,7 +130,7 @@ export class ServiceCallId extends UUID7.pipe(Schema.brand(ServiceCallIdBrand)) 
 	 * @returns Either with ServiceCallId or ParseError
 	 */
 	static readonly decodeEither: (value: string) => Either.Either<ServiceCallId.Type, ParseResult.ParseError> = (
-		value
+		value,
 	) => Schema.decodeEither(ServiceCallId)(value)
 }
 

@@ -83,7 +83,7 @@ export interface TimerEventBusPort {
 	 * @requires MessageMetadata - Context providing correlationId/causationId
 	 */
 	readonly publishDueTimeReached: (
-		event: Messages.Timer.Events.DueTimeReached.Type
+		event: Messages.Timer.Events.DueTimeReached.Type,
 	) => Effect.Effect<void, Ports.PublishError, MessageMetadata>
 
 	/**
@@ -146,8 +146,8 @@ export interface TimerEventBusPort {
 	readonly subscribeToScheduleTimerCommands: <E, R>(
 		handler: (
 			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-			metadata: MessageMetadata.Type
-		) => Effect.Effect<void, E, R>
+			metadata: MessageMetadata.Type,
+		) => Effect.Effect<void, E, R>,
 	) => Effect.Effect<void, Ports.SubscribeError | E, R>
 }
 
@@ -156,6 +156,5 @@ export interface TimerEventBusPort {
  *
  * Provides access to TimerEventBusPort from the Effect context.
  */
-export const TimerEventBusPort: Context.Tag<TimerEventBusPort, TimerEventBusPort> = Context.GenericTag<
-	TimerEventBusPort
->('@event-service-agent/timer/TimerEventBusPort')
+export const TimerEventBusPort: Context.Tag<TimerEventBusPort, TimerEventBusPort> =
+	Context.GenericTag<TimerEventBusPort>('@event-service-agent/timer/TimerEventBusPort')

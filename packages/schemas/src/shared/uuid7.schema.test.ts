@@ -165,7 +165,7 @@ describe('UUID7 Edge Cases', () => {
 			const invalidUuid = '01234567-89ab-4cde-89ab-0123456789ab' // v4
 
 			expect(() => Schema.decodeSync(UUID7)(invalidUuid)).toThrow(
-				'Must be a valid UUID version 7 (format: xxxxxxxx-xxxx-7xxx-[89ab]xxx-xxxxxxxxxxxx)'
+				'Must be a valid UUID version 7 (format: xxxxxxxx-xxxx-7xxx-[89ab]xxx-xxxxxxxxxxxx)',
 			)
 		})
 	})

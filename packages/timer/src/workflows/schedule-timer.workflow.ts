@@ -50,7 +50,7 @@ import * as Ports from '../ports/index.ts'
  * - MessageMetadata Context requirements
  */
 export const scheduleTimerWorkflow: (
-	command: Messages.Orchestration.Commands.ScheduleTimer
+	command: Messages.Orchestration.Commands.ScheduleTimer,
 ) => Effect.Effect<void, Ports.PersistenceError, Ports.TimerPersistencePort | Ports.ClockPort | MessageMetadata> =
 	Effect.fn('Timer.ScheduleTimer')(function* ({ dueAt, serviceCallId, tenantId }) {
 		const { causationId, correlationId } = yield* MessageMetadata
@@ -62,7 +62,7 @@ export const scheduleTimerWorkflow: (
 			correlationId,
 			dueAt,
 			serviceCallId,
-			tenantId
+			tenantId,
 		})
 
 		const registeredAt = yield* clock.now()
@@ -72,7 +72,7 @@ export const scheduleTimerWorkflow: (
 			dueAt,
 			registeredAt,
 			serviceCallId,
-			tenantId
+			tenantId,
 		})
 
 		yield* persistence.save(scheduledTimer)

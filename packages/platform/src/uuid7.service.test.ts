@@ -18,7 +18,7 @@ describe('UUID7', () => {
 		it.effect('should generate a valid UUID v7', () =>
 			Effect.gen(function* () {
 				expect(yield* Services.UUID7.randomUUIDv7()).toMatch(Schema.UUID7Regex)
-			}).pipe(Effect.provide(Services.UUID7.Default))
+			}).pipe(Effect.provide(Services.UUID7.Default)),
 		)
 
 		it.effect('should allow multiple calls with same fixed UUID', () =>
@@ -37,7 +37,7 @@ describe('UUID7', () => {
 				expect(uuid1).toMatch(Schema.UUID7Regex)
 				expect(uuid2).toMatch(Schema.UUID7Regex)
 				expect(uuid3).toMatch(Schema.UUID7Regex)
-			}).pipe(Effect.provide(Services.UUID7.Default))
+			}).pipe(Effect.provide(Services.UUID7.Default)),
 		)
 
 		it('should generate UUIDs with increasing timestamps (time-ordered)', async () => {
@@ -66,7 +66,7 @@ describe('UUID7', () => {
 
 				// At runtime, it's just a string (brands are type-level only)
 				expect(typeof (yield* uuid7.randomUUIDv7()) === 'string').toBe(true)
-			}).pipe(Effect.provide(Services.UUID7.Default))
+			}).pipe(Effect.provide(Services.UUID7.Default)),
 		)
 
 		it.effect('should support timestamp override for deterministic generation', () =>
@@ -96,7 +96,7 @@ describe('UUID7', () => {
 				// Both should be valid UUID v7
 				expect(uuid1).toMatch(Schema.UUID7Regex)
 				expect(uuid2).toMatch(Schema.UUID7Regex)
-			}).pipe(Effect.provide(Services.UUID7.Default))
+			}).pipe(Effect.provide(Services.UUID7.Default)),
 		)
 
 		it.effect('should generate different UUIDs with different timestamp overrides', () =>
@@ -133,7 +133,7 @@ describe('UUID7', () => {
 				// Both should be valid UUID v7
 				expect(uuid1).toMatch(Schema.UUID7Regex)
 				expect(uuid2).toMatch(Schema.UUID7Regex)
-			}).pipe(Effect.provide(Services.UUID7.Default))
+			}).pipe(Effect.provide(Services.UUID7.Default)),
 		)
 	})
 
@@ -147,7 +147,7 @@ describe('UUID7', () => {
 					const uuid7 = yield* Services.UUID7
 
 					expect(yield* uuid7.randomUUIDv7()).toBe(fixedUuid as Schema.UUID7.Type)
-				}).pipe(Effect.provide(Services.UUID7.Test(fixedUuid))) // Inject test adapter with fixed UUID)
+				}).pipe(Effect.provide(Services.UUID7.Test(fixedUuid))), // Inject test adapter with fixed UUID)
 		)
 
 		it.effect('should return same UUID on multiple calls', () =>
@@ -163,7 +163,7 @@ describe('UUID7', () => {
 				expect(uuid1).toBe(fixedUuid as Schema.UUID7.Type)
 				expect(uuid2).toBe(fixedUuid as Schema.UUID7.Type)
 				expect(uuid3).toBe(fixedUuid as Schema.UUID7.Type)
-			}).pipe(Effect.provide(Services.UUID7.Test(fixedUuid)))
+			}).pipe(Effect.provide(Services.UUID7.Test(fixedUuid))),
 		)
 
 		it.effect('should fail if fixed UUID is invalid', () => {
@@ -179,7 +179,7 @@ describe('UUID7', () => {
 					expect(Option.isSome(error)).toBe(true)
 					if (Option.isSome(error)) {
 						expect((error.value as ParseResult.ParseError).message).toBe(
-							'Must be a valid UUID version 7 (format: xxxxxxxx-xxxx-7xxx-[89ab]xxx-xxxxxxxxxxxx)'
+							'Must be a valid UUID version 7 (format: xxxxxxxx-xxxx-7xxx-[89ab]xxx-xxxxxxxxxxxx)',
 						)
 					}
 				}
@@ -199,7 +199,7 @@ describe('UUID7', () => {
 				expect(uuid1).toBe('12345678-0000-7000-8000-000000000000' as Schema.UUID7.Type)
 				expect(uuid2).toBe('12345678-0000-7000-8000-000000000001' as Schema.UUID7.Type)
 				expect(uuid3).toBe('12345678-0000-7000-8000-000000000002' as Schema.UUID7.Type)
-			}).pipe(Effect.provide(Services.UUID7.Sequence('12345678')))
+			}).pipe(Effect.provide(Services.UUID7.Sequence('12345678'))),
 		)
 
 		it.effect('should use default prefix "00000000" when not provided', () =>
@@ -208,7 +208,7 @@ describe('UUID7', () => {
 
 				expect(uuid1).toBe('00000000-0000-7000-8000-000000000000' as Schema.UUID7.Type)
 				expect(uuid2).toBe('00000000-0000-7000-8000-000000000001' as Schema.UUID7.Type)
-			}).pipe(Effect.provide(Services.UUID7.Sequence()))
+			}).pipe(Effect.provide(Services.UUID7.Sequence())),
 		)
 
 		it.effect(
@@ -220,7 +220,7 @@ describe('UUID7', () => {
 
 					expect(result).toMatch(Schema.UUID7Regex)
 					expect(result).toBe('aaaabbbb-0000-7000-8000-000000000000' as Schema.UUID7.Type)
-				}).pipe(Effect.provide(Services.UUID7.Sequence('aaaabbbb'))) // Inject test adapter with fixed UUID
+				}).pipe(Effect.provide(Services.UUID7.Sequence('aaaabbbb'))), // Inject test adapter with fixed UUID
 		)
 
 		it.effect('should generate multiple sequential UUIDs in a single program', () =>
@@ -229,7 +229,7 @@ describe('UUID7', () => {
 					const uuid = yield* Services.UUID7.randomUUIDv7()
 					expect(uuid).toBe(`abcdef12-0000-7000-8000-00000000000${i}` as Schema.UUID7.Type)
 				}
-			}).pipe(Effect.provide(Services.UUID7.Sequence('abcdef12')))
+			}).pipe(Effect.provide(Services.UUID7.Sequence('abcdef12'))),
 		)
 	})
 })

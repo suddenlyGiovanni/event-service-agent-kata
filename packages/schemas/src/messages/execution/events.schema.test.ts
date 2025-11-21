@@ -36,7 +36,7 @@ describe('Execution Events Schema', () => {
 				// ✅ CORRECT: Test domain type (DateTime.Utc), not encoded format
 				expect(DateTime.isDateTime(event.startedAt)).toBe(true)
 				expect(DateTime.isUtc(event.startedAt)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('rejects invalid tenantId', () =>
@@ -50,7 +50,7 @@ describe('Execution Events Schema', () => {
 
 				const exit = yield* Effect.exit(Execution.Events.ExecutionStarted.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('rejects invalid startedAt timestamp', () =>
@@ -64,7 +64,7 @@ describe('Execution Events Schema', () => {
 
 				const exit = yield* Effect.exit(Execution.Events.ExecutionStarted.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('encodes domain instance to DTO', () =>
@@ -80,7 +80,7 @@ describe('Execution Events Schema', () => {
 
 				expect(dto._tag).toBe(Execution.Events.ExecutionStarted.Tag)
 				expect(dto.tenantId).toBe(tenantId)
-			})
+			}),
 		)
 	})
 
@@ -100,7 +100,7 @@ describe('Execution Events Schema', () => {
 				expect(event._tag).toBe(Execution.Events.ExecutionSucceeded.Tag)
 				expect(event.responseMeta.status).toBe(200)
 				expect(event.responseMeta.latencyMs).toBe(1500)
-			})
+			}),
 		)
 
 		it.effect('decodes event with optional responseMeta fields', () =>
@@ -124,7 +124,7 @@ describe('Execution Events Schema', () => {
 				expect(event.responseMeta.headers).toEqual({
 					'Content-Type': 'application/json',
 				})
-			})
+			}),
 		)
 
 		it.effect('rejects invalid status code', () =>
@@ -141,7 +141,7 @@ describe('Execution Events Schema', () => {
 
 				const exit = yield* Effect.exit(Execution.Events.ExecutionSucceeded.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('encodes domain instance to DTO', () =>
@@ -155,7 +155,7 @@ describe('Execution Events Schema', () => {
 						},
 						serviceCallId,
 						tenantId,
-					} satisfies Execution.Events.ExecutionSucceeded.Dto
+					} satisfies Execution.Events.ExecutionSucceeded.Dto,
 				)
 
 				const dto: Execution.Events.ExecutionSucceeded.Dto =
@@ -163,7 +163,7 @@ describe('Execution Events Schema', () => {
 
 				expect(dto._tag).toBe(Execution.Events.ExecutionSucceeded.Tag)
 				expect(dto.responseMeta.status).toBe(200)
-			})
+			}),
 		)
 	})
 
@@ -186,7 +186,7 @@ describe('Execution Events Schema', () => {
 				expect(event._tag).toBe(Execution.Events.ExecutionFailed.Tag)
 				expect(event.errorMeta.kind).toBe('NetworkError')
 				expect(event.errorMeta.message).toBe('Connection timeout')
-			})
+			}),
 		)
 
 		it.effect('decodes event with optional errorMeta fields', () =>
@@ -211,7 +211,7 @@ describe('Execution Events Schema', () => {
 					statusCode: 500,
 				})
 				expect(event.errorMeta.latencyMs).toBe(5000)
-			})
+			}),
 		)
 
 		it.effect('rejects missing required errorMeta fields', () =>
@@ -226,7 +226,7 @@ describe('Execution Events Schema', () => {
 
 				const exit = yield* Effect.exit(Execution.Events.ExecutionFailed.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('encodes domain instance to DTO', () =>
@@ -246,7 +246,7 @@ describe('Execution Events Schema', () => {
 
 				expect(dto._tag).toBe(Execution.Events.ExecutionFailed.Tag)
 				expect(dto.errorMeta.kind).toBe('NetworkError')
-			})
+			}),
 		)
 	})
 
@@ -262,7 +262,7 @@ describe('Execution Events Schema', () => {
 
 				const event = yield* Schema.decode(Execution.Events.Events)(dto)
 				expect(event._tag).toBe(Execution.Events.ExecutionStarted.Tag)
-			})
+			}),
 		)
 
 		it.effect('accepts ExecutionSucceeded', () =>
@@ -277,7 +277,7 @@ describe('Execution Events Schema', () => {
 
 				const event = yield* Schema.decode(Execution.Events.Events)(dto)
 				expect(event._tag).toBe(Execution.Events.ExecutionSucceeded.Tag)
-			})
+			}),
 		)
 
 		it.effect('accepts ExecutionFailed', () =>
@@ -295,7 +295,7 @@ describe('Execution Events Schema', () => {
 
 				const event = yield* Schema.decode(Execution.Events.Events)(dto)
 				expect(event._tag).toBe(Execution.Events.ExecutionFailed.Tag)
-			})
+			}),
 		)
 
 		it.effect('rejects invalid _tag', () =>
@@ -312,7 +312,7 @@ describe('Execution Events Schema', () => {
 				// @ts-expect-error Testing invalid _tag
 				const exit = yield* Effect.exit(Schema.decode(Execution.Events.Events)(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 	})
 })

@@ -99,9 +99,9 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 			 * @returns Effect producing a validated and branded UUID7
 			 */
 			randomUUIDv7: (time?: DateTime.Utc): Effect.Effect<Schema.UUID7.Type, ParseResult.ParseError> =>
-				pipe(uuid.randomUUIDv7(time?.epochMillis), Schema.UUID7.decode)
-		}))
-	)
+				pipe(uuid.randomUUIDv7(time?.epochMillis), Schema.UUID7.decode),
+		})),
+	),
 }) {
 	/**
 	 * Test implementation with fixed UUID
@@ -126,17 +126,17 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 * @param fixed - The fixed UUID v7 string to return (must be valid UUID v7)
 	 */
 	static readonly Test = <A extends `${string}-${string}-${string}-${string}-${string}`>(
-		fixed: A
+		fixed: A,
 	): Layer.Layer<UUID7> =>
 		UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(Ports.UUIDPort, Ports.UUIDPort.Test(fixed))))
 
 	/**
 	 * Test implementation with sequential UUIDs
 	 *
-	 * Provides the service layer with a sequential UUID port. Uses
-	 * DefaultWithoutDependencies to allow overriding the UUID dependency.
-	 * Format: `{prefix}-0000-7000-8000-{counter}` where counter increments from
-	 * 000000000000.
+	 * Provides the service layer with a sequential UUID port. Uses DefaultWithoutDependencies to allow overriding the
+	 * UUID dependency.
+	 *
+	 * Format: `{prefix}-0000-7000-8000-{counter}` where counter increments from 000000000000.
 	 *
 	 * @example
 	 *
@@ -155,7 +155,5 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 * @param prefix - Optional 8-char hex prefix (default: "00000000")
 	 */
 	static readonly Sequence = (prefix = '00000000'): Layer.Layer<UUID7> =>
-		UUID7.DefaultWithoutDependencies.pipe(
-			Layer.provide(Layer.succeed(Ports.UUIDPort, Ports.UUIDPort.Sequence(prefix)))
-		)
+		UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(Ports.UUIDPort, Ports.UUIDPort.Sequence(prefix))))
 }

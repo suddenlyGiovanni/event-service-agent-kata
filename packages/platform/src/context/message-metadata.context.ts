@@ -124,9 +124,8 @@ import type { CorrelationId, EnvelopeId } from '@event-service-agent/schemas/sha
 /**
  * Message Metadata Context
  *
- * Provides correlation and causation identifiers for message envelope
- * construction. Propagated implicitly through Effect's Context system (R
- * parameter).
+ * Provides correlation and causation identifiers for message envelope construction. Propagated implicitly through
+ * Effect's Context system (R parameter).
  *
  * @example
  *

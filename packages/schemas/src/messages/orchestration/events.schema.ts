@@ -31,7 +31,7 @@ export class ServiceCallSubmitted extends Schema.TaggedClass<ServiceCallSubmitte
 	/**
 	 * Optional tags for categorization and filtering
 	 */
-	tags: Schema.optional(Schema.Array(Schema.String))
+	tags: Schema.optional(Schema.Array(Schema.String)),
 }) {
 	/**
 	 * Decode from wire format to validated domain event
@@ -75,7 +75,7 @@ export class ServiceCallScheduled extends Schema.TaggedClass<ServiceCallSchedule
 	/**
 	 * Timestamp when execution should start (ISO8601)
 	 */
-	dueAt: Schema.DateTimeUtc
+	dueAt: Schema.DateTimeUtc,
 }) {
 	/**
 	 * Decode from wire format to validated domain event
@@ -119,7 +119,7 @@ export class ServiceCallRunning extends Schema.TaggedClass<ServiceCallRunning>()
 	/**
 	 * Timestamp when execution began (ISO8601)
 	 */
-	startedAt: Schema.DateTimeUtc
+	startedAt: Schema.DateTimeUtc,
 }) {
 	/**
 	 * Decode from wire format to validated domain event
@@ -170,7 +170,7 @@ export class ServiceCallSucceeded extends Schema.TaggedClass<ServiceCallSucceede
 	 * HTTP response metadata (status, headers, latency, body snippet)
 	 */
 
-	responseMeta: ResponseMeta
+	responseMeta: ResponseMeta,
 }) {
 	/**
 	 * Decode from wire format to validated domain event
@@ -219,7 +219,7 @@ export class ServiceCallFailed extends Schema.TaggedClass<ServiceCallFailed>()('
 	/**
 	 * Timestamp when execution failed (ISO8601)
 	 */
-	finishedAt: Schema.DateTimeUtc
+	finishedAt: Schema.DateTimeUtc,
 }) {
 	/**
 	 * Decode from wire format to validated domain event
@@ -260,7 +260,7 @@ export const Events = Schema.Union(
 	ServiceCallScheduled,
 	ServiceCallRunning,
 	ServiceCallSucceeded,
-	ServiceCallFailed
+	ServiceCallFailed,
 )
 
 /**

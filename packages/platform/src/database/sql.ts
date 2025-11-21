@@ -16,8 +16,8 @@ import * as StringModule from 'effect/String'
 /**
  * Workspace root path service.
  *
- * Resolves the workspace root directory from this file's location.
- * Used by DatabaseConfig and MigratorLayer to consistently locate resources.
+ * Resolves the workspace root directory from this file's location. Used by DatabaseConfig and MigratorLayer to
+ * consistently locate resources.
  *
  * @internal Shared service for workspace-relative path resolution
  */
@@ -33,22 +33,23 @@ class WorkspaceRoot extends Effect.Service<WorkspaceRoot>()('WorkspaceRoot', {
 		yield* Effect.logInfo('Workspace root resolved', { workspaceRoot: workspaceRootPath })
 
 		return { path: workspaceRootPath }
-	})
+	}),
 }) {}
 
 /**
  * Database configuration with environment variable overrides.
  *
  * Environment variables:
+ *
  * - `DB_PATH`: Database file path (default: '<workspace>/data/db.sqlite')
  * - `DB_SCHEMA_DIR`: Schema dump directory (default: '<workspace>/data')
  *
- * Defaults use workspace root (not CWD), so paths are consistent regardless
- * of where commands are executed (workspace root, package dir, etc.).
+ * Defaults use workspace root (not CWD), so paths are consistent regardless of where commands are executed (workspace
+ * root, package dir, etc.).
  *
- * Local dev: No configuration needed, uses workspace-root 'data/' directory
- * Production: Override via env vars (e.g., DB_PATH=/var/lib/myapp/db.sqlite)
- * Testing: Override via Layer.mock (e.g., ':memory:' database, no schema dump)
+ * Local dev: No configuration needed, uses workspace-root 'data/' directory.
+ * - Production: Override via env vars (e.g., DB_PATH=/var/lib/myapp/db.sqlite)
+ * - Testing: Override via Layer.mock (e.g., ':memory:' database, no schema dump)
  *
  * @internal Consumed by ClientLayer and MigratorLayer via dependency injection
  */
@@ -69,16 +70,16 @@ class DatabaseConfig extends Effect.Service<DatabaseConfig>()('DatabaseConfig', 
 			schemaDirectory: string | undefined
 		} = yield* Config.all({
 			filename: Config.string('DB_PATH').pipe(Config.withDefault(path.join(dataDirectory, 'db.sqlite'))),
-			schemaDirectory: Config.string('DB_SCHEMA_DIR').pipe(Config.withDefault(dataDirectory))
+			schemaDirectory: Config.string('DB_SCHEMA_DIR').pipe(Config.withDefault(dataDirectory)),
 		})
 
 		yield* Effect.logInfo('Database configuration loaded', {
 			filename: config.filename,
-			schemaDirectory: config.schemaDirectory
+			schemaDirectory: config.schemaDirectory,
 		})
 
 		return config
-	}).pipe(Effect.withSpan('DatabaseConfig'))
+	}).pipe(Effect.withSpan('DatabaseConfig')),
 }) {}
 
 /**
@@ -127,7 +128,7 @@ const MigratorLayer: Layer.Layer<
 	yield* Effect.logInfo('Initializing database migrator', { schemaDirectory: config.schemaDirectory })
 
 	yield* Effect.logDebug('Using workspace root for migration discovery', {
-		workspaceRoot: workspaceRoot.path
+		workspaceRoot: workspaceRoot.path,
 	})
 
 	const migrationsRecord = yield* pipe(
@@ -140,16 +141,16 @@ const MigratorLayer: Layer.Layer<
 					method: 'glob.scan',
 					module: 'FileSystem',
 					pathOrDescriptor: workspaceRoot.path,
-					reason: 'Unknown'
-				})
+					reason: 'Unknown',
+				}),
 		),
 		Stream.runCollect,
 		Effect.map(
 			Record.fromIterableWith((relativePath: string) => {
 				const absolutePath = path.join(workspaceRoot.path, relativePath)
 				return [absolutePath, () => import(absolutePath)] as const
-			})
-		)
+			}),
+		),
 	)
 
 	const migrationFiles = Record.keys(migrationsRecord)
@@ -157,7 +158,7 @@ const MigratorLayer: Layer.Layer<
 
 	yield* Effect.logInfo('Discovered migrations', {
 		count: migrationCount,
-		files: migrationFiles
+		files: migrationFiles,
 	})
 
 	// Fail fast if no migrations found (likely path misconfiguration)
@@ -165,13 +166,12 @@ const MigratorLayer: Layer.Layer<
 		return yield* Effect.fail(
 			new Platform.Error.SystemError({
 				cause: new Error('No migration files discovered'),
-				description:
-					`Expected to find migration files matching 'packages/*/src/database/migrations/*.ts' in workspace root '${workspaceRoot.path}', but found none. This likely indicates a path misconfiguration.`,
+				description: `Expected to find migration files matching 'packages/*/src/database/migrations/*.ts' in workspace root '${workspaceRoot.path}', but found none. This likely indicates a path misconfiguration.`,
 				method: 'glob.scan',
 				module: 'FileSystem',
 				pathOrDescriptor: workspaceRoot.path,
-				reason: 'Unknown'
-			})
+				reason: 'Unknown',
+			}),
 		)
 	}
 
@@ -179,21 +179,21 @@ const MigratorLayer: Layer.Layer<
 
 	yield* Effect.logInfo('Creating migrator layer', {
 		schemaDirectory: config.schemaDirectory ?? '<none>',
-		table: 'effect_sql_migrations'
+		table: 'effect_sql_migrations',
 	})
 
 	return SqliteBun.SqliteMigrator.layer({
 		loader,
 		...(config.schemaDirectory ? { schemaDirectory: config.schemaDirectory } : {}),
-		table: 'effect_sql_migrations'
+		table: 'effect_sql_migrations',
 	}).pipe(Layer.provide(PlatformBun.BunContext.layer))
 }).pipe(Effect.withSpan('SQL.MigratorLayer'), Layer.unwrapEffect)
 
 /**
  * SQLite session pragma configuration layer.
  *
- * Configures session-level SQLite pragmas after client initialization.
- * These pragmas apply per-connection and must be set on each session.
+ * Configures session-level SQLite pragmas after client initialization. These pragmas apply per-connection and must be
+ * set on each session.
  *
  * Configured pragmas:
  *
@@ -260,16 +260,13 @@ const ClientLayer: Layer.Layer<
 
 	yield* Effect.logInfo('Creating SQLite client', { filename: config.filename })
 
-	const sqlClientLayer: Layer.Layer<
-		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient,
-		ConfigError,
-		never
-	> = SqliteBun.SqliteClient.layer({
-		disableWAL: false,
-		filename: config.filename,
-		transformQueryNames: StringModule.camelToSnake,
-		transformResultNames: StringModule.snakeToCamel
-	})
+	const sqlClientLayer: Layer.Layer<SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient, ConfigError, never> =
+		SqliteBun.SqliteClient.layer({
+			disableWAL: false,
+			filename: config.filename,
+			transformQueryNames: StringModule.camelToSnake,
+			transformResultNames: StringModule.snakeToCamel,
+		})
 
 	/*
 	 * Sequential composition: Client → Pragma Setup → Export Client Only
@@ -324,7 +321,7 @@ const Live: Layer.Layer<
 	Layer.provide(PlatformBun.BunPath.layer),
 	Layer.provide(WorkspaceRoot.Default),
 	Layer.provideMerge(ClientLayer),
-	Layer.provide(DatabaseConfig.Default)
+	Layer.provide(DatabaseConfig.Default),
 )
 
 /**
@@ -335,8 +332,8 @@ const Live: Layer.Layer<
  * - Identical schema and pragma configuration to production
  * - No schema dump (schemaDirectory overridden to undefined)
  *
- * Architecture: Same composition as Live (MigratorLayer.pipe(provideMerge(ClientLayer))),
- * differs only in DatabaseConfig provision (Layer.succeed for test configuration).
+ * Architecture: Same composition as Live (MigratorLayer.pipe(provideMerge(ClientLayer))), differs only in
+ * DatabaseConfig provision (Layer.succeed for test configuration).
  *
  * Self-contained: Provides all dependencies internally (no external requirements)
  *
@@ -373,9 +370,9 @@ const Test: Layer.Layer<
 		Layer.succeed(DatabaseConfig, {
 			_tag: 'DatabaseConfig',
 			filename: ':memory:',
-			schemaDirectory: undefined
-		})
-	)
+			schemaDirectory: undefined,
+		}),
+	),
 )
 
 /**
@@ -436,5 +433,5 @@ const Test: Layer.Layer<
  */
 export const SQL = {
 	Live,
-	Test
+	Test,
 } as const

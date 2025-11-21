@@ -5,14 +5,16 @@ import * as Effect from 'effect/Effect'
  * Bootstrap migration - SQLite configuration + minimal database structure
  *
  * Part 1: Database-Level Pragmas (persistent, survive connection close)
+ *
  * - journal_mode: WAL for read/write concurrency (ADR-0004)
  *
- * Note: Session-level pragmas (foreign_keys, synchronous, etc.) must be set
- * on client initialization, NOT in migrations (cannot change mid-transaction).
- * See sql.ts for session pragma configuration.
+ * Note: Session-level pragmas (foreign_keys, synchronous, etc.) must be set on client initialization, NOT in migrations
+ * (cannot change mid-transaction). See sql.ts for session pragma configuration.
  *
- * Part 2: Schema Structure + FK Relationships
+ * Part 2: Schema Structure + FK Relationships.
+ *
  * Philosophy:
+ *
  * - Platform owns table structure and FK constraints ONLY
  * - Modules own domain-specific columns (see module migrations)
  * - This migration creates minimal stubs to establish referential integrity
@@ -41,16 +43,16 @@ const migration: Effect.Effect<(readonly Sql.SqlConnection.Row[])[], Sql.SqlErro
 		Effect.all(
 			[
 				/**
-				 * WAL mode for read/write concurrency (ADR-0004)
-				 * Persistent setting (survives connection close)
-				 * Safe to set in migration (database-level, not session-level)
+				 * WAL mode for read/write concurrency (ADR-0004).
+				 * Persistent setting (survives connection close).
+				 * Safe to set in migration (database-level, not session-level).
 				 */
 				sql`
 					PRAGMA journal_mode = WAL;
 				`,
 
 				/**
-				 * service_calls: Stub table for FK target
+				 * service_calls: Stub table for FK target.
 				 * Orchestration module will add domain-specific columns (status, created_at, etc.)
 				 */
 				sql`
@@ -62,7 +64,7 @@ const migration: Effect.Effect<(readonly Sql.SqlConnection.Row[])[], Sql.SqlErro
 				`,
 
 				/**
-				 * timer_schedules: Skeleton table with FK to service_calls
+				 * timer_schedules: Skeleton table with FK to service_calls.
 				 * Timer module will add domain columns in 0003_timer_schedules_schema.ts
 				 */
 				sql`
@@ -74,7 +76,7 @@ const migration: Effect.Effect<(readonly Sql.SqlConnection.Row[])[], Sql.SqlErro
 					) STRICT;
 				`,
 				/**
-				 * http_execution_log: Skeleton table with FK to service_calls
+				 * http_execution_log: Skeleton table with FK to service_calls.
 				 * Execution module will add domain columns (request_url, response_status, etc.)
 				 */
 				sql`
@@ -88,7 +90,7 @@ const migration: Effect.Effect<(readonly Sql.SqlConnection.Row[])[], Sql.SqlErro
 				`,
 
 				/**
-				 * Outbox: Event publication queue (shared infrastructure, not module-owned)
+				 * Outbox: Event publication queue (shared infrastructure, not module-owned).
 				 * Platform manages outbox schema (ADR-0008 outbox pattern)
 				 */
 				sql`
@@ -110,9 +112,10 @@ const migration: Effect.Effect<(readonly Sql.SqlConnection.Row[])[], Sql.SqlErro
 					CREATE INDEX IF NOT EXISTS idx_outbox_unpublished ON outbox(published_at, created_at)
 					WHERE
 						published_at IS NULL;
-				`
+				`,
 			],
-			{ concurrency: 1 }
-		))
+			{ concurrency: 1 },
+		),
+	)
 
 export default migration

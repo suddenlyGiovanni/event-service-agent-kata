@@ -380,20 +380,20 @@ describe('Topics', () => {
 				const modules = ['timer', 'orchestration', 'execution', 'api']
 
 				for (const module of modules) {
-					const moduleTopics = Topics.All.filter(topic => topic.startsWith(`${module}.`))
+					const moduleTopics = Topics.All.filter((topic) => topic.startsWith(`${module}.`))
 					expect(moduleTopics.length).toBeGreaterThan(0)
 				}
 			})
 
 			it('should have at least one topic per module', () => {
 				// Timer
-				expect(Topics.All.filter(t => t.startsWith('timer.'))).toHaveLength(2)
+				expect(Topics.All.filter((t) => t.startsWith('timer.'))).toHaveLength(2)
 				// Orchestration
-				expect(Topics.All.filter(t => t.startsWith('orchestration.'))).toHaveLength(2)
+				expect(Topics.All.filter((t) => t.startsWith('orchestration.'))).toHaveLength(2)
 				// Execution
-				expect(Topics.All.filter(t => t.startsWith('execution.'))).toHaveLength(1)
+				expect(Topics.All.filter((t) => t.startsWith('execution.'))).toHaveLength(1)
 				// Api
-				expect(Topics.All.filter(t => t.startsWith('api.'))).toHaveLength(1)
+				expect(Topics.All.filter((t) => t.startsWith('api.'))).toHaveLength(1)
 			})
 		})
 

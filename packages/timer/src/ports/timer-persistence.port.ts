@@ -43,7 +43,7 @@ export class PersistenceError extends Schema.TaggedError<PersistenceError>()('Pe
 	/** Human-readable description of what failed */
 	message: Schema.optional(Schema.String),
 	/** Which persistence operation failed */
-	operation: Schema.Literal('save', 'find', 'findScheduledTimer', 'findDue', 'markFired', 'delete')
+	operation: Schema.Literal('save', 'find', 'findScheduledTimer', 'findDue', 'markFired', 'delete'),
 }) {
 	/** Format error for logs/debugging */
 	get formattedMessage(): string {
@@ -56,7 +56,7 @@ export class PersistenceError extends Schema.TaggedError<PersistenceError>()('Pe
  */
 export class TimerNotFoundError extends Schema.TaggedError<TimerNotFoundError>()('TimerNotFoundError', {
 	serviceCallId: ServiceCallId,
-	tenantId: TenantId
+	tenantId: TenantId,
 }) {}
 
 /**
@@ -77,7 +77,7 @@ export const TimerScheduleKey: Schema.Struct<{
 	/**
 	 * Tenant identifier - supports multi-tenant isolation
 	 */
-	tenantId: TenantId
+	tenantId: TenantId,
 })
 
 /** Namespace for the branded payload type of `TimerScheduleKey` schema. */
@@ -171,7 +171,7 @@ export interface TimerPersistencePort {
 	 * @throws PersistenceError - When query fails (connection, etc.)
 	 */
 	readonly findScheduledTimer: (
-		key: TimerScheduleKey.Type
+		key: TimerScheduleKey.Type,
 	) => Effect.Effect<Option.Option<TimerEntry.ScheduledTimer>, PersistenceError>
 
 	/**
@@ -330,5 +330,5 @@ export interface TimerPersistencePort {
  * Use this to access the TimerPersistencePort from the Effect context.
  */
 export const TimerPersistencePort = Context.GenericTag<TimerPersistencePort>(
-	'@event-service-agent/timer/TimerPersistencePort'
+	'@event-service-agent/timer/TimerPersistencePort',
 )

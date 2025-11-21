@@ -34,7 +34,7 @@ export const withServiceCall = (key: Ports.TimerScheduleKey.Type) =>
 								${request.serviceCallId}
 							);
 					`,
-				Request: Ports.TimerScheduleKey
-			})
+				Request: Ports.TimerScheduleKey,
+			}),
 		)
 	})

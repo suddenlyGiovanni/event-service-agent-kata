@@ -60,7 +60,7 @@ describe('scheduleTimerWorkflow', () => {
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.none(),
 						correlationId: Option.none(),
-					})
+					}),
 				)
 
 				yield* TestClock.adjust('4 minutes')
@@ -76,8 +76,8 @@ describe('scheduleTimerWorkflow', () => {
 				expect(DateTime.Equivalence(timer.dueAt, DateTime.unsafeMake(dueAt))).toBe(true)
 			}).pipe(
 				// Merge layers to avoid lifecycle issues
-				Effect.provide(BaseTestLayers)
-			)
+				Effect.provide(BaseTestLayers),
+			),
 		)
 
 		it.scoped('should use current time for registeredAt', () =>
@@ -103,7 +103,7 @@ describe('scheduleTimerWorkflow', () => {
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
 						correlationId: Option.none(),
-					})
+					}),
 				)
 				yield* TestClock.adjust('4 minutes')
 
@@ -112,7 +112,7 @@ describe('scheduleTimerWorkflow', () => {
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 
 				expect(DateTime.Equivalence(timer.registeredAt, now)).toBe(true)
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should set status to `Scheduled`', () =>
@@ -137,7 +137,7 @@ describe('scheduleTimerWorkflow', () => {
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
 						correlationId: Option.none(),
-					})
+					}),
 				)
 				yield* TestClock.adjust('4 minutes')
 
@@ -147,7 +147,7 @@ describe('scheduleTimerWorkflow', () => {
 
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 				expect(Domain.TimerEntry.isScheduled(timer)).toBe(true)
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
@@ -178,7 +178,7 @@ describe('scheduleTimerWorkflow', () => {
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
 						correlationId: Option.some(correlationId), // Provide correlationId via context
-					})
+					}),
 				)
 				yield* TestClock.adjust('4 minutes')
 
@@ -188,7 +188,7 @@ describe('scheduleTimerWorkflow', () => {
 
 				expect(Option.isSome(timer.correlationId)).toBe(true)
 				expect(Option.getOrThrow(timer.correlationId)).toBe(correlationId)
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 
 		it.scoped('should work without correlationId', () =>
@@ -213,7 +213,7 @@ describe('scheduleTimerWorkflow', () => {
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
 						correlationId: Option.none(),
-					})
+					}),
 				)
 				yield* TestClock.adjust('4 minutes')
 
@@ -222,7 +222,7 @@ describe('scheduleTimerWorkflow', () => {
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 
 				expect(Option.isNone(timer.correlationId)).toBe(true)
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
@@ -253,7 +253,7 @@ describe('scheduleTimerWorkflow', () => {
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
 						correlationId: Option.none(),
-					})
+					}),
 				)
 
 				// Assert: Timer should still be persisted (no fast-path optimization)
@@ -262,7 +262,7 @@ describe('scheduleTimerWorkflow', () => {
 				const timer = Option.getOrThrow(maybeScheduledTimer)
 				expect(timer._tag).toBe('Scheduled')
 				expect(DateTime.lessThan(timer.dueAt, now)).toBe(true) // Verify dueAt is in past
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
@@ -294,7 +294,7 @@ describe('scheduleTimerWorkflow', () => {
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
 						correlationId: Option.some(correlationId),
-					})
+					}),
 				)
 				yield* TestClock.adjust('1 second')
 				// Second call without correlationId (should not fail - upsert semantics)
@@ -302,7 +302,7 @@ describe('scheduleTimerWorkflow', () => {
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a4')),
 						correlationId: Option.none(), // No correlationId on second call
-					})
+					}),
 				)
 
 				// Assert: Timer exists (second call didn't error)
@@ -315,7 +315,7 @@ describe('scheduleTimerWorkflow', () => {
 				assertNone(timer.correlationId) // correlationId should be None as the second call didn't pass it and it overrides the first call's value
 
 				expect(DateTime.Equivalence(timer.registeredAt, DateTime.add(now, { seconds: 1 }))).toBe(true)
-			}).pipe(Effect.provide(BaseTestLayers))
+			}).pipe(Effect.provide(BaseTestLayers)),
 		)
 	})
 
@@ -343,8 +343,8 @@ describe('scheduleTimerWorkflow', () => {
 						Effect.provideService(MessageMetadata, {
 							causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
 							correlationId: Option.none(),
-						})
-					)
+						}),
+					),
 				)
 
 				expect(Either.isLeft(result)).toBe(true)
@@ -371,14 +371,14 @@ describe('scheduleTimerWorkflow', () => {
 										new Ports.PersistenceError({
 											cause: 'Simulated database failure',
 											operation: 'save',
-										})
+										}),
 									),
-							})
+							}),
 						),
-						Adapters.ClockPortTest
-					)
-				)
-			)
+						Adapters.ClockPortTest,
+					),
+				),
+			),
 		)
 	})
 })

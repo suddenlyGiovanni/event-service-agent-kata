@@ -26,18 +26,18 @@ describe('TimerEventBus', () => {
 	// These are shared across all tests via @effect/vitest layer()
 	const BaseTestLayers = Layer.merge(UUID7.Default, AdaptersTimer.ClockPortTest)
 
-	layer(BaseTestLayers)('publishDueTimeReached', it => {
+	layer(BaseTestLayers)('publishDueTimeReached', (it) => {
 		describe('Happy Path', () => {
 			it.effect('should publish DueTimeReached event with correlationId from MessageMetadata context', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
-					publish: envelopes => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
+					publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
 				})
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
-					Layer.merge(EventBusTest, BaseTestLayers)
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
 				return Effect.gen(function* () {
@@ -56,7 +56,7 @@ describe('TimerEventBus', () => {
 						Effect.provideService(MessageMetadata, {
 							causationId: Option.none(),
 							correlationId: Option.some(correlationId),
-						})
+						}),
 					)
 
 					// Assert
@@ -85,12 +85,12 @@ describe('TimerEventBus', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
-					publish: envelopes => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
+					publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
 				})
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
-					Layer.merge(EventBusTest, BaseTestLayers)
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
 				return Effect.gen(function* () {
@@ -110,7 +110,7 @@ describe('TimerEventBus', () => {
 						Effect.provideService(MessageMetadata, {
 							causationId: Option.none(),
 							correlationId: Option.none(),
-						})
+						}),
 					)
 
 					// Assert
@@ -130,12 +130,12 @@ describe('TimerEventBus', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
-					publish: envelopes => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
+					publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
 				})
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
-					Layer.merge(EventBusTest, BaseTestLayers)
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
 				return Effect.gen(function* () {
@@ -186,12 +186,12 @@ describe('TimerEventBus', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
-					publish: envelopes => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
+					publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
 				})
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
-					Layer.merge(EventBusTest, BaseTestLayers)
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
 				return Effect.gen(function* () {
@@ -217,7 +217,7 @@ describe('TimerEventBus', () => {
 						Effect.provideService(MessageMetadata, {
 							causationId: Option.none(),
 							correlationId: Option.none(),
-						})
+						}),
 					)
 
 					// Assert: envelope timestamp reflects publishing time (T+10)
@@ -245,13 +245,13 @@ describe('TimerEventBus', () => {
 						Effect.fail(
 							new Ports.PublishError({
 								cause: 'Connection failed',
-							})
+							}),
 						),
 				})
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
-					Layer.merge(EventBusTest, BaseTestLayers)
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
 				return Effect.gen(function* () {
@@ -270,7 +270,7 @@ describe('TimerEventBus', () => {
 						Effect.provideService(MessageMetadata, {
 							causationId: Option.none(),
 							correlationId: Option.none(),
-						})
+						}),
 					)
 
 					// Assert
@@ -284,7 +284,7 @@ describe('TimerEventBus', () => {
 		})
 	})
 
-	layer(BaseTestLayers)('subscribeToScheduleTimerCommands', it => {
+	layer(BaseTestLayers)('subscribeToScheduleTimerCommands', (it) => {
 		describe('Happy Path', () => {
 			it.effect('should subscribe to Timer.Commands topic', () => {
 				let subscribedTopics: readonly Topics.Type[] = []
@@ -298,7 +298,7 @@ describe('TimerEventBus', () => {
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
-					Layer.merge(EventBusTest, BaseTestLayers)
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
 				return Effect.gen(function* () {
@@ -339,13 +339,13 @@ describe('TimerEventBus', () => {
 				const EventBusTest = Layer.mock(Ports.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>
+						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
 					) => handler(envelope),
 				})
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
-					Layer.merge(EventBusTest, BaseTestLayers)
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
 				return Effect.gen(function* () {
@@ -356,7 +356,7 @@ describe('TimerEventBus', () => {
 							handlerCalled = true
 							receivedCommand = command
 							receivedCorrelationId = Option.getOrUndefined(metadata.correlationId)
-						})
+						}),
 					)
 					// Assert
 					expect(handlerCalled).toBe(true)
@@ -395,13 +395,13 @@ describe('TimerEventBus', () => {
 				const EventBusTest = Layer.mock(Ports.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>
+						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
 					) => handler(envelope),
 				})
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
-					Layer.merge(EventBusTest, BaseTestLayers)
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
 				return Effect.gen(function* () {
@@ -410,7 +410,7 @@ describe('TimerEventBus', () => {
 					yield* timerEventBus.subscribeToScheduleTimerCommands(() =>
 						Effect.sync(() => {
 							handlerCalled = true
-						})
+						}),
 					)
 
 					// Assert - handler should NOT be called for wrong message type
@@ -444,13 +444,13 @@ describe('TimerEventBus', () => {
 				const EventBusTest = Layer.mock(Ports.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>
+						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
 					) => handler(envelope),
 				})
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
-					Layer.merge(EventBusTest, BaseTestLayers)
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
 				return Effect.gen(function* () {
@@ -459,7 +459,7 @@ describe('TimerEventBus', () => {
 					yield* timerEventBus.subscribeToScheduleTimerCommands((_command, metadata) =>
 						Effect.sync(() => {
 							receivedCorrelationId = Option.getOrUndefined(metadata.correlationId)
-						})
+						}),
 					)
 
 					// Assert: adapter passes metadata from envelope.correlationId (Option.none)
@@ -492,20 +492,20 @@ describe('TimerEventBus', () => {
 				const EventBusTest = Layer.mock(Ports.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
-						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>
+						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
 					) => handler(envelope),
 				})
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
-					Layer.merge(EventBusTest, BaseTestLayers)
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
 				return Effect.gen(function* () {
 					// Act
 					const timerEventBus = yield* Ports.TimerEventBusPort
 					const result = yield* Effect.either(
-						timerEventBus.subscribeToScheduleTimerCommands(() => Effect.fail(new Error('Handler processing failed')))
+						timerEventBus.subscribeToScheduleTimerCommands(() => Effect.fail(new Error('Handler processing failed'))),
 					)
 
 					// Assert
@@ -519,13 +519,13 @@ describe('TimerEventBus', () => {
 						Effect.fail(
 							new Ports.SubscribeError({
 								cause: 'Consumer creation failed',
-							})
+							}),
 						),
 				})
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
-					Layer.merge(EventBusTest, BaseTestLayers)
+					Layer.merge(EventBusTest, BaseTestLayers),
 				)
 
 				return Effect.gen(function* () {
@@ -556,7 +556,7 @@ describe('TimerEventBus', () => {
 
 			const TimerEventBusLive = Layer.provide(
 				AdaptersTimer.TimerEventBus.Live,
-				Layer.merge(EventBusTest, BaseTestLayers)
+				Layer.merge(EventBusTest, BaseTestLayers),
 			)
 
 			return Effect.gen(function* () {
@@ -572,7 +572,7 @@ describe('TimerEventBus', () => {
 			const publishedEnvelopes: MessageEnvelope.Type[] = []
 
 			const EventBusTest = Layer.mock(Ports.EventBusPort, {
-				publish: envelopes =>
+				publish: (envelopes) =>
 					Effect.sync(() => {
 						publishedEnvelopes.push(...envelopes)
 					}),
@@ -581,7 +581,7 @@ describe('TimerEventBus', () => {
 
 			const TimerEventBusLive = Layer.provide(
 				AdaptersTimer.TimerEventBus.Live,
-				Layer.merge(EventBusTest, BaseTestLayers)
+				Layer.merge(EventBusTest, BaseTestLayers),
 			)
 
 			return Effect.gen(function* () {
@@ -599,7 +599,7 @@ describe('TimerEventBus', () => {
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.none(),
 						correlationId: Option.none(),
-					})
+					}),
 				)
 
 				// Assert - envelope ID should be valid UUID7

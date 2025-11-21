@@ -77,5 +77,5 @@ export interface ClockPort {
  * Use this to access ClockPort from the Effect context. Inject via Layer in production, TestLayer in tests.
  */
 export const ClockPort: Context.Tag<ClockPort, ClockPort> = Context.GenericTag<ClockPort>(
-	'@event-service-agent/timer/ClockPort'
+	'@event-service-agent/timer/ClockPort',
 )

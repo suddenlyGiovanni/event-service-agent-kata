@@ -43,7 +43,7 @@ export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('
 	 */
 	tags: Schema.optional(Schema.Array(Schema.String)),
 
-	tenantId: TenantId
+	tenantId: TenantId,
 }) {
 	/**
 	 * Decode from wire format to validated command

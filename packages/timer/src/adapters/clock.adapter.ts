@@ -52,8 +52,8 @@ import { ClockPort } from '../ports/clock.port.ts'
 export const ClockPortLive: Layer.Layer<ClockPort> = Layer.succeed(
 	ClockPort,
 	ClockPort.of({
-		now: () => Effect.map(Clock.currentTimeMillis, DateTime.unsafeMake)
-	})
+		now: () => Effect.map(Clock.currentTimeMillis, DateTime.unsafeMake),
+	}),
 )
 
 /**
@@ -125,6 +125,6 @@ export const ClockPortLive: Layer.Layer<ClockPort> = Layer.succeed(
 export const ClockPortTest: Layer.Layer<ClockPort> = Layer.succeed(
 	ClockPort,
 	ClockPort.of({
-		now: () => Effect.map(TestClock.currentTimeMillis, DateTime.unsafeMake)
-	})
+		now: () => Effect.map(TestClock.currentTimeMillis, DateTime.unsafeMake),
+	}),
 )

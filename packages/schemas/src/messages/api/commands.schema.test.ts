@@ -45,7 +45,7 @@ describe('SubmitServiceCall Command Schema', () => {
 
 				expect(command.requestSpec.url).toBe(dto.requestSpec.url)
 				expect(command.requestSpec.method).toBe(dto.requestSpec.method)
-			})
+			}),
 		)
 
 		it.effect('decodes command with optional fields', () =>
@@ -69,7 +69,7 @@ describe('SubmitServiceCall Command Schema', () => {
 				expectTypeOf(command).toEqualTypeOf<Api.Commands.SubmitServiceCall.Type>()
 				expect(command.idempotencyKey).toBe(idempotencyKey)
 				expect(command.tags).toEqual(tags)
-			})
+			}),
 		)
 
 		it.effect('decodes command without optional fields', () =>
@@ -87,7 +87,7 @@ describe('SubmitServiceCall Command Schema', () => {
 				expectTypeOf(command).toEqualTypeOf<Api.Commands.SubmitServiceCall.Type>()
 				expect(command.idempotencyKey).toBeUndefined()
 				expect(command.tags).toBeUndefined()
-			})
+			}),
 		)
 
 		it.effect('rejects invalid tenantId format', () =>
@@ -106,7 +106,7 @@ describe('SubmitServiceCall Command Schema', () => {
 
 				const exit = yield* Effect.exit(Api.Commands.SubmitServiceCall.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('rejects invalid dueAt format', () =>
@@ -125,7 +125,7 @@ describe('SubmitServiceCall Command Schema', () => {
 
 				const exit = yield* Effect.exit(Api.Commands.SubmitServiceCall.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('rejects missing required fields', () =>
@@ -138,11 +138,11 @@ describe('SubmitServiceCall Command Schema', () => {
 				const exit = yield* Effect.exit(
 					Api.Commands.SubmitServiceCall.decode(
 						// @ts-expect-error Testing missing fields
-						dto
-					)
+						dto,
+					),
 				)
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 
 		it.effect('rejects invalid requestSpec (missing required fields)', () =>
@@ -161,11 +161,11 @@ describe('SubmitServiceCall Command Schema', () => {
 				const exit = yield* Effect.exit(
 					Api.Commands.SubmitServiceCall.decode(
 						// @ts-expect-error Testing invalid requestSpec
-						dto
-					)
+						dto,
+					),
 				)
 				expect(Exit.isFailure(exit)).toBe(true)
-			})
+			}),
 		)
 	})
 
@@ -189,7 +189,7 @@ describe('SubmitServiceCall Command Schema', () => {
 				expect(dto._tag).toBe(Api.Commands.SubmitServiceCall.Tag)
 				expect(dto.tenantId).toBe(tenantId)
 				expect(dto.name).toBe(name)
-			})
+			}),
 		)
 	})
 
@@ -210,7 +210,7 @@ describe('SubmitServiceCall Command Schema', () => {
 
 				const command = yield* Schema.decode(Api.Commands.Commands)(dto)
 				expect(command._tag).toBe(Api.Commands.SubmitServiceCall.Tag)
-			})
+			}),
 		)
 	})
 })
