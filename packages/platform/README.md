@@ -62,7 +62,7 @@ Centralized topic/routing configuration:
 import { Topics } from '@event-service-agent/platform/routing'
 
 // Subscribe with type-safe topics
-yield* bus.subscribe([Topics.Timer.Commands], handler)
+yield * bus.subscribe([Topics.Timer.Commands], handler)
 ```
 
 ### 📦 Types (`./types`)

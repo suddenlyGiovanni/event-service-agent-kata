@@ -28,7 +28,7 @@ http/                RequestSpec
 ```typescript ignore
 import { TenantId } from '@event-service-agent/schemas/shared'
 
-const id = yield* TenantId.makeUUID7() // Effect<TenantId, ParseError, UUID7>
+const id = yield * TenantId.makeUUID7() // Effect<TenantId, ParseError, UUID7>
 ```
 
 ### Create a domain event
@@ -48,11 +48,11 @@ const event = new DueTimeReached({
 ```typescript ignore
 import { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 
-const envelope = yield* MessageEnvelope.decodeJson(jsonString)
+const envelope = yield * MessageEnvelope.decodeJson(jsonString)
 
 // Pattern match on typed payload
 if (envelope.payload._tag === 'DueTimeReached') {
-	yield* handle(envelope.payload) // TypeScript knows the type!
+	yield * handle(envelope.payload) // TypeScript knows the type!
 }
 ```
 
@@ -97,13 +97,8 @@ Branded ID schemas (`TenantId`, `ServiceCallId`, etc.) provide a `makeUUID7()` m
 import * as Service from '@event-service-agent/platform/uuid7' // Runtime service
 
 export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
-	static readonly makeUUID7 = (
-		time?: DateTime.Utc
-	): Effect.Effect<TenantId, ParseError, Service.UUID7> =>
-		Service.generateUUID7(time).pipe(
-			Effect.flatMap(TenantId.decode),
-			Effect.withSpan('TenantId.makeUUID7')
-		)
+	static readonly makeUUID7 = (time?: DateTime.Utc): Effect.Effect<TenantId, ParseError, Service.UUID7> =>
+		Service.generateUUID7(time).pipe(Effect.flatMap(TenantId.decode), Effect.withSpan('TenantId.makeUUID7'))
 }
 ```
 

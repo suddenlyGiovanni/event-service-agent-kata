@@ -88,9 +88,9 @@ Adapters sit at the **outer layer** of hexagonal architecture:
 
 - **@event-service-agent/platform**: Port interface contracts
 - Infrastructure SDKs (to be added as needed):
-  - `nats` - NATS JetStream client
-  - `bun:sqlite` - SQLite native support
-  - Others TBD
+    - `nats` - NATS JetStream client
+    - `bun:sqlite` - SQLite native support
+    - Others TBD
 
 ## Current Status
 
@@ -115,8 +115,12 @@ export class NatsEventBus {
 			const js = nc.jetstream()
 
 			return EventBusPort.of({
-				publish: (envelopes) => {/* ... */},
-				subscribe: (topics, handler) => {/* ... */}
+				publish: (envelopes) => {
+					/* ... */
+				},
+				subscribe: (topics, handler) => {
+					/* ... */
+				}
 			})
 		})
 	)
@@ -134,9 +138,15 @@ export class SqliteTimerPersistence {
 			const db = yield* Database
 
 			return TimerPersistencePort.of({
-				save: (timer) => {/* <SQL INSERT> */},
-				findScheduledTimer: (id) => {/* <SQL SELECT> */},
-				findDue: (tenantId, now) => {/* <SQL SELECT WHERE due> */}
+				save: (timer) => {
+					/* <SQL INSERT> */
+				},
+				findScheduledTimer: (id) => {
+					/* <SQL SELECT> */
+				},
+				findDue: (tenantId, now) => {
+					/* <SQL SELECT WHERE due> */
+				}
 			})
 		})
 	)

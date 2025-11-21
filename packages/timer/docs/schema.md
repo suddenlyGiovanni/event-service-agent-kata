@@ -21,12 +21,12 @@ Implementation-focused documentation for Timer module's `timer_schedules` table.
 ```mermaid
 erDiagram
     service_calls ||--o{ timer_schedules : "schedules"
-    
+
     service_calls {
         TEXT tenant_id PK "Multi-tenant partition key"
         TEXT service_call_id PK "Aggregate root ID (UUID v7)"
     }
-    
+
     timer_schedules {
         TEXT tenant_id PK,FK "Multi-tenant partition key"
         TEXT service_call_id PK,FK "References service_calls"
@@ -61,8 +61,8 @@ CREATE TABLE timer_schedules (
     reached_at TEXT,
     state TEXT NOT NULL DEFAULT 'Scheduled',
     PRIMARY KEY (tenant_id, service_call_id),
-    FOREIGN KEY (tenant_id, service_call_id) 
-        REFERENCES service_calls(tenant_id, service_call_id) 
+    FOREIGN KEY (tenant_id, service_call_id)
+        REFERENCES service_calls(tenant_id, service_call_id)
         ON DELETE CASCADE,
     CHECK (state IN ('Scheduled', 'Reached'))
 ) STRICT;
@@ -248,15 +248,15 @@ WHERE correlation_id = ?;
 ```sql
 -- Domain: Create or update timer for (tenant_id, service_call_id)
 INSERT INTO timer_schedules (
-    tenant_id, 
-    service_call_id, 
-    correlation_id, 
-    due_at, 
-    registered_at, 
+    tenant_id,
+    service_call_id,
+    correlation_id,
+    due_at,
+    registered_at,
     state
 ) VALUES (?, ?, ?, ?, ?, 'Scheduled')
-ON CONFLICT (tenant_id, service_call_id) 
-DO UPDATE SET 
+ON CONFLICT (tenant_id, service_call_id)
+DO UPDATE SET
     due_at = excluded.due_at,
     correlation_id = excluded.correlation_id,
     registered_at = excluded.registered_at,
@@ -283,7 +283,7 @@ DO UPDATE SET
 
 ```sqlite
 -- Domain: Poll for timers ready to fire (per-tenant)
-SELECT 
+SELECT
     tenant_id,
     service_call_id,
     correlation_id,
@@ -301,7 +301,7 @@ LIMIT 100;
 **Execution Plan:**
 
 ```text
-SEARCH timer_schedules USING INDEX idx_timer_schedules_due_at 
+SEARCH timer_schedules USING INDEX idx_timer_schedules_due_at
   (tenant_id=? AND state=? AND due_at<?)
 ```
 
@@ -366,7 +366,7 @@ WHERE tenant_id = ?
 
 ```sqlite
 -- Observability: Trace request flow
-SELECT 
+SELECT
     tenant_id,
     service_call_id,
     correlation_id,
@@ -405,15 +405,10 @@ SEARCH timer_schedules USING INDEX idx_timer_schedules_correlation_id (correlati
 ```typescript ignore
 export interface TimerPersistencePort {
 	// Tenant ID required as first parameter
-	findDue(
-		tenantId: TenantId,
-		now: DateTime.Utc
-	): Effect.Effect<Chunk<TimerEntry>, PersistenceError>
+	findDue(tenantId: TenantId, now: DateTime.Utc): Effect.Effect<Chunk<TimerEntry>, PersistenceError>
 
 	// Tenant ID embedded in TimerEntry domain object
-	scheduleTimer(
-		entry: TimerEntry
-	): Effect.Effect<void, PersistenceError>
+	scheduleTimer(entry: TimerEntry): Effect.Effect<void, PersistenceError>
 
 	// Tenant ID required for all mutations
 	markFired(
@@ -429,17 +424,14 @@ export interface TimerPersistencePort {
 ```typescript ignore
 namespace CorrectExamples {
 	// ✅ Correct: Tenant-scoped query (all WHERE clauses include tenant_id)
-	const timers = await db.query(
-		'SELECT * FROM timer_schedules WHERE tenant_id = ? AND state = ?',
-		[tenantId, 'Scheduled']
-	)
+	const timers = await db.query('SELECT * FROM timer_schedules WHERE tenant_id = ? AND state = ?', [
+		tenantId,
+		'Scheduled'
+	])
 }
 namespace WrongExamples {
 	// ❌ Wrong: Global query (would leak cross-tenant data)
-	const timers = await db.query(
-		'SELECT * FROM timer_schedules WHERE state = ?',
-		['Scheduled']
-	)
+	const timers = await db.query('SELECT * FROM timer_schedules WHERE state = ?', ['Scheduled'])
 }
 ```
 
@@ -494,7 +486,8 @@ it.effect('should not return timers from other tenants', () =>
 		// Assert: Only tenant A's timer returned
 		expect(Chunk.size(results)).toBe(1)
 		expect(Chunk.unsafeHead(results).tenantId).toEqual(tenantA)
-	}))
+	})
+)
 ```
 
 ### Index Coverage Test (EXPLAIN QUERY PLAN)
@@ -520,7 +513,8 @@ it.effect('should use index for polling query', () =>
 		// Assert: Index scan (not table scan)
 		expect(plan[0].detail).toContain('USING INDEX idx_timer_schedules_due_at')
 		expect(plan[0].detail).not.toContain('SCAN') // No full table scan
-	}))
+	})
+)
 ```
 
 ### FK Constraint Test
@@ -567,7 +561,8 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 		`
 
 		expect(timers[0].count).toBe(0)
-	}))
+	})
+)
 ```
 
 ---
@@ -608,14 +603,14 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 **Potential bottlenecks (future considerations):**
 
 1. **Write contention:** Many concurrent `scheduleTimer` calls
-   - Mitigation: SQLite WAL mode (concurrent reads during writes)
-   - Mitigation: Connection pooling (reduce lock contention)
+    - Mitigation: SQLite WAL mode (concurrent reads during writes)
+    - Mitigation: Connection pooling (reduce lock contention)
 2. **Polling hot path:** Frequent polling queries
-   - Mitigation: Index coverage (no table scan)
-   - Mitigation: LIMIT bounds result set
+    - Mitigation: Index coverage (no table scan)
+    - Mitigation: LIMIT bounds result set
 3. **Index maintenance:** B-tree rebalance on insert/update
-   - Acceptable: O(log N) insertion cost
-   - Alternative: Batch upserts (amortized cost)
+    - Acceptable: O(log N) insertion cost
+    - Alternative: Batch upserts (amortized cost)
 
 **Not a bottleneck:**
 

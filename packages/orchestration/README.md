@@ -156,9 +156,7 @@ declare const fail: (call: Running, meta: ErrorMeta) => Failed
 ### submitWorkflow
 
 ```typescript ignore
-const submitWorkflow = Effect.fn('Orchestration.Submit')(function* (
-	command: SubmitServiceCall
-) {
+const submitWorkflow = Effect.fn('Orchestration.Submit')(function* (command: SubmitServiceCall) {
 	// Generate ID
 	const serviceCallId = yield* ServiceCallId.makeUUID7()
 
@@ -185,20 +183,12 @@ const submitWorkflow = Effect.fn('Orchestration.Submit')(function* (
 ### dueWorkflow
 
 ```typescript ignore
-const dueWorkflow = Effect.fn('Orchestration.Due')(function* (
-	event: DueTimeReached
-) {
+const dueWorkflow = Effect.fn('Orchestration.Due')(function* (event: DueTimeReached) {
 	// Load aggregate
-	const serviceCall = yield* persistence.find(
-		event.tenantId,
-		event.serviceCallId
-	)
+	const serviceCall = yield* persistence.find(event.tenantId, event.serviceCallId)
 
 	// Transition
-	const running = ServiceCall.start(
-		serviceCall,
-		yield* Clock.currentTimeMillis
-	)
+	const running = ServiceCall.start(serviceCall, yield* Clock.currentTimeMillis)
 
 	// Persist
 	yield* persistence.save(running)

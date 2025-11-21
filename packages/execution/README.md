@@ -98,14 +98,9 @@ packages/execution/
 ### executeRequestWorkflow
 
 ```typescript ignore
-const executeRequestWorkflow = Effect.fn('Execution.ExecuteRequest')(function* (
-	command: StartExecution
-) {
+const executeRequestWorkflow = Effect.fn('Execution.ExecuteRequest')(function* (command: StartExecution) {
 	// 1. Fetch full request body from storage
-	const requestSpec = yield* bodyStorage.getRequestBody(
-		command.tenantId,
-		command.serviceCallId
-	)
+	const requestSpec = yield* bodyStorage.getRequestBody(command.tenantId, command.serviceCallId)
 
 	// 2. Execute HTTP request
 	const result = yield* httpClient.execute(requestSpec).pipe(
@@ -148,10 +143,7 @@ interface HttpClientPort {
 ```typescript ignore
 interface BodyStoragePort {
 	// Retrieve full request body by serviceCallId
-	getRequestBody: (
-		tenantId: TenantId,
-		serviceCallId: ServiceCallId
-	) => Effect.Effect<RequestSpec, StorageError>
+	getRequestBody: (tenantId: TenantId, serviceCallId: ServiceCallId) => Effect.Effect<RequestSpec, StorageError>
 }
 ```
 
