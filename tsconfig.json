@@ -3,5 +3,14 @@
 	"exclude": ["node_modules", "**/node_modules", "dist", "**/dist", ".direnv"],
 	"extends": "./packages/typescript/tsconfig.json",
 	"files": [],
-	"include": []
+	"references": [
+		{ "path": "./packages/adapters" },
+		{ "path": "./packages/api" },
+		{ "path": "./packages/execution" },
+		{ "path": "./packages/orchestration" },
+		{ "path": "./packages/platform" },
+		{ "path": "./packages/schemas" },
+		{ "path": "./packages/timer" },
+		{ "path": "./packages/ui" }
+	]
 }
