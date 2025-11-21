@@ -332,6 +332,7 @@ import * as Schema from 'effect/Schema'
  * Effect Schema automatically validates against all union members.
  *
  * This enables:
+ *
  * 1. Parse JSON → validate envelope + payload in one step
  * 2. Pattern match on payload._tag for type-safe routing
  */
@@ -345,10 +346,14 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	causationId: Schema.optional(Schema.String),
 	payload: DomainMessage // ← Union of all messages!
 }) {
-	/** Parse from JSON wire format (string → validated envelope with typed payload) */
+	/**
+	 * Parse from JSON wire format (string → validated envelope with typed payload)
+	 */
 	static readonly parseJson = Schema.parseJson(MessageEnvelope)
 
-	/** Encode to JSON wire format (envelope → string) */
+	/**
+	 * Encode to JSON wire format (envelope → string)
+	 */
 	static readonly encodeJson = Schema.encodeJson(MessageEnvelope)
 }
 

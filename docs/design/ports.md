@@ -222,6 +222,7 @@ export interface TimerEventBusPort {
 	 * - Delegate to EventBusPort.publish([envelope])
 	 *
 	 * @param event - Pure domain event (DueTimeReached.Type)
+	 *
 	 * @returns Effect requiring MessageMetadata Context
 	 */
 	publishDueTimeReached(
