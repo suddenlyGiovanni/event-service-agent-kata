@@ -6,6 +6,6 @@ export default defineConfig({
 		environment: 'node',
 		include: ['src/**/*.{test,spec}.{ts,tsx}'],
 		name: 'timer',
-		passWithNoTests: true
-	}
+		passWithNoTests: true,
+	},
 })

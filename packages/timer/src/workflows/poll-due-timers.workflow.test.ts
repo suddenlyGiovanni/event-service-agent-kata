@@ -24,6 +24,7 @@ import * as Workflows from './poll-due-timers.workflow.ts'
 
 /**
  * Base test layers - static resources shared across most tests:
+ *
  * - ClockPortTest: TestClock for time manipulation
  * - UUID7.Default: Deterministic UUID generation
  * - TimerPersistence.Test: In-memory SQLite persistence adapter
@@ -34,6 +35,7 @@ import * as Workflows from './poll-due-timers.workflow.ts'
  * where data from one test affects another.
  *
  * Why scoped?
+ *
  * - Each test gets a fresh SQLite `:memory:` database
  * - No data persists between tests (full isolation)
  * - Tests can use the same IDs without conflicts
@@ -47,6 +49,7 @@ const BaseTestLayers = Layer.mergeAll(Adapters.ClockPortTest, UUID7.Default, Ada
  * Test suite for pollDueTimersWorkflow
  *
  * Covers:
+ *
  * - Happy path (timers found and processed)
  * - Edge cases (no timers, empty batches)
  * - Error handling (publish failures, persistence failures)
@@ -60,10 +63,10 @@ describe('pollDueTimersWorkflow', () => {
 			// Mock EventBus to track published events
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: event =>
+				publishDueTimeReached: (event) =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
-					}),
+					})
 			})
 
 			const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
@@ -185,12 +188,12 @@ describe('pollDueTimersWorkflow', () => {
 								serviceCallId: t.serviceCallId,
 								tenantId: t.tenantId,
 							}),
-							_ => persistence.save(t),
+							_ => persistence.save(t)
 						),
 					{
 						concurrency: 1,
 						discard: true,
-					},
+					}
 				)
 
 				// Act: Advance time to make all timers due
@@ -206,15 +209,17 @@ describe('pollDueTimersWorkflow', () => {
 				yield* pipe(
 					serviceCallIds,
 					// biome-ignore lint/suspicious/useIterableCallbackReturn: Ensure proper iteration
-					Effect.forEach(serviceCallId => persistence.find({ serviceCallId, tenantId }), { concurrency: 1 }),
+					Effect.forEach(serviceCallId => persistence.find({ serviceCallId, tenantId }), {
+						concurrency: 1,
+					}),
 					Effect.tap(foundTimers =>
 						Effect.sync(() => {
 							foundTimers.forEach(found => {
 								expect(Option.isSome(found)).toBe(true)
 								expect(found.pipe(Option.exists(Domain.TimerEntry.isReached))).toBe(true)
 							})
-						}),
-					),
+						})
+					)
 				) // Assert: No timers should remain in findDue
 				const afterFired = yield* persistence.findDue(yield* clock.now())
 				expect(Chunk.isEmpty(afterFired)).toBe(true)
@@ -276,7 +281,7 @@ describe('pollDueTimersWorkflow', () => {
 								operations.push(`markFired:${params.key.serviceCallId}`)
 								yield* basePersistence.markFired(params)
 							}),
-					}),
+					})
 				) // Act: Advance time to make timer due
 				yield* TestClock.adjust('6 minutes')
 
@@ -295,9 +300,9 @@ describe('pollDueTimersWorkflow', () => {
 		/**
 		 * Verifies correlationId propagation from timer aggregate to published event.
 		 *
-		 * The workflow provisions MessageMetadata Context with the timer's correlationId
-		 * before calling publishDueTimeReached. The adapter then accesses this context
-		 * to populate the envelope's correlationId field.
+		 * The workflow provisions MessageMetadata Context with the timer's correlationId before calling
+		 * publishDueTimeReached. The adapter then accesses this context to populate the envelope's correlationId
+		 * field.
 		 *
 		 * This ensures correlation chains remain intact across module boundaries.
 		 *
@@ -521,8 +526,8 @@ describe('pollDueTimersWorkflow', () => {
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
-						}),
-					),
+						})
+					)
 				)
 			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
@@ -582,8 +587,8 @@ describe('pollDueTimersWorkflow', () => {
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isScheduled)).toBe(true)
-						}),
-					),
+						})
+					)
 				)
 			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
@@ -647,8 +652,8 @@ describe('pollDueTimersWorkflow', () => {
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
-						}),
-					),
+						})
+					)
 				)
 			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
@@ -661,7 +666,7 @@ describe('pollDueTimersWorkflow', () => {
 					Effect.fail(
 						new Ports.PublishError({
 							cause: 'Event bus publish failed',
-						}),
+						})
 					),
 			})
 
@@ -735,7 +740,7 @@ describe('pollDueTimersWorkflow', () => {
 						return Effect.fail(
 							new Ports.PublishError({
 								cause: 'Event bus publish failed',
-							}),
+							})
 						)
 					}
 					return Effect.sync(() => {
@@ -764,7 +769,7 @@ describe('pollDueTimersWorkflow', () => {
 						registeredAt,
 						serviceCallId,
 						tenantId,
-					}),
+					})
 				)
 
 				yield* Effect.forEach(
@@ -812,8 +817,8 @@ describe('pollDueTimersWorkflow', () => {
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
-						}),
-					),
+						})
+					)
 				)
 				// Assert: Timer 2 should still be Scheduled (publish failed)
 				yield* pipe(
@@ -822,8 +827,8 @@ describe('pollDueTimersWorkflow', () => {
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isScheduled)).toBe(true)
-						}),
-					),
+						})
+					)
 				)
 				// Assert: Timer 3 should be marked as Reached
 				yield* pipe(
@@ -832,8 +837,8 @@ describe('pollDueTimersWorkflow', () => {
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
-						}),
-					),
+						})
+					)
 				)
 
 				// End of test case
@@ -898,16 +903,18 @@ describe('pollDueTimersWorkflow', () => {
 								new Ports.PersistenceError({
 									cause: 'Database connection lost',
 									operation: 'markFired',
-								}),
+								})
 							),
-					}),
+					})
 				)
 
 				// Act: Advance time to make timer due
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow with failing markFired - should fail with BatchProcessingError
-				const result = yield* Effect.exit(Workflows.pollDueTimersWorkflow().pipe(Effect.provide(TimerPersistenceTest)))
+				const result = yield* Effect.exit(
+					Workflows.pollDueTimersWorkflow().pipe(Effect.provide(TimerPersistenceTest))
+				)
 
 				// Assert: Workflow should fail
 				expect(Exit.isFailure(result)).toBe(true)
@@ -932,8 +939,8 @@ describe('pollDueTimersWorkflow', () => {
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isScheduled)).toBe(true)
-						}),
-					),
+						})
+					)
 				)
 			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
@@ -963,7 +970,7 @@ describe('pollDueTimersWorkflow', () => {
 						new Ports.PersistenceError({
 							cause: 'Database connection failed',
 							operation: 'findDue',
-						}),
+						})
 					),
 			})
 
@@ -986,7 +993,11 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: No events should have been published
 				expect(publishedEvents).toHaveLength(0)
-			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default)))
+			}).pipe(
+				Effect.provide(
+					Layer.mergeAll(TestPersistence, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default)
+				)
+			)
 		})
 	})
 })

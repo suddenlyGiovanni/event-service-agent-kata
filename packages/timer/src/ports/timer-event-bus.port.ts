@@ -11,6 +11,7 @@ import type * as Messages from '@event-service-agent/schemas/messages'
  * TimerEventBusPort - Timer module's complete EventBus contract
  *
  * Represents ALL EventBus capabilities Timer needs:
+ *
  * 1. Publish DueTimeReached events (polling workflow)
  * 2. Subscribe to ScheduleTimer commands (command handler)
  *
@@ -34,21 +35,19 @@ export interface TimerEventBusPort {
 	 * Workflow provisions MessageMetadata Context with correlationId/causationId.
 	 *
 	 * Adapter responsibilities:
+	 *
 	 * - Extract MessageMetadata from Effect Context (yield* MessageMetadata)
 	 * - Wrap event in MessageEnvelope with generated EnvelopeId
 	 * - Extract tenantId/serviceCallId/reachedAt for routing/metadata
 	 * - Populate correlationId/causationId from MessageMetadata Context
 	 * - Delegate to `EventBusPort.publish([envelope])`
 	 *
-	 * **Type Safety**: R parameter requires MessageMetadata, enforcing context
-	 * provisioning at workflow level. Missing context = compile error.
+	 * **Type Safety**: R parameter requires MessageMetadata, enforcing context provisioning at workflow level. Missing
+	 * context = compile error.
 	 *
-	 * @param event - Pure domain event {@link DueTimeReached.Type} with all domain fields
-	 * @returns Effect that succeeds when event is published
-	 * @throws PublishError - When broker publish fails
-	 * @requires MessageMetadata - Context providing correlationId/causationId
 	 * @example
-	 * ```typescript ignore
+	 *
+	 * ```typescript
 	 * import * as Effect from 'effect/Effect'
 	 * import * as Option from 'effect/Option'
 	 * import { MessageMetadata } from '@event-service-agent/platform/context'
@@ -77,9 +76,15 @@ export interface TimerEventBusPort {
 	 * 	)
 	 * })
 	 * ```
+	 *
+	 * @param event - Pure domain event {@link DueTimeReached.Type} with all domain fields
+	 *
+	 * @returns Effect that succeeds when event is published
+	 * @throws PublishError - When broker publish fails
+	 * @requires MessageMetadata - Context providing correlationId/causationId
 	 */
 	readonly publishDueTimeReached: (
-		event: Messages.Timer.Events.DueTimeReached.Type,
+		event: Messages.Timer.Events.DueTimeReached.Type
 	) => Effect.Effect<void, Ports.PublishError, MessageMetadata>
 
 	/**
@@ -87,31 +92,29 @@ export interface TimerEventBusPort {
 	 *
 	 * Used by: Command Handler
 	 *
-	 * **Pattern**: Adapter extracts envelope metadata and passes it directly to handler
-	 * as a parameter.
+	 * **Pattern**: Adapter extracts envelope metadata and passes it directly to handler as a parameter.
 	 *
 	 * Adapter responsibilities:
+	 *
 	 * - Subscribe to timer.commands topic
 	 * - Parse and validate {@link MessageEnvelope}
 	 * - Extract command from payload
 	 * - Extract metadata from envelope:
-	 *   - correlationId: From envelope (upstream correlation)
-	 *   - causationId: envelope.id (this command envelope is the cause)
+	 *
+	 *   - CorrelationId: From envelope (upstream correlation)
+	 *   - CausationId: envelope.id (this command envelope is the cause)
 	 * - Invoke handler with command AND metadata as parameters
 	 * - Map errors (parse errors, subscription errors)
 	 *
 	 * Handler responsibilities:
+	 *
 	 * - Receive pure command and metadata as direct parameters
 	 * - Use correlationId for timer aggregate
 	 * - Use causationId when publishing events (tracks "which command triggered this")
 	 *
-	 * @param handler - Effect to process each command (invokes scheduleTimerWorkflow)
-	 * @returns Effect that runs indefinitely, processing commands
-	 * @throws SubscribeError - When subscription setup fails
-	 * @throws E - When handler fails (propagated for error handling)
-	 *
 	 * @example
-	 * ```typescript ignore
+	 *
+	 * ```typescript
 	 * import * as Effect from 'effect/Effect'
 	 * import * as Option from 'effect/Option'
 	 * import { TimerEventBusPort } from '@event-service-agent/timer/ports'
@@ -123,10 +126,7 @@ export interface TimerEventBusPort {
 	 * 	const eventBus = yield* TimerEventBusPort
 	 *
 	 * 	yield* eventBus.subscribeToScheduleTimerCommands(
-	 * 		(
-	 * 			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-	 * 			metadata: MessageMetadata.Type
-	 * 		) =>
+	 * 		(command: Messages.Orchestration.Commands.ScheduleTimer.Type, metadata: MessageMetadata.Type) =>
 	 * 			Effect.gen(function* () {
 	 * 				// Metadata passed directly as parameter
 	 * 				console.log('Processing command with correlation:', metadata.correlationId)
@@ -137,12 +137,18 @@ export interface TimerEventBusPort {
 	 * 	)
 	 * })
 	 * ```
+	 *
+	 * @param handler - Effect to process each command (invokes scheduleTimerWorkflow)
+	 *
+	 * @returns Effect that runs indefinitely, processing commands
+	 * @throws SubscribeError - When subscription setup fails
+	 * @throws E - When handler fails (propagated for error handling)
 	 */
 	readonly subscribeToScheduleTimerCommands: <E, R>(
 		handler: (
 			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-			metadata: MessageMetadata.Type,
-		) => Effect.Effect<void, E, R>,
+			metadata: MessageMetadata.Type
+		) => Effect.Effect<void, E, R>
 	) => Effect.Effect<void, Ports.SubscribeError | E, R>
 }
 
