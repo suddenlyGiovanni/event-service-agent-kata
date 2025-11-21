@@ -2,8 +2,7 @@
  * ClockPort — Time service abstraction
  *
  * Provides current time access with controllable implementation for testing.
- * This is a fundamental port that enables deterministic time handling in tests
- * while using real system time in production.
+ * This is a fundamental port that enables deterministic time handling in tests while using real system time in production.
  *
  * Why this abstraction exists:
  *
@@ -75,8 +74,7 @@ export interface ClockPort {
 /**
  * ClockPort service tag
  *
- * Use this to access ClockPort from the Effect context.
- * Inject via Layer in production, TestLayer in tests.
+ * Use this to access ClockPort from the Effect context. Inject via Layer in production, TestLayer in tests.
  */
 export const ClockPort: Context.Tag<ClockPort, ClockPort> = Context.GenericTag<ClockPort>(
 	'@event-service-agent/timer/ClockPort'

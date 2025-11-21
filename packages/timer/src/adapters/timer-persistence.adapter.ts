@@ -29,24 +29,22 @@ class TimerScheduleRow extends Sql.Model.Class<TimerScheduleRow>('TimerScheduleR
 	registeredAt: Schema.DateTimeUtc,
 
 	/**
-	 * Service Call ID associated with this timer
-	 * Primary key component
+	 * Service Call ID associated with this timer Primary key component
 	 */
 	serviceCallId: Sql.Model.GeneratedByApp(ServiceCallId),
 
 	state: Schema.propertySignature(Schema.Literal('Scheduled', 'Reached')).pipe(
-		Schema.withConstructorDefault(() => 'Scheduled' as const),
+		Schema.withConstructorDefault(() => 'Scheduled' as const)
 	),
 
 	/**
-	 * Tenant ID for multi-tenant isolation
-	 * Primary key component
+	 * Tenant ID for multi-tenant isolation; Primary key component
 	 */
 	tenantId: Sql.Model.GeneratedByApp(TenantId),
 }) {}
 
 /**
- * Helper: Convert Timer DB row to TimerEntry domain type
+ * Helper: Convert Timer DB row to TimerEntry domain type.
  * Handles both Scheduled and Reached states based on state column.
  */
 const timerRecordToTimerEntry: (timer: TimerScheduleRow) => TimerEntry.Type = Match.type<TimerScheduleRow>().pipe(
@@ -60,7 +58,7 @@ const timerRecordToTimerEntry: (timer: TimerScheduleRow) => TimerEntry.Type = Ma
 				registeredAt: timerRow.registeredAt,
 				serviceCallId: timerRow.serviceCallId,
 				tenantId: timerRow.tenantId,
-			}),
+			})
 	),
 	Match.when(
 		row => row.state === 'Reached',
@@ -72,9 +70,9 @@ const timerRecordToTimerEntry: (timer: TimerScheduleRow) => TimerEntry.Type = Ma
 				registeredAt: timerRow.registeredAt,
 				serviceCallId: timerRow.serviceCallId,
 				tenantId: timerRow.tenantId,
-			}),
+			})
 	),
-	Match.orElseAbsurd,
+	Match.orElseAbsurd
 )
 
 /**
@@ -111,7 +109,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 					cause: error,
 					message: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
 					operation,
-				}),
+				})
 		)
 
 	/**
@@ -137,14 +135,14 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 					Effect.annotateCurrentSpan({
 						serviceCallId: key.serviceCallId,
 						tenantId: key.tenantId,
-					}),
-				),
+					})
+				)
 			)
-		},
+		}
 	)
 
 	/**
-	 * Find a timer in ANY state (Scheduled or Reached)
+	 * Find a timer in ANY state (Scheduled or Reached).
 	 * Used for observability/debugging.
 	 */
 	const find = Effect.fn('TimerPersistence.Live.find')(
@@ -166,23 +164,24 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 					Effect.annotateCurrentSpan({
 						serviceCallId: key.serviceCallId,
 						tenantId: key.tenantId,
-					}),
+					})
 				),
-				Effect.map(Option.map(timerRecordToTimerEntry)),
-			),
+				Effect.map(Option.map(timerRecordToTimerEntry))
+			)
 	)
 
 	/**
 	 * Find all timers with dueAt <= now and status = 'Scheduled'
 	 *
-	 * Only returns Scheduled timers (Reached excluded).
-	 * Returns sorted chunk containing due timers sorted by:
-	 *   1. dueAt ASC (earliest first)
-	 *   2. registeredAt ASC (first-come-first-served for same dueAt)
-	 *   3. serviceCallId ASC (UUID7 has embedded timestamp, provides deterministic tiebreaker)
+	 * Only returns Scheduled timers (Reached excluded). Returns sorted chunk containing due timers sorted by:
 	 *
-	 * Performance: Query is optimized by idx_timer_schedules_due_at (state, due_at, tenant_id)
-	 * which provides efficient filtering and range scan for polling worker.
+	 * 1. `dueAt` ASC (earliest first)
+	 * 2. `registeredAt` ASC (first-come-first-served for same dueAt)
+	 * 3. `serviceCallId` ASC (UUID7 has embedded timestamp, provides deterministic tiebreaker)
+	 *
+	 * Performance: Query is optimized by idx_timer_schedules_due_at (state, due_at, tenant_id) which provides efficient
+	 * filtering and range scan for polling worker.
+	 *
 	 * @see 0003_timer_schedules_schema.ts - Index definition
 	 */
 	const findDue = Effect.fn('TimerPersistence.Live.findDue')(
@@ -209,17 +208,16 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 				Effect.tap(Effect.annotateCurrentSpan({ now })),
 				Effect.map(Chunk.fromIterable),
 				Effect.map(Chunk.map(timerRecordToTimerEntry)),
-				Effect.map(Chunk.filter(TimerEntry.isScheduled)),
-			),
+				Effect.map(Chunk.filter(TimerEntry.isScheduled))
+			)
 	)
 
 	/**
-	 * Find only Scheduled timers (filters by state = 'Scheduled')
-	 * Returns Option<ScheduledTimer>
+	 * Find only Scheduled timers (filters by state = 'Scheduled') Returns Option<ScheduledTimer>
 	 */
 	const findScheduledTimer = Effect.fn('TimerPersistence.Live.findScheduledTimer')(
 		(
-			key: Ports.TimerScheduleKey.Type,
+			key: Ports.TimerScheduleKey.Type
 		): Effect.Effect<Option.Option<TimerEntry.ScheduledTimer>, Ports.PersistenceError> =>
 			pipe(
 				key,
@@ -242,17 +240,18 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 					Effect.annotateCurrentSpan({
 						serviceCallId: key.serviceCallId,
 						tenantId: key.tenantId,
-					}),
+					})
 				),
 				Effect.map(Option.map(timerRecordToTimerEntry)),
-				Effect.map(Option.filter(TimerEntry.isScheduled)),
-			),
+				Effect.map(Option.filter(TimerEntry.isScheduled))
+			)
 	)
 
 	/**
 	 * Mark a timer as fired by transitioning Scheduled → Reached
 	 *
 	 * State transitions:
+	 *
 	 * - ScheduledTimer → ReachedTimer (normal case)
 	 * - ReachedTimer → ReachedTimer (idempotent no-op, preserves original reachedAt)
 	 * - NotFound → Success (idempotent)
@@ -291,9 +290,9 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 						reachedAt: params.reachedAt,
 						serviceCallId: params.key.serviceCallId,
 						tenantId: params.key.tenantId,
-					}),
-				),
-			),
+					})
+				)
+			)
 	)
 
 	/**
@@ -302,23 +301,23 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	 * Idempotent: calling multiple times with same key succeeds.
 	 *
 	 * **State transition semantics:**
+	 *
 	 * - If no timer exists: creates new Scheduled timer
 	 * - If Scheduled timer exists: updates fields (e.g., new dueAt for rescheduling)
 	 * - If Reached timer exists: NO-OP (all columns preserved, no UPDATE performed)
 	 *
 	 * @remarks
-	 * Reached is a terminal state per ADR-0003. Once a timer fires and
-	 * transitions to Reached, subsequent save() calls will NOT modify ANY
-	 * columns. This prevents accidental resurrection, preserves the idempotency
-	 * marker (reached_at), and ensures fired timers remain immutable.
+	 * Reached is a terminal state per ADR-0003. Once a timer fires and transitions to Reached, subsequent save() calls
+	 * will NOT modify ANY columns. This prevents accidental resurrection, preserves the idempotency marker
+	 * (reached_at), and ensures fired timers remain immutable.
 	 *
 	 * The SQL uses a conditional UPDATE clause to enforce full NO-OP:
-	 * - `WHERE timer_schedules.state != 'Reached'`: Blocks UPDATE entirely if
-	 *   existing row is Reached, preserving all columns (state, reached_at, due_at, etc.)
+	 *
+	 * - `WHERE timer_schedules.state != 'Reached'`: Blocks UPDATE entirely if existing row is Reached, preserving all
+	 *   columns (state, reached_at, due_at, etc.)
 	 * - Performance: No row writes when timer already fired (early exit)
 	 *
 	 * If genuine re-scheduling is needed after firing, use delete() + save().
-	 *
 	 * @see ADR-0003 for timer state machine and terminal state semantics
 	 */
 	const save = Effect.fn('TimerPersistence.Live.save')(
@@ -356,8 +355,8 @@ WHERE timer_schedules.state != 'Reached';
 					Request: TimerScheduleRow.insert,
 				}),
 				mapSqlError('save'),
-				Effect.tap(Effect.annotateCurrentSpan({ ...entry })),
-			),
+				Effect.tap(Effect.annotateCurrentSpan({ ...entry }))
+			)
 	)
 
 	return Ports.TimerPersistencePort.of({
@@ -374,34 +373,31 @@ WHERE timer_schedules.state != 'Reached';
  * TimerPersistence - Adapter implementations for TimerPersistencePort
  *
  * Provides different storage backends for timer persistence:
+ *
  * - {@link Test} - Fast, isolated, SQLite in-memory storage for testing
  * - {@link Live} - Persistent file-backed SQLite database for production
  *
  * @remarks
- * This class follows the namespace pattern for organizing related Layer implementations.
- * Each static member provides a Layer that implements TimerPersistencePort with different
- * storage strategies. Both implementations use the same SQL adapter with different
- * database configurations (`:memory:` vs file-backed).
- *
+ * This class follows the namespace pattern for organizing related Layer implementations. Each static member provides a
+ * Layer that implements TimerPersistencePort with different storage strategies. Both implementations use the same SQL
+ * adapter with different database configurations (`:memory:` vs file-backed).
  * @example
- * ```typescript ignore
+ *
+ * ```typescript
  * // In tests - use in-memory SQLite
  * import { TimerPersistence } from '../adapters/timer-persistence.adapter.ts'
  *
  * Effect.gen(function* () {
- *   const persistence = yield* TimerPersistencePort
- *   yield* persistence.save(timer)
- * }).pipe(
- *   Effect.provide(TimerPersistence.Test)
- * )
+ * 	const persistence = yield* TimerPersistencePort
+ * 	yield* persistence.save(timer)
+ * }).pipe(Effect.provide(TimerPersistence.Test))
  * ```
  *
  * @example
- * ```typescript ignore
+ *
+ * ```typescript
  * // In production - use file-backed SQLite
- * Effect.provide(
- *   TimerPersistence.Live
- * )
+ * Effect.provide(TimerPersistence.Live)
  * ```
  *
  * @see {@link TimerPersistencePort} for the port interface specification
@@ -424,27 +420,28 @@ export class TimerPersistence {
 	/**
 	 * Test Layer using SQLite with in-memory database
 	 *
-	 * Provides realistic persistence behavior without external dependencies.
-	 * Uses SQLite in-memory mode for fast, isolated tests.
+	 * Provides realistic persistence behavior without external dependencies. Uses SQLite in-memory mode for fast,
+	 * isolated tests.
 	 *
 	 * **Characteristics:**
+	 *
 	 * - **Isolation**: Each test gets fresh database (`:memory:` per test run)
 	 * - **Speed**: In-memory operations (faster than file I/O)
 	 * - **Realistic**: Uses actual SQL queries (validates production SQL path)
 	 * - **Migrations**: Runs same migrations as production
 	 * - **No cleanup needed**: Database disposed when scope closes
 	 *
-	 * @example
-	 * Basic usage in tests with SQLite in-memory
-	 * ```typescript ignore
+	 * @example Basic usage in tests with SQLite in-memory
+	 *
+	 * ```typescript
 	 * it.effect('saves and retrieves timer', () =>
-	 *   Effect.gen(function* () {
-	 *     const persistence = yield* TimerPersistencePort
-	 *     const timer = ScheduledTimer.make({ tenantId, serviceCallId, dueAt, registeredAt, correlationId })
-	 *     yield* persistence.save(timer)
-	 *     const found = yield* persistence.find({ tenantId, serviceCallId })
-	 *     expect(Option.isSome(found)).toBe(true)
-	 *   }).pipe(Effect.provide(TimerPersistence.Test))
+	 * 	Effect.gen(function* () {
+	 * 		const persistence = yield* TimerPersistencePort
+	 * 		const timer = ScheduledTimer.make({ tenantId, serviceCallId, dueAt, registeredAt, correlationId })
+	 * 		yield* persistence.save(timer)
+	 * 		const found = yield* persistence.find({ tenantId, serviceCallId })
+	 * 		expect(Option.isSome(found)).toBe(true)
+	 * 	}).pipe(Effect.provide(TimerPersistence.Test))
 	 * )
 	 * ```
 	 */

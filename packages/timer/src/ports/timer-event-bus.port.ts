@@ -15,13 +15,12 @@ import type * as Messages from '@event-service-agent/schemas/messages'
  * 1. Publish DueTimeReached events (polling workflow)
  * 2. Subscribe to ScheduleTimer commands (command handler)
  *
- * Abstracts Timer-specific concerns (envelopes, topics, parsing)
- * from workflows and handlers. Domain code works with commands/events,
- * not infrastructure primitives.
+ * Abstracts Timer-specific concerns (envelopes, topics, parsing) from workflows and handlers. Domain code works with
+ * commands/events, not infrastructure primitives.
  *
- * **Design Pattern**: Port accepts pure domain events (DueTimeReached.Type),
- * adapter wraps in MessageEnvelope and delegates to EventBusPort. Enables domain purity
- * while maintaining transactional publishing (outbox pattern deferred to ADR-0008).
+ * **Design Pattern**: Port accepts pure domain events (DueTimeReached.Type), adapter wraps in MessageEnvelope and
+ * delegates to EventBusPort. Enables domain purity while maintaining transactional publishing (outbox pattern deferred
+ * to ADR-0008).
  *
  * @see docs/design/hexagonal-architecture-layers.md#event-publishing-pattern
  */

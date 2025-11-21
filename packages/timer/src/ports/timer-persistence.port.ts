@@ -1,8 +1,8 @@
 /**
  * TimerPersistencePort - Timer storage abstraction
  *
- * Provides persistence operations for TimerEntry entities. The adapter handles
- * all storage-specific details (SQL queries, connection pooling, transactions).
+ * Provides persistence operations for TimerEntry entities. The adapter handles all storage-specific details (SQL
+ * queries, connection pooling, transactions).
  *
  * Used by: Timer module (command handlers, polling worker)
  *
@@ -31,10 +31,9 @@ import type { TimerEntry } from '../domain/timer-entry.domain.ts'
 /**
  * PersistenceError - Storage operation failure
  *
- * Preserves full diagnostic context from underlying storage layer.
- * The `cause` field contains the raw error (with stack trace, nested errors, etc.)
- * for debugging and observability. The `message` field provides a human-readable
- * summary extracted from the cause.
+ * Preserves full diagnostic context from underlying storage layer. The `cause` field contains the raw error (with stack
+ * trace, nested errors, etc.) for debugging and observability. The `message` field provides a human-readable summary
+ * extracted from the cause.
  *
  * Follows Effect Platform error pattern (see @effect/platform/Error).
  */
@@ -63,9 +62,8 @@ export class TimerNotFoundError extends Schema.TaggedError<TimerNotFoundError>()
 /**
  * TimerScheduleKey - Composite identity for timer persistence operations
  *
- * All persistence queries use (tenantId, serviceCallId) as the idempotent key.
- * Keeping the Schema definition in the port layer ensures adapters/tests share
- * the same structural contract without depending on adapter internals.
+ * All persistence queries use (tenantId, serviceCallId) as the idempotent key. Keeping the Schema definition in the
+ * port layer ensures adapters/tests share the same structural contract without depending on adapter internals.
  */
 export const TimerScheduleKey: Schema.Struct<{
 	serviceCallId: typeof ServiceCallId
@@ -121,11 +119,9 @@ export interface TimerPersistencePort {
 	 * - If Scheduled timer exists: update with new values (e.g., reschedule with new dueAt)
 	 * - If Reached timer exists: NO-OP (all columns preserved, no database write)
 	 *
-	 * **Terminal state enforcement:**
-	 * Reached is a terminal state per ADR-0003. Once a timer fires and transitions
-	 * to Reached, subsequent save() calls will NOT modify ANY columns. The entire
-	 * row becomes immutable, preserving both the idempotency marker (reached_at)
-	 * and all other metadata (due_at, correlation_id, etc.).
+	 * **Terminal state enforcement:** Reached is a terminal state per ADR-0003. Once a timer fires and transitions to
+	 * Reached, subsequent save() calls will NOT modify ANY columns. The entire row becomes immutable, preserving both
+	 * the idempotency marker (reached_at) and all other metadata (due_at, correlation_id, etc.).
 	 *
 	 * The adapter handles:
 	 *
