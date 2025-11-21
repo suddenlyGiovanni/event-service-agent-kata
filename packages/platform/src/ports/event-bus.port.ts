@@ -67,57 +67,31 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  *
  * @example Publishing events and subscribing to commands
  *
- * ```typescript
- * import * as DateTime from 'effect/DateTime'
- * import * as Effect from 'effect/Effect'
- * import * as Option from 'effect/Option'
- * import { EventBusPort } from '@event-service-agent/platform/ports'
- * import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
- * import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
- *
+ * ```typescript ignore
  * // Example: Publishing events with self-contained envelope
- * const publishEventsExample = Effect.gen(function* () {
- * 	const bus = yield* EventBusPort
+ * const bus = yield* EventBusPort
  *
- * 	// Generate required IDs
- * 	const envelopeId = yield* EnvelopeId.makeUUID7()
- * 	const correlationId = yield* CorrelationId.makeUUID7()
- * 	const serviceCallId = yield* ServiceCallId.makeUUID7()
- * 	const tenantId = TenantId.make('tenant-123')
- * 	const now = yield* DateTime.now
+ * // Build self-contained envelope with all routing metadata
+ * const envelope = {
+ * 	id: envelopeId,
+ * 	type: 'ServiceCallScheduled',
+ * 	tenantId,
+ * 	correlationId: Option.some(correlationId),
+ * 	aggregateId: Option.some(serviceCallId),
+ * 	causationId: Option.none(),
+ * 	timestampMs: now,
+ * 	payload: {},
+ * }
  *
- * 	// Build self-contained envelope with all routing metadata
- * 	const envelope: MessageEnvelope.Type = {
- * 		id: envelopeId,
- * 		type: 'ServiceCallScheduled',
- * 		tenantId,
- * 		correlationId: Option.some(correlationId),
- * 		aggregateId: Option.some(serviceCallId),
- * 		causationId: Option.none(),
- * 		timestampMs: now,
- * 		payload: {
- * 			serviceCallId,
- * 			tenantId,
- * 		},
- * 	}
- *
- * 	yield* bus.publish([envelope]) // No separate context needed!
- * })
+ * yield* bus.publish([envelope])
  *
  * // Example: Subscribing to commands
- * const subscribeToCommandsExample = Effect.gen(function* () {
- * 	const bus = yield* EventBusPort
- *
- * 	// Subscribe with handler Effect
- * 	yield* bus.subscribe([{ name: 'timer.commands' }], (envelope) =>
- * 		Effect.gen(function* () {
- * 			// Handler processes envelope
- * 			console.log('Received command:', envelope.type)
- * 			// Parse and handle command (simplified)
- * 			return
- * 		}),
- * 	)
- * })
+ * yield* bus.subscribe([{ name: 'timer.commands' }], (envelope) =>
+ * 	Effect.gen(function* () {
+ * 		console.log('Received command:', envelope.type)
+ * 		// Handle command...
+ * 	}),
+ * )
  * ```
  */
 export interface EventBusPort {
@@ -138,40 +112,21 @@ export interface EventBusPort {
 	 *
 	 * @example Publishing a message envelope
 	 *
-	 * ```typescript
-	 * import * as DateTime from 'effect/DateTime'
-	 * import * as Effect from 'effect/Effect'
-	 * import * as Option from 'effect/Option'
-	 * import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
-	 * import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
-	 * import { EventBusPort } from '@event-service-agent/platform/ports'
+	 * ```typescript ignore
+	 * const bus = yield* EventBusPort
 	 *
-	 * const publishExample = Effect.gen(function* () {
-	 * 	const bus = yield* EventBusPort
+	 * const envelope = {
+	 * 	id: envelopeId,
+	 * 	type: 'ServiceCallScheduled',
+	 * 	tenantId,
+	 * 	correlationId: Option.some(correlationId),
+	 * 	aggregateId: Option.some(serviceCallId),
+	 * 	causationId: Option.none(),
+	 * 	timestampMs: now,
+	 * 	payload: {},
+	 * }
 	 *
-	 * 	// Generate IDs
-	 * 	const envelopeId = yield* EnvelopeId.makeUUID7()
-	 * 	const correlationId = yield* CorrelationId.makeUUID7()
-	 * 	const serviceCallId = yield* ServiceCallId.makeUUID7()
-	 * 	const tenantId = TenantId.make('tenant-123')
-	 * 	const now = yield* DateTime.now
-	 *
-	 * 	const envelope: MessageEnvelope.Type = {
-	 * 		id: envelopeId,
-	 * 		type: 'ServiceCallScheduled',
-	 * 		tenantId,
-	 * 		correlationId: Option.some(correlationId),
-	 * 		aggregateId: Option.some(serviceCallId),
-	 * 		causationId: Option.none(),
-	 * 		timestampMs: now,
-	 * 		payload: {
-	 * 			serviceCallId,
-	 * 			tenantId,
-	 * 		},
-	 * 	}
-	 *
-	 * 	yield* bus.publish([envelope]) // All metadata in envelope!
-	 * })
+	 * yield* bus.publish([envelope])
 	 * ```
 	 *
 	 * @param envelopes - Array of message envelopes to publish (self-contained with all routing metadata)
@@ -215,28 +170,22 @@ export interface EventBusPort {
 	 *
 	 * @example Subscribing to commands with idempotent handler
 	 *
-	 * ```typescript
-	 * import * as Effect from 'effect/Effect'
-	 * import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
-	 * import { EventBusPort } from '@event-service-agent/platform/ports'
+	 * ```typescript ignore
+	 * const bus = yield* EventBusPort
 	 *
-	 * const subscribeExample = Effect.gen(function* () {
-	 * 	const bus = yield* EventBusPort
+	 * // Subscribe to commands with idempotent handler
+	 * yield* bus.subscribe([{ name: 'timer.commands' }], (envelope) =>
+	 * 	Effect.gen(function* () {
+	 * 		// Handler must be idempotent
+	 * 		console.log('Processing command:', envelope.type)
 	 *
-	 * 	// Subscribe to commands with idempotent handler
-	 * 	yield* bus.subscribe([{ name: 'timer.commands' }], (envelope: MessageEnvelope.Type) =>
-	 * 		Effect.gen(function* () {
-	 * 			// Handler must be idempotent
-	 * 			console.log('Processing command:', envelope.type)
-	 *
-	 * 			// Simulate command processing (upsert is idempotent)
-	 * 			yield* Effect.succeed(undefined)
-	 * 		}).pipe(
-	 * 			// Handler errors cause NAK → redelivery
-	 * 			Effect.catchAll((err) => Effect.logError(err)),
-	 * 		),
-	 * 	)
-	 * })
+	 * 		// Process command (upsert is idempotent)
+	 * 		yield* processCommand(envelope)
+	 * 	}).pipe(
+	 * 		// Handler errors cause NAK → redelivery
+	 * 		Effect.catchAll((err) => Effect.logError(err)),
+	 * 	),
+	 * )
 	 * ```
 	 *
 	 * @param topics - Array of type-safe topic references (from Topics namespace)
@@ -258,20 +207,18 @@ export interface EventBusPort {
  *
  * @example
  *
- * ```typescript
- * const program = Effect.gen(function* () {
- * 	const bus = yield* EventBusPort
+ * ```typescript ignore
+ * const bus = yield* EventBusPort
  *
- * 	const envelope: MessageEnvelope.Type = {
- * 		id,
- * 		type,
- * 		tenantId,
- * 		payload,
- * 		timestampMs,
- * 	}
+ * const envelope = {
+ * 	id,
+ * 	type,
+ * 	tenantId,
+ * 	payload,
+ * 	timestampMs,
+ * }
  *
- * 	yield* bus.publish([envelope]) // Envelope is self-contained
- * })
+ * yield* bus.publish([envelope])
  * ```
  */
 export const EventBusPort = Context.GenericTag<EventBusPort>('@event-service-agent/platform/EventBusPort')

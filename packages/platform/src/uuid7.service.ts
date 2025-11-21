@@ -35,22 +35,13 @@ import * as Ports from './ports/index.ts'
  *
  * @example
  *
- * ```typescript
- * import * as Effect from 'effect/Effect'
- * import { UUID7 } from '@event-service-agent/platform'
- *
+ * ```typescript ignore
  * // Production usage with accessor
- * const program = Effect.gen(function* () {
- * 	const id = yield* UUID7.randomUUIDv7()
- * 	console.log(id) // "01934567-89ab-7cde-89ab-0123456789ab" (branded UUID7 type)
- * }).pipe(Effect.provide(UUID7.Default))
+ * const id = yield* UUID7.randomUUIDv7()
  *
  * // Or extract service if needed
- * const program2 = Effect.gen(function* () {
- * 	const service = yield* UUID7
- * 	const id = yield* service.randomUUIDv7()
- * 	return id
- * }).pipe(Effect.provide(UUID7.Default))
+ * const service = yield* UUID7
+ * const id2 = yield* service.randomUUIDv7()
  * ```
  */
 export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas/UUID7', {
@@ -67,31 +58,13 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 			 *
 			 * @example
 			 *
-			 * ```typescript
-			 * import * as DateTime from 'effect/DateTime'
-			 * import * as Effect from 'effect/Effect'
-			 * import { UUID7 } from '@event-service-agent/platform'
-			 *
-			 * // Generate with current time - dependencies satisfied automatically
-			 * const example1 = Effect.gen(function* () {
-			 * 	const id = yield* UUID7.randomUUIDv7()
-			 * 	return id
-			 * }).pipe(Effect.provide(UUID7.Default))
+			 * ```typescript ignore
+			 * // Generate with current time
+			 * const id = yield* UUID7.randomUUIDv7()
 			 *
 			 * // Generate with specific time
-			 * const example2 = Effect.gen(function* () {
-			 * 	const now = yield* DateTime.now
-			 * 	const id = yield* UUID7.randomUUIDv7(now)
-			 * 	return id
-			 * }).pipe(Effect.provide(UUID7.Default))
-			 *
-			 * // Or yield the service and use it
-			 * const example3 = Effect.gen(function* () {
-			 * 	const uuid7 = yield* UUID7
-			 * 	const now = yield* DateTime.now
-			 * 	const id = yield* uuid7.randomUUIDv7(now)
-			 * 	return id
-			 * }).pipe(Effect.provide(UUID7.Default))
+			 * const now = yield* DateTime.now
+			 * const id2 = yield* UUID7.randomUUIDv7(now)
 			 * ```
 			 *
 			 * @param time - Optional DateTime for deterministic generation

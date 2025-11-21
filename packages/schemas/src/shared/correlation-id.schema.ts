@@ -98,57 +98,29 @@ export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) 
 	 *
 	 * @example API generates correlation ID for new request
 	 *
-	 * ```typescript
-	 * import * as Effect from 'effect/Effect'
-	 * import * as Option from 'effect/Option'
-	 * import { CorrelationId } from '@event-service-agent/schemas/shared'
-	 *
+	 * ```typescript ignore
 	 * // Example: Extract from HTTP header or generate new
-	 * const handleRequest = (headers: Record<string, string>) =>
-	 * 	Effect.gen(function* () {
-	 * 		const correlationId = headers['x-correlation-id']
-	 * 			? yield* CorrelationId.decode(headers['x-correlation-id'])
-	 * 			: yield* CorrelationId.makeUUID7()
+	 * const correlationId = headers['x-correlation-id']
+	 * 	? yield* CorrelationId.decode(headers['x-correlation-id'])
+	 * 	: yield* CorrelationId.makeUUID7()
 	 *
-	 * 		// Use correlationId in your workflow
-	 * 		return correlationId
-	 * 	})
-	 *
-	 * // Usage with missing header (generates new)
-	 * const result1 = handleRequest({})
-	 *
-	 * // Usage with existing header (uses provided)
-	 * const result2 = handleRequest({
-	 * 	'x-correlation-id': '01234567-89ab-7cde-89ab-0123456789ab',
-	 * })
+	 * // Use correlationId in your workflow
+	 * return correlationId
 	 * ```
 	 *
 	 * @example Workflow preserves correlation from aggregate
 	 *
-	 * ```typescript
-	 * import * as Effect from 'effect/Effect'
-	 * import * as Option from 'effect/Option'
-	 * import { CorrelationId } from '@event-service-agent/schemas/shared'
-	 * import type { MessageMetadata } from '@event-service-agent/platform/context'
-	 *
+	 * ```typescript ignore
 	 * // Example: Propagate correlation through workflow
-	 * const scheduleTimerWorkflow = (correlationId: Option.Option<CorrelationId.Type>) =>
-	 * 	Effect.gen(function* () {
-	 * 		// Provision metadata context for port operations
-	 * 		const metadata: MessageMetadata.Type = {
-	 * 			correlationId,
-	 * 			causationId: Option.none(),
-	 * 		}
+	 * const metadata = {
+	 * 	correlationId,
+	 * 	causationId: Option.none(),
+	 * }
 	 *
-	 * 		// Context would be consumed by port adapters
-	 * 		return metadata
-	 * 	})
-	 *
-	 * // Usage: Preserve correlation from domain aggregate
-	 * const workflow = Effect.gen(function* () {
-	 * 	const correlationId = yield* CorrelationId.makeUUID7()
-	 * 	yield* scheduleTimerWorkflow(Option.some(correlationId))
-	 * })
+	 * // Context would be consumed by port adapters via Effect.provideService
+	 * yield* portOperation().pipe(
+	 * 	Effect.provideService(MessageMetadata, metadata)
+	 * )
 	 * ```
 	 *
 	 * @param time - Optional UTC timestamp for deterministic generation

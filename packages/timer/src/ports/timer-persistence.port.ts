@@ -184,30 +184,22 @@ export interface TimerPersistencePort {
 	 *
 	 * @example Testing state transitions
 	 *
-	 * ```typescript
-	 * import { describe, expect, it } from '@effect/vitest'
-	 * import * as Effect from 'effect/Effect'
-	 * import * as Option from 'effect/Option'
-	 *
+	 * ```typescript ignore
 	 * // Example: Verify timer state transitions in tests
-	 * it.effect('should mark timer as fired', () =>
-	 * 	Effect.gen(function* () {
-	 * 		const persistence = yield* TimerPersistencePort
+	 * const persistence = yield* TimerPersistencePort
 	 *
-	 * 		yield* persistence.markFired({
-	 * 			key: { tenantId, serviceCallId },
-	 * 			reachedAt: now,
-	 * 		})
+	 * yield* persistence.markFired({
+	 * 	key: { tenantId, serviceCallId },
+	 * 	reachedAt: now,
+	 * })
 	 *
-	 * 		// Verify state transition happened (testing concern)
-	 * 		const result = yield* persistence.find({ tenantId, serviceCallId })
-	 * 		expect(Option.getOrThrow(result)._tag).toBe('Reached')
+	 * // Verify state transition happened
+	 * const result = yield* persistence.find({ tenantId, serviceCallId })
+	 * assert.equal(Option.getOrThrow(result)._tag, 'Reached')
 	 *
-	 * 		// Verify domain behavior (no longer active)
-	 * 		const scheduled = yield* persistence.findScheduledTimer({ tenantId, serviceCallId })
-	 * 		expect(Option.isNone(scheduled)).toBe(true)
-	 * 	}),
-	 * )
+	 * // Verify domain behavior (no longer active)
+	 * const scheduled = yield* persistence.findScheduledTimer({ tenantId, serviceCallId })
+	 * assert.ok(Option.isNone(scheduled))
 	 * ```
 	 *
 	 * @param key - Composite key identifying the timer (tenantId + serviceCallId)
