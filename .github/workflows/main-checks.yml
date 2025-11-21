@@ -7,7 +7,7 @@ on:
 
 jobs:
   lint:
-    name: 🎨 Lint
+    name: 🎨 Lint (Source)
     runs-on: ubuntu-latest
 
     steps:
@@ -37,7 +37,7 @@ jobs:
           fi
 
   typecheck:
-    name: 🔍 Typecheck
+    name: 🔍 Typecheck (Source)
     runs-on: ubuntu-latest
 
     steps:
@@ -53,7 +53,7 @@ jobs:
         run: bun run type-check
 
   tests:
-    name: 🧪 Tests
+    name: 🧪 Tests (Source)
     runs-on: ubuntu-latest
 
     steps:

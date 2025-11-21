@@ -6,7 +6,7 @@ This document maps all formatting, linting, and quality check tools used in the 
 
 - What each tool does
 - Where it's configured
-- How it's invoked (locally vs CI)
+- How it's invoked (locally vs. CI)
 - The execution order to prevent conflicts
 
 ---
@@ -17,8 +17,8 @@ Quick reference organized by context (how developers think about their work):
 
 ### 📦 Source Code (TypeScript/JavaScript/JSON)
 
-| Capability              | Biome                           | Deno           | Prettier       | tsc        |
-| ----------------------- | ------------------------------- | -------------- | -------------- | ---------- |
+| Capability              | Biome                          | Deno          | Prettier      | tsc       |
+|-------------------------|--------------------------------|---------------|---------------|-----------|
 | **Format**              | ✅ Primary (fast, configurable) | ✅ Alternative | ❌             | ❌         |
 | **Lint**                | ✅ Primary                      | ✅ Alternative | ❌             | ❌         |
 | **Type-check**          | ❌                              | ✅ Alternative | ❌             | ✅ Primary |
@@ -31,21 +31,21 @@ Quick reference organized by context (how developers think about their work):
 **Rationale**:
 
 - Biome is faster (Rust-based) and more configurable than Deno
-- Avoid conflicts: don't run both Biome and Deno fmt on same files
+- Avoid conflicts: don't run both Biome and Deno fmt on the same files
 - tsc is authoritative for TypeScript type-checking
 
 ---
 
 ### 📝 TSDoc/JSDoc (Documentation in Source)
 
-| Capability                       | Prettier      | Deno                           | Biome |
-| -------------------------------- | ------------- | ------------------------------ | ----- |
-| **Format prose** (comment text)  | ✅ Primary    | ❌                             | ❌    |
-| **Format `@example` code**       | ✅ Can format | ✅ Validates                   | ❌    |
-| **Type-check `@example` blocks** | ❌            | ✅ Primary                     | ❌    |
-| **Test `@example` blocks**       | ❌            | ✅ Primary                     | ❌    |
-| **Validate structure**           | ❌            | ✅ Primary (`deno doc --lint`) | ❌    |
-| **Auto-fix**                     | ✅            | ✅                             | ❌    |
+| Capability                       | Prettier     | Deno                          | Biome |
+|----------------------------------|--------------|-------------------------------|-------|
+| **Format prose** (comment text)  | ✅ Primary    | ❌                             | ❌     |
+| **Format `@example` code**       | ✅ Can format | ✅ Validates                   | ❌     |
+| **Type-check `@example` blocks** | ❌            | ✅ Primary                     | ❌     |
+| **Test `@example` blocks**       | ❌            | ✅ Primary                     | ❌     |
+| **Validate structure**           | ❌            | ✅ Primary (`deno doc --lint`) | ❌     |
+| **Auto-fix**                     | ✅            | ✅                             | ❌     |
 
 **Decision**: **Prettier** formats → **Deno** validates
 
@@ -61,13 +61,13 @@ Quick reference organized by context (how developers think about their work):
 
 ### 📄 Markdown Documentation
 
-| Capability                        | Prettier      | Deno         | markdownlint |
-| --------------------------------- | ------------- | ------------ | ------------ |
-| **Format prose**                  | ✅ Primary    | ❌           | ❌           |
-| **Format code fences** (TS/JS)    | ✅ Can format | ✅ Validates | ❌           |
-| **Lint syntax** (headings, lists) | ❌            | ❌           | ✅ Primary   |
-| **Type-check code fences**        | ❌            | ✅ Primary   | ❌           |
-| **Auto-fix**                      | ✅            | ✅           | ✅           |
+| Capability                        | Prettier     | Deno        | markdownlint |
+|-----------------------------------|--------------|-------------|--------------|
+| **Format prose**                  | ✅ Primary    | ❌           | ❌            |
+| **Format code fences** (TS/JS)    | ✅ Can format | ✅ Validates | ❌            |
+| **Lint syntax** (headings, lists) | ❌            | ❌           | ✅ Primary    |
+| **Type-check code fences**        | ❌            | ✅ Primary   | ❌            |
+| **Auto-fix**                      | ✅            | ✅           | ✅            |
 
 **Decision**: **markdownlint** fixes syntax → **Prettier** formats prose/code → **Deno** validates code
 
@@ -118,7 +118,7 @@ Based on the matrices above, here's the conflict-free execution order:
 ### 🚨 Tool Conflicts & Resolutions
 
 | Conflict                  | Tools                | Resolution        | Why                                               |
-| ------------------------- | -------------------- | ----------------- | ------------------------------------------------- |
+|---------------------------|----------------------|-------------------|---------------------------------------------------|
 | **TS source formatting**  | Biome vs Deno fmt    | Use Biome only    | Faster, configurable, avoids arrow paren fights   |
 | **Code fence formatting** | Prettier vs Deno fmt | Both (sequential) | Prettier formats first, Deno enforces final rules |
 | **JSON formatting**       | Biome vs Prettier    | Use Biome only    | Already primary tool, consistent with TS          |
@@ -128,11 +128,11 @@ Based on the matrices above, here's the conflict-free execution order:
 
 ### ✅ Coverage Summary
 
-| Context         | Format                | Lint            | Type-Check | Test      | Validate        |
-| --------------- | --------------------- | --------------- | ---------- | --------- | --------------- |
-| **Source Code** | ✅ Biome              | ✅ Biome        | ✅ tsc     | ✅ Vitest | ✅ Biome        |
-| **TSDoc**       | ⚠️ Prettier (unused!) | ❌ N/A          | ✅ Deno    | ✅ Deno   | ✅ Deno         |
-| **Markdown**    | ⚠️ Prettier (unused!) | ✅ markdownlint | ✅ Deno    | ❌ N/A    | ✅ markdownlint |
+| Context         | Format                | Lint           | Type-Check | Test     | Validate       |
+|-----------------|-----------------------|----------------|------------|----------|----------------|
+| **Source Code** | ✅ Biome               | ✅ Biome        | ✅ tsc      | ✅ Vitest | ✅ Biome        |
+| **TSDoc**       | ⚠️ Prettier (unused!) | ❌ N/A          | ✅ Deno     | ✅ Deno   | ✅ Deno         |
+| **Markdown**    | ⚠️ Prettier (unused!) | ✅ markdownlint | ✅ Deno     | ❌ N/A    | ✅ markdownlint |
 
 **Legend**: ✅ Implemented | ⚠️ Configured but not invoked | ❌ Not applicable
 
@@ -140,7 +140,7 @@ Based on the matrices above, here's the conflict-free execution order:
 
 ## Formatting Concerns (Goal-Based Organization)
 
-This section organizes formatting by **what you want to achieve**, not by tool or file type. Each concern is independently invokable and composable for different contexts (IDE vs CI).
+This section organizes formatting by **what you want to achieve**, not by tool or file type. Each concern is independently invokable and composable for different contexts (IDE vs. CI).
 
 ### Atomic Formatting Concerns (Building Blocks)
 
@@ -262,7 +262,7 @@ This section organizes formatting by **what you want to achieve**, not by tool o
 
 **Speed**: 🐌 Slower
 
-**Description**: Comprehensive JSDoc formatting. Prettier formats prose, then Deno enforces final code style in examples.
+**Description**: Comprehensive JSDoc formatting. Prettier formats prose, then Deno enforces the final code style in examples.
 
 ---
 
@@ -298,13 +298,13 @@ This section organizes formatting by **what you want to achieve**, not by tool o
 
 **Speed**: 🐌 Slowest
 
-**Description**: Format entire project. Runs source formatting, then documentation formatting.
+**Description**: Format the entire project. Runs source formatting, then documentation formatting.
 
 ---
 
 ### Dependency Graph
 
-Visual representation of formatting concern dependencies:
+Visual representation of formatting concerns dependencies:
 
 ```text
 format:all
@@ -447,7 +447,7 @@ format:all            # Everything
 - Format TypeScript/JavaScript files
 - Lint TypeScript/JavaScript files
 - Format JSON files
-- Import sorting & organization
+- Import sorting and organization
 - Quick fixes (assists)
 
 **File Scope**:
@@ -477,15 +477,15 @@ format:all            # Everything
 
 ### 2. **Prettier** (`prettier` + `prettier-plugin-jsdoc`)
 
-**Purpose**: Format JSDoc/TSDoc prose and markdown
+**Purpose**: Format JSDoc/TSDoc prose and Markdown
 
 **Configuration**: `.prettierrc.json`
 
 **Capabilities**:
 
 - Format JSDoc comment blocks (prose wrapping, tag alignment)
-- Format markdown files
-- Format code fences in markdown
+- Format Markdown files
+- Format code fences in Markdown
 - TSDoc-aware (via `tsdoc: true`)
 
 **File Scope**:
@@ -497,13 +497,13 @@ format:all            # Everything
 **Current Invocations**:
 
 - ❌ **NOT currently invoked** in package.json or CI
-- Configuration exists but unused in automation
+- Configuration exists but is unused in automation
 
 **Notes**:
 
 - Complementary to Biome (handles prose, not code structure)
 - `prettier-plugin-jsdoc` formats JSDoc comment content
-- Can conflict with Biome if not run in correct order
+- Can conflict with Biome if not run in the correct order
 
 ---
 
@@ -592,7 +592,7 @@ format:all            # Everything
 
 **Purpose**: Type-check TypeScript source code
 
-**Configuration**: `tsconfig.json` (root + workspace packages)
+**Configuration**: `tsconfig.json` (root and workspace packages)
 
 **Capabilities**:
 
@@ -622,7 +622,7 @@ format:all            # Everything
 ### package.json (Root)
 
 | Script               | Command                                     | Tool(s)      | Scope                  |
-| -------------------- | ------------------------------------------- | ------------ | ---------------------- |
+|----------------------|---------------------------------------------|--------------|------------------------|
 | `format`             | `biome format --write .`                    | Biome        | All TS/JS/JSON         |
 | `lint`               | `biome lint --write .`                      | Biome        | All TS/JS/JSON         |
 | `check`              | `biome check --write .`                     | Biome        | Format + Lint combined |
@@ -637,7 +637,7 @@ format:all            # Everything
 ### deno.json (Tasks)
 
 | Task                 | Command                             | Purpose                   |
-| -------------------- | ----------------------------------- | ------------------------- |
+|----------------------|-------------------------------------|---------------------------|
 | `docs:check`         | `deno doc --lint $(find ...)`       | Validate JSDoc structure  |
 | `docs:type-check`    | `deno check --doc $(find ...)`      | Type-check JSDoc examples |
 | `docs:type-check:md` | `deno check --doc-only $(find ...)` | Type-check MD code fences |
@@ -651,7 +651,7 @@ format:all            # Everything
 #### push-checks.yml (Auto-fix on push)
 
 | Step         | Command                                                  | Tool         | Purpose          |
-| ------------ | -------------------------------------------------------- | ------------ | ---------------- |
+|--------------|----------------------------------------------------------|--------------|------------------|
 | Fix Markdown | `markdownlint-cli2-action` (fix: true)                   | markdownlint | MD syntax fixes  |
 | Format code  | `biome check --formatter-enabled=true --write --changed` | Biome        | TS/JS formatting |
 | Lint code    | `biome check --linter-enabled=true --write --changed`    | Biome        | TS/JS linting    |
@@ -659,7 +659,7 @@ format:all            # Everything
 #### pull-request-checks.yml (Validate only)
 
 | Job         | Command                       | Tool         | Purpose                   |
-| ----------- | ----------------------------- | ------------ | ------------------------- |
+|-------------|-------------------------------|--------------|---------------------------|
 | `lint`      | `biome ci --reporter=github`  | Biome        | Format + lint check       |
 | `typecheck` | `bun run type-check`          | TypeScript   | Source type-check         |
 | `typecheck` | `deno task docs:type-check`   | Deno         | JSDoc examples type-check |
@@ -747,7 +747,7 @@ To prevent tools from fighting, run in this order:
 
 ## Next Steps
 
-1. **Add Prettier to pipeline**
+1. **Add Prettier to the pipeline**
    - Create `docs:format:jsdoc` script
    - Run Prettier on `.ts` and `.md` files before `deno fmt`
 
@@ -769,4 +769,4 @@ To prevent tools from fighting, run in this order:
 
 6. **Document final pipeline**
    - Update this file with final scripts
-   - Add README section on "How to run CI locally"
+   - Add a README section on "How to run CI locally"

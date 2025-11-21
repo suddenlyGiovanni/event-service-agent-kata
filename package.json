@@ -77,7 +77,7 @@
 		"format:jsdoc": "prettier --write 'packages/*/src/**/*.ts' 'packages/*/**/*.md'",
 		"format:jsdoc:examples": "deno fmt packages/*/src",
 		"format:markdown:code": "deno fmt docs",
-		"format:markdown:prose": "prettier --write 'docs/**/*.md'",
+		"format:markdown:prose": "prettier --write 'docs/**/*.md' 'packages/*/**/*.md'",
 		"format:markdown:structure": "bunx --bun markdownlint-cli2 --fix docs/**/*.md packages/*/**/*.md",
 		"format:ts": "biome format --write .",
 		"lint": "biome lint --write .",

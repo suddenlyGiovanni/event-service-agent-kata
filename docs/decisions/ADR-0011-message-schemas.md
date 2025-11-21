@@ -278,7 +278,7 @@ function handleIncoming(raw: unknown) {
 				return yield* routeToOrchestration(message)
 			case 'StartExecution':
 				return yield* routeToExecution(message)
-				// TypeScript enforces exhaustiveness
+			// TypeScript enforces exhaustiveness
 		}
 	})
 }
