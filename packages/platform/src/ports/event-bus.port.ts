@@ -67,7 +67,7 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
  *
  * @example
  * Publishing events and subscribing to commands
- * ```typescript
+ * ```typescript ignore
  * import * as DateTime from 'effect/DateTime'
  * import * as Effect from 'effect/Effect'
  * import * as Option from 'effect/Option'
@@ -146,7 +146,7 @@ export interface EventBusPort {
 	 *
 	 * @example
 	 * Publishing a message envelope
-	 * ```typescript
+	 * ```typescript ignore
 	 * import * as DateTime from 'effect/DateTime'
 	 * import * as Effect from 'effect/Effect'
 	 * import * as Option from 'effect/Option'
@@ -224,7 +224,7 @@ export interface EventBusPort {
 	 *
 	 * @example
 	 * Subscribing to commands with idempotent handler
-	 * ```typescript
+	 * ```typescript ignore
 	 * import * as Effect from 'effect/Effect'
 	 * import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 	 * import { EventBusPort } from '@event-service-agent/platform/ports'

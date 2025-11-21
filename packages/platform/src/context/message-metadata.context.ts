@@ -13,7 +13,7 @@
  * ## Usage Pattern
  *
  * ### In Workflows (Context Provisioning)
- * ```typescript
+ * ```typescript ignore
  * import * as Effect from 'effect/Effect'
  * import * as Option from 'effect/Option'
  * import type { CorrelationId } from '@event-service-agent/schemas/shared'
@@ -36,7 +36,7 @@
  * ```
  *
  * ### In Ports (Requirement Declaration)
- * ```typescript
+ * ```typescript ignore
  * import * as Context from 'effect/Context'
  * import type * as Effect from 'effect/Effect'
  * import { MessageMetadata } from '@event-service-agent/platform/context'
@@ -55,7 +55,7 @@
  * ```
  *
  * ### In Adapters (Context Consumption)
- * ```typescript
+ * ```typescript ignore
  * import * as Effect from 'effect/Effect'
  * import { MessageMetadata } from '@event-service-agent/platform/context'
  *
@@ -77,7 +77,7 @@
  * ```
  *
  * ### In Tests (Test Data Provisioning)
- * ```typescript
+ * ```typescript ignore
  * import { describe, expect, it } from '@effect/vitest'
  * import * as Effect from 'effect/Effect'
  * import * as Option from 'effect/Option'

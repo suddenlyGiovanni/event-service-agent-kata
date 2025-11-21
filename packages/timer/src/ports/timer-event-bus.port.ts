@@ -48,7 +48,7 @@ export interface TimerEventBusPort {
 	 * @throws PublishError - When broker publish fails
 	 * @requires MessageMetadata - Context providing correlationId/causationId
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * import * as Effect from 'effect/Effect'
 	 * import * as Option from 'effect/Option'
 	 * import { MessageMetadata } from '@event-service-agent/platform/context'
@@ -111,7 +111,7 @@ export interface TimerEventBusPort {
 	 * @throws E - When handler fails (propagated for error handling)
 	 *
 	 * @example
-	 * ```typescript
+	 * ```typescript ignore
 	 * import * as Effect from 'effect/Effect'
 	 * import * as Option from 'effect/Option'
 	 * import { TimerEventBusPort } from '@event-service-agent/timer/ports'

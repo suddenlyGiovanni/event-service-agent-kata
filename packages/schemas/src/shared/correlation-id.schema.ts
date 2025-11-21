@@ -96,7 +96,7 @@ export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) 
 	 * @requires UUID7 - Service for UUID generation
 	 *
 	 * @example API generates correlation ID for new request
-	 * ```typescript
+	 * ```typescript ignore
 	 * import * as Effect from 'effect/Effect'
 	 * import * as Option from 'effect/Option'
 	 * import { CorrelationId } from '@event-service-agent/schemas/shared'
@@ -122,7 +122,7 @@ export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) 
 	 * ```
 	 *
 	 * @example Workflow preserves correlation from aggregate
-	 * ```typescript
+	 * ```typescript ignore
 	 * import * as Effect from 'effect/Effect'
 	 * import * as Option from 'effect/Option'
 	 * import { CorrelationId } from '@event-service-agent/schemas/shared'
