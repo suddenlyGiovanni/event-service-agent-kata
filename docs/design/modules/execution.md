@@ -36,7 +36,7 @@ const { tenantId, serviceCallId, requestSpec } = command
 const event = new ExecutionStarted({
 	tenantId,
 	serviceCallId,
-	startedAt: now // DateTime.Utc
+	startedAt: now, // DateTime.Utc
 })
 
 // Publish with MessageMetadata Context
@@ -44,8 +44,8 @@ yield *
 	eventBus.publishExecutionStarted(event).pipe(
 		Effect.provideService(MessageMetadata, {
 			correlationId: command.correlationId, // Forward from command
-			causationId: Option.some(commandEnvelopeId) // StartExecution envelope
-		})
+			causationId: Option.some(commandEnvelopeId), // StartExecution envelope
+		}),
 	)
 ```
 
@@ -67,7 +67,7 @@ const envelope: MessageEnvelope.Type = new MessageEnvelope({
 	timestampMs: yield * clock.now(),
 	correlationId: metadata.correlationId,
 	causationId: metadata.causationId,
-	aggregateId: Option.some(event.serviceCallId)
+	aggregateId: Option.some(event.serviceCallId),
 })
 
 yield * eventBus.publish([envelope])
@@ -113,12 +113,12 @@ Inputs/Outputs Recap
 
 - Inputs: [StartExecution] (command)
 - Outputs:
-    - [ExecutionStarted],
-    - [ExecutionSucceeded] OR [ExecutionFailed] (events)
+  - [ExecutionStarted],
+  - [ExecutionSucceeded] OR [ExecutionFailed] (events)
 - Ports:
-    - [HttpClientPort],
-    - [EventBusPort],
-    - [ClockPort]
+  - [HttpClientPort],
+  - [EventBusPort],
+  - [ClockPort]
 - Storage: none (stateless)
 
 Sequence (StartExecution HTTP Outcome)

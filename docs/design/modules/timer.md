@@ -38,18 +38,18 @@ TimerEntry: `(tenantId, serviceCallId, dueAt, registeredAt, status)`
 **IDs Generated:**
 
 - **EnvelopeId** — Generated when publishing [DueTimeReached] events (UUID v7)
-    - **Why Timer generates**: Every message needs unique envelope ID for broker deduplication
-    - **Why UUID v7**: Time-ordered for chronological event sorting and broker index locality
+  - **Why Timer generates**: Every message needs unique envelope ID for broker deduplication
+  - **Why UUID v7**: Time-ordered for chronological event sorting and broker index locality
 
 **IDs Received (from [ScheduleTimer] command):**
 
 - **TenantId** — Multi-tenant partition key (embedded in envelope)
-    - **Why received**: Timer doesn't provision tenants; just enforces multi-tenant scoping
+  - **Why received**: Timer doesn't provision tenants; just enforces multi-tenant scoping
 - **ServiceCallId** — Aggregate root identifier (embedded in envelope)
-    - **Why received**: Timer doesn't own ServiceCall aggregate; Orchestration does
+  - **Why received**: Timer doesn't own ServiceCall aggregate; Orchestration does
 - **CorrelationId** — Request trace ID (optional, embedded in envelope)
-    - **Why optional**: System-initiated timers lack correlation; user-initiated timers carry it through
-    - **Why preserved**: Enables end-to-end tracing from original request → scheduled timer → execution
+  - **Why optional**: System-initiated timers lack correlation; user-initiated timers carry it through
+  - **Why preserved**: Enables end-to-end tracing from original request → scheduled timer → execution
 
 **Pattern:**
 
@@ -64,7 +64,7 @@ await db.upsert({ tenantId, serviceCallId, dueAt, status: 'Scheduled' })
 const event = new DueTimeReached({
 	tenantId,
 	serviceCallId,
-	reachedAt: firedAt // DateTime.Utc (not ISO string)
+	reachedAt: firedAt, // DateTime.Utc (not ISO string)
 })
 
 // Publish with MessageMetadata Context (workflow provides)
@@ -72,8 +72,8 @@ yield *
 	eventBus.publishDueTimeReached(event).pipe(
 		Effect.provideService(MessageMetadata, {
 			correlationId: timer.correlationId, // From timer aggregate
-			causationId: Option.none() // Time-triggered
-		})
+			causationId: Option.none(), // Time-triggered
+		}),
 	)
 ```
 
@@ -95,7 +95,7 @@ const envelope: MessageEnvelope.Type = new MessageEnvelope({
 	timestampMs: yield * clock.now(),
 	correlationId: metadata.correlationId, // From Context
 	causationId: metadata.causationId, // From Context
-	aggregateId: Option.some(dueTimeReached.serviceCallId)
+	aggregateId: Option.some(dueTimeReached.serviceCallId),
 })
 
 yield * eventBus.publish([envelope])
@@ -144,12 +144,12 @@ See ADR-0003 for detailed polling strategy rationale and ADR-0006 for idempotenc
 Timer depends on these port abstractions:
 
 - **[ClockPort]** — Provides current time for due-time evaluation
-    - **Why abstraction**: Enables deterministic testing (TestClock.adjust for time control)
-    - **Why not Date.now()**: Effect-based for composability and tracing
+  - **Why abstraction**: Enables deterministic testing (TestClock.adjust for time control)
+  - **Why not Date.now()**: Effect-based for composability and tracing
 
 - **[EventBusPort]** — Publishes [DueTimeReached] events to broker
-    - **Why abstraction**: Broker-agnostic (works with NATS, Kafka, or in-memory)
-    - **Why Event pattern**: Async, decoupled communication (Orchestration polls for events independently)
+  - **Why abstraction**: Broker-agnostic (works with NATS, Kafka, or in-memory)
+  - **Why Event pattern**: Async, decoupled communication (Orchestration polls for events independently)
 
 **Why Timer has minimal ports:**
 

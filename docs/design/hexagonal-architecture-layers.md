@@ -83,7 +83,7 @@ graph TB
 ```typescript ignore
 // packages/orchestration/src/workflows/submit-service-call.workflow.ts
 export const submitServiceCallWorkflow = (
-	request: SubmitServiceCallRequest
+	request: SubmitServiceCallRequest,
 ): Effect<ServiceCall, ValidationError | PersistenceError> =>
 	Effect.gen(function* (_) {
 		// 1. Create domain entity
@@ -122,7 +122,7 @@ export interface OrchestrationPersistencePort {
 
 // Tag for Effect dependency injection
 export const OrchestrationPersistencePort = Context.GenericTag<OrchestrationPersistencePort>(
-	'@orchestration/PersistencePort'
+	'@orchestration/PersistencePort',
 )
 ```
 
@@ -156,13 +156,7 @@ export class OrchestrationSqliteAdapter implements OrchestrationPersistencePort 
 								`INSERT INTO service_calls (
                   tenant_id, service_call_id, name, status, created_at
                 ) VALUES (?, ?, ?, ?, ?)`,
-								[
-									serviceCall.tenantId,
-									serviceCall.id,
-									serviceCall.name,
-									serviceCall.status,
-									serviceCall.createdAt
-								]
+								[serviceCall.tenantId, serviceCall.id, serviceCall.name, serviceCall.status, serviceCall.createdAt],
 							)
 
 							// Save tags in same transaction
@@ -171,12 +165,12 @@ export class OrchestrationSqliteAdapter implements OrchestrationPersistencePort 
 									`INSERT INTO service_call_tags (
                     tenant_id, service_call_id, tag
                   ) VALUES (?, ?, ?)`,
-									[serviceCall.tenantId, serviceCall.id, tag]
+									[serviceCall.tenantId, serviceCall.id, tag],
 								)
 							}
 						}),
-					catch: (error) => new PersistenceError({ cause: error })
-				})
+					catch: (error) => new PersistenceError({ cause: error }),
+				}),
 			)
 		})
 	}
@@ -189,10 +183,10 @@ export class OrchestrationSqliteAdapter implements OrchestrationPersistencePort 
 						this.db.get(
 							`SELECT * FROM service_calls 
                WHERE tenant_id = ? AND service_call_id = ?`,
-							[tenantId, id]
+							[tenantId, id],
 						),
-					catch: (error) => new PersistenceError({ cause: error })
-				})
+					catch: (error) => new PersistenceError({ cause: error }),
+				}),
 			)
 
 			if (!row) return null
@@ -226,7 +220,7 @@ await tx.run(
 	`INSERT INTO service_calls (
     tenant_id, service_call_id, name, status, created_at
   ) VALUES (?, ?, ?, ?, ?)`,
-	[serviceCall.tenantId, serviceCall.id, serviceCall.name /* ... */]
+	[serviceCall.tenantId, serviceCall.id, serviceCall.name /* ... */],
 )
 ```
 
@@ -289,7 +283,7 @@ container.bind(OrchestrationPersistencePort).to(OrchestrationSqliteAdapter)
 class UseCase {
 	constructor(
 		@Inject(OrchestrationPersistencePort)
-		private readonly persistence: OrchestrationPersistencePort
+		private readonly persistence: OrchestrationPersistencePort,
 	) {}
 }
 ```
@@ -414,7 +408,7 @@ class InMemoryPersistenceAdapter implements OrchestrationPersistencePort {
 const testLayer = Layer.succeed(PersistencePort, new InMemoryPersistenceAdapter())
 
 const program = submitServiceCall(request).pipe(
-	Effect.provide(testLayer) // Same use case, different adapter!
+	Effect.provide(testLayer), // Same use case, different adapter!
 )
 ```
 
@@ -462,7 +456,7 @@ Effect.gen(function* () {
 	const event = new DueTimeReached({
 		tenantId: timer.tenantId,
 		serviceCallId: timer.serviceCallId,
-		reachedAt: now // DateTime.Utc (domain type, not string)
+		reachedAt: now, // DateTime.Utc (domain type, not string)
 	})
 
 	// Layer 2: Port (Domain-defined contract)
@@ -484,7 +478,7 @@ class TimerEventBusAdapter {
 				tenantId: event.tenantId,
 				aggregateId: event.serviceCallId,
 				timestampMs: DateTime.toEpochMillis(event.reachedAt),
-				correlationId: Option.none() // Infrastructure metadata (not in domain event)
+				correlationId: Option.none(), // Infrastructure metadata (not in domain event)
 			})
 
 			// Delegate to shared EventBusPort (accepts envelopes)
@@ -506,7 +500,7 @@ class TimerEventBusAdapter {
 const event = new DueTimeReached({
 	tenantId: timer.tenantId,
 	serviceCallId: timer.serviceCallId,
-	reachedAt: now
+	reachedAt: now,
 	// No correlationId field in DueTimeReached (pure domain event)
 })
 
@@ -514,7 +508,7 @@ const event = new DueTimeReached({
 const envelope = new MessageEnvelope({
 	id: yield * EnvelopeId.makeUUID7(),
 	payload: event,
-	correlationId: timer.correlationId // Retrieved from timer aggregate
+	correlationId: timer.correlationId, // Retrieved from timer aggregate
 	// ... other metadata
 })
 ```

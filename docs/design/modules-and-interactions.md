@@ -89,17 +89,17 @@ flowchart TB
 Message Index
 
 - Orchestration (commands in, domain events out):
-    - Commands in: [SubmitServiceCall], [DueTimeReached], [ExecutionStarted] OR [ExecutionSucceeded] OR [ExecutionFailed]
-    - Commands out: [StartExecution], [ScheduleTimer]
-    - Domain events out: [ServiceCallSubmitted], [ServiceCallScheduled], [ServiceCallRunning], [ServiceCallSucceeded], [ServiceCallFailed]
+  - Commands in: [SubmitServiceCall], [DueTimeReached], [ExecutionStarted] OR [ExecutionSucceeded] OR [ExecutionFailed]
+  - Commands out: [StartExecution], [ScheduleTimer]
+  - Domain events out: [ServiceCallSubmitted], [ServiceCallScheduled], [ServiceCallRunning], [ServiceCallSucceeded], [ServiceCallFailed]
 - Execution:
-    - Commands in: [StartExecution]
-    - Events out: [ExecutionStarted], [ExecutionSucceeded], [ExecutionFailed]
+  - Commands in: [StartExecution]
+  - Events out: [ExecutionStarted], [ExecutionSucceeded], [ExecutionFailed]
 - Timer:
-    - Commands in: [ScheduleTimer]
-    - Events out: [DueTimeReached]
+  - Commands in: [ScheduleTimer]
+  - Events out: [DueTimeReached]
 - API (Edge):
-    - Commands out: [SubmitServiceCall]
+  - Commands out: [SubmitServiceCall]
 
 EDA without ES/CQRS (MVP)
 

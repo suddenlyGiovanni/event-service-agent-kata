@@ -177,20 +177,20 @@ First principles analysis shows this as the only viable path satisfying all MVP 
 **Boundaries (enforced in code):**
 
 - ❌ **No Cross-Module JOINs**: Timer queries ONLY its own table
-    - **Why**: Prevents coupling to Orchestration's schema changes
-    - **Enforced**: Code reviews + architecture tests
+  - **Why**: Prevents coupling to Orchestration's schema changes
+  - **Enforced**: Code reviews + architecture tests
 
 - ✅ **Denormalized Storage**: Timer stores all needed data from `ScheduleTimer` event
-    - **Why**: Timer can operate independently without querying other tables
-    - **Trade-off**: Some data duplication, but enables service extraction
+  - **Why**: Timer can operate independently without querying other tables
+  - **Trade-off**: Some data duplication, but enables service extraction
 
 - ✅ **Event-Driven Communication**: Timer receives data via broker, not DB queries
-    - **Why**: Loose coupling, supports future physical separation
-    - **Pattern**: Command → Event → New Command (async workflow)
+  - **Why**: Loose coupling, supports future physical separation
+  - **Pattern**: Command → Event → New Command (async workflow)
 
 - ⚠️ **Foreign Keys**: For integrity only (can be removed when extracting to separate service)
-    - **Why keep now**: Prevents orphaned timers during MVP development
-    - **Why remove later**: Foreign keys don't work across services
+  - **Why keep now**: Prevents orphaned timers during MVP development
+  - **Why remove later**: Foreign keys don't work across services
 
 **Migration Path:**
 
@@ -284,13 +284,13 @@ type TimerSchedule = {
 **Indexes:**
 
 - **Composite: `(state, dueAt)`** — For polling query (CRITICAL for performance)
-    - **Why state first**: Filters ~99% of rows (most timers are Reached)
-    - **Why dueAt second**: Enables range scan on remaining Scheduled timers
-    - **Performance**: O(log n) index seek + O(k) range scan (k = due timers)
+  - **Why state first**: Filters ~99% of rows (most timers are Reached)
+  - **Why dueAt second**: Enables range scan on remaining Scheduled timers
+  - **Performance**: O(log n) index seek + O(k) range scan (k = due timers)
 
 - **Unique: `(tenantId, serviceCallId)`** — Primary key (business invariant)
-    - **Why unique**: Prevents duplicate timers for same ServiceCall
-    - **Why composite**: Multi-tenancy isolation at index level
+  - **Why unique**: Prevents duplicate timers for same ServiceCall
+  - **Why composite**: Multi-tenancy isolation at index level
 
 **Critical Polling Query:**
 
@@ -354,7 +354,7 @@ for (const schedule of dueSchedules) {
 		tenantId: schedule.tenantId,
 		correlationId: schedule.correlationId, // Optional
 		timestampMs: now,
-		payload: DueTimeReached(schedule)
+		payload: DueTimeReached(schedule),
 	}
 
 	await eventBus.publish([envelope]) // First

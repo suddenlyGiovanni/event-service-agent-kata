@@ -59,19 +59,17 @@ interface PublishContext {
 declare const publishDueTimeReached: (event: DueTimeReached, context: PublishContext) => Effect<void, PublishError>
 
 // Workflow
-yield * eventBus.publishDueTimeReached(
-	dueTimeReachedEvent,
-	{
+yield *
+	eventBus.publishDueTimeReached(dueTimeReachedEvent, {
 		correlationId: timer.correlationId,
-		causationId: Option.none()
-	}
-)
+		causationId: Option.none(),
+	})
 
 // Adapter
 const envelope = new MessageEnvelope({
 	payload: event,
 	correlationId: context.correlationId,
-	causationId: context.causationId
+	causationId: context.causationId,
 	// ...
 })
 ```
@@ -104,12 +102,12 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	reachedAt: Schema.DateTimeUtc,
 	correlationId: Schema.optionalWith(CorrelationId, {
 		as: 'Option',
-		exact: true
+		exact: true,
 	}),
 	causationId: Schema.optionalWith(EnvelopeId, {
 		as: 'Option',
-		exact: true
-	})
+		exact: true,
+	}),
 }) {}
 ```
 
@@ -142,7 +140,7 @@ const publishDueTimeReached = (event: DueTimeReached) =>
 
 		const envelope = new MessageEnvelope({
 			payload: event,
-			correlationId: Option.flatMap(timer, (t) => t.correlationId)
+			correlationId: Option.flatMap(timer, (t) => t.correlationId),
 			// ...
 		})
 	})
@@ -207,19 +205,20 @@ export class MessageMetadata extends Context.Tag('MessageMetadata')<
 declare const publishDueTimeReached: (event: DueTimeReached) => Effect<void, PublishError, MessageMetadata> // ← Requires context
 
 // 3. Workflow provisions context (per-request data)
-yield* eventBus.publishDueTimeReached(event).pipe(
-  Effect.provideService(MessageMetadata, {
-    correlationId: timer.correlationId,  // Extract from aggregate
-    causationId: Option.none()
-  })
-)
+yield *
+	eventBus.publishDueTimeReached(event).pipe(
+		Effect.provideService(MessageMetadata, {
+			correlationId: timer.correlationId, // Extract from aggregate
+			causationId: Option.none(),
+		}),
+	)
 
 // 4. Adapter consumes context (type-safe)
 const metadata = yield * MessageMetadata // Type-driven requirement
 const envelope = new MessageEnvelope({
 	payload: event,
 	correlationId: metadata.correlationId,
-	causationId: metadata.causationId
+	causationId: metadata.causationId,
 	// ...
 })
 ```
@@ -299,16 +298,16 @@ See `docs/plan/correlation-context-implementation.md` for 14-task breakdown (PL-
 **Clarification**: MessageMetadata Context is **orthogonal** to OpenTelemetry:
 
 - **MessageMetadata (This ADR)**: Application-level business workflow tracking
-    - Lives in: MessageEnvelope payload
-    - Purpose: Link messages in business logic (ServiceCall lifecycle)
-    - Tools: Structured logs, event store queries
-    - Lifecycle: Generated at API entry, constant across flow
+  - Lives in: MessageEnvelope payload
+  - Purpose: Link messages in business logic (ServiceCall lifecycle)
+  - Tools: Structured logs, event store queries
+  - Lifecycle: Generated at API entry, constant across flow
 
 - **OpenTelemetry (ADR-0009 Phase 2)**: Infrastructure-level distributed tracing
-    - Lives in: HTTP headers, broker message headers (NOT payload)
-    - Purpose: Infrastructure observability (latency, errors, dependencies)
-    - Tools: APM systems (Jaeger, Zipkin, Datadog)
-    - Lifecycle: New trace/span per hop
+  - Lives in: HTTP headers, broker message headers (NOT payload)
+  - Purpose: Infrastructure observability (latency, errors, dependencies)
+  - Tools: APM systems (Jaeger, Zipkin, Datadog)
+  - Lifecycle: New trace/span per hop
 
 **Bridge**: Inject `correlationId` into OTEL span attributes for cross-referencing.
 

@@ -51,8 +51,8 @@ Milestones (aligned to Gates)
 1. Execution Worker (HTTP)
 
 - Implement Execution module with `HttpClientPort` adapter:
-    - Mock client for offline tests.
-    - Real client (e.g., undici/fetch) optional.
+  - Mock client for offline tests.
+  - Real client (e.g., undici/fetch) optional.
 - Acceptance: emits `ExecutionStarted` then exactly one of `ExecutionSucceeded`/`ExecutionFailed`.
 
 1. Persistence Adapter (MVP) [Gate 04 → 05 — [ADR-0004], [ADR-0005]]

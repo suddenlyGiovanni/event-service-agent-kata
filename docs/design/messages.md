@@ -84,34 +84,34 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 ## Index by Context
 
 - Orchestration:
-    - Commands in: [SubmitServiceCall]
-    - Commands out: [StartExecution], [ScheduleTimer]
-    - Events out: [ServiceCallSubmitted], [ServiceCallScheduled], [ServiceCallRunning], [ServiceCallSucceeded], [ServiceCallFailed]
+  - Commands in: [SubmitServiceCall]
+  - Commands out: [StartExecution], [ScheduleTimer]
+  - Events out: [ServiceCallSubmitted], [ServiceCallScheduled], [ServiceCallRunning], [ServiceCallSucceeded], [ServiceCallFailed]
 - Execution:
-    - Commands in: [StartExecution]
-    - Events out: [ExecutionStarted], [ExecutionSucceeded], [ExecutionFailed]
+  - Commands in: [StartExecution]
+  - Events out: [ExecutionStarted], [ExecutionSucceeded], [ExecutionFailed]
 - Timer:
-    - Commands in: [ScheduleTimer]
-    - Events out: [DueTimeReached]
+  - Commands in: [ScheduleTimer]
+  - Events out: [DueTimeReached]
 - API (Edge):
-    - Commands out: [SubmitServiceCall]
+  - Commands out: [SubmitServiceCall]
 
 ## Index by Type
 
 - Commands:
-    - [SubmitServiceCall] — create and schedule a service call;
-    - [StartExecution] — trigger a single execution attempt;
-    - [ScheduleTimer] — request a due signal at/after `dueAt`.
+  - [SubmitServiceCall] — create and schedule a service call;
+  - [StartExecution] — trigger a single execution attempt;
+  - [ScheduleTimer] — request a due signal at/after `dueAt`.
 - Events:
-    - [ServiceCallSubmitted] — submission accepted;
-    - [ServiceCallScheduled] — dueAt recorded/eligible;
-    - [ServiceCallRunning] — attempt started (domain state);
-    - [ServiceCallSucceeded] — domain state finalized as Succeeded;
-    - [ServiceCallFailed] — domain state finalized as Failed;
-    - [DueTimeReached] — time to start execution;
-    - [ExecutionStarted] — attempt started;
-    - [ExecutionSucceeded] — call succeeded;
-    - [ExecutionFailed] — call failed.
+  - [ServiceCallSubmitted] — submission accepted;
+  - [ServiceCallScheduled] — dueAt recorded/eligible;
+  - [ServiceCallRunning] — attempt started (domain state);
+  - [ServiceCallSucceeded] — domain state finalized as Succeeded;
+  - [ServiceCallFailed] — domain state finalized as Failed;
+  - [DueTimeReached] — time to start execution;
+  - [ExecutionStarted] — attempt started;
+  - [ExecutionSucceeded] — call succeeded;
+  - [ExecutionFailed] — call failed.
 
 ## Commands
 
@@ -122,12 +122,12 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 - Consumed by: [Orchestration]
 - Purpose: create and schedule a new ServiceCall
 - Payload:
-    - tenantId: string
-    - name: string
-    - dueAt: datetime (ISO8601)
-    - requestSpec: { method: string, url: string, headers?: object, body?: string }
-    - tags?: string[]
-    - idempotencyKey?: string
+  - tenantId: string
+  - name: string
+  - dueAt: datetime (ISO8601)
+  - requestSpec: { method: string, url: string, headers?: object, body?: string }
+  - tags?: string[]
+  - idempotencyKey?: string
 
 ### StartExecution
 
@@ -136,9 +136,9 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 - Consumed by: [Execution]
 - Purpose: start the HTTP execution for a scheduled ServiceCall
 - Payload:
-    - tenantId: string
-    - serviceCallId: string
-    - requestSpec: { method: string, url: string, headers?: object, bodySnippet?: string }
+  - tenantId: string
+  - serviceCallId: string
+  - requestSpec: { method: string, url: string, headers?: object, bodySnippet?: string }
 
 ### ScheduleTimer
 
@@ -147,9 +147,9 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 - Consumed by: [Timer]
 - Purpose: request a due signal at/after `dueAt`
 - Payload:
-    - tenantId: string
-    - serviceCallId: string
-    - dueAt: datetime (ISO8601)
+  - tenantId: string
+  - serviceCallId: string
+  - dueAt: datetime (ISO8601)
 
 ## Events
 
@@ -160,12 +160,12 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 - Consumed by: interested observers
 - Purpose: acknowledge accepted submission
 - Payload:
-    - tenantId: string
-    - serviceCallId: string
-    - name: string
-    - requestSpec: { method: string, url: string, headers?: object, bodySnippet?: string }
-    - submittedAt: datetime (ISO8601)
-    - tags?: string[]
+  - tenantId: string
+  - serviceCallId: string
+  - name: string
+  - requestSpec: { method: string, url: string, headers?: object, bodySnippet?: string }
+  - submittedAt: datetime (ISO8601)
+  - tags?: string[]
 
 ### ServiceCallScheduled
 
@@ -174,9 +174,9 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 - Consumed by: interested observers, Orchestration policies
 - Purpose: record schedule eligibility
 - Payload:
-    - tenantId: string
-    - serviceCallId: string
-    - dueAt: datetime (ISO8601)
+  - tenantId: string
+  - serviceCallId: string
+  - dueAt: datetime (ISO8601)
 
 ### ServiceCallRunning
 
@@ -185,9 +185,9 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 - Consumed by: interested observers
 - Purpose: mark execution as running at domain level
 - Payload:
-    - tenantId: string
-    - serviceCallId: string
-    - startedAt: datetime (ISO8601)
+  - tenantId: string
+  - serviceCallId: string
+  - startedAt: datetime (ISO8601)
 
 ### ServiceCallSucceeded
 
@@ -196,10 +196,10 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 - Consumed by: interested observers
 - Purpose: mark successful completion at domain level
 - Payload:
-    - tenantId: string
-    - serviceCallId: string
-    - finishedAt: datetime (ISO8601)
-    - responseMeta: { status: number, headers?: object, bodySnippet?: string, latencyMs?: number }
+  - tenantId: string
+  - serviceCallId: string
+  - finishedAt: datetime (ISO8601)
+  - responseMeta: { status: number, headers?: object, bodySnippet?: string, latencyMs?: number }
 
 ### ServiceCallFailed
 
@@ -208,10 +208,10 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 - Consumed by: interested observers
 - Purpose: mark failed completion at domain level
 - Payload:
-    - tenantId: string
-    - serviceCallId: string
-    - finishedAt: datetime (ISO8601)
-    - errorMeta: { kind: string, message?: string, details?: object, latencyMs?: number }
+  - tenantId: string
+  - serviceCallId: string
+  - finishedAt: datetime (ISO8601)
+  - errorMeta: { kind: string, message?: string, details?: object, latencyMs?: number }
 
 ### DueTimeReached
 
@@ -220,9 +220,9 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 - Consumed by: [Orchestration]
 - Purpose: signal that time to start execution has arrived
 - Payload:
-    - tenantId: string
-    - serviceCallId: string
-    - reachedAt?: datetime (ISO8601)
+  - tenantId: string
+  - serviceCallId: string
+  - reachedAt?: datetime (ISO8601)
 
 ### ExecutionStarted
 
@@ -231,9 +231,9 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 - Consumed by: [Orchestration]
 - Purpose: mark execution as running
 - Payload:
-    - tenantId: string
-    - serviceCallId: string
-    - startedAt: datetime (ISO8601)
+  - tenantId: string
+  - serviceCallId: string
+  - startedAt: datetime (ISO8601)
 
 ### ExecutionSucceeded
 
@@ -242,10 +242,10 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 - Consumed by: [Orchestration]
 - Purpose: record successful outcome
 - Payload:
-    - tenantId: string
-    - serviceCallId: string
-    - finishedAt: datetime (ISO8601)
-    - responseMeta: { status: number, headers?: object, bodySnippet?: string, latencyMs?: number }
+  - tenantId: string
+  - serviceCallId: string
+  - finishedAt: datetime (ISO8601)
+  - responseMeta: { status: number, headers?: object, bodySnippet?: string, latencyMs?: number }
 
 ### ExecutionFailed
 
@@ -254,10 +254,10 @@ See [ADR-0011](../decisions/ADR-0011-message-schemas.md) for detailed patterns.
 - Consumed by: [Orchestration]
 - Purpose: record failed outcome
 - Payload:
-    - tenantId: string
-    - serviceCallId: string
-    - finishedAt: datetime (ISO8601)
-    - errorMeta: { kind: string, message?: string, details?: object, latencyMs?: number }
+  - tenantId: string
+  - serviceCallId: string
+  - finishedAt: datetime (ISO8601)
+  - errorMeta: { kind: string, message?: string, details?: object, latencyMs?: number }
 
 Notes
 

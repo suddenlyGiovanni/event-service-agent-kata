@@ -76,7 +76,7 @@ export interface EventBusPort {
 
 	subscribe<E>(
 		topics: string[],
-		handler: (env: MessageEnvelope) => Effect.Effect<void, E>
+		handler: (env: MessageEnvelope) => Effect.Effect<void, E>,
 	): Effect.Effect<void, SubscribeError>
 }
 
@@ -150,7 +150,7 @@ export interface PersistencePort {
 		tenantId: string,
 		filters: Record<string, unknown>,
 		paging: { limit: number; offset: number },
-		ctx: RequestContext
+		ctx: RequestContext,
 	): Promise<unknown[]>
 
 	// Single-writer transitions (guarded updates)
@@ -161,14 +161,14 @@ export interface PersistencePort {
 		serviceCallId: string,
 		finishedAtMs: number,
 		responseMeta: unknown,
-		ctx: RequestContext
+		ctx: RequestContext,
 	): Promise<boolean>
 	setFailed(
 		tenantId: string,
 		serviceCallId: string,
 		finishedAtMs: number,
 		errorMeta: unknown,
-		ctx: RequestContext
+		ctx: RequestContext,
 	): Promise<boolean>
 }
 ```
@@ -226,14 +226,14 @@ export interface TimerEventBusPort {
 	 * @returns Effect requiring MessageMetadata Context
 	 */
 	publishDueTimeReached(
-		event: Messages.Timer.Events.DueTimeReached.Type
+		event: Messages.Timer.Events.DueTimeReached.Type,
 	): Effect.Effect<void, PublishError, MessageMetadata>
 
 	/**
 	 * Subscribe to ScheduleTimer commands from Orchestration
 	 *
-	 * Asymmetric pattern: Adapter passes MessageMetadata as handler parameter (not via Context). This aligns with
-	 * Effect ecosystem conventions:
+	 * Asymmetric pattern: Adapter passes MessageMetadata as handler parameter (not via Context). This aligns with Effect
+	 * ecosystem conventions:
 	 *
 	 * - Publishing: Workflow provides Context (ambient data)
 	 * - Subscribing: Adapter passes parameter (explicit data flow)
@@ -253,8 +253,8 @@ export interface TimerEventBusPort {
 	subscribeToScheduleTimerCommands<E, R>(
 		handler: (
 			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-			metadata: MessageMetadata.Type
-		) => Effect.Effect<void, E, R>
+			metadata: MessageMetadata.Type,
+		) => Effect.Effect<void, E, R>,
 	): Effect.Effect<void, Ports.SubscribeError | E, R>
 }
 ```

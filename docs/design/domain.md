@@ -20,37 +20,37 @@ Contract the discovery into problem-space essentials: constraints, core concepts
 **Why these constraints:**
 
 - **Single attempt per Service Call; no retries/cancellations**
-    - **Why**: Simplifies state machine (no retry counters, backoff strategies)
-    - **Trade-off**: Less resilient, but avoids complexity of idempotent retry logic
-    - **Evolution path**: Can add retries in Phase 2 without breaking current design
+  - **Why**: Simplifies state machine (no retry counters, backoff strategies)
+  - **Trade-off**: Less resilient, but avoids complexity of idempotent retry logic
+  - **Evolution path**: Can add retries in Phase 2 without breaking current design
 
 - **HTTP is the only supported protocol**
-    - **Why**: 80% of use cases, standardized request/response semantics
-    - **Trade-off**: Can't call gRPC/GraphQL services in MVP
-    - **Evolution path**: Protocol abstraction already in place (RequestSpec extensible)
+  - **Why**: 80% of use cases, standardized request/response semantics
+  - **Trade-off**: Can't call gRPC/GraphQL services in MVP
+  - **Evolution path**: Protocol abstraction already in place (RequestSpec extensible)
 
 - **Due time semantics: execute at/after `dueAt`; if `dueAt <= now`, eligible immediately**
-    - **Why**: Prevents blocked queue if timer fires late (system resilience)
-    - **Trade-off**: "Fire ASAP" vs "Fire at exact time" — chose pragmatism
-    - **Business impact**: Acceptable for async service calls (not real-time events)
+  - **Why**: Prevents blocked queue if timer fires late (system resilience)
+  - **Trade-off**: "Fire ASAP" vs "Fire at exact time" — chose pragmatism
+  - **Business impact**: Acceptable for async service calls (not real-time events)
 
 - **Multi-tenancy: every action is tenant-scoped; all queries filter by `tenantId`**
-    - **Why**: Data isolation enforced at application layer (defense in depth)
-    - **Trade-off**: Every operation pays tenant-filtering cost, but prevents data leakage
-    - **Security**: Type system prevents cross-tenant access (TenantId brand)
+  - **Why**: Data isolation enforced at application layer (defense in depth)
+  - **Trade-off**: Every operation pays tenant-filtering cost, but prevents data leakage
+  - **Security**: Type system prevents cross-tenant access (TenantId brand)
 
 - **Minimal persistence of bodies/headers (size-limited snippets; redaction allowed)**
-    - **Why**: PII/GDPR compliance, storage efficiency
-    - **Trade-off**: Can't fully debug failed requests, but keeps storage bounded
+  - **Why**: PII/GDPR compliance, storage efficiency
+  - **Trade-off**: Can't fully debug failed requests, but keeps storage bounded
 
 - **Event-driven messaging with at-least-once delivery tolerance**
-    - **Why**: Resilience over strict ordering (crash-tolerant, broker-agnostic)
-    - **Trade-off**: Consumers must be idempotent, but system survives broker restarts
+  - **Why**: Resilience over strict ordering (crash-tolerant, broker-agnostic)
+  - **Trade-off**: Consumers must be idempotent, but system survives broker restarts
 
 - **DB is the source of truth; Orchestration is the only writer of domain state**
-    - **Why**: Single Writer Principle prevents race conditions and conflicting writes
-    - **Trade-off**: All reads must query Orchestration's tables (no projections in MVP)
-    - **Correctness**: Guarantees consistent state transitions (see ADR-0004)
+  - **Why**: Single Writer Principle prevents race conditions and conflicting writes
+  - **Trade-off**: All reads must query Orchestration's tables (no projections in MVP)
+  - **Correctness**: Guarantees consistent state transitions (see ADR-0004)
 
 ## Core Concepts (Ubiquitous Language)
 
@@ -63,25 +63,25 @@ Contract the discovery into problem-space essentials: constraints, core concepts
 **Domain Entities:**
 
 - **Tenant**: Logical owner of Service Calls
-    - **Why separate from User**: Multi-organization support (one user, many tenants)
-    - **Security boundary**: All data partitioned by TenantId
+  - **Why separate from User**: Multi-organization support (one user, many tenants)
+  - **Security boundary**: All data partitioned by TenantId
 
 - **Service Call**: Intention to invoke an external service with a request spec and a due time
-    - **Why "Service Call" not "HTTP Request"**: Protocol-agnostic terminology
-    - **Aggregate root**: All state transitions center on ServiceCall lifecycle
+  - **Why "Service Call" not "HTTP Request"**: Protocol-agnostic terminology
+  - **Aggregate root**: All state transitions center on ServiceCall lifecycle
 
 - **Due Time** (`dueAt`): Earliest instant at which execution may start
-    - **Why "earliest"**: System fires at-or-after, not at-exact-time (resilience over precision)
-    - **Type**: DateTime.Utc (timezone-agnostic, prevents DST bugs)
+  - **Why "earliest"**: System fires at-or-after, not at-exact-time (resilience over precision)
+  - **Type**: DateTime.Utc (timezone-agnostic, prevents DST bugs)
 
 - **Execution**: The single attempt to perform the Service Call
-    - **Why single attempt**: MVP constraint, simplifies failure handling
+  - **Why single attempt**: MVP constraint, simplifies failure handling
 
 - **Outcome/Status**: Scheduled | Running | Succeeded | Failed
-    - **Why these states**: Minimal state machine, no intermediate states (simpler correctness proofs)
+  - **Why these states**: Minimal state machine, no intermediate states (simpler correctness proofs)
 
 - **Tag**: Label(s) associated at submission for later filtering
-    - **Why tags**: Enables batch queries without complex schema (extensibility point)
+  - **Why tags**: Enables batch queries without complex schema (extensibility point)
 
 Glossary (Problem-Space)
 
@@ -129,31 +129,31 @@ Glossary (Problem-Space)
 **Core Workflows:**
 
 - **Submission**
-    - A tenant submits a Service Call with `name`, `requestSpec`, `dueAt`, and optional `tags`
-    - Orchestration validates, persists `Scheduled` state in the domain DB, and emits domain events after commit
-    - **Why validation first**: Fail fast before persisting invalid data (saves storage, prevents orphaned timers)
-    - **Why events after commit**: Outbox pattern prevents dual-write problem (see ADR-0008)
+  - A tenant submits a Service Call with `name`, `requestSpec`, `dueAt`, and optional `tags`
+  - Orchestration validates, persists `Scheduled` state in the domain DB, and emits domain events after commit
+  - **Why validation first**: Fail fast before persisting invalid data (saves storage, prevents orphaned timers)
+  - **Why events after commit**: Outbox pattern prevents dual-write problem (see ADR-0008)
 
 - **Scheduling**
-    - Orchestration ensures a timer exists for `dueAt` (or starts immediately when `dueAt <= now`)
-    - **Why separate Timer module**: Decouples time-tracking from business logic (testability, maintainability)
-    - **Why immediate execution**: If already past due time, no reason to wait (UX optimization)
+  - Orchestration ensures a timer exists for `dueAt` (or starts immediately when `dueAt <= now`)
+  - **Why separate Timer module**: Decouples time-tracking from business logic (testability, maintainability)
+  - **Why immediate execution**: If already past due time, no reason to wait (UX optimization)
 
 - **Becoming Due**
-    - At/after `dueAt`, the Service Call becomes eligible to start; Timer emits a due signal; Orchestration decides to start
-    - **Why Timer "signals" vs "executes"**: Timer doesn't make business decisions, only reports time passage
-    - **Why Orchestration decides**: Guards against duplicate firing, validates state transition (Scheduled → Running)
+  - At/after `dueAt`, the Service Call becomes eligible to start; Timer emits a due signal; Orchestration decides to start
+  - **Why Timer "signals" vs "executes"**: Timer doesn't make business decisions, only reports time passage
+  - **Why Orchestration decides**: Guards against duplicate firing, validates state transition (Scheduled → Running)
 
 - **Execution**
-    - Exactly one attempt is performed, producing either success (response metadata) or failure (error metadata)
-    - Orchestration is the single writer for `Running` and terminal states
-    - **Why single writer**: Prevents race conditions in state transitions (correctness guarantee)
-    - **Why capture metadata**: Enables debugging, latency analysis, and outcome auditing
+  - Exactly one attempt is performed, producing either success (response metadata) or failure (error metadata)
+  - Orchestration is the single writer for `Running` and terminal states
+  - **Why single writer**: Prevents race conditions in state transitions (correctness guarantee)
+  - **Why capture metadata**: Enables debugging, latency analysis, and outcome auditing
 
 - **Observation**
-    - The tenant can list and filter calls by status, tags, and date; API serves queries directly from the domain DB with proper indexes
-    - **Why direct DB queries**: Simpler than CQRS projections for MVP (acceptable read latency)
-    - **Why filter by status/tags**: Common UX patterns (show pending, show failed, etc.)
+  - The tenant can list and filter calls by status, tags, and date; API serves queries directly from the domain DB with proper indexes
+  - **Why direct DB queries**: Simpler than CQRS projections for MVP (acceptable read latency)
+  - **Why filter by status/tags**: Common UX patterns (show pending, show failed, etc.)
 
 Business State Diagram (Problem-Space)
 

@@ -23,7 +23,7 @@ erDiagram
     service_calls ||--o{ service_call_tags : "has tags"
     service_calls ||--o{ timer_schedules : "schedules"
     service_calls ||--o{ http_execution_log : "executes"
-    
+
     service_calls {
         TEXT tenant_id PK "Multi-tenant partition key"
         TEXT service_call_id PK "Aggregate root ID (UUID v7)"
@@ -36,13 +36,13 @@ erDiagram
         TEXT request_spec "JSON HttpRequest"
         TEXT outcome_meta "JSON response/error (nullable)"
     }
-    
+
     service_call_tags {
         TEXT tenant_id PK,FK "Multi-tenant partition key"
         TEXT service_call_id PK,FK "References service_calls"
         TEXT tag PK "Tag value"
     }
-    
+
     timer_schedules {
         TEXT tenant_id PK,FK "Multi-tenant partition key"
         TEXT service_call_id PK,FK "References service_calls"
@@ -52,7 +52,7 @@ erDiagram
         TEXT reached_at "ISO8601 UTC (nullable)"
         TEXT state "CHECK: Scheduled | Reached"
     }
-    
+
     http_execution_log {
         TEXT tenant_id PK,FK "Multi-tenant partition key"
         TEXT service_call_id PK,FK "References service_calls"
@@ -68,7 +68,7 @@ erDiagram
         TEXT response_body "Response payload (nullable)"
         TEXT error_message "Error details (nullable)"
     }
-    
+
     outbox {
         INTEGER id PK "Auto-increment sequence"
         TEXT tenant_id "Multi-tenant partition key"
@@ -322,8 +322,8 @@ FOREIGN KEY (tenant_id, service_call_id)
 **Extraction strategy:**
 
 1. Replace FK with event-driven consistency:
-    - Orchestration publishes `ServiceCallDeleted` event
-    - Timer consumes event and deletes orphaned timers
+   - Orchestration publishes `ServiceCallDeleted` event
+   - Timer consumes event and deletes orphaned timers
 2. Timer validates `service_call_id` existence via query to Orchestration (tolerate stale data)
 3. Move `timer_schedules` table to `timer.db`
 
@@ -582,18 +582,18 @@ Every module adapter MUST test:
 Detailed schema documentation per module:
 
 - **Timer:** [`packages/timer/docs/schema.md`](../../packages/timer/docs/schema.md)
-    - Timer polling query patterns
-    - State transition semantics
-    - Idempotency guarantees
+  - Timer polling query patterns
+  - State transition semantics
+  - Idempotency guarantees
 
 - **Orchestration:** (Future) `packages/orchestration/docs/schema.md`
-    - ServiceCall aggregate schema
-    - Tag query patterns
-    - Status transition rules
+  - ServiceCall aggregate schema
+  - Tag query patterns
+  - Status transition rules
 
 - **Execution:** (Future) `packages/execution/docs/schema.md`
-    - Execution log schema
-    - Retry tracking patterns
+  - Execution log schema
+  - Retry tracking patterns
 
 ---
 

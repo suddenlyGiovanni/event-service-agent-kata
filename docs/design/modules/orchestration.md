@@ -13,9 +13,9 @@ Responsibility
 Core Model
 
 - **Aggregate**: ServiceCall
-    - Identity: `(tenantId, serviceCallId)`
-    - State: name, submittedAt, dueAt, requestSpec, status (Scheduled|Running|Succeeded|Failed), tags, startedAt?, finishedAt?, outcome meta
-    - Invariants: single attempt, legal transitions, terminal immutability, dueAt eligibility
+  - Identity: `(tenantId, serviceCallId)`
+  - State: name, submittedAt, dueAt, requestSpec, status (Scheduled|Running|Succeeded|Failed), tags, startedAt?, finishedAt?, outcome meta
+  - Invariants: single attempt, legal transitions, terminal immutability, dueAt eligibility
 
 Commands (intent)
 
@@ -72,7 +72,7 @@ const finalServiceCallId = serviceCallId ?? yield * ServiceCallId.makeUUID7()
 const event = new ServiceCallSubmitted({
 	tenantId,
 	serviceCallId: finalServiceCallId,
-	name: commandData.name
+	name: commandData.name,
 	// ... other fields
 })
 
@@ -83,8 +83,8 @@ yield *
 	eventBus.publishServiceCallSubmitted(event).pipe(
 		Effect.provideService(MessageMetadata, {
 			correlationId, // From command (pass-through)
-			causationId: commandMetadata.causationId // From command envelope
-		})
+			causationId: commandMetadata.causationId, // From command envelope
+		}),
 	)
 ```
 
@@ -106,7 +106,7 @@ const envelope: MessageEnvelope.Type = new MessageEnvelope({
 	timestampMs: yield * clock.now(),
 	correlationId: metadata.correlationId,
 	causationId: metadata.causationId,
-	aggregateId: Option.some(event.serviceCallId)
+	aggregateId: Option.some(event.serviceCallId),
 })
 
 yield * eventBus.publish([envelope])
@@ -222,12 +222,12 @@ sequenceDiagram
 Inputs/Outputs Recap
 
 - Inputs:
-    - [SubmitServiceCall] (command),
-    - [DueTimeReached] (event),
-    - [ExecutionStarted] OR [ExecutionSucceeded] OR [ExecutionFailed] (events)
+  - [SubmitServiceCall] (command),
+  - [DueTimeReached] (event),
+  - [ExecutionStarted] OR [ExecutionSucceeded] OR [ExecutionFailed] (events)
 - Outputs:
-    - [ServiceCallSubmitted], [ServiceCallScheduled], [ServiceCallRunning], [ServiceCallSucceeded], [ServiceCallFailed] (events via outbox)
-    - [StartExecution], [ScheduleTimer] (commands)
+  - [ServiceCallSubmitted], [ServiceCallScheduled], [ServiceCallRunning], [ServiceCallSucceeded], [ServiceCallFailed] (events via outbox)
+  - [StartExecution], [ScheduleTimer] (commands)
 - Ports: [PersistencePort], [OutboxPublisherPort], [EventBusPort], [TimerPort], [ClockPort]
 - Read Side: API reads domain DB; no projections
 

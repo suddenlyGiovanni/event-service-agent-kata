@@ -28,8 +28,8 @@ import { Effect, Schema } from 'effect'
 export const DomainMessage = Schema.Union(
 	Schema.Struct({
 		_tag: Schema.Literal('DueTimeReached'),
-		tenantId: Schema.String // ← Lost TenantId brand!
-	})
+		tenantId: Schema.String, // ← Lost TenantId brand!
+	}),
 )
 
 Effect.gen(function* () {

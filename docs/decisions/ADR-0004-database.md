@@ -222,9 +222,9 @@ export class OrchestrationSqliteAdapter implements OrchestrationPersistencePort 
 				await tx.run(
 					`INSERT INTO service_calls (tenant_id, service_call_id, name, status, created_at)
                      VALUES (?, ?, ?, ?, ?)`,
-					[entity.tenantId, entity.id, entity.name, entity.status, entity.createdAt]
+					[entity.tenantId, entity.id, entity.name, entity.status, entity.createdAt],
 				)
-			})
+			}),
 		)
 	}
 }
