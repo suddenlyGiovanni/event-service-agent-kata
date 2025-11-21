@@ -1,4 +1,5 @@
-/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag` discriminators */
+/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag`
+discriminators */
 import * as Schema from 'effect/Schema'
 
 import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
@@ -20,8 +21,7 @@ import { ServiceCallEventBase } from '../common/service-call-event-base.schema.t
 /**
  * DueTimeReached - Time to start execution has arrived
  *
- * **Produced by**: Timer (or Orchestration fast-path).
- * **Consumed by**: Orchestration.
+ * **Produced by**: Timer (or Orchestration fast-path). **Consumed by**: Orchestration.
  *
  * This event signals that a scheduled timer has reached its due time and execution should begin. The `reachedAt`
  * timestamp indicates when the polling worker detected the timer was due.
@@ -60,8 +60,8 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	/**
 	 * Timestamp when the due time was detected
 	 *
-	 * Domain type: DateTime.Utc (Effect's immutable datetime).
-	 * Wire format: ISO8601 string (e.g., "2025-10-27T12:00:00.000Z").
+	 * Domain type: DateTime.Utc (Effect's immutable datetime). Wire format: ISO8601 string (e.g.,
+	 * "2025-10-27T12:00:00.000Z").
 	 */
 	reachedAt: Schema.DateTimeUtc,
 }) {
@@ -131,8 +131,8 @@ export declare namespace DueTimeReached {
 	/**
 	 * DTO type for wire format (encoded representation)
 	 *
-	 * Used at adapter boundaries when encoding events for the broker.
-	 * All branded types are converted to their primitive representations.
+	 * Used at adapter boundaries when encoding events for the broker. All branded types are converted to their primitive
+	 * representations.
 	 */
 	type Dto = typeof DueTimeReached.Encoded
 }
@@ -150,7 +150,6 @@ export type Events = Schema.Schema.Type<typeof Events>
 /**
  * Tag discriminator type for Timer events
  *
- * Union of all possible event tag values ('DueTimeReached', etc.).
- * Used for exhaustive pattern matching on event types.
+ * Union of all possible event tag values ('DueTimeReached', etc.). Used for exhaustive pattern matching on event types.
  */
 export type Tag = typeof Events.Tag

@@ -17,7 +17,6 @@
  *   - Set once at API entry point, carried throughout
  *   - Never changes across message chain
  *   - Enables tracing: "Show me all events for user request X"
- *
  * - **CausationId (EnvelopeId)**: "Which specific message triggered this event?"
  *
  *   - Changes at each step (parent envelope → child envelope)
@@ -36,8 +35,8 @@
  * 7. ExecuteServiceCall command → correlationId = uuid1, causationId = event.envelopeId
  * ```
  *
- * All messages share correlationId=uuid1, enabling query:
- * `"Show me all events where correlationId = uuid1" → full request trace`
+ * All messages share correlationId=uuid1, enabling query: `"Show me all events where correlationId = uuid1" → full
+ * request trace`
  *
  * **Why Optional**: CorrelationId is `Option<CorrelationId>` because:
  *

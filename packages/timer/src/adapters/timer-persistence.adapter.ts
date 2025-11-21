@@ -1,5 +1,7 @@
-/** biome-ignore-all lint/style/useNamingConvention: explanation: Capitalized identifiers follow Effect service
-conventions */
+/**
+ * biome-ignore-all lint/style/useNamingConvention: explanation: Capitalized identifiers follow Effect service
+ * conventions
+ */
 
 import type * as Platform from '@effect/platform'
 import * as Sql from '@effect/sql'

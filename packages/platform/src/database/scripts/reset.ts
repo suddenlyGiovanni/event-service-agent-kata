@@ -14,13 +14,15 @@
  * Usage: `bun run db:reset` # From workspace root
  *
  * Environment Variables (.env or shell):
- *   - `DB_PATH`        - Database file path (default: <workspace>/data/db.sqlite)
- *   - `DB_SCHEMA_DIR`  - Schema dump directory (default: <workspace>/data)
+ *
+ * - `DB_PATH` - Database file path (default: <workspace>/data/db.sqlite)
+ * - `DB_SCHEMA_DIR` - Schema dump directory (default: <workspace>/data)
  *
  * Environment File:
- *   - Scripts automatically load <workspace>/.env if present.
- *   - See .env.example for available configuration options.
- *   - Relative paths in .env work correctly when running from workspace root.
+ *
+ * - Scripts automatically load <workspace>/.env if present.
+ * - See .env.example for available configuration options.
+ * - Relative paths in .env work correctly when running from workspace root.
  *
  * Exit Codes:
  *

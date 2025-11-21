@@ -486,7 +486,8 @@ it.effect('should not return timers from other tenants', () =>
 		// Assert: Only tenant A's timer returned
 		expect(Chunk.size(results)).toBe(1)
 		expect(Chunk.unsafeHead(results).tenantId).toEqual(tenantA)
-	}))
+	}),
+)
 ```
 
 ### Index Coverage Test (EXPLAIN QUERY PLAN)
@@ -512,7 +513,8 @@ it.effect('should use index for polling query', () =>
 		// Assert: Index scan (not table scan)
 		expect(plan[0].detail).toContain('USING INDEX idx_timer_schedules_due_at')
 		expect(plan[0].detail).not.toContain('SCAN') // No full table scan
-	}))
+	}),
+)
 ```
 
 ### FK Constraint Test
@@ -559,7 +561,8 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 		`
 
 		expect(timers[0].count).toBe(0)
-	}))
+	}),
+)
 ```
 
 ---

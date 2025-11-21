@@ -60,8 +60,8 @@ const makeScheduledTimer = ({
  * - ClockPort: Test clock for time control
  * - UUID7: Default UUID generator
  *
- * Note: SQL.Test appears in both TimerPersistence.Test (internal) and BaseTestLayers (external).
- * This is NOT duplication - Layer.mergeAll deduplicates identical layers, so SQL.Test is only initialized once.
+ * Note: SQL.Test appears in both TimerPersistence.Test (internal) and BaseTestLayers (external). This is NOT
+ * duplication - Layer.mergeAll deduplicates identical layers, so SQL.Test is only initialized once.
  */
 const BaseTestLayers = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.ClockPortTest, UUID7.Default, SQL.Test)
 
