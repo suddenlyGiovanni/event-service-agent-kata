@@ -2,15 +2,18 @@
  * Centralized topic/routing configuration
  *
  * Topic Naming Convention:
+ *
  * - Format: {module}.{message-class}
  * - Examples: timer.commands, orchestration.events
  *
  * Routing Strategy:
+ *
  * - Module-level topics (all commands/events for a module)
  * - Consumers filter by envelope.type discriminator
  * - Multi-tenancy via broker partition keys (not separate topics)
  *
  * Evolution Path:
+ *
  * - Can add message-level sub-topics later if needed
  * - Structure allows: Topics.Timer.Commands.ScheduleTimer
  *
@@ -25,7 +28,8 @@ export namespace Topics {
 	 * Timer module topics
 	 *
 	 * @example
-	 * ```typescript ignore
+	 *
+	 * ```typescript
 	 * // Subscribe to timer commands
 	 * bus.subscribe([Topics.Timer.Commands], handler)
 	 *
@@ -37,12 +41,14 @@ export namespace Topics {
 		const timer = 'timer' as const
 		/**
 		 * Commands consumed by Timer module
+		 *
 		 * - ScheduleTimer (from Orchestration)
 		 */
 		export const Commands = `${timer}.${commands}` as const
 
 		/**
 		 * Events published by Timer module
+		 *
 		 * - DueTimeReached (to Orchestration)
 		 */
 		export const Events = `${timer}.${events}` as const
@@ -57,13 +63,13 @@ export namespace Topics {
 	export namespace Orchestration {
 		const orchestration = 'orchestration' as const
 		/**
-		 * Commands consumed by Orchestration module
-		 * (None in MVP)
+		 * Commands consumed by Orchestration module (None in MVP)
 		 */
 		export const Commands = `${orchestration}.${commands}` as const
 
 		/**
 		 * Events published by Orchestration module
+		 *
 		 * - ServiceCallSubmitted
 		 * - ServiceCallScheduled
 		 * - ServiceCallRunning
@@ -83,6 +89,7 @@ export namespace Topics {
 		const execution = 'execution' as const
 		/**
 		 * Events published by Execution module
+		 *
 		 * - ExecutionStarted
 		 * - ExecutionSucceeded
 		 * - ExecutionFailed
@@ -100,6 +107,7 @@ export namespace Topics {
 		const api = 'api' as const
 		/**
 		 * Commands from API module
+		 *
 		 * - SubmitServiceCall (to Orchestration)
 		 */
 		export const Commands = `${api}.${commands}` as const
@@ -115,12 +123,13 @@ export namespace Topics {
 	 * Broker adapters can use this to ensure only valid topics are subscribed to.
 	 *
 	 * @example
-	 * ```typescript ignore
+	 *
+	 * ```typescript
 	 * function subscribe(topic: Topics.Type) {
-	 *   // TypeScript ensures only valid topics
+	 * 	// TypeScript ensures only valid topics
 	 * }
 	 * subscribe(Topics.Timer.Commands) // ✅
-	 * subscribe('invalid.topic')       // ❌ Compile error
+	 * subscribe('invalid.topic') // ❌ Compile error
 	 * ```
 	 */
 	export type Type = Timer.Topic | Orchestration.Topic | Execution.Topic | Api.Topic
@@ -128,8 +137,7 @@ export namespace Topics {
 	/**
 	 * Canonical list of all topics
 	 *
-	 * Enables runtime iteration over all known topics for configuration,
-	 * validation, and adapter setup.
+	 * Enables runtime iteration over all known topics for configuration, validation, and adapter setup.
 	 */
 	export const All: ReadonlyArray<Type> = [
 		Timer.Commands,
@@ -144,6 +152,7 @@ export namespace Topics {
 	 * Runtime type guard for topic validation
 	 *
 	 * @param t - String to validate
+	 *
 	 * @returns True if t is a valid topic
 	 */
 	export const isTopic = (t: string): t is Type => (All as ReadonlyArray<string>).includes(t)
@@ -157,9 +166,10 @@ export namespace Topics {
 	 * Metadata shape for a topic
 	 *
 	 * Defines the structure of metadata for each topic:
-	 * - producer: Which module publishes to this topic (null if external/user-initiated)
-	 * - consumers: Which module(s) subscribe to this topic
-	 * - description: Human-readable description of the topic's purpose
+	 *
+	 * - Producer: Which module publishes to this topic (null if external/user-initiated)
+	 * - Consumers: Which module(s) subscribe to this topic
+	 * - Description: Human-readable description of the topic's purpose
 	 */
 	type TopicMetadata = Readonly<{
 		producer: Module | null
@@ -171,11 +181,13 @@ export namespace Topics {
 	 * Topic metadata for documentation and tooling
 	 *
 	 * Provides human-readable information about each topic:
-	 * - description: What messages flow through this topic
-	 * - producer: Which module publishes to this topic
-	 * - consumers: Which module(s) subscribe to this topic
+	 *
+	 * - Description: What messages flow through this topic
+	 * - Producer: Which module publishes to this topic
+	 * - Consumers: Which module(s) subscribe to this topic
 	 *
 	 * This metadata is optional but useful for:
+	 *
 	 * - Generated documentation
 	 * - Runtime introspection
 	 * - Debugging routing issues
