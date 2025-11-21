@@ -261,10 +261,10 @@ export interface TimerPersistencePort {
 	 * - NotFound → Success (already cleaned up or never existed)
 	 *
 	 * The adapter handles:
-	 * - Atomic state transition using HashMap.modify or SQL UPDATE
+	 * - Atomic state transition using storage-specific operations (e.g., SQL UPDATE)
 	 * - Recording reachedAt timestamp on first transition
 	 * - Preserving original reachedAt on subsequent calls (idempotency)
-	 * - Transaction management (for SQL adapters)
+	 * - Transaction management when required by the storage backend
 	 *
 	 * After marking as fired, the timer will no longer be returned by
 	 * `findDue()` or `findScheduledTimer()`, but can still be queried via
