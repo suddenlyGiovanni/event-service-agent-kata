@@ -33,6 +33,8 @@
  * @see .env.example for environment configuration options
  */
 
+import console from 'node:console'
+
 import * as PlatformBun from '@effect/platform-bun'
 import * as Sql from '@effect/sql'
 import * as Effect from 'effect/Effect'

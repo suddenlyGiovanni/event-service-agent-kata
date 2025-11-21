@@ -15,7 +15,7 @@ The Timer module provides **durable delayed execution** for service calls. It re
 - **Scheduled**: Timer waiting for due time
 - **Reached**: Timer has fired (terminal state)
 
-```typescript
+```typescript ignore
 type TimerEntry =
 	| ScheduledTimer // Waiting to fire
 	| ReachedTimer // Already fired
@@ -98,7 +98,7 @@ Structured logging and distributed tracing via `correlationId`.
 
 Batch processing continues on individual timer errors:
 
-```typescript
+```txt
 BatchProcessingError {
   successCount: 97,
   failureCount: 3,
@@ -110,9 +110,14 @@ BatchProcessingError {
 
 ### Schedule a Timer
 
-```typescript
-import { scheduleTimerWorkflow } from '@event-service-agent/timer'
-import { Iso8601DateTime } from '@event-service-agent/schemas/shared'
+```typescript ignore
+import { scheduleTimerWorkflow }                                   from '@event-service-agent/timer'
+import { Iso8601DateTime, CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
+import { Effect }                                                  from 'effect'
+
+declare const tenantId: TenantId.Type
+declare const serviceCallId: ServiceCallId.Type
+declare const correlationId: CorrelationId.Type
 
 const program = Effect.gen(function* () {
 	yield* scheduleTimerWorkflow({
@@ -129,7 +134,7 @@ const program = Effect.gen(function* () {
 
 ### Poll Due Timers
 
-```typescript
+```typescript ignore
 import { pollDueTimersWorkflow } from '@event-service-agent/timer'
 
 // Run periodically (e.g., every 10 seconds)

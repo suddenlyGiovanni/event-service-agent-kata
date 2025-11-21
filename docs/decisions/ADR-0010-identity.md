@@ -32,7 +32,7 @@ Each approach has implications for idempotency, event correlation, outbox patter
 
 ### Database-Generated IDs: Why They Don't Work
 
-```typescript
+```typescript ignore
 // ❌ PROBLEM: Can't use ID until AFTER insert
 const result = await db.insert(serviceCall).returning(['id'])
 const serviceCallId = result.id // Only available NOW!
@@ -47,7 +47,7 @@ const serviceCallId = result.id // Only available NOW!
 
 ### Application-Generated IDs: Why They Work
 
-```typescript
+```typescript ignore
 // ✅ SOLUTION: Generate ID BEFORE insert
 const serviceCallId = clientProvidedId
   ?? crypto.randomUUID()  // UUID v7 preferred
@@ -57,7 +57,7 @@ const existing = await db.findBy({ tenantId, serviceCallId })
 if (existing) return existing
 
 // ✅ Can include ID in domain events
-const event = ServiceCallSubmitted({ serviceCallId, ... })
+const event = ServiceCallSubmitted({ serviceCallId, /* ... */ })
 
 // ✅ Can insert aggregate + publish events in same transaction
 await db.transaction(async (tx) => {
@@ -107,7 +107,7 @@ Use `crypto.randomUUID()` directly in application code. If UUID v7 library neede
 
 ### API Pattern: Accept Optional Client IDs
 
-```typescript
+```typescript ignore
 // API accepts optional serviceCallId for idempotency
 interface SubmitServiceCallRequest {
 	serviceCallId?: ServiceCallId // Client-provided (idempotent retry)
@@ -153,7 +153,7 @@ This enables:
 
 **Previous problem:** `shared.ts` used `Brand.nominal` (type-only, no runtime validation):
 
-```typescript
+```typescript ignore
 // ❌ OLD: No validation!
 export type TenantId = string & Brand.Brand<'TenantId'>
 export const TenantId = Brand.nominal<TenantId>()
@@ -164,23 +164,30 @@ const tenantId = req.body.tenantId as TenantId // Accepts ANYTHING!
 
 **Current implementation:** Migrated to `Schema.brand` with UUID v7 validation:
 
-```typescript
+```typescript ignore
 // ✅ CURRENT: Runtime validation with UUID7 schema
-import * as Schema from 'effect/Schema'
+import * as DateTime     from 'effect/DateTime'
+import * as Effect       from 'effect/Effect'
+import * as Schema       from 'effect/Schema'
+import { TenantIdBrand } from './tenant-id.schema'
+import { UUID7 }         from './uuid7.schema'
 
 export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	static readonly makeUUID7 = (time?: DateTime.Utc) =>
-		Effect.gen(function* () {
-			const uuid7 = yield* Uuid7Service.randomUUIDv7(time)
-			return TenantId.make(uuid7) // Validated UUID7 → branded TenantId
-		})
+			Effect.gen(function* () {
+				const uuid7 = yield* Uuid7Service.randomUUIDv7(time)
+				return TenantId.make(uuid7) // Validated UUID7 → branded TenantId
+			})
 
 	static readonly decode = (value: string) => Schema.decode(TenantId)(value) // Validates UUID7 format!
 }
 
-// API handler (SAFE):
-const tenantId = yield* TenantId.decode(req.body.tenantId)
-// ✅ Validates UUID7 format! Rejects invalid input with ParseError
+Effect.gen(function* () {
+	// API handler (SAFE):
+	const tenantId = yield* TenantId.decode(req.body.tenantId)
+	// ✅ Validates UUID7 format! Rejects invalid input with ParseError
+})
+
 ```
 
 **Completed in:** `packages/schemas/src/shared/`\

@@ -49,7 +49,7 @@ Port signature changed from `publishDueTimeReached(timer, firedAt)` to `publishD
 
 Pass metadata alongside domain event via separate context object.
 
-```typescript
+```typescript ignore
 // Port signature
 interface PublishContext {
   readonly correlationId: Option.Option<CorrelationId>
@@ -100,7 +100,7 @@ const envelope = new MessageEnvelope({
 
 Include infrastructure metadata in domain event schema.
 
-```typescript
+```typescript ignore
 // Domain event with metadata
 export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
 	'DueTimeReached',
@@ -139,7 +139,7 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
 
 Adapter fetches aggregate to get metadata before wrapping.
 
-```typescript
+```typescript ignore
 // Adapter queries persistence
 const publishDueTimeReached = (event: DueTimeReached) => Effect.gen(function* () {
 	const persistence = yield* TimerPersistencePort
@@ -175,7 +175,7 @@ const publishDueTimeReached = (event: DueTimeReached) => Effect.gen(function* ()
 
 Domain events carry aggregate reference.
 
-```typescript
+```typescript ignore
 declare const publishDueTimeReached: (
   event: DueTimeReached,
   timer: TimerEntry
@@ -202,7 +202,7 @@ declare const publishDueTimeReached: (
 
 Use Effect's Context system to carry metadata implicitly.
 
-```typescript
+```typescript ignore
 // 1. Define Context Tag (platform package)
 export class MessageMetadata extends Context.Tag('MessageMetadata')<
   MessageMetadata,

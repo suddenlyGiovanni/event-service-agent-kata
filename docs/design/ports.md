@@ -8,7 +8,7 @@ Minimal domain-facing ports to keep the system simple and broker/storage agnosti
 
 ## Shared Types
 
-```ts
+```typescript ignore
 export type TenantId = string & { readonly __tag: 'TenantId' }
 export type CorrelationId = string & { readonly __tag: 'CorrelationId' }
 export type EnvelopeId = string & { readonly __tag: 'EnvelopeId' }
@@ -30,7 +30,7 @@ Minimal envelope shared by publishers/consumers. See [Semantics](./messages.md#s
 
 The schema provides JSON serialization (`parseJson`/`encodeJson`) and validation at infrastructure boundaries.
 
-```ts
+```typescript ignore
 export interface MessageEnvelope<T = unknown> {
 	id: EnvelopeId // unique id
 	type: string // message type
@@ -53,7 +53,7 @@ export interface MessageEnvelope<T = unknown> {
 Adapter responsibilities: Provide stable UTC milliseconds; no blocking; test fake allowed.\
 Used in: [Orchestration] (timeouts), [Timer] (scheduling).
 
-```ts
+```typescript ignore
 export interface ClockPort {
 	nowMs(): number // Epoch millis (UTC)
 }
@@ -66,7 +66,7 @@ Used in: [Orchestration], [Execution], [Timer], [API] (publish only).
 
 **Design Note**: The envelope is self-contained with all routing metadata (tenantId, correlationId, aggregateId). No separate context parameter needed - this eliminates duplication and ensures single source of truth.
 
-```ts
+```typescript ignore
 import * as Data from 'effect/Data'
 import type * as Effect from 'effect/Effect'
 import type { NonEmptyReadonlyArray } from 'effect/Array'
@@ -98,7 +98,7 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
 Adapter responsibilities: Schedule/cancel one-shot timers with at-least-once delivery semantics.\
 Used in: [Orchestration].
 
-```ts
+```typescript ignore
 export interface TimerSpec {
 	id: string // idempotent key
 	dueTimeMs: number // epoch millis when due
@@ -116,7 +116,7 @@ export interface TimerPort {
 Adapter responsibilities: Perform HTTP call and return status/headers/body without extra concerns.\
 Used in: [Execution].
 
-```ts
+```typescript ignore
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 export interface HttpRequest {
@@ -147,7 +147,7 @@ Used in: [Orchestration] (write), [API] (read-only).
 
 Note: `responseMeta` and `errorMeta` follow the payload shapes defined in the messages catalog — see [ExecutionSucceeded] (responseMeta) and [ExecutionFailed] (errorMeta) in `design/messages.md`.
 
-```ts
+```typescript ignore
 export interface PersistencePort {
 	// Read models for API
 	getServiceCall(
@@ -192,7 +192,7 @@ export interface PersistencePort {
 Role: ensure messages are published after DB commit. Orchestration appends messages to an outbox table within the same transaction; a dispatcher publishes them to the broker in order.\
 Used in: [Orchestration].
 
-```ts
+```typescript ignore
 export interface OutboxPublisher {
 	append(envelopes: MessageEnvelope[], ctx: RequestContext): Promise<void> // called within DB tx
 	dispatch(batchSize?: number): Promise<void> // background loop
@@ -206,7 +206,7 @@ Used in: [Timer] (workflows publish events, handlers consume commands).
 
 **Design Pattern**: Port accepts **pure domain events**, not infrastructure DTOs. Adapter wraps events in `MessageEnvelope` and delegates to shared `EventBusPort`. See [Hexagonal Architecture: Event Publishing Pattern](./hexagonal-architecture-layers.md#event-publishing-pattern-domain-events-at-port-boundary) for rationale.
 
-```ts
+```typescript ignore
 import type * as Effect from 'effect/Effect'
 import type * as Messages from '@event-service-agent/schemas/messages'
 import type { MessageMetadata } from '@event-service-agent/platform/context'

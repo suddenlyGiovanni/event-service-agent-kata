@@ -42,7 +42,7 @@ Domain Modeling Made Functional (DMMF) principle: **"Parse, Don't Validate"** �
 
 ### Current Architecture
 
-```typescript
+```typescript ignore
 // packages/contracts/src/messages/messages.ts
 interface DueTimeReached extends Event<Type.DueTimeReached> {
 	readonly reachedAt?: Iso8601DateTime.Type
@@ -61,7 +61,7 @@ const event: Timer.Events.DueTimeReached = {
 
 Effect Schema implements DMMF "Parse, Don't Validate" pattern:
 
-```typescript
+```typescript ignore
 // Domain event as validated Schema
 class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
 	'DueTimeReached',
@@ -113,7 +113,7 @@ packages/
 
 Use `Schema.TaggedClass` with **direct field repetition** (Option A from analysis):
 
-```typescript
+```typescript ignore
 export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
 	'DueTimeReached',
 	{
@@ -133,7 +133,7 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
 
 **Commands that create aggregates** omit `serviceCallId`:
 
-```typescript
+```typescript ignore
 export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()(
 	'SubmitServiceCall',
 	{
@@ -150,7 +150,7 @@ export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()(
 
 **Static Methods** (for ergonomics):
 
-```typescript
+```typescript ignore
 export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
 	'DueTimeReached',
 	{
@@ -193,7 +193,7 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
 
 **Usage**:
 
-```typescript
+```typescript ignore
 // Decode from DTO shape (already parsed from JSON)
 const dto = { _tag: 'DueTimeReached', tenantId: 'tenant-123', ... }
 const event = yield * DueTimeReached.decode(dto);
@@ -218,7 +218,7 @@ const dto = yield * DueTimeReached.encode(event);
 
 **DTO Type Exports** (for adapter boundaries):
 
-```typescript
+```typescript ignore
 // Domain type (validated, used in workflows)
 export type DueTimeReached = Schema.Schema.Type<
 	typeof Timer.Events.DueTimeReached
@@ -249,7 +249,7 @@ export type DueTimeReachedDTO = Schema.Schema.Encoded<
 
 **Original proposal** (no longer valid):
 
-```typescript
+```typescript ignore
 // ❌ NOT IMPLEMENTED - Creates circular dependency
 import { DueTimeReached } from '@event-service-agent/timer/domain'
 import { ServiceCallScheduled } from '@event-service-agent/orchestration/domain'
@@ -264,7 +264,7 @@ export const DomainEvent = Schema.Union(
 
 **Actual implementation** (per ADR-0012):
 
-```typescript
+```typescript ignore
 // ✅ Schemas defined in @event-service-agent/schemas
 // packages/schemas/src/messages/timer/events.schema.ts
 export class DueTimeReached extends Schema.TaggedClass(...) { }
@@ -281,7 +281,7 @@ For complete architecture, see **ADR-0012: Package Structure - Schemas and Platf
 
 **Usage in Broker Adapter**:
 
-```typescript
+```typescript ignore
 const decodeMessage = Schema.decode(DomainMessage)
 
 function handleIncoming(raw: unknown) {
@@ -337,7 +337,7 @@ Layer 4: NATS adapter JSON serialization
 
 Create Effect Schema for envelope structure validation with union of all domain messages:
 
-```typescript
+```typescript ignore
 // packages/contracts/src/types/message-envelope.schema.ts
 import * as Schema from 'effect/Schema'
 
@@ -398,7 +398,7 @@ The union approach provides both **runtime validation** and **compile-time type 
 
 Adapters construct validated envelopes using **direct Schema class instantiation** combined with **MessageMetadata Context**:
 
-```typescript
+```typescript ignore
 // Real implementation from timer-event-bus.adapter.ts
 publishDueTimeReached: Effect.fn('publishDueTimeReached')(function* (
 	dueTimeReached: DueTimeReached.Type
@@ -446,7 +446,7 @@ publishDueTimeReached: Effect.fn('publishDueTimeReached')(function* (
 
 **MessageMetadata Context Pattern** (see ADR-0013):
 
-```typescript
+```typescript ignore
 // Workflow provisions metadata when publishing
 yield* eventBus.publishDueTimeReached(event).pipe(
 		Effect.provideService(MessageMetadata, {
@@ -464,7 +464,7 @@ const metadata = yield * MessageMetadata
 
 **Consuming (Wire → Domain)**:
 
-```typescript
+```typescript ignore
 // In NATS adapter or consumer handler
 function* handleMessage(jsonString: string) {
 	// 1. Parse JSON → validate envelope structure + payload (single step!)
@@ -498,7 +498,7 @@ function* handleMessage(jsonString: string) {
 
 **Alternative: Manual discrimination**:
 
-```typescript
+```typescript ignore
 // If not using match helper
 const envelope = yield * MessageEnvelope.parseJson(jsonString)
 
@@ -630,7 +630,7 @@ When consuming messages from the wire (NATS), we need to:
 
 **Why Union Works**:
 
-```typescript
+```typescript ignore
 // Envelope with union payload
 payload: DomainMessage // Union of all message schemas
 
@@ -647,7 +647,7 @@ match(envelope.payload, {
 
 **Why Schema.Unknown Doesn't Work**:
 
-```typescript
+```typescript ignore
 // Envelope with unknown payload
 payload: Schema.Unknown
 
@@ -663,7 +663,7 @@ const envelope = yield * MessageEnvelope.parseJson(jsonString)
 
 **Generic Constructor Considered**:
 
-```typescript
+```typescript ignore
 // Alternative: Generic schema constructor
 const MessageEnvelope = <M extends Schema.Schema.All>(
   messageSchema: M
@@ -699,7 +699,7 @@ Revisit if base fields grow beyond current 2 fields.
 
 `RequestSpec` and `RequestSpecWithoutBody` need Schema definitions:
 
-```typescript
+```typescript ignore
 // packages/contracts/src/types/http.type.ts
 export class RequestSpec extends Schema.Class<RequestSpec>('RequestSpec')({
 	method: Schema.Literal('GET', 'POST', 'PUT', 'PATCH', 'DELETE'),
@@ -726,7 +726,7 @@ export class RequestSpecWithoutBody extends Schema.Class<RequestSpecWithoutBody>
 
 `ResponseMeta` and `ErrorMeta` (used in events) need schemas:
 
-```typescript
+```typescript ignore
 export class ResponseMeta extends Schema.Class<ResponseMeta>('ResponseMeta')({
 	status: Schema.Number,
 	headers: Schema.optional(

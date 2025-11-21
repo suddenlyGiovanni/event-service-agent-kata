@@ -80,7 +80,7 @@ graph TB
 
 **Example:**
 
-```typescript
+```typescript ignore
 // packages/orchestration/src/workflows/submit-service-call.workflow.ts
 export const submitServiceCallWorkflow = (
 	request: SubmitServiceCallRequest
@@ -109,7 +109,7 @@ export const submitServiceCallWorkflow = (
 
 **Example:**
 
-```typescript
+```typescript ignore
 // packages/orchestration/src/ports/persistence.ts
 export interface OrchestrationPersistencePort {
 	// Interface shaped by DOMAIN needs, not DB capabilities
@@ -145,7 +145,7 @@ export const OrchestrationPersistencePort =
 
 **Example:**
 
-```typescript
+```typescript ignore
 // packages/orchestration/src/adapters/sqlite-persistence.ts
 export class OrchestrationSqliteAdapter
 	implements OrchestrationPersistencePort
@@ -232,7 +232,7 @@ export class OrchestrationSqliteAdapter
 
 **Example:**
 
-```typescript
+```typescript ignore
 // Inside adapter method
 await tx.run(
   `INSERT INTO service_calls (
@@ -270,7 +270,7 @@ await tx.run(
 
 **Effect's approach:**
 
-```typescript
+```typescript ignore
 // Main application setup
 import { Effect, Layer } from 'effect'
 
@@ -297,7 +297,7 @@ Effect.runPromise(program)
 
 **Traditional DI container approach:**
 
-```typescript
+```typescript ignore
 // Similar concept with other DI frameworks
 container.bind(OrchestrationPersistencePort).to(OrchestrationSqliteAdapter)
 
@@ -359,7 +359,7 @@ sequenceDiagram
 - **Infrastructure implements** what domain needs (adapter)
 - Domain depends on abstraction (port), NOT implementation (adapter)
 
-```typescript
+```typescript ignore
 // ✅ Good: Domain depends on interface
 function useCase(port: PersistencePort) { /* ... */ }
 
@@ -398,7 +398,7 @@ function useCase(adapter: SqliteAdapter) { /* ... */ }
 
 **Production:**
 
-```typescript
+```typescript ignore
 // Real adapter talks to SQLite
 const prodLayer = Layer.succeed(
 	PersistencePort,
@@ -410,7 +410,7 @@ const program = submitServiceCall(request).pipe(Effect.provide(prodLayer))
 
 **Testing:**
 
-```typescript
+```typescript ignore
 // Mock adapter for fast tests
 class InMemoryPersistenceAdapter implements OrchestrationPersistencePort {
 	private store = new Map<string, ServiceCall>()
@@ -470,7 +470,7 @@ Port interfaces accept/return pure domain event objects. Adapters handle infrast
 
 ### **Architecture Flow**
 
-```typescript
+```typescript ignore
 // Layer 1: Domain Core
 // Workflow constructs pure domain event
 Effect.gen(function* () {
@@ -520,7 +520,7 @@ class TimerEventBusAdapter {
 
 **Solution**: Extract from domain aggregate (timer stores correlationId from original command).
 
-```typescript
+```typescript ignore
 // Workflow: Extract correlationId from timer (stored during schedule command)
 const event = new DueTimeReached({
 	tenantId: timer.tenantId,

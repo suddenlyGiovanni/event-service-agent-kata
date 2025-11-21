@@ -28,7 +28,7 @@ Identity & Context
 
 **Pattern:**
 
-```typescript
+```typescript ignore
 // Receive IDs from command
 const { tenantId, serviceCallId, requestSpec } = command
 
@@ -51,7 +51,7 @@ yield *
 
 **Pattern** (execution-event-bus.adapter.ts - future implementation):
 
-```typescript
+```typescript ignore
 // Adapter extracts MessageMetadata from Context
 const metadata = yield * MessageMetadata
 

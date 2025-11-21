@@ -97,7 +97,7 @@ packages/execution/
 
 ### executeRequestWorkflow
 
-```typescript
+```typescript ignore
 const executeRequestWorkflow = Effect.fn('Execution.ExecuteRequest')(function* (
 	command: StartExecution
 ) {
@@ -136,7 +136,7 @@ const executeRequestWorkflow = Effect.fn('Execution.ExecuteRequest')(function* (
 
 ### HttpClientPort
 
-```typescript
+```typescript ignore
 interface HttpClientPort {
 	// Execute HTTP request with timeout/retry
 	execute: (spec: RequestSpec) => Effect.Effect<Response, HttpError>
@@ -145,7 +145,7 @@ interface HttpClientPort {
 
 ### BodyStoragePort
 
-```typescript
+```typescript ignore
 interface BodyStoragePort {
 	// Retrieve full request body by serviceCallId
 	getRequestBody: (
@@ -159,7 +159,7 @@ interface BodyStoragePort {
 
 Errors are classified for metrics and retry decisions:
 
-```typescript
+```typescript ignore
 type ErrorKind =
 	| 'NetworkError' // Connection failed, DNS lookup failed
 	| 'TimeoutError' // Request exceeded timeout
@@ -179,7 +179,7 @@ Each error includes:
 
 Success responses capture:
 
-```typescript
+```typescript ignore
 interface ResponseMeta {
 	status: number // HTTP status code (2xx)
 	headers?: Record // Selected headers (filtered)

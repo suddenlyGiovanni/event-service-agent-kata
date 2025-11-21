@@ -105,7 +105,7 @@ This package exists to establish the structure but doesn't contain adapters yet.
 
 ### Phase 1: Broker Adapter (PL-3)
 
-```typescript
+```typescript ignore
 // packages/adapters/src/broker/nats-event-bus.adapter.ts
 export class NatsEventBus {
   static readonly Live: Layer.Layer<EventBusPort, NatsError /*, ... */> =
@@ -123,7 +123,7 @@ export class NatsEventBus {
 
 ### Phase 2: Persistence Adapter (PL-6)
 
-```typescript
+```typescript ignore
 // packages/adapters/src/persistence/sqlite-timer-persistence.adapter.ts
 export class SqliteTimerPersistence {
   static readonly Live: Layer.Layer<TimerPersistencePort /*, ...*/> =

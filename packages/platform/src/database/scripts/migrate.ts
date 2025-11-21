@@ -30,6 +30,8 @@
  * @see .env.example for environment configuration options
  */
 
+import console from 'node:console'
+
 import * as PlatformBun from '@effect/platform-bun'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'

@@ -155,7 +155,7 @@ declare const fail: (call: Running, meta: ErrorMeta) => Failed
 
 ### submitWorkflow
 
-```typescript
+```typescript ignore
 const submitWorkflow = Effect.fn('Orchestration.Submit')(function* (
 	command: SubmitServiceCall
 ) {
@@ -184,7 +184,7 @@ const submitWorkflow = Effect.fn('Orchestration.Submit')(function* (
 
 ### dueWorkflow
 
-```typescript
+```typescript ignore
 const dueWorkflow = Effect.fn('Orchestration.Due')(function* (
 	event: DueTimeReached
 ) {
