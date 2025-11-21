@@ -17,7 +17,7 @@ describe('ClockPort Adapters', () => {
 						expect(clock).toBeDefined()
 						expect(typeof clock.now).toBe('function')
 					}),
-					Effect.provide(ClockPortLive),
+					Effect.provide(ClockPortLive)
 				)
 
 				// ClockPortLive has no requirements (Clock is default service)
@@ -36,7 +36,7 @@ describe('ClockPort Adapters', () => {
 						// Verify it's UTC specifically
 						expect(DateTime.isUtc(time)).toBe(true)
 					}),
-					Effect.provide(ClockPortLive),
+					Effect.provide(ClockPortLive)
 				)
 
 				await Effect.runPromise(program)

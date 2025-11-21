@@ -34,7 +34,7 @@ describe('Timer Domain Events', () => {
 					expect(DateTime.isDateTime(event.reachedAt)).toBe(true)
 					expect(DateTime.isUtc(event.reachedAt)).toBe(true)
 					expect(DateTime.Equivalence(event.reachedAt, DateTime.unsafeMake(dto.reachedAt))).toBe(true)
-				}),
+				})
 			)
 
 			it('constructs event directly with validated types', () => {
@@ -74,7 +74,7 @@ describe('Timer Domain Events', () => {
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
-				}),
+				})
 			)
 
 			it.effect('fails with invalid serviceCallId format', () =>
@@ -92,7 +92,7 @@ describe('Timer Domain Events', () => {
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
-				}),
+				})
 			)
 
 			it.effect('fails with invalid reachedAt format', () =>
@@ -110,7 +110,7 @@ describe('Timer Domain Events', () => {
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
-				}),
+				})
 			)
 
 			it.effect('fails with missing required fields', () =>
@@ -128,13 +128,13 @@ describe('Timer Domain Events', () => {
 					const result = yield* Effect.exit(
 						Timer.Events.DueTimeReached.decode(
 							// @ts-expect-error Testing missing field
-							dto,
-						),
+							dto
+						)
 					)
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
-				}),
+				})
 			)
 
 			it.effect('fails with wrong type discriminator', () =>
@@ -152,13 +152,13 @@ describe('Timer Domain Events', () => {
 					const result = yield* Effect.exit(
 						Timer.Events.DueTimeReached.decode(
 							// @ts-expect-error Testing wrong _tag
-							dto,
-						),
+							dto
+						)
 					)
 
 					// Assert: Fails with validation error
 					expect(Exit.isFailure(result)).toBe(true)
-				}),
+				})
 			)
 		})
 
@@ -181,7 +181,7 @@ describe('Timer Domain Events', () => {
 					expect(decoded.tenantId).toBe(original.tenantId)
 					expect(decoded.serviceCallId).toBe(original.serviceCallId)
 					expect(DateTime.Equivalence(decoded.reachedAt, original.reachedAt)).toBe(true)
-				}),
+				})
 			)
 		})
 
@@ -208,7 +208,7 @@ describe('Timer Domain Events', () => {
 					// DTO should be JSON-serializable
 					const json = JSON.stringify(dto)
 					expect(json).toBeDefined()
-				}),
+				})
 			)
 		})
 	})

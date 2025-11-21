@@ -63,10 +63,10 @@ describe('pollDueTimersWorkflow', () => {
 			// Mock EventBus to track published events
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: (event) =>
+				publishDueTimeReached: event =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
-					})
+					}),
 			})
 
 			const tenantId = TenantId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0')
@@ -176,7 +176,7 @@ describe('pollDueTimersWorkflow', () => {
 						registeredAt,
 						serviceCallId,
 						tenantId,
-					}),
+					})
 				)
 
 				yield* Effect.forEach(
@@ -780,12 +780,12 @@ describe('pollDueTimersWorkflow', () => {
 								serviceCallId: t.serviceCallId,
 								tenantId,
 							}),
-							() => persistence.save(t),
+							() => persistence.save(t)
 						),
 					{
 						concurrency: 1,
 						discard: true,
-					},
+					}
 				)
 
 				// Act: Advance time to make all timers due
@@ -912,9 +912,7 @@ describe('pollDueTimersWorkflow', () => {
 				yield* TestClock.adjust('6 minutes')
 
 				// Execute workflow with failing markFired - should fail with BatchProcessingError
-				const result = yield* Effect.exit(
-					Workflows.pollDueTimersWorkflow().pipe(Effect.provide(TimerPersistenceTest))
-				)
+				const result = yield* Effect.exit(Workflows.pollDueTimersWorkflow().pipe(Effect.provide(TimerPersistenceTest)))
 
 				// Assert: Workflow should fail
 				expect(Exit.isFailure(result)).toBe(true)
@@ -993,11 +991,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: No events should have been published
 				expect(publishedEvents).toHaveLength(0)
-			}).pipe(
-				Effect.provide(
-					Layer.mergeAll(TestPersistence, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default)
-				)
-			)
+			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default)))
 		})
 	})
 })

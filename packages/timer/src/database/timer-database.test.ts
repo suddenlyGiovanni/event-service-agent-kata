@@ -60,7 +60,7 @@ layer(TestLayer)('Timer database invariants', it => {
 			`
 
 			expect(rows).toHaveLength(1)
-		}),
+		})
 	)
 
 	it.scoped('rejects timers with non ISO8601 due_at', () =>
@@ -90,11 +90,11 @@ layer(TestLayer)('Timer database invariants', it => {
                     '2025/01/01 00:00:00',
                     ${registeredAt},
                     'Scheduled')
-				`,
+				`
 			)
 
 			expect(Exit.isFailure(exit)).toBe(true)
-		}),
+		})
 	)
 
 	it.scoped('rejects timers with reached_at/state mismatch', () =>
@@ -128,10 +128,10 @@ layer(TestLayer)('Timer database invariants', it => {
                     ${registeredAt},
                     ${reachedAt},
                     'Scheduled')
-				`,
+				`
 			)
 
 			expect(Exit.isFailure(exit)).toBe(true)
-		}),
+		})
 	)
 })

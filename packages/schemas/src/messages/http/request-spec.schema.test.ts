@@ -20,7 +20,7 @@ describe('HTTP Request Spec Schemas', () => {
 				expect(spec.url).toBe('https://api.example.com/endpoint')
 				expect(spec.body).toBeUndefined()
 				expect(spec.headers).toBeUndefined()
-			}),
+			})
 		)
 
 		it.effect('decodes spec with all optional fields', () =>
@@ -44,7 +44,7 @@ describe('HTTP Request Spec Schemas', () => {
 					'Content-Type': 'application/json',
 					'X-Api-Key': 'secret-key-123',
 				})
-			}),
+			})
 		)
 
 		it.effect('decodes various HTTP methods', () =>
@@ -58,7 +58,7 @@ describe('HTTP Request Spec Schemas', () => {
 					})
 					expect(spec.method).toBe(method)
 				}
-			}),
+			})
 		)
 
 		it.effect('rejects missing required method field', () =>
@@ -70,11 +70,11 @@ describe('HTTP Request Spec Schemas', () => {
 				const exit = yield* Effect.exit(
 					Schema.decode(RequestSpec)(
 						// @ts-expect-error Testing missing required field
-						dto,
-					),
+						dto
+					)
 				)
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('rejects missing required url field', () =>
@@ -86,11 +86,11 @@ describe('HTTP Request Spec Schemas', () => {
 				const exit = yield* Effect.exit(
 					Schema.decode(RequestSpec)(
 						// @ts-expect-error Testing missing required field
-						dto,
-					),
+						dto
+					)
 				)
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('rejects invalid method type', () =>
@@ -102,7 +102,7 @@ describe('HTTP Request Spec Schemas', () => {
 
 				const exit = yield* Effect.exit(Schema.decode(RequestSpec)(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('encodes and decodes round-trip', () =>
@@ -118,7 +118,7 @@ describe('HTTP Request Spec Schemas', () => {
 				const encoded = yield* Schema.encode(RequestSpec)(decoded)
 
 				expect(encoded).toEqual(original)
-			}),
+			})
 		)
 	})
 
@@ -136,7 +136,7 @@ describe('HTTP Request Spec Schemas', () => {
 				expect(spec.url).toBe('https://api.example.com/endpoint')
 				expect(spec.bodySnippet).toBeUndefined()
 				expect(spec.headers).toBeUndefined()
-			}),
+			})
 		)
 
 		it.effect('decodes spec with all optional fields', () =>
@@ -160,7 +160,7 @@ describe('HTTP Request Spec Schemas', () => {
 					'Content-Type': 'application/json',
 					'X-Request-Id': 'abc-123',
 				})
-			}),
+			})
 		)
 
 		it.effect('has bodySnippet instead of body', () =>
@@ -176,7 +176,7 @@ describe('HTTP Request Spec Schemas', () => {
 				expect(spec.bodySnippet).toBe('Snippet of request body')
 				// @ts-expect-error body should not exist on RequestSpecWithoutBody
 				expect(spec.body).toBeUndefined()
-			}),
+			})
 		)
 
 		it.effect('rejects missing required fields', () =>
@@ -188,11 +188,11 @@ describe('HTTP Request Spec Schemas', () => {
 				const exit = yield* Effect.exit(
 					Schema.decode(RequestSpecWithoutBody)(
 						// @ts-expect-error Testing missing required fields
-						dto,
-					),
+						dto
+					)
 				)
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('encodes and decodes round-trip', () =>
@@ -208,7 +208,7 @@ describe('HTTP Request Spec Schemas', () => {
 				const encoded = yield* Schema.encode(RequestSpecWithoutBody)(decoded)
 
 				expect(encoded).toEqual(original)
-			}),
+			})
 		)
 	})
 
@@ -222,7 +222,7 @@ describe('HTTP Request Spec Schemas', () => {
 				})
 
 				expect(spec.body).toBe('Full request body')
-			}),
+			})
 		)
 
 		it.effect('RequestSpecWithoutBody has bodySnippet field', () =>
@@ -234,7 +234,7 @@ describe('HTTP Request Spec Schemas', () => {
 				})
 
 				expect(spec.bodySnippet).toBe('Body snippet')
-			}),
+			})
 		)
 	})
 })

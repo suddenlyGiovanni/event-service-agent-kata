@@ -34,7 +34,7 @@ describe('ScheduleTimer Command Schema', () => {
 				expect(DateTime.isDateTime(command.dueAt)).toBe(true)
 				expect(DateTime.isUtc(command.dueAt)).toBe(true)
 				expect(DateTime.Equivalence(command.dueAt, DateTime.unsafeMake(dto.dueAt))).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('rejects invalid tenantId format', () =>
@@ -48,7 +48,7 @@ describe('ScheduleTimer Command Schema', () => {
 
 				const exit = yield* Effect.exit(Orchestration.Commands.ScheduleTimer.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('rejects invalid serviceCallId format', () =>
@@ -62,7 +62,7 @@ describe('ScheduleTimer Command Schema', () => {
 
 				const exit = yield* Effect.exit(Orchestration.Commands.ScheduleTimer.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('rejects invalid dueAt format', () =>
@@ -76,7 +76,7 @@ describe('ScheduleTimer Command Schema', () => {
 
 				const exit = yield* Effect.exit(Orchestration.Commands.ScheduleTimer.decode(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('rejects missing _tag', () =>
@@ -91,11 +91,11 @@ describe('ScheduleTimer Command Schema', () => {
 				const exit = yield* Effect.exit(
 					Orchestration.Commands.ScheduleTimer.decode(
 						//@ts-expect-error Testing missing _tag
-						dto,
-					),
+						dto
+					)
 				)
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('rejects wrong _tag', () =>
@@ -111,11 +111,11 @@ describe('ScheduleTimer Command Schema', () => {
 				const exit = yield* Effect.exit(
 					Orchestration.Commands.ScheduleTimer.decode(
 						// @ts-expect-error Testing wrong _tag
-						dto,
-					),
+						dto
+					)
 				)
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 	})
 
@@ -144,7 +144,7 @@ describe('ScheduleTimer Command Schema', () => {
 
 				// ✅ CORRECT: Use DateTime.Equivalence for DateTime.Utc comparison
 				expect(DateTime.Equivalence(decoded.dueAt, original.dueAt)).toBe(true)
-			}),
+			})
 		)
 	})
 })

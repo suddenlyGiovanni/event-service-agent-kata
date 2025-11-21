@@ -21,6 +21,7 @@ import * as Adapters from './index.ts'
 
 /**
  * Test helper: Creates a ScheduledTimer with default values
+ *
  * @param now - Current time (registeredAt)
  * @param tenantId - Tenant identifier
  * @param serviceCallId - Service call identifier
@@ -52,8 +53,10 @@ const makeScheduledTimer = ({
  * Base test layers for all adapter tests.
  *
  * Layer composition rationale:
+ *
  * - TimerPersistence.Test: SQLite-backed adapter under test (internally uses SQL.Test for adapter implementation)
- * - SQL.Test: ALSO needed separately because test fixtures (withServiceCall) require SqlClient directly to insert FK-compliant data
+ * - SQL.Test: ALSO needed separately because test fixtures (withServiceCall) require SqlClient directly to insert
+ *   FK-compliant data
  * - ClockPort: Test clock for time control
  * - UUID7: Default UUID generator
  *
@@ -81,13 +84,15 @@ describe('TimerPersistenceAdapter', () => {
 	/**
 	 * Test helper: Creates and persists a scheduled timer with a service call record.
 	 *
-	 * This helper combines service call insertion and timer creation/persistence
-	 * for the Live (SQLite) adapter tests, respecting foreign key constraints.
+	 * This helper combines service call insertion and timer creation/persistence for the Live (SQLite) adapter tests,
+	 * respecting foreign key constraints.
 	 *
-	 * @param dueIn - Duration until timer is due (default: '5 minutes'). Accepts Duration.DurationInput format (e.g., '5 minutes', { minutes: 5 }, Duration.minutes(5)).
+	 * @param dueIn - Duration until timer is due (default: '5 minutes'). Accepts Duration.DurationInput format (e.g.,
+	 *   '5 minutes', { minutes: 5 }, Duration.minutes(5)).
 	 * @param tenantId - Tenant identifier (default: mocks.tenantId)
 	 * @param serviceCallId - Service call identifier (default: mocks.serviceCallId)
 	 * @param correlationId - Correlation identifier (default: mocks.correlationId)
+	 *
 	 * @returns An Effect that yields the current time and the saved timer
 	 */
 	const withScheduledTimer = ({
@@ -156,7 +161,7 @@ describe('TimerPersistenceAdapter', () => {
 				expect(timerEntry._tag).toBe('Scheduled')
 				expect(timerEntry.tenantId).toBe(mocks.tenantA.tenantId)
 				expect(timerEntry.serviceCallId).toBe(mocks.tenantA.serviceCallId)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 	})
 
@@ -179,7 +184,7 @@ describe('TimerPersistenceAdapter', () => {
 				expect(timer.tenantId).toBe(mocks.tenantA.tenantId)
 				expect(timer.serviceCallId).toBe(mocks.tenantA.serviceCallId)
 				expect(timer._tag).toBe('Scheduled')
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('returns None when timer does not exist', () =>
@@ -195,7 +200,7 @@ describe('TimerPersistenceAdapter', () => {
 
 				// Assert
 				assertNone(found)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('does not return timers from other tenants (tenant isolation)', () =>
@@ -218,7 +223,7 @@ describe('TimerPersistenceAdapter', () => {
 
 				// Assert: Should return None (tenant isolation enforced)
 				assertNone(found)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 	})
 
@@ -234,7 +239,7 @@ describe('TimerPersistenceAdapter', () => {
 					tenantId: mocks.tenantA.tenantId,
 				}) // Assert
 				assertNone(found)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('returns Some when timer is Scheduled', () =>
@@ -254,7 +259,7 @@ describe('TimerPersistenceAdapter', () => {
 				expect(timer._tag).toBe('Scheduled')
 				expect(timer.tenantId).toBe(mocks.tenantA.tenantId)
 				expect(timer.serviceCallId).toBe(mocks.tenantA.serviceCallId)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('excludes reached timers', () =>
@@ -282,7 +287,7 @@ describe('TimerPersistenceAdapter', () => {
 				})
 				expect(Option.isSome(raw)).toBe(true)
 				expect(Option.getOrThrow(raw)._tag).toBe('Reached')
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('does not return timers from other tenants (tenant isolation)', () =>
@@ -305,7 +310,7 @@ describe('TimerPersistenceAdapter', () => {
 
 				// Assert: Should return None (tenant isolation enforced)
 				assertNone(found)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 	})
 
@@ -323,7 +328,7 @@ describe('TimerPersistenceAdapter', () => {
 
 				// Assert
 				expect(Chunk.isEmpty(dueTimers)).toBe(true)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('returns timers that are due', () =>
@@ -342,7 +347,7 @@ describe('TimerPersistenceAdapter', () => {
 				const timer = Chunk.unsafeGet(dueTimers, 0)
 				expect(timer.tenantId).toBe(mocks.tenantA.tenantId)
 				expect(timer.serviceCallId).toBe(mocks.tenantA.serviceCallId)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('returns due timers ordered by due date', () =>
@@ -371,7 +376,7 @@ describe('TimerPersistenceAdapter', () => {
 				const first = Chunk.unsafeGet(dueTimers, 0)
 				const second = Chunk.unsafeGet(dueTimers, 1)
 				expect(DateTime.lessThanOrEqualTo(first.dueAt, second.dueAt)).toBe(true)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('returns timer when dueAt equals now (inclusive)', () =>
@@ -398,7 +403,7 @@ describe('TimerPersistenceAdapter', () => {
 				const dueTimers = yield* persistence.findDue(now)
 
 				expect(Chunk.size(dueTimers)).toBe(1)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('returns timers from all tenants (global polling behavior)', () =>
@@ -431,11 +436,11 @@ describe('TimerPersistenceAdapter', () => {
 				const timerIds = pipe(
 					dueTimers,
 					Chunk.map(t => t.serviceCallId),
-					Chunk.toReadonlyArray,
+					Chunk.toReadonlyArray
 				)
 				expect(timerIds).toContain(mocks.tenantA.serviceCallId)
 				expect(timerIds).toContain(mocks.tenantB.serviceCallId)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 	})
 
@@ -460,7 +465,7 @@ describe('TimerPersistenceAdapter', () => {
 				expect(Option.isSome(found)).toBe(true)
 				const reached = Option.getOrThrow(found)
 				expect(reached._tag).toBe('Reached')
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('idempotent (preserves original reachedAt on retry)', () =>
@@ -491,7 +496,7 @@ describe('TimerPersistenceAdapter', () => {
 				assertTrue(reached._tag === 'Reached')
 				expect(DateTime.Equivalence(reached.reachedAt, firstReachedAt)).toBe(true)
 				expect(DateTime.Equivalence(reached.reachedAt, secondReachedAt)).toBe(false)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('preserves Reached state when save() called after markFired (terminal state invariant)', () =>
@@ -508,7 +513,10 @@ describe('TimerPersistenceAdapter', () => {
 				})
 
 				// Verify timer is Reached
-				const beforeSave = yield* persistence.find({ serviceCallId: timer.serviceCallId, tenantId: timer.tenantId })
+				const beforeSave = yield* persistence.find({
+					serviceCallId: timer.serviceCallId,
+					tenantId: timer.tenantId,
+				})
 				const reachedTimer = Option.getOrThrow(beforeSave)
 				expect(reachedTimer._tag).toBe('Reached')
 
@@ -532,7 +540,10 @@ describe('TimerPersistenceAdapter', () => {
 				yield* persistence.save(newScheduledTimer)
 
 				// Assert: Timer remains in Reached state (NO resurrection)
-				const afterSave = yield* persistence.find({ serviceCallId: timer.serviceCallId, tenantId: timer.tenantId })
+				const afterSave = yield* persistence.find({
+					serviceCallId: timer.serviceCallId,
+					tenantId: timer.tenantId,
+				})
 				const finalTimer = Option.getOrThrow(afterSave)
 				expect(finalTimer._tag).toBe('Reached')
 
@@ -543,7 +554,7 @@ describe('TimerPersistenceAdapter', () => {
 					expect(DateTime.Equivalence(finalTimer.registeredAt, originalRegisteredAt)).toBe(true)
 					expect(Equal.equals(finalTimer.correlationId, originalCorrelationId)).toBe(true)
 				}
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('succeeds even if timer does not exist', () =>
@@ -566,7 +577,7 @@ describe('TimerPersistenceAdapter', () => {
 					tenantId: mocks.tenantA.tenantId,
 				})
 				expect(Option.isNone(result)).toBe(true)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 	})
 
@@ -578,7 +589,10 @@ describe('TimerPersistenceAdapter', () => {
 				yield* withScheduledTimer()
 
 				// Act
-				yield* persistence.delete({ serviceCallId: mocks.tenantA.serviceCallId, tenantId: mocks.tenantA.tenantId })
+				yield* persistence.delete({
+					serviceCallId: mocks.tenantA.serviceCallId,
+					tenantId: mocks.tenantA.tenantId,
+				})
 
 				// Assert
 				const afterDelete = yield* persistence.find({
@@ -586,7 +600,7 @@ describe('TimerPersistenceAdapter', () => {
 					tenantId: mocks.tenantA.tenantId,
 				})
 				expect(Option.isNone(afterDelete)).toBe(true)
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 
 		it.scoped('idempotent (succeeds even if timer does not exist)', () =>
@@ -598,7 +612,7 @@ describe('TimerPersistenceAdapter', () => {
 					serviceCallId: ServiceCallId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9ff'), // non-existent
 					tenantId: mocks.tenantA.tenantId,
 				})
-			}).pipe(Effect.provide(BaseTestLayers)),
+			}).pipe(Effect.provide(BaseTestLayers))
 		)
 	})
 })

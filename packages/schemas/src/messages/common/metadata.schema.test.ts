@@ -19,7 +19,7 @@ describe('Metadata Schemas', () => {
 				expect(meta.bodySnippet).toBeUndefined()
 				expect(meta.headers).toBeUndefined()
 				expect(meta.latencyMs).toBeUndefined()
-			}),
+			})
 		)
 
 		it.effect('decodes metadata with all optional fields', () =>
@@ -43,7 +43,7 @@ describe('Metadata Schemas', () => {
 					'X-Request-Id': 'abc-123',
 				})
 				expect(meta.latencyMs).toBe(1500)
-			}),
+			})
 		)
 
 		it.effect('rejects missing required status field', () =>
@@ -55,11 +55,11 @@ describe('Metadata Schemas', () => {
 				const exit = yield* Effect.exit(
 					Schema.decode(ResponseMeta)(
 						// @ts-expect-error Testing missing required field
-						dto,
-					),
+						dto
+					)
 				)
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('rejects invalid status type', () =>
@@ -70,7 +70,7 @@ describe('Metadata Schemas', () => {
 
 				const exit = yield* Effect.exit(Schema.decode(ResponseMeta)(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('rejects invalid latencyMs type', () =>
@@ -82,7 +82,7 @@ describe('Metadata Schemas', () => {
 
 				const exit = yield* Effect.exit(Schema.decode(ResponseMeta)(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('encodes and decodes round-trip', () =>
@@ -98,7 +98,7 @@ describe('Metadata Schemas', () => {
 				const encoded = yield* Schema.encode(ResponseMeta)(decoded)
 
 				expect(encoded).toEqual(original)
-			}),
+			})
 		)
 	})
 
@@ -115,7 +115,7 @@ describe('Metadata Schemas', () => {
 				expect(meta.message).toBeUndefined()
 				expect(meta.details).toBeUndefined()
 				expect(meta.latencyMs).toBeUndefined()
-			}),
+			})
 		)
 
 		it.effect('decodes metadata with all optional fields', () =>
@@ -139,7 +139,7 @@ describe('Metadata Schemas', () => {
 					statusCode: 500,
 				})
 				expect(meta.latencyMs).toBe(5000)
-			}),
+			})
 		)
 
 		it.effect('decodes various error kinds', () =>
@@ -150,7 +150,7 @@ describe('Metadata Schemas', () => {
 					const meta = yield* Schema.decode(ErrorMeta)({ kind })
 					expect(meta.kind).toBe(kind)
 				}
-			}),
+			})
 		)
 
 		it.effect('rejects missing required kind field', () =>
@@ -162,11 +162,11 @@ describe('Metadata Schemas', () => {
 				const exit = yield* Effect.exit(
 					Schema.decode(ErrorMeta)(
 						// @ts-expect-error Testing missing required field
-						dto,
-					),
+						dto
+					)
 				)
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('rejects invalid kind type', () =>
@@ -177,7 +177,7 @@ describe('Metadata Schemas', () => {
 
 				const exit = yield* Effect.exit(Schema.decode(ErrorMeta)(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('rejects invalid latencyMs type', () =>
@@ -189,7 +189,7 @@ describe('Metadata Schemas', () => {
 
 				const exit = yield* Effect.exit(Schema.decode(ErrorMeta)(dto))
 				expect(Exit.isFailure(exit)).toBe(true)
-			}),
+			})
 		)
 
 		it.effect('encodes and decodes round-trip', () =>
@@ -205,7 +205,7 @@ describe('Metadata Schemas', () => {
 				const encoded = yield* Schema.encode(ErrorMeta)(decoded)
 
 				expect(encoded).toEqual(original)
-			}),
+			})
 		)
 	})
 })
