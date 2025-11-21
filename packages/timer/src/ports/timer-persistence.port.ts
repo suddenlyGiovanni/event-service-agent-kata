@@ -279,15 +279,15 @@ export interface TimerPersistencePort {
 	 * @example Idempotent polling worker
 	 * ```typescript ignore
 	 * const program = Effect.gen(function* () {
-	 *   // Mark as fired FIRST (before publishing event)
+	 *   // Publish event FIRST (may fail and retry)
+	 *   yield* eventBus.publish(DueTimeReached.make(timer))
+	 *
+	 *   // Mark as fired AFTER successful publish (idempotency marker)
 	 *   yield* persistence.markFired({
 	 *     key: { tenantId: timer.tenantId, serviceCallId: timer.serviceCallId },
 	 *     reachedAt: now
 	 *   })
 	 *   // Timer is now Reached, won't appear in next findDue()
-	 *
-	 *   // Even if this crashes, timer won't be re-processed
-	 *   yield* eventBus.publish(DueTimeReached.make(timer))
 	 * })
 	 * ```
 	 */
