@@ -27,10 +27,10 @@
 
 - [Domain](./docs/design/domain.md) (Problem Space)
 - [Modules & Interactions](./docs/design/modules-and-interactions.md) (Solution Space)
-  - [API Module](./docs/design/modules/api.md)
-  - [Orchestration Module](./docs/design/modules/orchestration.md)
-  - [Execution Module](./docs/design/modules/execution.md)
-  - [Timer Module](./docs/design/modules/timer.md)
+    - [API Module](./docs/design/modules/api.md)
+    - [Orchestration Module](./docs/design/modules/orchestration.md)
+    - [Execution Module](./docs/design/modules/execution.md)
+    - [Timer Module](./docs/design/modules/timer.md)
 
 - [Ports](./docs/design/ports.md)
 - [Messages Catalog](./docs/design/messages.md)
