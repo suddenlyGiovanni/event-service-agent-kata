@@ -414,7 +414,7 @@ export interface TimerPersistencePort {
 	markFired(
 		tenantId: TenantId,
 		serviceCallId: ServiceCallId,
-		reachedAt: DateTime.Utc
+		reachedAt: DateTime.Utc,
 	): Effect.Effect<void, PersistenceError>
 }
 ```
@@ -426,7 +426,7 @@ namespace CorrectExamples {
 	// ✅ Correct: Tenant-scoped query (all WHERE clauses include tenant_id)
 	const timers = await db.query('SELECT * FROM timer_schedules WHERE tenant_id = ? AND state = ?', [
 		tenantId,
-		'Scheduled'
+		'Scheduled',
 	])
 }
 namespace WrongExamples {
@@ -466,8 +466,8 @@ it.effect('should not return timers from other tenants', () =>
 				serviceCallId: ServiceCallId.make(),
 				correlationId: CorrelationId.make(),
 				dueAt: now,
-				registeredAt: now
-			})
+				registeredAt: now,
+			}),
 		)
 
 		yield* persistence.scheduleTimer(
@@ -476,8 +476,8 @@ it.effect('should not return timers from other tenants', () =>
 				serviceCallId: ServiceCallId.make(),
 				correlationId: CorrelationId.make(),
 				dueAt: now,
-				registeredAt: now
-			})
+				registeredAt: now,
+			}),
 		)
 
 		// Act: Query tenant A
@@ -486,7 +486,7 @@ it.effect('should not return timers from other tenants', () =>
 		// Assert: Only tenant A's timer returned
 		expect(Chunk.size(results)).toBe(1)
 		expect(Chunk.unsafeHead(results).tenantId).toEqual(tenantA)
-	})
+	}),
 )
 ```
 
@@ -513,7 +513,7 @@ it.effect('should use index for polling query', () =>
 		// Assert: Index scan (not table scan)
 		expect(plan[0].detail).toContain('USING INDEX idx_timer_schedules_due_at')
 		expect(plan[0].detail).not.toContain('SCAN') // No full table scan
-	})
+	}),
 )
 ```
 
@@ -540,8 +540,8 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 				serviceCallId,
 				correlationId: CorrelationId.make(),
 				dueAt: yield* ClockPort.pipe(Effect.flatMap((c) => c.now())),
-				registeredAt: yield* ClockPort.pipe(Effect.flatMap((c) => c.now()))
-			})
+				registeredAt: yield* ClockPort.pipe(Effect.flatMap((c) => c.now())),
+			}),
 		)
 
 		// Act: Delete ServiceCall
@@ -561,7 +561,7 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 		`
 
 		expect(timers[0].count).toBe(0)
-	})
+	}),
 )
 ```
 
@@ -603,14 +603,14 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 **Potential bottlenecks (future considerations):**
 
 1. **Write contention:** Many concurrent `scheduleTimer` calls
-    - Mitigation: SQLite WAL mode (concurrent reads during writes)
-    - Mitigation: Connection pooling (reduce lock contention)
+   - Mitigation: SQLite WAL mode (concurrent reads during writes)
+   - Mitigation: Connection pooling (reduce lock contention)
 2. **Polling hot path:** Frequent polling queries
-    - Mitigation: Index coverage (no table scan)
-    - Mitigation: LIMIT bounds result set
+   - Mitigation: Index coverage (no table scan)
+   - Mitigation: LIMIT bounds result set
 3. **Index maintenance:** B-tree rebalance on insert/update
-    - Acceptable: O(log N) insertion cost
-    - Alternative: Batch upserts (amortized cost)
+   - Acceptable: O(log N) insertion cost
+   - Alternative: Batch upserts (amortized cost)
 
 **Not a bottleneck:**
 

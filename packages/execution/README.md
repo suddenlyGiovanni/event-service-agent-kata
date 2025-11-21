@@ -104,7 +104,7 @@ const executeRequestWorkflow = Effect.fn('Execution.ExecuteRequest')(function* (
 
 	// 2. Execute HTTP request
 	const result = yield* httpClient.execute(requestSpec).pipe(
-		Effect.either // Catch errors
+		Effect.either, // Catch errors
 	)
 
 	// 3. Publish result event
@@ -113,16 +113,16 @@ const executeRequestWorkflow = Effect.fn('Execution.ExecuteRequest')(function* (
 			eventBus.publish([
 				{
 					type: 'ExecutionFailed',
-					errorMeta: classifyError(error)
-				}
+					errorMeta: classifyError(error),
+				},
 			]),
 		onRight: (response) =>
 			eventBus.publish([
 				{
 					type: 'ExecutionSucceeded',
-					responseMeta: captureMetadata(response)
-				}
-			])
+					responseMeta: captureMetadata(response),
+				},
+			]),
 	})
 })
 ```

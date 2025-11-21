@@ -88,9 +88,9 @@ Adapters sit at the **outer layer** of hexagonal architecture:
 
 - **@event-service-agent/platform**: Port interface contracts
 - Infrastructure SDKs (to be added as needed):
-    - `nats` - NATS JetStream client
-    - `bun:sqlite` - SQLite native support
-    - Others TBD
+  - `nats` - NATS JetStream client
+  - `bun:sqlite` - SQLite native support
+  - Others TBD
 
 ## Current Status
 
@@ -120,9 +120,9 @@ export class NatsEventBus {
 				},
 				subscribe: (topics, handler) => {
 					/* ... */
-				}
+				},
 			})
-		})
+		}),
 	)
 }
 ```
@@ -146,9 +146,9 @@ export class SqliteTimerPersistence {
 				},
 				findDue: (tenantId, now) => {
 					/* <SQL SELECT WHERE due> */
-				}
+				},
 			})
-		})
+		}),
 	)
 }
 ```

@@ -166,7 +166,7 @@ const submitWorkflow = Effect.fn('Orchestration.Submit')(function* (command: Sub
 		tenantId: command.tenantId,
 		name: command.name,
 		requestSpec: command.requestSpec,
-		submittedAt: yield* Clock.currentTimeMillis
+		submittedAt: yield* Clock.currentTimeMillis,
 	})
 
 	// Persist
