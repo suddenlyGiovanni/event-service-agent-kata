@@ -5,16 +5,19 @@
  *
  * **Purpose — Message Identity and Causation Tracking**:
  * EnvelopeId uniquely identifies a message envelope in the system, serving dual purposes:
+ *
  * 1. **Deduplication**: Prevents duplicate message processing (broker idempotency)
  * 2. **Causation Chain**: Links child messages to parent (envelope.causationId = parent.envelopeId)
  *
  * **EnvelopeId vs ServiceCallId**:
+ *
  * - **EnvelopeId**: Identifies a single message/event instance (ephemeral, message-level)
  * - **ServiceCallId**: Identifies aggregate instance (persistent, domain-level)
  *
  * Every event/command gets its own EnvelopeId, even if they relate to same ServiceCall.
  *
  * **Causation Chain Example**:
+ *
  * ```
  * Command: SubmitServiceCall
  *   envelope.id = env-1 (EnvelopeId)
@@ -30,21 +33,23 @@
  * ```
  *
  * This creates a causality DAG (Directed Acyclic Graph) enabling:
+ *
  * - "What triggered this message?" (look at causationId)
  * - "What did this message trigger?" (query: where causationId = this.envelopeId)
  * - Full causality reconstruction for debugging
  *
- * **Deduplication Strategy**:
- * Message broker uses envelope.id for deduplication window (e.g., 5 minutes).
- * If same envelope.id published twice, second publish is ignored (at-most-once
- * per dedup window, at-least-once across windows).
+ * **Deduplication Strategy**: Message broker uses envelope.id for deduplication window (e.g., 5 minutes). If same
+ * envelope.id published twice, second publish is ignored (at-most-once per dedup window, at-least-once across
+ * windows).
  *
  * **Why UUID7**:
+ *
  * - Time-ordered for natural chronological sorting
  * - Globally unique (no coordination needed)
  * - Embedded timestamp (extract message creation time)
  *
  * Type Structure: `string & Brand<UUID7Brand> & Brand<EnvelopeIdBrand>`
+ *
  * - Cannot be confused with ServiceCallId, TenantId, or CorrelationId
  * - Runtime validation via Effect Schema
  *
@@ -79,68 +84,72 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 	/**
 	 * Generate a new EnvelopeId using UUID version 7
 	 *
-	 * Creates time-ordered identifier for a new message envelope. UUID7's timestamp
-	 * prefix enables chronological message ordering and causality reconstruction.
+	 * Creates time-ordered identifier for a new message envelope. UUID7's timestamp prefix enables chronological
+	 * message ordering and causality reconstruction.
 	 *
 	 * **When to use**:
+	 *
 	 * - Adapter wrapping domain event into MessageEnvelope (most common)
 	 * - Testing with deterministic envelope IDs
 	 *
-	 * **Who generates**:
-	 * Adapters generate EnvelopeId when publishing domain events. Workflows never
-	 * generate EnvelopeId directly — they work with pure domain events, and the
-	 * adapter wraps them with infrastructure metadata (envelope.id, timestamp, etc).
+	 * **Who generates**: Adapters generate EnvelopeId when publishing domain events. Workflows never generate
+	 * EnvelopeId directly — they work with pure domain events, and the adapter wraps them with infrastructure metadata
+	 * (envelope.id, timestamp, etc).
 	 *
-	 * **Application-Generated IDs (per ADR-0010)**:
-	 * EnvelopeId generated in application code (adapter), not broker. This enables:
+	 * **Application-Generated IDs (per ADR-0010)**: EnvelopeId generated in application code (adapter), not broker.
+	 * This enables:
+	 *
 	 * - Pre-publishing correlation (ID known before broker ACK)
 	 * - Deterministic testing (can control exact envelope IDs)
 	 * - Causation tracking (child's causationId = parent's envelope.id)
 	 *
-	 * @param time - Optional UTC timestamp for deterministic generation
-	 * @returns Effect producing validated EnvelopeId
-	 * @throws ParseError - If generated UUID7 fails validation (extremely rare)
-	 * @requires UUID7 - Service for UUID generation
-	 *
 	 * @example Adapter generates envelope ID when publishing
-	 * ```typescript ignore
+	 *
+	 * ```typescript
 	 * // Adapter wraps domain event with envelope
 	 * const publishEvent = Effect.gen(function* () {
-	 *   const envelopeId = yield* EnvelopeId.makeUUID7()
-	 *   const metadata = yield* MessageMetadata // correlationId, causationId
+	 * 	const envelopeId = yield* EnvelopeId.makeUUID7()
+	 * 	const metadata = yield* MessageMetadata // correlationId, causationId
 	 *
-	 *   const envelope = new MessageEnvelope({
-	 *     id: envelopeId,  // Unique ID for this message
-	 *     correlationId: metadata.correlationId,  // Traces to original request
-	 *     causationId: metadata.causationId,      // Points to parent message
-	 *     payload: domainEvent,
-	 *     // ...
-	 *   })
+	 * 	const envelope = new MessageEnvelope({
+	 * 		id: envelopeId, // Unique ID for this message
+	 * 		correlationId: metadata.correlationId, // Traces to original request
+	 * 		causationId: metadata.causationId, // Points to parent message
+	 * 		payload: domainEvent,
+	 * 		// ...
+	 * 	})
 	 *
-	 *   yield* eventBus.publish([envelope])
+	 * 	yield* eventBus.publish([envelope])
 	 * })
 	 * ```
 	 *
 	 * @example Causation chain in command handler
-	 * ```typescript ignore
+	 *
+	 * ```typescript
 	 * // Handler receives command envelope, extracts causationId for response
 	 * const handleCommand = (commandEnvelope: MessageEnvelope) =>
-	 *   Effect.gen(function* () {
-	 *     // Process command
-	 *     const event = processCommand(commandEnvelope.payload)
+	 * 	Effect.gen(function* () {
+	 * 		// Process command
+	 * 		const event = processCommand(commandEnvelope.payload)
 	 *
-	 *     // Publish event with causationId pointing to command
-	 *     yield* eventBus.publishEvent(event).pipe(
-	 *       Effect.provideService(MessageMetadata, {
-	 *         correlationId: commandEnvelope.correlationId,
-	 *         causationId: Option.some(commandEnvelope.id) // ← Command caused this event
-	 *       })
-	 *     )
-	 *   })
+	 * 		// Publish event with causationId pointing to command
+	 * 		yield* eventBus.publishEvent(event).pipe(
+	 * 			Effect.provideService(MessageMetadata, {
+	 * 				correlationId: commandEnvelope.correlationId,
+	 * 				causationId: Option.some(commandEnvelope.id), // ← Command caused this event
+	 * 			})
+	 * 		)
+	 * 	})
 	 * ```
+	 *
+	 * @param time - Optional UTC timestamp for deterministic generation
+	 *
+	 * @returns Effect producing validated EnvelopeId
+	 * @throws ParseError - If generated UUID7 fails validation (extremely rare)
+	 * @requires UUID7 - Service for UUID generation
 	 */
 	static readonly makeUUID7: (
-		time?: DateTime.Utc,
+		time?: DateTime.Utc
 	) => Effect.Effect<EnvelopeId.Type, ParseResult.ParseError, Service.UUID7> = time =>
 		Service.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
@@ -148,7 +157,7 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 			 * Use make() instead of decode() — UUID7 service already validates.
 			 * Avoids redundant validation for performance.
 			 */
-			Effect.map((uuid7: UUID7.Type): EnvelopeId.Type => EnvelopeId.make(uuid7)),
+			Effect.map((uuid7: UUID7.Type): EnvelopeId.Type => EnvelopeId.make(uuid7))
 		)
 
 	/**
@@ -157,6 +166,7 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 	 * Use for parsing broker messages, logs, or debugging tools.
 	 *
 	 * @param value - String to validate and brand
+	 *
 	 * @returns Effect with validated EnvelopeId
 	 * @throws ParseError - If value is not valid UUID7
 	 */
@@ -167,6 +177,7 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 	 * Decode string to EnvelopeId (Either variant)
 	 *
 	 * @param value - String to validate
+	 *
 	 * @returns Either with EnvelopeId or ParseError
 	 */
 	static readonly decodeEither: (value: string) => Either.Either<EnvelopeId.Type, ParseResult.ParseError> = value =>
