@@ -87,8 +87,8 @@ describe('TimerPersistenceAdapter', () => {
 	 * This helper combines service call insertion and timer creation/persistence for the Live (SQLite) adapter tests,
 	 * respecting foreign key constraints.
 	 *
-	 * @param dueIn - Duration until timer is due (default: '5 minutes'). Accepts Duration.DurationInput format (e.g.,
-	 *   '5 minutes', { minutes: 5 }, Duration.minutes(5)).
+	 * @param dueIn - Duration until timer is due (default: '5 minutes'). Accepts Duration.DurationInput format (e.g., '5
+	 *   minutes', { minutes: 5 }, Duration.minutes(5)).
 	 * @param tenantId - Tenant identifier (default: mocks.tenantId)
 	 * @param serviceCallId - Service call identifier (default: mocks.serviceCallId)
 	 * @param correlationId - Correlation identifier (default: mocks.correlationId)

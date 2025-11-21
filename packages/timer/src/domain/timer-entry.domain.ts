@@ -56,6 +56,7 @@ export const Timer = Schema.Struct({
  * - Can transition to Reached when fired
  *
  * Invariants:
+ *
  * - `dueAt` must be in the future at creation time (validated by workflow)
  * - `tenantId` + `serviceCallId` form unique composite key
  * - `registeredAt` <= `dueAt` (timer can't be due before it's registered)
@@ -168,8 +169,8 @@ export const TimerEntry = {
 	/**
 	 * Query: Checks if a scheduled timer is due to fire
 	 *
-	 * Uses inclusive comparison (<=) to catch timers at exact millisecond boundary.
-	 * Clock precision varies across systems, so inclusive comparison prevents missed timers.
+	 * Uses inclusive comparison (<=) to catch timers at exact millisecond boundary. Clock precision varies across
+	 * systems, so inclusive comparison prevents missed timers.
 	 */
 	isDue: (entry: TimerEntry.ScheduledTimer, now: DateTime.Utc): boolean => DateTime.lessThanOrEqualTo(entry.dueAt, now),
 
@@ -215,8 +216,8 @@ export namespace TimerEntry {
 	/**
 	 * Union type of all timer states
 	 *
-	 * Use for variables that can be either Scheduled or Reached.
-	 * Pattern match with type guards (isScheduled, isReached) for exhaustive handling.
+	 * Use for variables that can be either Scheduled or Reached. Pattern match with type guards (isScheduled, isReached)
+	 * for exhaustive handling.
 	 */
 	export type Type = typeof TimerEntrySchema.Type
 

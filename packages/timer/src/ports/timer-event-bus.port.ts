@@ -30,8 +30,8 @@ export interface TimerEventBusPort {
 	 *
 	 * Used by: pollDueTimersWorkflow
 	 *
-	 * **Pattern**: Workflow constructs pure domain event, port publishes it.
-	 * Workflow provisions MessageMetadata Context with correlationId/causationId.
+	 * **Pattern**: Workflow constructs pure domain event, port publishes it. Workflow provisions MessageMetadata Context
+	 * with correlationId/causationId.
 	 *
 	 * Adapter responsibilities:
 	 *
@@ -71,7 +71,7 @@ export interface TimerEventBusPort {
 	 * 		Effect.provideService(MessageMetadata, {
 	 * 			correlationId: Option.some(correlationId),
 	 * 			causationId: Option.none(),
-	 * 		})
+	 * 		}),
 	 * 	)
 	 * })
 	 * ```
@@ -132,7 +132,7 @@ export interface TimerEventBusPort {
 	 *
 	 * 				// Invoke workflow with command and metadata
 	 * 				yield* Effect.succeed(undefined) // Simplified workflow
-	 * 			})
+	 * 			}),
 	 * 	)
 	 * })
 	 * ```

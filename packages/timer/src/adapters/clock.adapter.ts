@@ -95,7 +95,7 @@ export const ClockPortLive: Layer.Layer<ClockPort> = Layer.succeed(
  * 		const t2 = yield* clock.now()
  * 		const dueTimers = yield* findDue(t2)
  * 		expect(Chunk.size(dueTimers)).toBe(1)
- * 	}).pipe(Effect.provide(ClockPortTest))
+ * 	}).pipe(Effect.provide(ClockPortTest)),
  * )
  * ```
  *
@@ -118,7 +118,7 @@ export const ClockPortLive: Layer.Layer<ClockPort> = Layer.succeed(
  *
  * 		const dueTimers = yield* findDue(current)
  * 		expect(Chunk.size(dueTimers)).toBe(1) // Should be due (inclusive comparison)
- * 	}).pipe(Effect.provide(ClockPortTest))
+ * 	}).pipe(Effect.provide(ClockPortTest)),
  * )
  * ```
  */

@@ -91,7 +91,7 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	 * 		const now = yield* DateTime.now
 	 * 		const tenantId = yield* TenantId.makeUUID7(now)
 	 * 		// tenantId is deterministic based on `now`
-	 * 	}).pipe(Effect.provide(UUID7.Default))
+	 * 	}).pipe(Effect.provide(UUID7.Default)),
 	 * )
 	 * ```
 	 *

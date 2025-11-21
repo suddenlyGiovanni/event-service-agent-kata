@@ -106,8 +106,8 @@ export declare namespace UUID7 {
 	/**
 	 * UUID7 type - Branded string representing a time-ordered UUID v7
 	 *
-	 * Use this type for function signatures, return types, and type annotations. To create values, use the UUID7
-	 * service or Schema.decode(UUID7).
+	 * Use this type for function signatures, return types, and type annotations. To create values, use the UUID7 service
+	 * or Schema.decode(UUID7).
 	 */
 	type Type = typeof UUID7.Type
 }

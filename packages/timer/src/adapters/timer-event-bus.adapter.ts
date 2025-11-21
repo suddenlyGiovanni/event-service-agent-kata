@@ -17,8 +17,8 @@ import * as Ports from '../ports/index.ts'
 /**
  * TimerEventBus — Adapter implementation for timer event publishing
  *
- * Wraps timer domain events in MessageEnvelope and publishes via EventBusPort.
- * Generates envelope IDs and correlation context for each published event.
+ * Wraps timer domain events in MessageEnvelope and publishes via EventBusPort. Generates envelope IDs and correlation
+ * context for each published event.
  */
 export class TimerEventBus {
 	/**
@@ -43,11 +43,11 @@ export class TimerEventBus {
 					/**
 					 * Extract observability metadata from Effect Context
 					 *
-					 * MessageMetadata is provisioned by workflow with correlationId/causationId extracted from timer
-					 * aggregate. This enables distributed tracing without polluting domain event types.
+					 * MessageMetadata is provisioned by workflow with correlationId/causationId extracted from timer aggregate.
+					 * This enables distributed tracing without polluting domain event types.
 					 *
-					 * Type-safe: Port signature requires MessageMetadata in R parameter, so missing context at workflow
-					 * level causes compile error.
+					 * Type-safe: Port signature requires MessageMetadata in R parameter, so missing context at workflow level
+					 * causes compile error.
 					 */
 					const metadata = yield* MessageMetadata
 
@@ -108,12 +108,12 @@ export class TimerEventBus {
 						tenantId: dueTimeReached.tenantId,
 
 						/**
-						 * Get current time for envelope timestamp (infrastructure timing) Distinct from
-						 * payload.reachedAt (domain timing):
+						 * Get current time for envelope timestamp (infrastructure timing) Distinct from payload.reachedAt (domain
+						 * timing):
 						 *
 						 * - `timestampMs`: When message was created/published (now)
-						 * - `reachedAt`: When timer became due (domain event time) Gap between them reveals publishing
-						 *   latency for observability.
+						 * - `reachedAt`: When timer became due (domain event time) Gap between them reveals publishing latency for
+						 *   observability.
 						 */
 						timestampMs: yield* clock.now(),
 						type: dueTimeReached._tag,
@@ -151,8 +151,8 @@ export class TimerEventBus {
 							/**
 							 * Log subscription establishment
 							 *
-							 * One-time log when subscription is set up, showing which topics the Timer module is
-							 * listening to for commands.
+							 * One-time log when subscription is set up, showing which topics the Timer module is listening to for
+							 * commands.
 							 */
 							yield* Effect.logInfo('Subscribed to ScheduleTimer commands', {
 								topics: Topics.Timer.Commands,
@@ -167,8 +167,7 @@ export class TimerEventBus {
 											 *
 											 * Infrastructure-level annotations for command reception (inbound):
 											 *
-											 * - Adapter annotates: message.envelope.id, message.correlationId (from
-											 *   upstream)
+											 * - Adapter annotates: message.envelope.id, message.correlationId (from upstream)
 											 * - Handler annotates: domain-level command details
 											 *
 											 * Enables span linking: upstream service span → adapter span → handler span

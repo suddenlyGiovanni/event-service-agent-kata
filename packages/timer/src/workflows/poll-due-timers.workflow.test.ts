@@ -33,7 +33,6 @@ import * as Workflows from './poll-due-timers.workflow.ts'
  * CRITICAL: Using `it.scoped()` instead of `it.effect()` ensures each test gets a FRESH layer scope with its own
  * database instance.
  *
- *
  * This prevents test pollution where data from one test affects another.
  *
  * Why scoped?
@@ -145,7 +144,7 @@ describe('pollDueTimersWorkflow', () => {
 			 * THEN all three DueTimeReached events should be published in order
 			 *   AND all three timers should be marked as Reached
 			 *   AND workflow should complete successfully
-			 *```
+			 * ```
 			 */
 
 			// Track the order of operations to verify sequential processing
@@ -309,8 +308,7 @@ describe('pollDueTimersWorkflow', () => {
 		 * Verifies correlationId propagation from timer aggregate to published event.
 		 *
 		 * The workflow provisions MessageMetadata Context with the timer's correlationId before calling
-		 * publishDueTimeReached.
-		 * The adapter then accesses this context to populate the envelope's correlationId field.
+		 * publishDueTimeReached. The adapter then accesses this context to populate the envelope's correlationId field.
 		 *
 		 * This ensures correlation chains remain intact across module boundaries.
 		 *
@@ -882,8 +880,9 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND the timer should remain in Scheduled state
 			 *   AND the workflow should fail with BatchProcessingError
 			 * ```
-			 * Strategy: Effect.partition collects failures, workflow propagates to error channel
-			 * Note: Event is published but timer stays Scheduled (Orchestration handles duplicate via state guard)
+			 *
+			 * Strategy: Effect.partition collects failures, workflow propagates to error channel Note: Event is published but
+			 * timer stays Scheduled (Orchestration handles duplicate via state guard)
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []

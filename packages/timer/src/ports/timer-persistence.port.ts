@@ -120,8 +120,8 @@ export interface TimerPersistencePort {
 	 * - If Reached timer exists: NO-OP (all columns preserved, no database write)
 	 *
 	 * **Terminal state enforcement:** Reached is a terminal state per ADR-0003. Once a timer fires and transitions to
-	 * Reached, subsequent save() calls will NOT modify ANY columns. The entire row becomes immutable, preserving both
-	 * the idempotency marker (reached_at) and all other metadata (due_at, correlation_id, etc.).
+	 * Reached, subsequent save() calls will NOT modify ANY columns. The entire row becomes immutable, preserving both the
+	 * idempotency marker (reached_at) and all other metadata (due_at, correlation_id, etc.).
 	 *
 	 * The adapter handles:
 	 *
@@ -160,7 +160,7 @@ export interface TimerPersistencePort {
 	 *
 	 * 	return yield* Option.match(existing, {
 	 * 		onNone: () => persistence.save(newTimer), // Create new (doesn't exist OR already reached)
-	 * 		onSome: timer => persistence.save(timer), // Update existing scheduled timer
+	 * 		onSome: (timer) => persistence.save(timer), // Update existing scheduled timer
 	 * 	})
 	 * })
 	 * ```
@@ -206,7 +206,7 @@ export interface TimerPersistencePort {
 	 * 		// Verify domain behavior (no longer active)
 	 * 		const scheduled = yield* persistence.findScheduledTimer({ tenantId, serviceCallId })
 	 * 		expect(Option.isNone(scheduled)).toBe(true)
-	 * 	})
+	 * 	}),
 	 * )
 	 * ```
 	 *
@@ -239,7 +239,7 @@ export interface TimerPersistencePort {
 	 * 	const dueTimers = yield* persistence.findDue(now)
 	 * 	// Only ScheduledTimers returned (Reached excluded)
 	 *
-	 * 	yield* Effect.forEach(dueTimers, timer =>
+	 * 	yield* Effect.forEach(dueTimers, (timer) =>
 	 * 		Effect.gen(function* () {
 	 * 			// Mark as fired FIRST (idempotency marker)
 	 * 			yield* persistence.markFired({
@@ -248,7 +248,7 @@ export interface TimerPersistencePort {
 	 * 			})
 	 * 			// Then publish event (safe to retry)
 	 * 			yield* eventBus.publish(DueTimeReached.make(timer))
-	 * 		})
+	 * 		}),
 	 * 	)
 	 * })
 	 * ```

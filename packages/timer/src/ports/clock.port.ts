@@ -1,8 +1,8 @@
 /**
  * ClockPort — Time service abstraction
  *
- * Provides current time access with controllable implementation for testing.
- * This is a fundamental port that enables deterministic time handling in tests while using real system time in production.
+ * Provides current time access with controllable implementation for testing. This is a fundamental port that enables
+ * deterministic time handling in tests while using real system time in production.
  *
  * Why this abstraction exists:
  *

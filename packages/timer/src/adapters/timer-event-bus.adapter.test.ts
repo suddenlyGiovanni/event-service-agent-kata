@@ -180,8 +180,7 @@ describe('TimerEventBus', () => {
 				 * - Envelope.timestampMs: Infrastructure time (when message was published)
 				 * - Payload.reachedAt: Domain time (when timer became due)
 				 *
-				 * Scenario: Timer reached at T+0, but published at T+10 The gap reveals publishing latency for
-				 * observability.
+				 * Scenario: Timer reached at T+0, but published at T+10 The gap reveals publishing latency for observability.
 				 */
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 

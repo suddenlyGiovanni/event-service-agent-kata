@@ -1,4 +1,5 @@
-/** biome-ignore-all lint/style/useNamingConvention:  explanation: Capitalized identifiers follow Effect service conventions */
+/** biome-ignore-all lint/style/useNamingConvention: explanation: Capitalized identifiers follow Effect service
+conventions */
 
 import type * as Platform from '@effect/platform'
 import * as Sql from '@effect/sql'
@@ -19,8 +20,8 @@ import { ReachedTimer, ScheduledTimer, TimerEntry } from '../domain/timer-entry.
 import * as Ports from '../ports/index.ts'
 
 /**
- * Database row representation for timer_schedules table.
- * Maps to both Scheduled and Reached timer states via the state column.
+ * Database row representation for timer_schedules table. Maps to both Scheduled and Reached timer states via the state
+ * column.
  */
 class TimerScheduleRow extends Sql.Model.Class<TimerScheduleRow>('TimerScheduleRow')({
 	correlationId: Sql.Model.FieldOption(CorrelationId),
@@ -44,8 +45,8 @@ class TimerScheduleRow extends Sql.Model.Class<TimerScheduleRow>('TimerScheduleR
 }) {}
 
 /**
- * Helper: Convert Timer DB row to TimerEntry domain type.
- * Handles both Scheduled and Reached states based on state column.
+ * Helper: Convert Timer DB row to TimerEntry domain type. Handles both Scheduled and Reached states based on state
+ * column.
  */
 const timerRecordToTimerEntry: (timer: TimerScheduleRow) => TimerEntry.Type = Match.type<TimerScheduleRow>().pipe(
 	Match.withReturnType<TimerEntry.Type>(),
@@ -95,12 +96,11 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	/**
 	 * Helper: Map SQL errors to domain PersistenceError
 	 *
-	 * Provides consistent error handling across all SQL operations.
-	 * Preserves full error context (stack traces, nested errors) via Schema.Defect.
-	 * Extracts human-readable message from Error objects for observability.
+	 * Provides consistent error handling across all SQL operations. Preserves full error context (stack traces, nested
+	 * errors) via Schema.Defect. Extracts human-readable message from Error objects for observability.
 	 *
-	 * Only SQL-level errors (connection, syntax, constraint violations) become PersistenceError.
-	 * Application-level errors (like validation) should fail with their specific error types.
+	 * Only SQL-level errors (connection, syntax, constraint violations) become PersistenceError. Application-level errors
+	 * (like validation) should fail with their specific error types.
 	 */
 	const mapSqlError = (operation: keyof Ports.TimerPersistencePort) =>
 		Effect.mapError(
@@ -117,13 +117,14 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	 *
 	 * Idempotent: deleting non-existent entry succeeds.
 	 */
-	const delete_ = Effect.fn('TimerPersistence.Live.delete')(
-		(key: Ports.TimerScheduleKey.Type): Effect.Effect<void, Ports.PersistenceError> => {
-			return pipe(
-				key,
-				Sql.SqlSchema.void({
-					execute: ({ tenantId, serviceCallId }) =>
-						sql`
+	const delete_ = Effect.fn('TimerPersistence.Live.delete')((
+		key: Ports.TimerScheduleKey.Type,
+	): Effect.Effect<void, Ports.PersistenceError> => {
+		return pipe(
+			key,
+			Sql.SqlSchema.void({
+				execute: ({ tenantId, serviceCallId }) =>
+					sql`
 							DELETE FROM
 								timer_schedules
 							WHERE
@@ -136,22 +137,20 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 									`,
 								])};
 						`,
-					Request: Ports.TimerScheduleKey,
+				Request: Ports.TimerScheduleKey,
+			}),
+			mapSqlError('delete'),
+			Effect.tap(
+				Effect.annotateCurrentSpan({
+					serviceCallId: key.serviceCallId,
+					tenantId: key.tenantId,
 				}),
-				mapSqlError('delete'),
-				Effect.tap(
-					Effect.annotateCurrentSpan({
-						serviceCallId: key.serviceCallId,
-						tenantId: key.tenantId,
-					}),
-				),
-			)
-		},
-	)
+			),
+		)
+	})
 
 	/**
-	 * Find a timer in ANY state (Scheduled or Reached).
-	 * Used for observability/debugging.
+	 * Find a timer in ANY state (Scheduled or Reached). Used for observability/debugging.
 	 */
 	const find = Effect.fn('TimerPersistence.Live.find')(
 		(key: Ports.TimerScheduleKey.Type): Effect.Effect<Option.Option<TimerEntry.Type>, Ports.PersistenceError> =>
@@ -352,8 +351,8 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	 *
 	 * @remarks
 	 * Reached is a terminal state per ADR-0003. Once a timer fires and transitions to Reached, subsequent save() calls
-	 * will NOT modify ANY columns. This prevents accidental resurrection, preserves the idempotency marker
-	 * (reached_at), and ensures fired timers remain immutable.
+	 * will NOT modify ANY columns. This prevents accidental resurrection, preserves the idempotency marker (reached_at),
+	 * and ensures fired timers remain immutable.
 	 *
 	 * The SQL uses a conditional UPDATE clause to enforce full NO-OP:
 	 *
@@ -494,7 +493,7 @@ export class TimerPersistence {
 	 * 		yield* persistence.save(timer)
 	 * 		const found = yield* persistence.find({ tenantId, serviceCallId })
 	 * 		expect(Option.isSome(found)).toBe(true)
-	 * 	}).pipe(Effect.provide(TimerPersistence.Test))
+	 * 	}).pipe(Effect.provide(TimerPersistence.Test)),
 	 * )
 	 * ```
 	 */
