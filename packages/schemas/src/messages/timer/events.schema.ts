@@ -6,8 +6,8 @@ import { ServiceCallEventBase } from '../common/service-call-event-base.schema.t
 /**
  * Timer Domain Events
  *
- * Effect Schema definitions for runtime-validated Timer events.
- * These schemas provide:
+ * Effect Schema definitions for runtime-validated Timer events. These schemas provide:
+ *
  * - Compile-time type safety (TypeScript types)
  * - Runtime validation (parse/decode from wire format)
  * - Encoding/decoding (domain <-> DTO transformations)
@@ -20,37 +20,38 @@ import { ServiceCallEventBase } from '../common/service-call-event-base.schema.t
 /**
  * DueTimeReached - Time to start execution has arrived
  *
- * **Produced by**: Timer (or Orchestration fast-path)
- * **Consumed by**: Orchestration
+ * **Produced by**: Timer (or Orchestration fast-path).
+ * **Consumed by**: Orchestration.
  *
- * This event signals that a scheduled timer has reached its due time
- * and execution should begin. The `reachedAt` timestamp indicates when
- * the polling worker detected the timer was due.
+ * This event signals that a scheduled timer has reached its due time and execution should begin. The `reachedAt`
+ * timestamp indicates when the polling worker detected the timer was due.
  *
  * **Wire Format (DTO)**:
+ *
  * ```json
  * {
- *   "_tag": "DueTimeReached",
- *   "tenantId": "018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0",
- *   "serviceCallId": "018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1",
- *   "reachedAt": "2025-10-27T12:00:00.000Z"
+ * 	"_tag": "DueTimeReached",
+ * 	"tenantId": "018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0",
+ * 	"serviceCallId": "018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1",
+ * 	"reachedAt": "2025-10-27T12:00:00.000Z"
  * }
  * ```
  *
  * @example
- * ```typescript ignore
+ *
+ * ```typescript
  * // Decode from wire format (JSON → validated domain event)
- * const event = yield* DueTimeReached.decode(rawJson)
+ * const event = yield * DueTimeReached.decode(rawJson)
  *
  * // Construct in domain code
  * const event = new DueTimeReached({
- *   tenantId,
- *   serviceCallId,
- *   reachedAt: firedAt, // DateTime.Utc
+ * 	tenantId,
+ * 	serviceCallId,
+ * 	reachedAt: firedAt, // DateTime.Utc
  * })
  *
  * // Encode to wire format (validated domain → JSON DTO)
- * const dto = yield* DueTimeReached.encode(event)
+ * const dto = yield * DueTimeReached.encode(event)
  * ```
  */
 export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTimeReached', {
@@ -59,8 +60,8 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	/**
 	 * Timestamp when the due time was detected
 	 *
-	 * Domain type: DateTime.Utc (Effect's immutable datetime)
-	 * Wire format: ISO8601 string (e.g., "2025-10-27T12:00:00.000Z")
+	 * Domain type: DateTime.Utc (Effect's immutable datetime).
+	 * Wire format: ISO8601 string (e.g., "2025-10-27T12:00:00.000Z").
 	 */
 	reachedAt: Schema.DateTimeUtc,
 }) {
@@ -68,17 +69,21 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 * Decode from unknown/wire format to validated domain event
 	 *
 	 * Returns `Effect<DueTimeReached, ParseError>`:
+	 *
 	 * - **Success**: Validated DueTimeReached instance
 	 * - **Failure**: ParseError with detailed validation errors
 	 *
 	 * @example
-	 * ```typescript ignore
-	 * const event = yield* DueTimeReached.decode({
-	 *   type: 'DueTimeReached',
-	 *   tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-	 *   serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-	 *   reachedAt: '2025-10-27T12:00:00.000Z',
-	 * })
+	 *
+	 * ```typescript
+	 * const event =
+	 * 	yield *
+	 * 	DueTimeReached.decode({
+	 * 		type: 'DueTimeReached',
+	 * 		tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
+	 * 		serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
+	 * 		reachedAt: '2025-10-27T12:00:00.000Z',
+	 * 	})
 	 * ```
 	 */
 	static readonly decode = Schema.decode(DueTimeReached)
@@ -87,13 +92,15 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 * Encode from validated domain event to wire format DTO
 	 *
 	 * Returns `Effect<DueTimeReachedDTO, ParseError>`:
+	 *
 	 * - Unbrands types (TenantId → string, ServiceCallId → string)
 	 * - Preserves ISO8601 DateTime format
 	 * - Ready for JSON serialization
 	 *
 	 * @example
-	 * ```typescript ignore
-	 * const dto = yield* DueTimeReached.encode(event)
+	 *
+	 * ```typescript
+	 * const dto = yield * DueTimeReached.encode(event)
 	 * // dto: { type: 'DueTimeReached', tenantId: string, ... }
 	 * await broker.publish(JSON.stringify(dto))
 	 * ```

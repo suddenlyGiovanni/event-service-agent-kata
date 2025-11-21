@@ -83,7 +83,7 @@ graph TB
 ```typescript ignore
 // packages/orchestration/src/workflows/submit-service-call.workflow.ts
 export const submitServiceCallWorkflow = (
-	request: SubmitServiceCallRequest
+	request: SubmitServiceCallRequest,
 ): Effect<ServiceCall, ValidationError | PersistenceError> =>
 	Effect.gen(function* (_) {
 		// 1. Create domain entity
@@ -113,24 +113,17 @@ export const submitServiceCallWorkflow = (
 // packages/orchestration/src/ports/persistence.ts
 export interface OrchestrationPersistencePort {
 	// Interface shaped by DOMAIN needs, not DB capabilities
-	getServiceCall(
-		tenantId: TenantId,
-		id: ServiceCallId
-	): Effect<ServiceCall | null, PersistenceError>
+	getServiceCall(tenantId: TenantId, id: ServiceCallId): Effect<ServiceCall | null, PersistenceError>
 
 	saveServiceCall(serviceCall: ServiceCall): Effect<void, PersistenceError>
 
-	listServiceCalls(
-		tenantId: TenantId,
-		filters: ListFilters
-	): Effect<ServiceCall[], PersistenceError>
+	listServiceCalls(tenantId: TenantId, filters: ListFilters): Effect<ServiceCall[], PersistenceError>
 }
 
 // Tag for Effect dependency injection
-export const OrchestrationPersistencePort =
-	Context.GenericTag<OrchestrationPersistencePort>(
-		'@orchestration/PersistencePort'
-	)
+export const OrchestrationPersistencePort = Context.GenericTag<OrchestrationPersistencePort>(
+	'@orchestration/PersistencePort',
+)
 ```
 
 **Key Point:** This is **Dependency Inversion** - the domain defines the interface it needs; infrastructure must adapt to it.
@@ -147,9 +140,7 @@ export const OrchestrationPersistencePort =
 
 ```typescript ignore
 // packages/orchestration/src/adapters/sqlite-persistence.ts
-export class OrchestrationSqliteAdapter
-	implements OrchestrationPersistencePort
-{
+export class OrchestrationSqliteAdapter implements OrchestrationPersistencePort {
 	constructor(private readonly db: Database) {}
 
 	// Adapter translates domain model to/from DB
@@ -165,13 +156,7 @@ export class OrchestrationSqliteAdapter
 								`INSERT INTO service_calls (
                   tenant_id, service_call_id, name, status, created_at
                 ) VALUES (?, ?, ?, ?, ?)`,
-								[
-									serviceCall.tenantId,
-									serviceCall.id,
-									serviceCall.name,
-									serviceCall.status,
-									serviceCall.createdAt,
-								]
+								[serviceCall.tenantId, serviceCall.id, serviceCall.name, serviceCall.status, serviceCall.createdAt],
 							)
 
 							// Save tags in same transaction
@@ -180,20 +165,17 @@ export class OrchestrationSqliteAdapter
 									`INSERT INTO service_call_tags (
                     tenant_id, service_call_id, tag
                   ) VALUES (?, ?, ?)`,
-									[serviceCall.tenantId, serviceCall.id, tag]
+									[serviceCall.tenantId, serviceCall.id, tag],
 								)
 							}
 						}),
 					catch: (error) => new PersistenceError({ cause: error }),
-				})
+				}),
 			)
 		})
 	}
 
-	getServiceCall(
-		tenantId: TenantId,
-		id: ServiceCallId
-	): Effect<ServiceCall | null, PersistenceError> {
+	getServiceCall(tenantId: TenantId, id: ServiceCallId): Effect<ServiceCall | null, PersistenceError> {
 		return Effect.gen(function* (_) {
 			const row = yield* _(
 				Effect.tryPromise({
@@ -201,10 +183,10 @@ export class OrchestrationSqliteAdapter
 						this.db.get(
 							`SELECT * FROM service_calls 
                WHERE tenant_id = ? AND service_call_id = ?`,
-							[tenantId, id]
+							[tenantId, id],
 						),
 					catch: (error) => new PersistenceError({ cause: error }),
-				})
+				}),
 			)
 
 			if (!row) return null
@@ -235,11 +217,11 @@ export class OrchestrationSqliteAdapter
 ```typescript ignore
 // Inside adapter method
 await tx.run(
-  `INSERT INTO service_calls (
+	`INSERT INTO service_calls (
     tenant_id, service_call_id, name, status, created_at
   ) VALUES (?, ?, ?, ?, ?)`,
-  [serviceCall.tenantId, serviceCall.id, serviceCall.name, /* ... */]
-);
+	[serviceCall.tenantId, serviceCall.id, serviceCall.name /* ... */],
+)
 ```
 
 **Key Point:** SQL is an implementation detail hidden inside the adapter.
@@ -281,15 +263,10 @@ const db = new Database('./data/event_service.db')
 const sqliteAdapter = new OrchestrationSqliteAdapter(db)
 
 // 3. Wire adapter to port (Dependency Injection)
-const OrchestrationPersistenceLayer = Layer.succeed(
-	OrchestrationPersistencePort,
-	sqliteAdapter
-)
+const OrchestrationPersistenceLayer = Layer.succeed(OrchestrationPersistencePort, sqliteAdapter)
 
 // 4. Provide layer to use cases
-const program = submitServiceCall(request).pipe(
-	Effect.provide(OrchestrationPersistenceLayer)
-)
+const program = submitServiceCall(request).pipe(Effect.provide(OrchestrationPersistenceLayer))
 
 // 5. Run the program
 Effect.runPromise(program)
@@ -304,10 +281,7 @@ container.bind(OrchestrationPersistencePort).to(OrchestrationSqliteAdapter)
 // Or with Angular
 @Injectable()
 class UseCase {
-	constructor(
-		@Inject(OrchestrationPersistencePort)
-		private readonly persistence: OrchestrationPersistencePort
-	) {}
+	constructor(@Inject(OrchestrationPersistencePort) private readonly persistence: OrchestrationPersistencePort) {}
 }
 ```
 
@@ -361,10 +335,14 @@ sequenceDiagram
 
 ```typescript ignore
 // ✅ Good: Domain depends on interface
-function useCase(port: PersistencePort) { /* ... */ }
+function useCase(port: PersistencePort) {
+	/* ... */
+}
 
 // ❌ Bad: Domain depends on implementation
-function useCase(adapter: SqliteAdapter) { /* ... */ }
+function useCase(adapter: SqliteAdapter) {
+	/* ... */
+}
 ```
 
 ### 2. **Repository Pattern**
@@ -400,10 +378,7 @@ function useCase(adapter: SqliteAdapter) { /* ... */ }
 
 ```typescript ignore
 // Real adapter talks to SQLite
-const prodLayer = Layer.succeed(
-	PersistencePort,
-	new OrchestrationSqliteAdapter(db)
-)
+const prodLayer = Layer.succeed(PersistencePort, new OrchestrationSqliteAdapter(db))
 
 const program = submitServiceCall(request).pipe(Effect.provide(prodLayer))
 ```
@@ -427,13 +402,10 @@ class InMemoryPersistenceAdapter implements OrchestrationPersistencePort {
 }
 
 // Inject mock instead of real DB
-const testLayer = Layer.succeed(
-	PersistencePort,
-	new InMemoryPersistenceAdapter()
-)
+const testLayer = Layer.succeed(PersistencePort, new InMemoryPersistenceAdapter())
 
 const program = submitServiceCall(request).pipe(
-	Effect.provide(testLayer) // Same use case, different adapter!
+	Effect.provide(testLayer), // Same use case, different adapter!
 )
 ```
 
@@ -547,7 +519,7 @@ const envelope = new MessageEnvelope({
 ### **Benefits**
 
 | Aspect               | Before (Timer, firedAt params)                                               | After (Pure Domain Events)                          |
-|----------------------|------------------------------------------------------------------------------|-----------------------------------------------------|
+| -------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------- |
 | **Port signature**   | `publishDueTimeReached(timer: ScheduledTimer, firedAt: DateTime.Utc)`        | `publishDueTimeReached(event: DueTimeReached.Type)` |
 | **Workflow concern** | Pass timer aggregate + timestamp                                             | Construct domain event                              |
 | **Testability**      | Mock expects timer+timestamp                                                 | Mock expects domain event                           |

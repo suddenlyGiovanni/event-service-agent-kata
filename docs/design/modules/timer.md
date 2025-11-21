@@ -73,7 +73,7 @@ yield *
 		Effect.provideService(MessageMetadata, {
 			correlationId: timer.correlationId, // From timer aggregate
 			causationId: Option.none(), // Time-triggered
-		})
+		}),
 	)
 ```
 

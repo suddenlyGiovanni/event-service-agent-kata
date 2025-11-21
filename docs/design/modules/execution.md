@@ -45,7 +45,7 @@ yield *
 		Effect.provideService(MessageMetadata, {
 			correlationId: command.correlationId, // Forward from command
 			causationId: Option.some(commandEnvelopeId), // StartExecution envelope
-		})
+		}),
 	)
 ```
 

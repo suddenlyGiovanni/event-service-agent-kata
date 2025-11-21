@@ -85,7 +85,7 @@ export class ExecutionSucceeded extends Schema.TaggedClass<ExecutionSucceeded>()
 /** Type aliases for ExecutionSucceeded event */
 export declare namespace ExecutionSucceeded {
 	/**
-	 *  Validated domain type
+	 * Validated domain type
 	 */
 	type Type = typeof ExecutionSucceeded.Type
 

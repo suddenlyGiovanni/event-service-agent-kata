@@ -84,7 +84,7 @@ yield *
 		Effect.provideService(MessageMetadata, {
 			correlationId, // From command (pass-through)
 			causationId: commandMetadata.causationId, // From command envelope
-		})
+		}),
 	)
 ```
 

@@ -49,20 +49,19 @@ const serviceCallId = result.id // Only available NOW!
 
 ```typescript ignore
 // ✅ SOLUTION: Generate ID BEFORE insert
-const serviceCallId = clientProvidedId
-  ?? crypto.randomUUID()  // UUID v7 preferred
+const serviceCallId = clientProvidedId ?? crypto.randomUUID() // UUID v7 preferred
 
 // ✅ Can check idempotency BEFORE insert
 const existing = await db.findBy({ tenantId, serviceCallId })
 if (existing) return existing
 
 // ✅ Can include ID in domain events
-const event = ServiceCallSubmitted({ serviceCallId, /* ... */ })
+const event = ServiceCallSubmitted({ serviceCallId /* ... */ })
 
 // ✅ Can insert aggregate + publish events in same transaction
 await db.transaction(async (tx) => {
-  await tx.insert(serviceCall)
-  await tx.outbox.append(event)  // References serviceCallId!
+	await tx.insert(serviceCall)
+	await tx.outbox.append(event) // References serviceCallId!
 })
 ```
 
@@ -117,8 +116,7 @@ interface SubmitServiceCallRequest {
 }
 
 // Handler logic
-const serviceCallId =
-	req.body.serviceCallId ?? Schema.make(ServiceCallId)(crypto.randomUUID())
+const serviceCallId = req.body.serviceCallId ?? Schema.make(ServiceCallId)(crypto.randomUUID())
 
 // Now have ID BEFORE any DB operation
 ```
@@ -166,18 +164,18 @@ const tenantId = req.body.tenantId as TenantId // Accepts ANYTHING!
 
 ```typescript ignore
 // ✅ CURRENT: Runtime validation with UUID7 schema
-import * as DateTime     from 'effect/DateTime'
-import * as Effect       from 'effect/Effect'
-import * as Schema       from 'effect/Schema'
+import * as DateTime from 'effect/DateTime'
+import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
 import { TenantIdBrand } from './tenant-id.schema'
-import { UUID7 }         from './uuid7.schema'
+import { UUID7 } from './uuid7.schema'
 
 export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	static readonly makeUUID7 = (time?: DateTime.Utc) =>
-			Effect.gen(function* () {
-				const uuid7 = yield* Uuid7Service.randomUUIDv7(time)
-				return TenantId.make(uuid7) // Validated UUID7 → branded TenantId
-			})
+		Effect.gen(function* () {
+			const uuid7 = yield* Uuid7Service.randomUUIDv7(time)
+			return TenantId.make(uuid7) // Validated UUID7 → branded TenantId
+		})
 
 	static readonly decode = (value: string) => Schema.decode(TenantId)(value) // Validates UUID7 format!
 }
@@ -187,7 +185,6 @@ Effect.gen(function* () {
 	const tenantId = yield* TenantId.decode(req.body.tenantId)
 	// ✅ Validates UUID7 format! Rejects invalid input with ParseError
 })
-
 ```
 
 **Completed in:** `packages/schemas/src/shared/`\

@@ -212,7 +212,7 @@ export class ServiceCallFailed extends Schema.TaggedClass<ServiceCallFailed>()('
 	...ServiceCallEventBase.fields,
 
 	/**
-	 *  Error details (kind, message, latency, additional context)
+	 * Error details (kind, message, latency, additional context)
 	 */
 	errorMeta: ErrorMeta,
 

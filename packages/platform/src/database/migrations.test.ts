@@ -2,6 +2,7 @@
  * Platform database migration integration tests.
  *
  * Tests verify:
+ *
  * - Bootstrap migration (0001) executes successfully
  * - All expected tables are created with correct structure
  * - Foreign key relationships are established
@@ -19,8 +20,8 @@ import { SQL } from './sql.ts'
 
 describe('Platform Database Migrations', () => {
 	/**
-	 * Base test layers with SQL.Test for fresh database per test.
-	 * Using it.scoped() ensures each test gets isolated database instance.
+	 * Base test layers with SQL.Test for fresh database per test. Using it.scoped() ensures each test gets isolated
+	 * database instance.
 	 */
 	const BaseTestLayers = Layer.provide(SQL.Test, PlatformBun.BunContext.layer)
 
@@ -143,12 +144,12 @@ describe('Platform Database Migrations', () => {
 				expect(migrations.length).toBeGreaterThanOrEqual(2)
 
 				// Verify bootstrap migration
-				const bootstrap = migrations.find(m => m['name'] === 'bootstrap_schema')
+				const bootstrap = migrations.find((m) => m['name'] === 'bootstrap_schema')
 				expect(bootstrap).toBeDefined()
 				expect(bootstrap?.['migrationId']).toBe(1)
 
 				// Verify timer migration
-				const timer = migrations.find(m => m['name'] === 'timer_schedules_schema')
+				const timer = migrations.find((m) => m['name'] === 'timer_schedules_schema')
 				expect(timer).toBeDefined()
 				expect(timer?.['migrationId']).toBe(3)
 			}).pipe(Effect.provide(BaseTestLayers)),
@@ -165,7 +166,7 @@ describe('Platform Database Migrations', () => {
 					FROM pragma_table_info('timer_schedules')
 				`
 
-				const columnNames = columns.map(c => c['name'])
+				const columnNames = columns.map((c) => c['name'])
 
 				// Verify all Timer domain columns were added
 				expect(columnNames).toContain('correlation_id')
@@ -176,13 +177,13 @@ describe('Platform Database Migrations', () => {
 
 				// Verify NOT NULL constraints
 				// correlation_id is nullable (Option<CorrelationId> in domain model)
-				const correlationId = columns.find(c => c['name'] === 'correlation_id')
+				const correlationId = columns.find((c) => c['name'] === 'correlation_id')
 				expect(correlationId?.['notnull']).toBe(0)
 
-				const dueAt = columns.find(c => c['name'] === 'due_at')
+				const dueAt = columns.find((c) => c['name'] === 'due_at')
 				expect(dueAt?.['notnull']).toBe(1)
 
-				const state = columns.find(c => c['name'] === 'state')
+				const state = columns.find((c) => c['name'] === 'state')
 				expect(state?.['notnull']).toBe(1)
 				expect(state?.['dfltValue']).toBe("'Scheduled'")
 			}).pipe(Effect.provide(BaseTestLayers)),
@@ -282,11 +283,11 @@ describe('Platform Database Migrations', () => {
 				// Verify both columns reference service_calls
 				const fkTable = foreignKeys[0]?.['table']
 				expect(fkTable).toBe('service_calls')
-				expect(foreignKeys.every(fk => fk['table'] === 'service_calls')).toBe(true)
+				expect(foreignKeys.every((fk) => fk['table'] === 'service_calls')).toBe(true)
 
 				// Verify FK columns (order matches definition)
-				const fromColumns = foreignKeys.map(fk => fk['from'])
-				const toColumns = foreignKeys.map(fk => fk['to'])
+				const fromColumns = foreignKeys.map((fk) => fk['from'])
+				const toColumns = foreignKeys.map((fk) => fk['to'])
 				expect(fromColumns).toContain('tenant_id')
 				expect(fromColumns).toContain('service_call_id')
 				expect(toColumns).toContain('tenant_id')

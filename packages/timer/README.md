@@ -24,17 +24,17 @@ type TimerEntry =
 ### Workflows
 
 1. **scheduleTimerWorkflow** (PL-4.3)
-    - Consumes: `ScheduleTimer` command
-    - Creates: `ScheduledTimer` domain entity
-    - Persists: Timer entry with `Scheduled` state
-    - No event published (timer just registered)
+   - Consumes: `ScheduleTimer` command
+   - Creates: `ScheduledTimer` domain entity
+   - Persists: Timer entry with `Scheduled` state
+   - No event published (timer just registered)
 
 2. **pollDueTimersWorkflow** (PL-4.4)
-    - Polls: All timers with `dueAt <= now` and `state = Scheduled`
-    - Batch processes: Up to 100 timers per poll
-    - Publishes: `DueTimeReached` event for each fired timer
-    - Transitions: `Scheduled` → `Reached` (two-operation model)
-    - Continues on error: Partial failures tracked with `BatchProcessingError`
+   - Polls: All timers with `dueAt <= now` and `state = Scheduled`
+   - Batch processes: Up to 100 timers per poll
+   - Publishes: `DueTimeReached` event for each fired timer
+   - Transitions: `Scheduled` → `Reached` (two-operation model)
+   - Continues on error: Partial failures tracked with `BatchProcessingError`
 
 ### Ports
 
@@ -111,9 +111,9 @@ BatchProcessingError {
 ### Schedule a Timer
 
 ```typescript ignore
-import { scheduleTimerWorkflow }                                   from '@event-service-agent/timer'
-import { Iso8601DateTime, CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
-import { Effect }                                                  from 'effect'
+import { scheduleTimerWorkflow } from '@event-service-agent/timer'
+import { CorrelationId, Iso8601DateTime, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
+import { Effect } from 'effect'
 
 declare const tenantId: TenantId.Type
 declare const serviceCallId: ServiceCallId.Type

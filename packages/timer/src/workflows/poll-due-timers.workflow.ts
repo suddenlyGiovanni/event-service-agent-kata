@@ -1,38 +1,41 @@
 /**
  * Poll Due Timers Workflow
  *
- * Periodically checks for timers that have reached their due time and fires them
- * by publishing DueTimeReached events. This is the core of the timer service's
- * event-driven architecture.
+ * Periodically checks for timers that have reached their due time and fires them by publishing DueTimeReached events.
+ * This is the core of the timer service's event-driven architecture.
  *
  * **Architecture Pattern**: Polling-based workflow
+ *
  * - Trigger: Time-based (cron job, scheduled task, infinite loop with delay)
  * - Input: Current time (from ClockPort)
  * - Output: Published DueTimeReached events for all due timers
  *
- * **Design Decision — Polling vs Push**:
- * We use polling (periodic findDue queries) instead of push-based timers because:
+ * **Design Decision — Polling vs Push**: We use polling (periodic findDue queries) instead of push-based timers
+ * because:
+ *
  * 1. **Resilience**: Survives crashes and restarts (timers are durable in DB)
  * 2. **Scalability**: Can process batches efficiently, tune batch size
  * 3. **Simplicity**: No in-memory timer wheel, no state synchronization
  * 4. **Predictability**: Query performance is measurable and tunable via indexes
  *
  * Trade-off: Higher latency (polling interval) vs push-based (instant firing)
+ *
  * - Accepted because: Service call scheduling doesn't require sub-second precision
  * - Mitigation: Poll interval tunable based on latency requirements (e.g., every 5s)
  *
- * **Error Handling Strategy**:
- * Uses Effect.partition to collect all failures instead of fail-fast. This ensures:
+ * **Error Handling Strategy**: Uses Effect.partition to collect all failures instead of fail-fast. This ensures:
+ *
  * - Successful timers are processed and marked as fired
  * - Failed timers remain Scheduled for retry on next poll
  * - Partial batch success enables forward progress even with failures
  *
  * Alternative considered: Fail-fast on first error
+ *
  * - Rejected because: Single failing timer blocks entire batch
  * - Current approach: Better availability and resilience
  *
- * **Idempotency Strategy**:
- * Each timer is processed exactly once even across failures:
+ * **Idempotency Strategy**: Each timer is processed exactly once even across failures:
+ *
  * 1. Timer found by findDue (WHERE status = 'Scheduled')
  * 2. Event published (may fail)
  * 3. Timer marked as Reached (idempotency marker)
@@ -59,19 +62,20 @@ import * as Ports from '../ports/index.ts'
 /**
  * BatchProcessingError — Aggregated failures from batch timer processing
  *
- * Raised when one or more timers fail to process during a batch poll.
- * Contains detailed failure information for observability and retry policies.
+ * Raised when one or more timers fail to process during a batch poll. Contains detailed failure information for
+ * observability and retry policies.
  *
  * **Domain Semantics**:
+ *
  * - Failed timers remain in Scheduled state (will retry on next poll)
  * - Successful timers transition to Reached (won't retry)
  * - Caller can inspect failures for alerting, backoff, or circuit breaking
  *
- * **Why aggregate errors instead of propagating first failure**:
- * Enables partial batch success. If 99 timers succeed and 1 fails, the 99
- * are marked as Reached and won't reprocess. Only the 1 failure retries.
+ * **Why aggregate errors instead of propagating first failure**: Enables partial batch success. If 99 timers succeed
+ * and 1 fails, the 99 are marked as Reached and won't reprocess. Only the 1 failure retries.
  *
  * Alternative: Fail-fast on first error (propagate first failure immediately)
+ *
  * - Rejected because: Blocks batch processing, reduces availability
  * - Current approach: Better throughput and resilience
  */
@@ -87,27 +91,29 @@ export class BatchProcessingError extends Schema.TaggedError<BatchProcessingErro
 /**
  * Process a single due timer by publishing its event and marking it as fired
  *
- * **Processing Order — Publish BEFORE markFired**:
- * Event is published FIRST, then timer is marked as fired. This ordering ensures
- * at-least-once delivery semantics:
+ * **Processing Order — Publish BEFORE markFired**: Event is published FIRST, then timer is marked as fired. This
+ * ordering ensures at-least-once delivery semantics:
  *
  * 1. If publish succeeds + markFired succeeds: ✅ Normal case, event delivered once
  * 2. If publish succeeds + markFired fails: ✅ Timer retries, event delivered twice (idempotent consumer handles)
  * 3. If publish fails: ✅ Timer remains Scheduled, retry on next poll
  *
  * Alternative: Mark fired BEFORE publish
+ *
  * - Rejected because: If publish fails, event is lost (timer is already marked Reached)
  * - Current approach: Guarantees at-least-once delivery at cost of possible duplicates
  *
- * **Metadata Strategy — No causationId for timer firing**:
- * Timer firing is NOT caused by a command/event, but by time passage. Therefore:
- * - causationId: None (no specific message triggered this)
- * - correlationId: From timer aggregate (traces back to original scheduling request)
+ * **Metadata Strategy — No causationId for timer firing**: Timer firing is NOT caused by a command/event, but by time
+ * passage. Therefore:
  *
- * This enables tracing timer events back to the original request that scheduled them,
- * while correctly indicating that the firing itself is time-driven, not message-driven.
+ * - CausationId: None (no specific message triggered this)
+ * - CorrelationId: From timer aggregate (traces back to original scheduling request)
+ *
+ * This enables tracing timer events back to the original request that scheduled them, while correctly indicating that
+ * the firing itself is time-driven, not message-driven.
  *
  * @param timer - The scheduled timer to process
+ *
  * @returns Effect that succeeds when timer is processed
  * @throws PublishError - When event publishing fails
  * @throws PersistenceError - When marking as fired fails
@@ -162,6 +168,7 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
  * Poll for due timers and process them in a batch
  *
  * See file-level documentation above for comprehensive details on:
+ *
  * - Workflow steps and processing order
  * - Concurrency strategy (sequential for ordering)
  * - Error handling (partition for partial success)
