@@ -33,7 +33,7 @@ class WorkspaceRoot extends Effect.Service<WorkspaceRoot>()('WorkspaceRoot', {
 		yield* Effect.logInfo('Workspace root resolved', { workspaceRoot: workspaceRootPath })
 
 		return { path: workspaceRootPath }
-	}),
+	})
 }) {}
 
 /**
@@ -69,16 +69,16 @@ class DatabaseConfig extends Effect.Service<DatabaseConfig>()('DatabaseConfig', 
 			schemaDirectory: string | undefined
 		} = yield* Config.all({
 			filename: Config.string('DB_PATH').pipe(Config.withDefault(path.join(dataDirectory, 'db.sqlite'))),
-			schemaDirectory: Config.string('DB_SCHEMA_DIR').pipe(Config.withDefault(dataDirectory)),
+			schemaDirectory: Config.string('DB_SCHEMA_DIR').pipe(Config.withDefault(dataDirectory))
 		})
 
 		yield* Effect.logInfo('Database configuration loaded', {
 			filename: config.filename,
-			schemaDirectory: config.schemaDirectory,
+			schemaDirectory: config.schemaDirectory
 		})
 
 		return config
-	}).pipe(Effect.withSpan('DatabaseConfig')),
+	}).pipe(Effect.withSpan('DatabaseConfig'))
 }) {}
 
 /**
@@ -127,20 +127,20 @@ const MigratorLayer: Layer.Layer<
 	yield* Effect.logInfo('Initializing database migrator', { schemaDirectory: config.schemaDirectory })
 
 	yield* Effect.logDebug('Using workspace root for migration discovery', {
-		workspaceRoot: workspaceRoot.path,
+		workspaceRoot: workspaceRoot.path
 	})
 
 	const migrationsRecord = yield* pipe(
 		Stream.fromAsyncIterable(
 			new Bun.Glob('packages/*/src/database/migrations/*.ts').scan({ cwd: workspaceRoot.path }),
-			error =>
+			(error) =>
 				new Platform.Error.SystemError({
 					cause: error,
 					description: String(error),
 					method: 'glob.scan',
 					module: 'FileSystem',
 					pathOrDescriptor: workspaceRoot.path,
-					reason: 'Unknown',
+					reason: 'Unknown'
 				})
 		),
 		Stream.runCollect,
@@ -157,7 +157,7 @@ const MigratorLayer: Layer.Layer<
 
 	yield* Effect.logInfo('Discovered migrations', {
 		count: migrationCount,
-		files: migrationFiles,
+		files: migrationFiles
 	})
 
 	// Fail fast if no migrations found (likely path misconfiguration)
@@ -165,11 +165,12 @@ const MigratorLayer: Layer.Layer<
 		return yield* Effect.fail(
 			new Platform.Error.SystemError({
 				cause: new Error('No migration files discovered'),
-				description: `Expected to find migration files matching 'packages/*/src/database/migrations/*.ts' in workspace root '${workspaceRoot.path}', but found none. This likely indicates a path misconfiguration.`,
+				description:
+					`Expected to find migration files matching 'packages/*/src/database/migrations/*.ts' in workspace root '${workspaceRoot.path}', but found none. This likely indicates a path misconfiguration.`,
 				method: 'glob.scan',
 				module: 'FileSystem',
 				pathOrDescriptor: workspaceRoot.path,
-				reason: 'Unknown',
+				reason: 'Unknown'
 			})
 		)
 	}
@@ -178,13 +179,13 @@ const MigratorLayer: Layer.Layer<
 
 	yield* Effect.logInfo('Creating migrator layer', {
 		schemaDirectory: config.schemaDirectory ?? '<none>',
-		table: 'effect_sql_migrations',
+		table: 'effect_sql_migrations'
 	})
 
 	return SqliteBun.SqliteMigrator.layer({
 		loader,
 		...(config.schemaDirectory ? { schemaDirectory: config.schemaDirectory } : {}),
-		table: 'effect_sql_migrations',
+		table: 'effect_sql_migrations'
 	}).pipe(Layer.provide(PlatformBun.BunContext.layer))
 }).pipe(Effect.withSpan('SQL.MigratorLayer'), Layer.unwrapEffect)
 
@@ -211,19 +212,27 @@ const PragmaLayer: Layer.Layer<never, Sql.SqlError.SqlError, Sql.SqlClient.SqlCl
 
 	yield* Effect.logDebug('Setting PRAGMA foreign_keys = ON')
 	/* CRITICAL: Enable FK constraints */
-	yield* sql`PRAGMA foreign_keys = ON`
+	yield* sql`
+		PRAGMA foreign_keys = ON;
+	`
 
 	yield* Effect.logDebug('Setting PRAGMA synchronous = NORMAL')
 	/* Balance safety/performance */
-	yield* sql`PRAGMA synchronous = NORMAL`
+	yield* sql`
+		PRAGMA synchronous = NORMAL;
+	`
 
 	yield* Effect.logDebug('Setting PRAGMA temp_store = MEMORY')
 	/* Faster temp tables */
-	yield* sql`PRAGMA temp_store = MEMORY`
+	yield* sql`
+		PRAGMA temp_store = MEMORY;
+	`
 
 	yield* Effect.logDebug('Setting PRAGMA cache_size = -64000')
 	/* 64MB cache */
-	yield* sql`PRAGMA cache_size = -64000`
+	yield* sql`
+		PRAGMA cache_size = -64000;
+	`
 
 	yield* Effect.logInfo('SQLite session pragmas configured successfully')
 }).pipe(Effect.withSpan('SQL.PragmaLayer'), Layer.effectDiscard)
@@ -251,13 +260,16 @@ const ClientLayer: Layer.Layer<
 
 	yield* Effect.logInfo('Creating SQLite client', { filename: config.filename })
 
-	const sqlClientLayer: Layer.Layer<SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient, ConfigError, never> =
-		SqliteBun.SqliteClient.layer({
-			disableWAL: false,
-			filename: config.filename,
-			transformQueryNames: StringModule.camelToSnake,
-			transformResultNames: StringModule.snakeToCamel,
-		})
+	const sqlClientLayer: Layer.Layer<
+		SqliteBun.SqliteClient.SqliteClient | Sql.SqlClient.SqlClient,
+		ConfigError,
+		never
+	> = SqliteBun.SqliteClient.layer({
+		disableWAL: false,
+		filename: config.filename,
+		transformQueryNames: StringModule.camelToSnake,
+		transformResultNames: StringModule.snakeToCamel
+	})
 
 	/*
 	 * Sequential composition: Client → Pragma Setup → Export Client Only
@@ -361,7 +373,7 @@ const Test: Layer.Layer<
 		Layer.succeed(DatabaseConfig, {
 			_tag: 'DatabaseConfig',
 			filename: ':memory:',
-			schemaDirectory: undefined,
+			schemaDirectory: undefined
 		})
 	)
 )
@@ -424,5 +436,5 @@ const Test: Layer.Layer<
  */
 export const SQL = {
 	Live,
-	Test,
+	Test
 } as const

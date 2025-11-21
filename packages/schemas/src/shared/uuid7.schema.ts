@@ -78,16 +78,16 @@ export const UUID7Regex =
  */
 export class UUID7 extends Schema.UUID.pipe(
 	Schema.pattern(UUID7Regex, {
-		arbitrary: (): LazyArbitrary<string> => fc => fc.uuid({ version: 7 }),
+		arbitrary: (): LazyArbitrary<string> => (fc) => fc.uuid({ version: 7 }),
 		description: 'a UUID version 7 (time-ordered, RFC 9562)',
 		identifier: identifier,
 		jsonSchema: {
 			description: 'UUID version 7 (time-ordered, RFC 9562)',
 			format: 'uuid',
-			pattern: UUID7Regex.source,
+			pattern: UUID7Regex.source
 		},
 		message: () => 'Must be a valid UUID version 7 (format: xxxxxxxx-xxxx-7xxx-[89ab]xxx-xxxxxxxxxxxx)',
-		schemaId: UUID7SchemaId,
+		schemaId: UUID7SchemaId
 	}),
 	Schema.brand(UUID7Brand)
 ) {

@@ -101,7 +101,7 @@ export class ServiceCallId extends UUID7.pipe(Schema.brand(ServiceCallIdBrand)) 
 	 */
 	static readonly makeUUID7: (
 		time?: DateTime.Utc
-	) => Effect.Effect<ServiceCallId.Type, ParseResult.ParseError, Service.UUID7> = time =>
+	) => Effect.Effect<ServiceCallId.Type, ParseResult.ParseError, Service.UUID7> = (time) =>
 		Service.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
 			/*
@@ -119,7 +119,7 @@ export class ServiceCallId extends UUID7.pipe(Schema.brand(ServiceCallIdBrand)) 
 	 * @returns Effect with validated ServiceCallId
 	 * @throws ParseError - If value is not valid UUID7
 	 */
-	static readonly decode: (value: string) => Effect.Effect<ServiceCallId.Type, ParseResult.ParseError> = value =>
+	static readonly decode: (value: string) => Effect.Effect<ServiceCallId.Type, ParseResult.ParseError> = (value) =>
 		Schema.decode(ServiceCallId)(value)
 
 	/**
@@ -129,8 +129,9 @@ export class ServiceCallId extends UUID7.pipe(Schema.brand(ServiceCallIdBrand)) 
 	 *
 	 * @returns Either with ServiceCallId or ParseError
 	 */
-	static readonly decodeEither: (value: string) => Either.Either<ServiceCallId.Type, ParseResult.ParseError> = value =>
-		Schema.decodeEither(ServiceCallId)(value)
+	static readonly decodeEither: (value: string) => Either.Either<ServiceCallId.Type, ParseResult.ParseError> = (
+		value
+	) => Schema.decodeEither(ServiceCallId)(value)
 }
 
 /**

@@ -71,11 +71,11 @@ const layer = SQL.Live.pipe(
 // Execute program with error handling
 Effect.runPromise(program.pipe(Effect.provide(layer)))
 	.then(() => {
-		console.log('\n✓ Migration completed successfully')
+		console.log('\n✓', 'Migration completed successfully')
 		process.exit(0)
 	})
-	.catch(error => {
-		console.error('\n✗ Migration failed:')
+	.catch((error) => {
+		console.error('\n', '✗ Migration failed:')
 		console.error(error)
 		process.exit(1)
 	})

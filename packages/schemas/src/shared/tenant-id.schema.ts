@@ -103,7 +103,7 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	 */
 	static readonly makeUUID7: (
 		time?: DateTime.Utc
-	) => Effect.Effect<TenantId.Type, ParseResult.ParseError, Service.UUID7> = time =>
+	) => Effect.Effect<TenantId.Type, ParseResult.ParseError, Service.UUID7> = (time) =>
 		Service.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
 			Effect.map(
@@ -138,7 +138,7 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	 * @returns Effect with validated TenantId
 	 * @throws ParseError - If value is not valid UUID7 format
 	 */
-	static readonly decode: (value: string) => Effect.Effect<TenantId.Type, ParseResult.ParseError> = value =>
+	static readonly decode: (value: string) => Effect.Effect<TenantId.Type, ParseResult.ParseError> = (value) =>
 		Schema.decode(TenantId)(value)
 
 	/**
@@ -154,7 +154,7 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	 *
 	 * @returns Either with TenantId or ParseError
 	 */
-	static readonly decodeEither: (value: string) => Either.Either<TenantId.Type, ParseResult.ParseError> = value =>
+	static readonly decodeEither: (value: string) => Either.Either<TenantId.Type, ParseResult.ParseError> = (value) =>
 		Schema.decodeEither(TenantId)(value)
 }
 

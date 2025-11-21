@@ -59,7 +59,7 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	dependencies: [Layer.succeed(Ports.UUIDPort, Ports.UUIDPort.Default)],
 
 	effect: Ports.UUIDPort.pipe(
-		Effect.map(uuid => ({
+		Effect.map((uuid) => ({
 			/**
 			 * Generate a new validated UUID7 with optional timestamp
 			 *
@@ -99,9 +99,9 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 			 * @returns Effect producing a validated and branded UUID7
 			 */
 			randomUUIDv7: (time?: DateTime.Utc): Effect.Effect<Schema.UUID7.Type, ParseResult.ParseError> =>
-				pipe(uuid.randomUUIDv7(time?.epochMillis), Schema.UUID7.decode),
+				pipe(uuid.randomUUIDv7(time?.epochMillis), Schema.UUID7.decode)
 		}))
-	),
+	)
 }) {
 	/**
 	 * Test implementation with fixed UUID
@@ -155,5 +155,7 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 * @param prefix - Optional 8-char hex prefix (default: "00000000")
 	 */
 	static readonly Sequence = (prefix = '00000000'): Layer.Layer<UUID7> =>
-		UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(Ports.UUIDPort, Ports.UUIDPort.Sequence(prefix))))
+		UUID7.DefaultWithoutDependencies.pipe(
+			Layer.provide(Layer.succeed(Ports.UUIDPort, Ports.UUIDPort.Sequence(prefix)))
+		)
 }

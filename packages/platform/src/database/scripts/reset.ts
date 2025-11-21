@@ -70,7 +70,7 @@ const program = Effect.gen(function* () {
      ORDER BY name;
 	`
 
-	const tableNames = tables.map(t => t.name)
+	const tableNames = tables.map((t) => t.name)
 	yield* Effect.logInfo('Found tables', { tables: tableNames })
 
 	// 2. Drop all tables (reverse order to handle FK dependencies)
@@ -78,7 +78,9 @@ const program = Effect.gen(function* () {
 		yield* Effect.logInfo('Dropping tables')
 
 		// Disable FK checks temporarily to avoid constraint errors
-		yield* sql`PRAGMA foreign_keys = OFF`
+		yield* sql`
+			PRAGMA foreign_keys = OFF;
+		`
 
 		for (const tableName of tableNames) {
 			yield* Effect.logDebug('Dropping table', { table: tableName })
@@ -87,7 +89,9 @@ const program = Effect.gen(function* () {
 		}
 
 		// Re-enable FK checks
-		yield* sql`PRAGMA foreign_keys = ON`
+		yield* sql`
+			PRAGMA foreign_keys = ON;
+		`
 
 		yield* Effect.logInfo('All tables dropped', { count: tableNames.length })
 	} else {
@@ -115,7 +119,7 @@ Effect.runPromise(program.pipe(Effect.provide(layer)))
 		console.log('ℹ️  Run "bun run db:migrate" to recreate schema')
 		process.exit(0)
 	})
-	.catch(error => {
+	.catch((error) => {
 		console.error('\n✗ Database reset failed:')
 		console.error(error)
 		process.exit(1)

@@ -14,7 +14,7 @@ export class ExecutionStarted extends Schema.TaggedClass<ExecutionStarted>()('Ex
 	...ServiceCallEventBase.fields,
 
 	/** Timestamp when HTTP request execution began (ISO8601) */
-	startedAt: Schema.DateTimeUtc,
+	startedAt: Schema.DateTimeUtc
 }) {
 	/**
 	 * Decode from wire format to validated domain event
@@ -64,7 +64,7 @@ export class ExecutionSucceeded extends Schema.TaggedClass<ExecutionSucceeded>()
 	/**
 	 * HTTP response metadata (status, headers, latency, body snippet)
 	 */
-	responseMeta: ResponseMeta,
+	responseMeta: ResponseMeta
 }) {
 	/**
 	 * Decode from wire format to validated domain event
@@ -112,7 +112,7 @@ export class ExecutionFailed extends Schema.TaggedClass<ExecutionFailed>()('Exec
 	/**
 	 * Timestamp when HTTP request failed (ISO8601)
 	 */
-	finishedAt: Schema.DateTimeUtc,
+	finishedAt: Schema.DateTimeUtc
 }) {
 	/**
 	 * Decode from wire format to validated domain event

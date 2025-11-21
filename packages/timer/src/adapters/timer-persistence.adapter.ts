@@ -40,7 +40,7 @@ class TimerScheduleRow extends Sql.Model.Class<TimerScheduleRow>('TimerScheduleR
 	/**
 	 * Tenant ID for multi-tenant isolation; Primary key component
 	 */
-	tenantId: Sql.Model.GeneratedByApp(TenantId),
+	tenantId: Sql.Model.GeneratedByApp(TenantId)
 }) {}
 
 /**
@@ -50,26 +50,26 @@ class TimerScheduleRow extends Sql.Model.Class<TimerScheduleRow>('TimerScheduleR
 const timerRecordToTimerEntry: (timer: TimerScheduleRow) => TimerEntry.Type = Match.type<TimerScheduleRow>().pipe(
 	Match.withReturnType<TimerEntry.Type>(),
 	Match.when(
-		row => row.state === 'Scheduled',
-		timerRow =>
+		(row) => row.state === 'Scheduled',
+		(timerRow) =>
 			new ScheduledTimer({
 				correlationId: timerRow.correlationId,
 				dueAt: timerRow.dueAt,
 				registeredAt: timerRow.registeredAt,
 				serviceCallId: timerRow.serviceCallId,
-				tenantId: timerRow.tenantId,
+				tenantId: timerRow.tenantId
 			})
 	),
 	Match.when(
-		row => row.state === 'Reached',
-		timerRow =>
+		(row) => row.state === 'Reached',
+		(timerRow) =>
 			new ReachedTimer({
 				correlationId: timerRow.correlationId,
 				dueAt: timerRow.dueAt,
 				reachedAt: Option.getOrThrow(timerRow.reachedAt),
 				registeredAt: timerRow.registeredAt,
 				serviceCallId: timerRow.serviceCallId,
-				tenantId: timerRow.tenantId,
+				tenantId: timerRow.tenantId
 			})
 	),
 	Match.orElseAbsurd
@@ -86,7 +86,7 @@ const scheduledTimerToTimerRecord = (scheduledTimer: TimerEntry.ScheduledTimer):
 		registeredAt: scheduledTimer.registeredAt,
 		serviceCallId: scheduledTimer.serviceCallId,
 		state: scheduledTimer._tag,
-		tenantId: scheduledTimer.tenantId,
+		tenantId: scheduledTimer.tenantId
 	})
 
 const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlClient> = Effect.gen(function* () {
@@ -108,7 +108,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 				new Ports.PersistenceError({
 					cause: error,
 					message: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
-					operation,
+					operation
 				})
 		)
 
@@ -124,17 +124,25 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 				Sql.SqlSchema.void({
 					execute: ({ tenantId, serviceCallId }) =>
 						sql`
-                DELETE
-                FROM timer_schedules
-                WHERE ${sql.and([sql`tenant_id = ${tenantId}`, sql`service_call_id = ${serviceCallId}`])};
+							DELETE FROM
+								timer_schedules
+							WHERE
+								${sql.and([
+									sql`
+										tenant_id = ${tenantId}
+									`,
+									sql`
+										service_call_id = ${serviceCallId}
+									`
+								])};
 						`,
-					Request: Ports.TimerScheduleKey,
+					Request: Ports.TimerScheduleKey
 				}),
 				mapSqlError('delete'),
 				Effect.tap(
 					Effect.annotateCurrentSpan({
 						serviceCallId: key.serviceCallId,
-						tenantId: key.tenantId,
+						tenantId: key.tenantId
 					})
 				)
 			)
@@ -152,18 +160,28 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 				Sql.SqlSchema.findOne({
 					execute: ({ tenantId, serviceCallId }) =>
 						sql`
-                SELECT *
-                FROM timer_schedules
-                WHERE ${sql.and([sql`tenant_id = ${tenantId}`, sql`service_call_id = ${serviceCallId}`])};
+							SELECT
+								*
+							FROM
+								timer_schedules
+							WHERE
+								${sql.and([
+									sql`
+										tenant_id = ${tenantId}
+									`,
+									sql`
+										service_call_id = ${serviceCallId}
+									`
+								])};
 						`,
 					Request: Ports.TimerScheduleKey,
-					Result: TimerScheduleRow,
+					Result: TimerScheduleRow
 				}),
 				mapSqlError('find'),
 				Effect.tap(
 					Effect.annotateCurrentSpan({
 						serviceCallId: key.serviceCallId,
-						tenantId: key.tenantId,
+						tenantId: key.tenantId
 					})
 				),
 				Effect.map(Option.map(timerRecordToTimerEntry))
@@ -189,20 +207,28 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 			pipe(
 				now,
 				Sql.SqlSchema.findAll({
-					execute: now =>
+					execute: (now) =>
 						sql`
-                SELECT *
-                FROM timer_schedules
-                WHERE ${sql.and([sql`state = 'Scheduled'`, sql`due_at <= ${now}`])}
-                ORDER BY due_at
-                    ASC,
-                         registered_at
-                    ASC,
-                         service_call_id
-                    ASC;
+							SELECT
+								*
+							FROM
+								timer_schedules
+							WHERE
+								${sql.and([
+									sql`
+										state = 'Scheduled'
+									`,
+									sql`
+										due_at <= ${now}
+									`
+								])}
+							ORDER BY
+								due_at ASC,
+								registered_at ASC,
+								service_call_id ASC;
 						`,
 					Request: Schema.DateTimeUtc,
-					Result: TimerScheduleRow,
+					Result: TimerScheduleRow
 				}),
 				mapSqlError('findDue'),
 				Effect.tap(Effect.annotateCurrentSpan({ now })),
@@ -224,22 +250,31 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 				Sql.SqlSchema.findOne({
 					execute: ({ tenantId, serviceCallId }) =>
 						sql`
-                SELECT *
-                FROM timer_schedules
-                WHERE ${sql.and([
-									sql`tenant_id = ${tenantId}`,
-									sql`service_call_id = ${serviceCallId}`,
-									sql`state = 'Scheduled'`,
+							SELECT
+								*
+							FROM
+								timer_schedules
+							WHERE
+								${sql.and([
+									sql`
+										tenant_id = ${tenantId}
+									`,
+									sql`
+										service_call_id = ${serviceCallId}
+									`,
+									sql`
+										state = 'Scheduled'
+									`
 								])};
 						`,
 					Request: Ports.TimerScheduleKey,
-					Result: TimerScheduleRow,
+					Result: TimerScheduleRow
 				}),
 				mapSqlError('findScheduledTimer'),
 				Effect.tap(
 					Effect.annotateCurrentSpan({
 						serviceCallId: key.serviceCallId,
-						tenantId: key.tenantId,
+						tenantId: key.tenantId
 					})
 				),
 				Effect.map(Option.map(timerRecordToTimerEntry)),
@@ -265,31 +300,40 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 				{
 					reachedAt: params.reachedAt,
 					serviceCallId: params.key.serviceCallId,
-					tenantId: params.key.tenantId,
+					tenantId: params.key.tenantId
 				},
 				Sql.SqlSchema.void({
 					execute: ({ reachedAt, tenantId, serviceCallId }) =>
 						sql`
-                UPDATE timer_schedules
-                SET state      = 'Reached',
-                    reached_at = ${reachedAt}
-                WHERE ${sql.and([
-									sql`tenant_id = ${tenantId}`,
-									sql`service_call_id = ${serviceCallId}`,
-									sql`state = 'Scheduled'`,
+							UPDATE
+								timer_schedules
+							SET
+								state = 'Reached',
+								reached_at = ${reachedAt}
+							WHERE
+								${sql.and([
+									sql`
+										tenant_id = ${tenantId}
+									`,
+									sql`
+										service_call_id = ${serviceCallId}
+									`,
+									sql`
+										state = 'Scheduled'
+									`
 								])};
 						`,
 					Request: Schema.Struct({
 						...Ports.TimerScheduleKey.fields,
-						reachedAt: Schema.DateTimeUtc,
-					}),
+						reachedAt: Schema.DateTimeUtc
+					})
 				}),
 				mapSqlError('markFired'),
 				Effect.tap(
 					Effect.annotateCurrentSpan({
 						reachedAt: params.reachedAt,
 						serviceCallId: params.key.serviceCallId,
-						tenantId: params.key.tenantId,
+						tenantId: params.key.tenantId
 					})
 				)
 			)
@@ -326,33 +370,42 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 				entry,
 				scheduledTimerToTimerRecord,
 				Sql.SqlSchema.void({
-					execute: timerRecord =>
-						sql`-- Upsert timer: insert new or update existing on conflict
--- Enforces full NO-OP for Reached timers (immutability after firing)
-INSERT INTO timer_schedules (tenant_id,
-                             service_call_id,
-                             correlation_id,
-                             due_at,
-                             registered_at,
-                             reached_at,
-                             state)
-VALUES (${timerRecord.tenantId},
-        ${timerRecord.serviceCallId},
-        ${timerRecord.correlationId},
-        ${timerRecord.dueAt},
-        ${timerRecord.registeredAt},
-        ${timerRecord.reachedAt},
-        ${timerRecord.state})
-ON CONFLICT (tenant_id, service_call_id)
-    DO UPDATE SET correlation_id = EXCLUDED.correlation_id,
-                  due_at         = EXCLUDED.due_at,
-                  registered_at  = EXCLUDED.registered_at,
-                  reached_at     = EXCLUDED.reached_at,
-                  state          = EXCLUDED.state
--- Block UPDATE entirely if existing timer already Reached (terminal state)
-WHERE timer_schedules.state != 'Reached';
-								`,
-					Request: TimerScheduleRow.insert,
+					execute: (timerRecord) =>
+						sql`
+							-- Upsert timer: insert new or update existing on conflict
+							-- Enforces full NO-OP for Reached timers (immutability after firing)
+							INSERT INTO
+								timer_schedules (
+									tenant_id,
+									service_call_id,
+									correlation_id,
+									due_at,
+									registered_at,
+									reached_at,
+									state
+								)
+							VALUES
+								(
+									${timerRecord.tenantId},
+									${timerRecord.serviceCallId},
+									${timerRecord.correlationId},
+									${timerRecord.dueAt},
+									${timerRecord.registeredAt},
+									${timerRecord.reachedAt},
+									${timerRecord.state}
+								) ON CONFLICT (tenant_id, service_call_id) DO
+							UPDATE
+							SET
+								correlation_id = EXCLUDED.correlation_id,
+								due_at = EXCLUDED.due_at,
+								registered_at = EXCLUDED.registered_at,
+								reached_at = EXCLUDED.reached_at,
+								state = EXCLUDED.state
+								-- Block UPDATE entirely if existing timer already Reached (terminal state)
+							WHERE
+								timer_schedules.state != 'Reached';
+						`,
+					Request: TimerScheduleRow.insert
 				}),
 				mapSqlError('save'),
 				Effect.tap(Effect.annotateCurrentSpan({ ...entry }))
@@ -365,7 +418,7 @@ WHERE timer_schedules.state != 'Reached';
 		findDue,
 		findScheduledTimer,
 		markFired,
-		save,
+		save
 	})
 })
 

@@ -145,7 +145,7 @@ export namespace Topics {
 		Orchestration.Commands,
 		Orchestration.Events,
 		Execution.Events,
-		Api.Commands,
+		Api.Commands
 	] as const
 
 	/**
@@ -198,32 +198,32 @@ export namespace Topics {
 		[Timer.Commands]: {
 			consumers: ['Timer'],
 			description: 'Commands consumed by Timer module (e.g., ScheduleTimer)',
-			producer: 'Orchestration',
+			producer: 'Orchestration'
 		},
 		[Timer.Events]: {
 			consumers: ['Orchestration'],
 			description: 'Events published by Timer module (e.g., DueTimeReached)',
-			producer: 'Timer',
+			producer: 'Timer'
 		},
 		[Orchestration.Commands]: {
 			consumers: ['Orchestration'],
 			description: 'Commands consumed by Orchestration module (none in MVP)',
-			producer: null,
+			producer: null
 		},
 		[Orchestration.Events]: {
 			consumers: ['Timer', 'Execution'],
 			description: 'Events published by Orchestration module (e.g., ServiceCallScheduled, ServiceCallSubmitted)',
-			producer: 'Orchestration',
+			producer: 'Orchestration'
 		},
 		[Execution.Events]: {
 			consumers: ['Orchestration'],
 			description: 'Events published by Execution module (e.g., ExecutionStarted, ExecutionSucceeded)',
-			producer: 'Execution',
+			producer: 'Execution'
 		},
 		[Api.Commands]: {
 			consumers: ['Orchestration'],
 			description: 'Commands from API module (e.g., SubmitServiceCall)',
-			producer: 'Api',
-		},
+			producer: 'Api'
+		}
 	} as const satisfies Record<Type, TopicMetadata>
 }

@@ -65,7 +65,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 * ```
 	 */
 	static readonly Default: Context.Tag.Service<UUIDPort> = UUIDPort.of({
-		randomUUIDv7: timestamp => Bun.randomUUIDv7('hex', timestamp),
+		randomUUIDv7: (timestamp) => Bun.randomUUIDv7('hex', timestamp)
 	})
 
 	/**
@@ -134,7 +134,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 				randomUUIDv7: () => {
 					const hex = (counter++).toString(16).padStart(12, '0')
 					return `${prefix}-0000-7000-8000-${hex}`
-				},
+				}
 			}
 		}
 		return UUIDPort.of(createService())

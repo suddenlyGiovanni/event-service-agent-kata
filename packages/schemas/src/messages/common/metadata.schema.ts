@@ -22,7 +22,7 @@ export const ResponseMeta = Schema.Struct({
 	/** Request duration in milliseconds (from HttpClientPort measurement) */
 	latencyMs: Schema.optional(Schema.Number),
 	/** HTTP status code (2xx range for success in MVP) */
-	status: Schema.Number,
+	status: Schema.Number
 })
 
 /**
@@ -50,7 +50,7 @@ export const ErrorMeta = Schema.Struct({
 	/** Request duration before failure in milliseconds */
 	latencyMs: Schema.optional(Schema.Number),
 	/** Human-readable error message (sanitized, no sensitive data) */
-	message: Schema.optional(Schema.String),
+	message: Schema.optional(Schema.String)
 })
 
 /**

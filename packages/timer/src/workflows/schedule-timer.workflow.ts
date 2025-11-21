@@ -62,7 +62,7 @@ export const scheduleTimerWorkflow: (
 			correlationId,
 			dueAt,
 			serviceCallId,
-			tenantId,
+			tenantId
 		})
 
 		const registeredAt = yield* clock.now()
@@ -72,7 +72,7 @@ export const scheduleTimerWorkflow: (
 			dueAt,
 			registeredAt,
 			serviceCallId,
-			tenantId,
+			tenantId
 		})
 
 		yield* persistence.save(scheduledTimer)

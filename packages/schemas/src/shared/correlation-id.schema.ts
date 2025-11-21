@@ -161,7 +161,7 @@ export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) 
 	 */
 	static readonly makeUUID7: (
 		time?: DateTime.Utc
-	) => Effect.Effect<CorrelationId.Type, ParseResult.ParseError, Service.UUID7> = time =>
+	) => Effect.Effect<CorrelationId.Type, ParseResult.ParseError, Service.UUID7> = (time) =>
 		Service.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
 			/*
@@ -181,7 +181,7 @@ export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) 
 	 * @returns Effect with validated CorrelationId
 	 * @throws ParseError - If value is not valid UUID7
 	 */
-	static readonly decode: (value: string) => Effect.Effect<CorrelationId.Type, ParseResult.ParseError> = value =>
+	static readonly decode: (value: string) => Effect.Effect<CorrelationId.Type, ParseResult.ParseError> = (value) =>
 		Schema.decode(CorrelationId)(value)
 
 	/**
@@ -191,8 +191,9 @@ export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) 
 	 *
 	 * @returns Either with CorrelationId or ParseError
 	 */
-	static readonly decodeEither: (value: string) => Either.Either<CorrelationId.Type, ParseResult.ParseError> = value =>
-		Schema.decodeEither(CorrelationId)(value)
+	static readonly decodeEither: (value: string) => Either.Either<CorrelationId.Type, ParseResult.ParseError> = (
+		value
+	) => Schema.decodeEither(CorrelationId)(value)
 }
 
 /**

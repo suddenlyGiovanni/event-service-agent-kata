@@ -150,7 +150,7 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 	 */
 	static readonly makeUUID7: (
 		time?: DateTime.Utc
-	) => Effect.Effect<EnvelopeId.Type, ParseResult.ParseError, Service.UUID7> = time =>
+	) => Effect.Effect<EnvelopeId.Type, ParseResult.ParseError, Service.UUID7> = (time) =>
 		Service.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
 			/*
@@ -170,7 +170,7 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 	 * @returns Effect with validated EnvelopeId
 	 * @throws ParseError - If value is not valid UUID7
 	 */
-	static readonly decode: (value: string) => Effect.Effect<EnvelopeId.Type, ParseResult.ParseError> = value =>
+	static readonly decode: (value: string) => Effect.Effect<EnvelopeId.Type, ParseResult.ParseError> = (value) =>
 		Schema.decode(EnvelopeId)(value)
 
 	/**
@@ -180,7 +180,7 @@ export class EnvelopeId extends UUID7.pipe(Schema.brand(EnvelopeIdBrand)) {
 	 *
 	 * @returns Either with EnvelopeId or ParseError
 	 */
-	static readonly decodeEither: (value: string) => Either.Either<EnvelopeId.Type, ParseResult.ParseError> = value =>
+	static readonly decodeEither: (value: string) => Either.Either<EnvelopeId.Type, ParseResult.ParseError> = (value) =>
 		Schema.decodeEither(EnvelopeId)(value)
 }
 

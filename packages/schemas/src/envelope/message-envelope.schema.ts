@@ -110,7 +110,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 */
 		aggregateId: Schema.optionalWith(ServiceCallId, {
 			as: 'Option',
-			exact: true,
+			exact: true
 		}),
 
 		/**
@@ -176,7 +176,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 */
 		causationId: Schema.optionalWith(EnvelopeId, {
 			as: 'Option',
-			exact: true,
+			exact: true
 		}),
 
 		/**
@@ -237,7 +237,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 */
 		correlationId: Schema.optionalWith(CorrelationId, {
 			as: 'Option',
-			exact: true,
+			exact: true
 		}),
 
 		/**
@@ -351,7 +351,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 			Messages.Execution.Events.ExecutionFailed.Tag,
 			// API Commands
 			Messages.Api.Commands.SubmitServiceCall.Tag
-		),
+		)
 	}).pipe(
 		/**
 		 * **Cross-Field Validation Filter**
@@ -548,7 +548,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	 */
 	static readonly matchPayload: <T extends MessageEnvelope.Type>(
 		envelope: T
-	) => Match.Matcher<T['payload'], Match.Types.Without<never>, T['payload'], never, T['payload']> = envelope =>
+	) => Match.Matcher<T['payload'], Match.Types.Without<never>, T['payload'], never, T['payload']> = (envelope) =>
 		Match.value(envelope.payload)
 }
 

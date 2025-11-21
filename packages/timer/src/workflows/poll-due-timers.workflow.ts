@@ -85,7 +85,7 @@ export class BatchProcessingError extends Schema.TaggedError<BatchProcessingErro
 	/** Array of failures for detailed logging/debugging */
 	failures: Schema.Array(Schema.Unknown),
 	/** Total number of timers attempted */
-	totalCount: Schema.Number,
+	totalCount: Schema.Number
 }) {}
 
 /**
@@ -128,13 +128,13 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
 	yield* Effect.annotateCurrentSpan({
 		'timer.dueAt': DateTime.formatIsoDateUtc(timer.dueAt),
 		'timer.serviceCallId': timer.serviceCallId,
-		'timer.tenantId': timer.tenantId,
+		'timer.tenantId': timer.tenantId
 	})
 
 	const dueTimeReachedEvent = new Messages.Timer.Events.DueTimeReached({
 		reachedAt: now,
 		serviceCallId: timer.serviceCallId,
-		tenantId: timer.tenantId,
+		tenantId: timer.tenantId
 	})
 
 	/*
@@ -148,19 +148,19 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
 	yield* eventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
 		Effect.provideService(MessageMetadata, {
 			causationId: Option.none(),
-			correlationId: timer.correlationId,
+			correlationId: timer.correlationId
 		})
 	)
 
 	yield* persistence.markFired({
 		key: { serviceCallId: timer.serviceCallId, tenantId: timer.tenantId },
-		reachedAt: now,
+		reachedAt: now
 	})
 
 	yield* Effect.logDebug('Timer fired successfully', {
 		dueAt: DateTime.formatIsoDateUtc(timer.dueAt),
 		serviceCallId: timer.serviceCallId,
-		tenantId: timer.tenantId,
+		tenantId: timer.tenantId
 	})
 })
 
@@ -188,12 +188,12 @@ export const pollDueTimersWorkflow: () => Effect.Effect<
 
 	yield* Effect.annotateCurrentSpan({
 		'timer.operation': 'batch-processing',
-		'timer.workflow': 'poll-due-timers',
+		'timer.workflow': 'poll-due-timers'
 	})
 
 	yield* Effect.logInfo('Polling due timers', {
 		dueCount: Chunk.size(dueTimers),
-		timestamp: DateTime.formatIso(now),
+		timestamp: DateTime.formatIso(now)
 	})
 
 	/*
@@ -220,32 +220,32 @@ export const pollDueTimersWorkflow: () => Effect.Effect<
 	 * See ADR-0002 for broker ordering guarantees.
 	 */
 	const [failures, successes] = yield* Effect.partition(dueTimers, processTimerFiring, {
-		concurrency: 1,
+		concurrency: 1
 	})
 
 	yield* Effect.logInfo('Timer batch processing completed', {
 		failedCount: failures.length,
 		successCount: successes.length,
-		totalCount: Chunk.size(dueTimers),
+		totalCount: Chunk.size(dueTimers)
 	})
 
 	if (failures.length > 0) {
 		yield* Effect.logWarning('Timer batch processing had failures', {
 			failedCount: failures.length,
 			failureRate: round((failures.length / Chunk.size(dueTimers)) * 100, 1),
-			totalCount: Chunk.size(dueTimers),
+			totalCount: Chunk.size(dueTimers)
 		})
 
 		return yield* Effect.fail(
 			new BatchProcessingError({
 				failedCount: failures.length,
 				failures,
-				totalCount: Chunk.size(dueTimers),
+				totalCount: Chunk.size(dueTimers)
 			})
 		)
 	}
 
 	yield* Effect.logInfo('All timers processed successfully', {
-		processedCount: successes.length,
+		processedCount: successes.length
 	})
 })

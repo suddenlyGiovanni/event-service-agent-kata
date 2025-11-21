@@ -24,13 +24,17 @@ export const withServiceCall = (key: Ports.TimerScheduleKey.Type) =>
 		return yield* pipe(
 			key,
 			Sql.SqlSchema.void({
-				execute: request =>
+				execute: (request) =>
 					sql`
-                  INSERT OR IGNORE INTO service_calls (tenant_id, service_call_id)
-                  VALUES (${request.tenantId},
-                          ${request.serviceCallId});
-                            `,
-				Request: Ports.TimerScheduleKey,
+						INSERT OR IGNORE
+							INTO service_calls (tenant_id, service_call_id)
+						VALUES
+							(
+								${request.tenantId},
+								${request.serviceCallId}
+							);
+					`,
+				Request: Ports.TimerScheduleKey
 			})
 		)
 	})

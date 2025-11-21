@@ -53,9 +53,9 @@ export class TimerEventBus {
 
 					const envelopeId: EnvelopeId.Type = yield* EnvelopeId.makeUUID7().pipe(
 						Effect.mapError(
-							parseError =>
+							(parseError) =>
 								new Ports.PublishError({
-									cause: `Failed to generate EnvelopeId: ${parseError}`,
+									cause: `Failed to generate EnvelopeId: ${parseError}`
 								})
 						),
 						Effect.provideService(UUID7, uuid)
@@ -75,7 +75,7 @@ export class TimerEventBus {
 						'message.causationId': Option.getOrUndefined(metadata.causationId),
 						'message.correlationId': Option.getOrUndefined(metadata.correlationId),
 						'message.envelope.id': envelopeId,
-						'message.type': dueTimeReached._tag,
+						'message.type': dueTimeReached._tag
 					})
 
 					const envelope: MessageEnvelope.Type = new MessageEnvelope({
@@ -116,7 +116,7 @@ export class TimerEventBus {
 						 *   latency for observability.
 						 */
 						timestampMs: yield* clock.now(),
-						type: dueTimeReached._tag,
+						type: dueTimeReached._tag
 					})
 
 					yield* eventBus.publish([envelope])
@@ -136,7 +136,7 @@ export class TimerEventBus {
 						correlationId: Option.getOrUndefined(metadata.correlationId),
 						envelopeId,
 						serviceCallId: dueTimeReached.serviceCallId,
-						tenantId: dueTimeReached.tenantId,
+						tenantId: dueTimeReached.tenantId
 					})
 				})
 
@@ -155,12 +155,12 @@ export class TimerEventBus {
 							 * listening to for commands.
 							 */
 							yield* Effect.logInfo('Subscribed to ScheduleTimer commands', {
-								topics: Topics.Timer.Commands,
+								topics: Topics.Timer.Commands
 							})
 
-							yield* eventBus.subscribe([Topics.Timer.Commands], envelope =>
+							yield* eventBus.subscribe([Topics.Timer.Commands], (envelope) =>
 								MessageEnvelope.matchPayload(envelope).pipe(
-									Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, command =>
+									Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, (command) =>
 										Effect.gen(function* () {
 											/**
 											 * Annotate span with inbound message metadata
@@ -177,7 +177,7 @@ export class TimerEventBus {
 												'message.causationId': Option.getOrUndefined(envelope.causationId),
 												'message.correlationId': Option.getOrUndefined(envelope.correlationId),
 												'message.envelope.id': envelope.id,
-												'message.type': envelope.type,
+												'message.type': envelope.type
 											})
 
 											/**
@@ -195,28 +195,26 @@ export class TimerEventBus {
 												correlationId: Option.getOrUndefined(envelope.correlationId),
 												envelopeId: envelope.id,
 												serviceCallId: command.serviceCallId,
-												tenantId: command.tenantId,
+												tenantId: command.tenantId
 											})
 
 											yield* handler(command, {
 												causationId: Option.some(envelope.id),
-												correlationId: envelope.correlationId,
+												correlationId: envelope.correlationId
 											})
-										})
-									),
+										})),
 									Match.orElse(() =>
 										Effect.logDebug('Ignoring non-ScheduleTimer message', {
-											receivedType: envelope.type,
+											receivedType: envelope.type
 										})
 									)
-								)
-							)
+								))
 						})
 				)
 
 				return Ports.TimerEventBusPort.of({
 					publishDueTimeReached,
-					subscribeToScheduleTimerCommands,
+					subscribeToScheduleTimerCommands
 				})
 			})
 		)
