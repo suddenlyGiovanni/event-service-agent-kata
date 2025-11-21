@@ -118,16 +118,16 @@ const executeRequestWorkflow = Effect.fn('Execution.ExecuteRequest')(function* (
 			eventBus.publish([
 				{
 					type: 'ExecutionFailed',
-					errorMeta: classifyError(error),
-				},
+					errorMeta: classifyError(error)
+				}
 			]),
 		onRight: (response) =>
 			eventBus.publish([
 				{
 					type: 'ExecutionSucceeded',
-					responseMeta: captureMetadata(response),
-				},
-			]),
+					responseMeta: captureMetadata(response)
+				}
+			])
 	})
 })
 ```

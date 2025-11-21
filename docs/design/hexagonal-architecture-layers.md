@@ -127,10 +127,9 @@ export interface OrchestrationPersistencePort {
 }
 
 // Tag for Effect dependency injection
-export const OrchestrationPersistencePort =
-	Context.GenericTag<OrchestrationPersistencePort>(
-		'@orchestration/PersistencePort'
-	)
+export const OrchestrationPersistencePort = Context.GenericTag<OrchestrationPersistencePort>(
+	'@orchestration/PersistencePort'
+)
 ```
 
 **Key Point:** This is **Dependency Inversion** - the domain defines the interface it needs; infrastructure must adapt to it.
@@ -147,9 +146,7 @@ export const OrchestrationPersistencePort =
 
 ```typescript ignore
 // packages/orchestration/src/adapters/sqlite-persistence.ts
-export class OrchestrationSqliteAdapter
-	implements OrchestrationPersistencePort
-{
+export class OrchestrationSqliteAdapter implements OrchestrationPersistencePort {
 	constructor(private readonly db: Database) {}
 
 	// Adapter translates domain model to/from DB
@@ -170,7 +167,7 @@ export class OrchestrationSqliteAdapter
 									serviceCall.id,
 									serviceCall.name,
 									serviceCall.status,
-									serviceCall.createdAt,
+									serviceCall.createdAt
 								]
 							)
 
@@ -184,7 +181,7 @@ export class OrchestrationSqliteAdapter
 								)
 							}
 						}),
-					catch: (error) => new PersistenceError({ cause: error }),
+					catch: (error) => new PersistenceError({ cause: error })
 				})
 			)
 		})
@@ -203,7 +200,7 @@ export class OrchestrationSqliteAdapter
                WHERE tenant_id = ? AND service_call_id = ?`,
 							[tenantId, id]
 						),
-					catch: (error) => new PersistenceError({ cause: error }),
+					catch: (error) => new PersistenceError({ cause: error })
 				})
 			)
 
@@ -235,11 +232,11 @@ export class OrchestrationSqliteAdapter
 ```typescript ignore
 // Inside adapter method
 await tx.run(
-  `INSERT INTO service_calls (
+	`INSERT INTO service_calls (
     tenant_id, service_call_id, name, status, created_at
   ) VALUES (?, ?, ?, ?, ?)`,
-  [serviceCall.tenantId, serviceCall.id, serviceCall.name, /* ... */]
-);
+	[serviceCall.tenantId, serviceCall.id, serviceCall.name /* ... */]
+)
 ```
 
 **Key Point:** SQL is an implementation detail hidden inside the adapter.
@@ -305,8 +302,7 @@ container.bind(OrchestrationPersistencePort).to(OrchestrationSqliteAdapter)
 @Injectable()
 class UseCase {
 	constructor(
-		@Inject(OrchestrationPersistencePort)
-		private readonly persistence: OrchestrationPersistencePort
+		@Inject(OrchestrationPersistencePort) private readonly persistence: OrchestrationPersistencePort
 	) {}
 }
 ```
@@ -361,10 +357,10 @@ sequenceDiagram
 
 ```typescript ignore
 // ✅ Good: Domain depends on interface
-function useCase(port: PersistencePort) { /* ... */ }
+function useCase(port: PersistencePort) {/* ... */}
 
 // ❌ Bad: Domain depends on implementation
-function useCase(adapter: SqliteAdapter) { /* ... */ }
+function useCase(adapter: SqliteAdapter) {/* ... */}
 ```
 
 ### 2. **Repository Pattern**
@@ -481,7 +477,7 @@ Effect.gen(function* () {
 	const event = new DueTimeReached({
 		tenantId: timer.tenantId,
 		serviceCallId: timer.serviceCallId,
-		reachedAt: now, // DateTime.Utc (domain type, not string)
+		reachedAt: now // DateTime.Utc (domain type, not string)
 	})
 
 	// Layer 2: Port (Domain-defined contract)
@@ -503,7 +499,7 @@ class TimerEventBusAdapter {
 				tenantId: event.tenantId,
 				aggregateId: event.serviceCallId,
 				timestampMs: DateTime.toEpochMillis(event.reachedAt),
-				correlationId: Option.none(), // Infrastructure metadata (not in domain event)
+				correlationId: Option.none() // Infrastructure metadata (not in domain event)
 			})
 
 			// Delegate to shared EventBusPort (accepts envelopes)
@@ -525,7 +521,7 @@ class TimerEventBusAdapter {
 const event = new DueTimeReached({
 	tenantId: timer.tenantId,
 	serviceCallId: timer.serviceCallId,
-	reachedAt: now,
+	reachedAt: now
 	// No correlationId field in DueTimeReached (pure domain event)
 })
 
@@ -533,7 +529,7 @@ const event = new DueTimeReached({
 const envelope = new MessageEnvelope({
 	id: yield * EnvelopeId.makeUUID7(),
 	payload: event,
-	correlationId: timer.correlationId, // Retrieved from timer aggregate
+	correlationId: timer.correlationId // Retrieved from timer aggregate
 	// ... other metadata
 })
 ```
@@ -547,7 +543,7 @@ const envelope = new MessageEnvelope({
 ### **Benefits**
 
 | Aspect               | Before (Timer, firedAt params)                                               | After (Pure Domain Events)                          |
-|----------------------|------------------------------------------------------------------------------|-----------------------------------------------------|
+| -------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------- |
 | **Port signature**   | `publishDueTimeReached(timer: ScheduledTimer, firedAt: DateTime.Utc)`        | `publishDueTimeReached(event: DueTimeReached.Type)` |
 | **Workflow concern** | Pass timer aggregate + timestamp                                             | Construct domain event                              |
 | **Testability**      | Mock expects timer+timestamp                                                 | Mock expects domain event                           |

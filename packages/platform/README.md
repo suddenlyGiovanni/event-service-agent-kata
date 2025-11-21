@@ -82,7 +82,7 @@ const envelope: MessageEnvelope.Type = {
 	type,
 	tenantId,
 	payload,
-	timestampMs,
+	timestampMs
 }
 ```
 
@@ -95,7 +95,7 @@ const request: RequestSpec = {
 	method: 'POST',
 	url: 'https://api.example.com',
 	headers: { 'Content-Type': 'application/json' },
-	body: '{"key": "value"}',
+	body: '{"key": "value"}'
 }
 ```
 

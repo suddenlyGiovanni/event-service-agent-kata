@@ -25,23 +25,20 @@ During PL-14 schema migration, we discovered that the `@event-service-agent/cont
 // contracts defines plain DTO shape
 import { Effect, Schema } from 'effect'
 
-
 export const DomainMessage = Schema.Union(
-		Schema.Struct({
-			_tag: Schema.Literal('DueTimeReached'),
-			tenantId: Schema.String, // ← Lost TenantId brand!
-		}),
+	Schema.Struct({
+		_tag: Schema.Literal('DueTimeReached'),
+		tenantId: Schema.String // ← Lost TenantId brand!
+	})
 )
 
 Effect.gen(function* () {
-
 	// Consumer can't use decoded payload:
 	const envelope = yield* MessageEnvelope.decodeJson(json)
 	yield* workflow.handle(envelope.payload)
 	//                     ^^^^^^^^^^^^^^^^
 	// ❌ TYPE MISMATCH: plain object vs branded types
 })
-
 ```
 
 **Fatal DX flaw**: Decoded payload loses type information (brands, validation), defeating the purpose of Effect Schema.

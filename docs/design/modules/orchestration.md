@@ -72,7 +72,7 @@ const finalServiceCallId = serviceCallId ?? yield * ServiceCallId.makeUUID7()
 const event = new ServiceCallSubmitted({
 	tenantId,
 	serviceCallId: finalServiceCallId,
-	name: commandData.name,
+	name: commandData.name
 	// ... other fields
 })
 
@@ -83,7 +83,7 @@ yield *
 	eventBus.publishServiceCallSubmitted(event).pipe(
 		Effect.provideService(MessageMetadata, {
 			correlationId, // From command (pass-through)
-			causationId: commandMetadata.causationId, // From command envelope
+			causationId: commandMetadata.causationId // From command envelope
 		})
 	)
 ```
@@ -106,7 +106,7 @@ const envelope: MessageEnvelope.Type = new MessageEnvelope({
 	timestampMs: yield * clock.now(),
 	correlationId: metadata.correlationId,
 	causationId: metadata.causationId,
-	aggregateId: Option.some(event.serviceCallId),
+	aggregateId: Option.some(event.serviceCallId)
 })
 
 yield * eventBus.publish([envelope])

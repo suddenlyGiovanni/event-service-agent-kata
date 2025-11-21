@@ -64,7 +64,7 @@ await db.upsert({ tenantId, serviceCallId, dueAt, status: 'Scheduled' })
 const event = new DueTimeReached({
 	tenantId,
 	serviceCallId,
-	reachedAt: firedAt, // DateTime.Utc (not ISO string)
+	reachedAt: firedAt // DateTime.Utc (not ISO string)
 })
 
 // Publish with MessageMetadata Context (workflow provides)
@@ -72,7 +72,7 @@ yield *
 	eventBus.publishDueTimeReached(event).pipe(
 		Effect.provideService(MessageMetadata, {
 			correlationId: timer.correlationId, // From timer aggregate
-			causationId: Option.none(), // Time-triggered
+			causationId: Option.none() // Time-triggered
 		})
 	)
 ```
@@ -95,7 +95,7 @@ const envelope: MessageEnvelope.Type = new MessageEnvelope({
 	timestampMs: yield * clock.now(),
 	correlationId: metadata.correlationId, // From Context
 	causationId: metadata.causationId, // From Context
-	aggregateId: Option.some(dueTimeReached.serviceCallId),
+	aggregateId: Option.some(dueTimeReached.serviceCallId)
 })
 
 yield * eventBus.publish([envelope])

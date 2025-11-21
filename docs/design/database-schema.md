@@ -274,13 +274,13 @@ While all tables currently live in a single SQLite file (`event_service.db`), th
 
 ### Extraction Readiness
 
-| Table                 | Owner Module  | Extraction Complexity | Blocker                                        |
-| --------------------- | ------------- | --------------------- | ---------------------------------------------- |
-| `service_calls`       | Orchestration | 🔴 High               | Referenced by all other domain tables (FK)     |
-| `service_call_tags`   | Orchestration | 🔴 High               | Requires JOIN with `service_calls` for queries |
-| `timer_schedules`     | Timer         | 🟡 Medium             | FK to `service_calls` (could use events)       |
-| `http_execution_log`  | Execution     | 🟢 Low                | FK to `service_calls` (could use events)       |
-| `outbox`              | Platform      | 🔴 High               | Shared infrastructure (all modules append)     |
+| Table                | Owner Module  | Extraction Complexity | Blocker                                        |
+| -------------------- | ------------- | --------------------- | ---------------------------------------------- |
+| `service_calls`      | Orchestration | 🔴 High               | Referenced by all other domain tables (FK)     |
+| `service_call_tags`  | Orchestration | 🔴 High               | Requires JOIN with `service_calls` for queries |
+| `timer_schedules`    | Timer         | 🟡 Medium             | FK to `service_calls` (could use events)       |
+| `http_execution_log` | Execution     | 🟢 Low                | FK to `service_calls` (could use events)       |
+| `outbox`             | Platform      | 🔴 High               | Shared infrastructure (all modules append)     |
 
 **Key Principle:** Think of each table as if it could live in its own database, even though we use a single file today. This mental model ensures clean module boundaries and event-driven communication.
 
@@ -322,8 +322,8 @@ FOREIGN KEY (tenant_id, service_call_id)
 **Extraction strategy:**
 
 1. Replace FK with event-driven consistency:
-    - Orchestration publishes `ServiceCallDeleted` event
-    - Timer consumes event and deletes orphaned timers
+   - Orchestration publishes `ServiceCallDeleted` event
+   - Timer consumes event and deletes orphaned timers
 2. Timer validates `service_call_id` existence via query to Orchestration (tolerate stale data)
 3. Move `timer_schedules` table to `timer.db`
 

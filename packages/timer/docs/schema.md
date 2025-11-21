@@ -409,12 +409,12 @@ export interface TimerPersistencePort {
 		tenantId: TenantId,
 		now: DateTime.Utc
 	): Effect.Effect<Chunk<TimerEntry>, PersistenceError>
-	
+
 	// Tenant ID embedded in TimerEntry domain object
 	scheduleTimer(
 		entry: TimerEntry
 	): Effect.Effect<void, PersistenceError>
-	
+
 	// Tenant ID required for all mutations
 	markFired(
 		tenantId: TenantId,
@@ -428,17 +428,17 @@ export interface TimerPersistencePort {
 
 ```typescript ignore
 namespace CorrectExamples {
-// ✅ Correct: Tenant-scoped query (all WHERE clauses include tenant_id)
+	// ✅ Correct: Tenant-scoped query (all WHERE clauses include tenant_id)
 	const timers = await db.query(
-			'SELECT * FROM timer_schedules WHERE tenant_id = ? AND state = ?',
-			[tenantId, 'Scheduled'],
+		'SELECT * FROM timer_schedules WHERE tenant_id = ? AND state = ?',
+		[tenantId, 'Scheduled']
 	)
 }
 namespace WrongExamples {
 	// ❌ Wrong: Global query (would leak cross-tenant data)
 	const timers = await db.query(
-			'SELECT * FROM timer_schedules WHERE state = ?',
-			['Scheduled'],
+		'SELECT * FROM timer_schedules WHERE state = ?',
+		['Scheduled']
 	)
 }
 ```
@@ -474,7 +474,7 @@ it.effect('should not return timers from other tenants', () =>
 				serviceCallId: ServiceCallId.make(),
 				correlationId: CorrelationId.make(),
 				dueAt: now,
-				registeredAt: now,
+				registeredAt: now
 			})
 		)
 
@@ -484,7 +484,7 @@ it.effect('should not return timers from other tenants', () =>
 				serviceCallId: ServiceCallId.make(),
 				correlationId: CorrelationId.make(),
 				dueAt: now,
-				registeredAt: now,
+				registeredAt: now
 			})
 		)
 
@@ -494,8 +494,7 @@ it.effect('should not return timers from other tenants', () =>
 		// Assert: Only tenant A's timer returned
 		expect(Chunk.size(results)).toBe(1)
 		expect(Chunk.unsafeHead(results).tenantId).toEqual(tenantA)
-	})
-)
+	}))
 ```
 
 ### Index Coverage Test (EXPLAIN QUERY PLAN)
@@ -504,13 +503,13 @@ it.effect('should not return timers from other tenants', () =>
 import { SqlClient } from '@effect/sql'
 
 it.effect('should use index for polling query', () =>
-		Effect.gen(function* () {
-			const sql = yield* SqlClient.SqlClient
+	Effect.gen(function* () {
+		const sql = yield* SqlClient.SqlClient
 
-			// Query plan for polling query
-			const plan = yield* sql<{
-				detail: string
-			}>`EXPLAIN QUERY PLAN
+		// Query plan for polling query
+		const plan = yield* sql<{
+			detail: string
+		}>`EXPLAIN QUERY PLAN
             SELECT * FROM timer_schedules
             WHERE tenant_id = 'tenant-a'
               AND state = 'Scheduled'
@@ -518,11 +517,10 @@ it.effect('should use index for polling query', () =>
             ORDER BY due_at ASC
             LIMIT 100`
 
-			// Assert: Index scan (not table scan)
-			expect(plan[0].detail).toContain('USING INDEX idx_timer_schedules_due_at')
-			expect(plan[0].detail).not.toContain('SCAN') // No full table scan
-		}),
-)
+		// Assert: Index scan (not table scan)
+		expect(plan[0].detail).toContain('USING INDEX idx_timer_schedules_due_at')
+		expect(plan[0].detail).not.toContain('SCAN') // No full table scan
+	}))
 ```
 
 ### FK Constraint Test
@@ -548,7 +546,7 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 				serviceCallId,
 				correlationId: CorrelationId.make(),
 				dueAt: yield* ClockPort.pipe(Effect.flatMap((c) => c.now())),
-				registeredAt: yield* ClockPort.pipe(Effect.flatMap((c) => c.now())),
+				registeredAt: yield* ClockPort.pipe(Effect.flatMap((c) => c.now()))
 			})
 		)
 
@@ -569,8 +567,7 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 		`
 
 		expect(timers[0].count).toBe(0)
-	})
-)
+	}))
 ```
 
 ---
@@ -580,7 +577,7 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 ### Query Complexity
 
 | Query                   | Index Used                           | Complexity   | Notes                                    |
-|-------------------------|--------------------------------------|--------------|------------------------------------------|
+| ----------------------- | ------------------------------------ | ------------ | ---------------------------------------- |
 | Schedule Timer (upsert) | PK `(tenant_id, service_call_id)`    | O(log N)     | B-tree insert/update                     |
 | Find Due Timers         | `idx_timer_schedules_due_at`         | O(log N + K) | K = LIMIT (bounded)                      |
 | Mark Fired              | PK `(tenant_id, service_call_id)`    | O(log N)     | Single-row update                        |
@@ -611,14 +608,14 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 **Potential bottlenecks (future considerations):**
 
 1. **Write contention:** Many concurrent `scheduleTimer` calls
-    - Mitigation: SQLite WAL mode (concurrent reads during writes)
-    - Mitigation: Connection pooling (reduce lock contention)
+   - Mitigation: SQLite WAL mode (concurrent reads during writes)
+   - Mitigation: Connection pooling (reduce lock contention)
 2. **Polling hot path:** Frequent polling queries
-    - Mitigation: Index coverage (no table scan)
-    - Mitigation: LIMIT bounds result set
+   - Mitigation: Index coverage (no table scan)
+   - Mitigation: LIMIT bounds result set
 3. **Index maintenance:** B-tree rebalance on insert/update
-    - Acceptable: O(log N) insertion cost
-    - Alternative: Batch upserts (amortized cost)
+   - Acceptable: O(log N) insertion cost
+   - Alternative: Batch upserts (amortized cost)
 
 **Not a bottleneck:**
 
@@ -644,20 +641,20 @@ it.effect('should cascade delete timer when ServiceCall deleted', () =>
 
 ```typescript ignore
 // Step 1: Create new table with full schema
-yield* sql`CREATE TABLE timer_schedules_new (...)`
+yield * sql`CREATE TABLE timer_schedules_new (...)`
 
 // Step 2: Copy data (if any exists)
-yield* sql`INSERT INTO timer_schedules_new SELECT ... FROM timer_schedules`
+yield * sql`INSERT INTO timer_schedules_new SELECT ... FROM timer_schedules`
 
 // Step 3: Drop old table
-yield* sql`DROP TABLE timer_schedules`
+yield * sql`DROP TABLE timer_schedules`
 
 // Step 4: Rename new table
-yield* sql`ALTER TABLE timer_schedules_new RENAME TO timer_schedules`
+yield * sql`ALTER TABLE timer_schedules_new RENAME TO timer_schedules`
 
 // Step 5: Create indexes
-yield* sql`CREATE INDEX idx_timer_schedules_due_at ...`
-yield* sql`CREATE INDEX idx_timer_schedules_correlation_id ...`
+yield * sql`CREATE INDEX idx_timer_schedules_due_at ...`
+yield * sql`CREATE INDEX idx_timer_schedules_correlation_id ...`
 ```
 
 **Why recreate table:**

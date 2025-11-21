@@ -138,11 +138,11 @@ Submitted → Scheduled → Running → Succeeded
 
 ```typescript
 type ServiceCall =
-  | { status: 'Submitted'; name: string; requestSpec: RequestSpec; /* ...*/ }
-  | { status: 'Scheduled'; dueAt: DateTime.Utc; /* ...*/ }
-  | { status: 'Running'; startedAt: DateTime.Utc; /* ...*/ }
-  | { status: 'Succeeded'; responseMeta: ResponseMeta; /* ...*/ }
-  | { status: 'Failed'; errorMeta: ErrorMeta; /* ...*/ }
+	| { status: 'Submitted'; name: string; requestSpec: RequestSpec /* ...*/ }
+	| { status: 'Scheduled'; dueAt: DateTime.Utc /* ...*/ }
+	| { status: 'Running'; startedAt: DateTime.Utc /* ...*/ }
+	| { status: 'Succeeded'; responseMeta: ResponseMeta /* ...*/ }
+	| { status: 'Failed'; errorMeta: ErrorMeta /* ...*/ }
 
 // State transition functions (pure)
 declare const schedule: (call: Submitted, dueAt: DateTime.Utc) => Scheduled
@@ -168,7 +168,7 @@ const submitWorkflow = Effect.fn('Orchestration.Submit')(function* (
 		tenantId: command.tenantId,
 		name: command.name,
 		requestSpec: command.requestSpec,
-		submittedAt: yield* Clock.currentTimeMillis,
+		submittedAt: yield* Clock.currentTimeMillis
 	})
 
 	// Persist

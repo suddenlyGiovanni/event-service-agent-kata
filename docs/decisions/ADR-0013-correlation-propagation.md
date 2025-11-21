@@ -52,30 +52,30 @@ Pass metadata alongside domain event via separate context object.
 ```typescript ignore
 // Port signature
 interface PublishContext {
-  readonly correlationId: Option.Option<CorrelationId>
-  readonly causationId: Option.Option<EnvelopeId>
+	readonly correlationId: Option.Option<CorrelationId>
+	readonly causationId: Option.Option<EnvelopeId>
 }
 
 declare const publishDueTimeReached: (
-  event: DueTimeReached,
-  context: PublishContext
+	event: DueTimeReached,
+	context: PublishContext
 ) => Effect<void, PublishError>
 
 // Workflow
-yield* eventBus.publishDueTimeReached(
-  dueTimeReachedEvent,
-  {
-    correlationId: timer.correlationId,
-    causationId: Option.none()
-  }
+yield * eventBus.publishDueTimeReached(
+	dueTimeReachedEvent,
+	{
+		correlationId: timer.correlationId,
+		causationId: Option.none()
+	}
 )
 
 // Adapter
 const envelope = new MessageEnvelope({
-  payload: event,
-  correlationId: context.correlationId,
-  causationId: context.causationId,
-  // ...
+	payload: event,
+	correlationId: context.correlationId,
+	causationId: context.causationId
+	// ...
 })
 ```
 
@@ -109,12 +109,12 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
 		reachedAt: Schema.DateTimeUtc,
 		correlationId: Schema.optionalWith(CorrelationId, {
 			as: 'Option',
-			exact: true,
+			exact: true
 		}),
 		causationId: Schema.optionalWith(EnvelopeId, {
 			as: 'Option',
-			exact: true,
-		}),
+			exact: true
+		})
 	}
 ) {}
 ```
@@ -141,17 +141,17 @@ Adapter fetches aggregate to get metadata before wrapping.
 
 ```typescript ignore
 // Adapter queries persistence
-const publishDueTimeReached = (event: DueTimeReached) => Effect.gen(function* () {
-	const persistence = yield* TimerPersistencePort
-	const timer = yield* persistence.find(event.tenantId, event.serviceCallId)
+const publishDueTimeReached = (event: DueTimeReached) =>
+	Effect.gen(function* () {
+		const persistence = yield* TimerPersistencePort
+		const timer = yield* persistence.find(event.tenantId, event.serviceCallId)
 
-	const envelope = new MessageEnvelope({
-		payload: event,
-		correlationId: Option.flatMap(timer, t => t.correlationId),
-		// ...
+		const envelope = new MessageEnvelope({
+			payload: event,
+			correlationId: Option.flatMap(timer, (t) => t.correlationId)
+			// ...
+		})
 	})
-})
-
 ```
 
 **Pros**:
@@ -177,8 +177,8 @@ Domain events carry aggregate reference.
 
 ```typescript ignore
 declare const publishDueTimeReached: (
-  event: DueTimeReached,
-  timer: TimerEntry
+	event: DueTimeReached,
+	timer: TimerEntry
 ) => Effect<void, PublishError>
 ```
 

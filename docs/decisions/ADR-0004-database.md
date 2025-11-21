@@ -227,8 +227,8 @@ export class OrchestrationSqliteAdapter implements OrchestrationPersistencePort 
 						entity.id,
 						entity.name,
 						entity.status,
-						entity.createdAt,
-					],
+						entity.createdAt
+					]
 				)
 			})
 		)

@@ -9,6 +9,7 @@
 		"proseWrap": "preserve",
 		"semiColons": false,
 		"singleQuote": true,
+		"trailingCommas": "never",
 		"useBraces": "preferNone",
 		"useTabs": true
 	},

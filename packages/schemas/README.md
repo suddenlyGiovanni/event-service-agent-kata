@@ -39,7 +39,7 @@ import { DueTimeReached } from '@event-service-agent/schemas/messages/timer'
 const event = new DueTimeReached({
 	tenantId,
 	serviceCallId,
-	reachedAt: timestamp,
+	reachedAt: timestamp
 }) // Validated at construction
 ```
 
