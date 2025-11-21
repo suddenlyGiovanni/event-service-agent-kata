@@ -6,6 +6,6 @@ export default defineConfig({
 		environment: 'node',
 		include: ['src/**/*.test.ts'],
 		name: 'schemas',
-		passWithNoTests: true,
-	},
+		passWithNoTests: true
+	}
 })
