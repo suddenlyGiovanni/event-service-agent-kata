@@ -225,11 +225,11 @@ Keep Orchestration co-located with the DB to maintain the single-writer constrai
 ### Evolution Path (summary)
 
 - See Migration/Extraction Paths below for details. In short:
-  - Extract Execution workers when IO concurrency or isolation signals appear; preserve ordering with partition key `tenantId.serviceCallId`; Orchestration unchanged.
-  - Extract API when edge traffic or release cadence diverges; API continues to publish `SubmitServiceCall` and read via DB or a read service if introduced.
-  - Timer becomes its own service only if the broker cannot meet delayed-delivery needs (ADR-0003).
-  - Promote DB (SQLite → Postgres) when write concurrency, size, or ops requirements demand; `PersistencePort` keeps core stable; outbox pattern remains.
-  - Expand observability (tracing across services) after extractions; keep `tenantId`, `serviceCallId`, `correlationId` throughout.
+    - Extract Execution workers when IO concurrency or isolation signals appear; preserve ordering with partition key `tenantId.serviceCallId`; Orchestration unchanged.
+    - Extract API when edge traffic or release cadence diverges; API continues to publish `SubmitServiceCall` and read via DB or a read service if introduced.
+    - Timer becomes its own service only if the broker cannot meet delayed-delivery needs (ADR-0003).
+    - Promote DB (SQLite → Postgres) when write concurrency, size, or ops requirements demand; `PersistencePort` keeps core stable; outbox pattern remains.
+    - Expand observability (tracing across services) after extractions; keep `tenantId`, `serviceCallId`, `correlationId` throughout.
 
 ## Consequences
 

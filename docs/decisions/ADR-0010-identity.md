@@ -49,8 +49,7 @@ const serviceCallId = result.id // Only available NOW!
 
 ```typescript ignore
 // ✅ SOLUTION: Generate ID BEFORE insert
-const serviceCallId = clientProvidedId ??
-	crypto.randomUUID() // UUID v7 preferred
+const serviceCallId = clientProvidedId ?? crypto.randomUUID() // UUID v7 preferred
 
 // ✅ Can check idempotency BEFORE insert
 const existing = await db.findBy({ tenantId, serviceCallId })
@@ -69,15 +68,15 @@ await db.transaction(async (tx) => {
 ### UUID v4 vs UUID v7
 
 - **UUID v4** — Random (122 bits entropy), no temporal ordering
-  - ❌ Poor database index locality (random inserts fragment B-trees)
-  - ❌ Poor cache locality (hot keys scattered across index)
-  - ❌ Can't sort by creation time
+    - ❌ Poor database index locality (random inserts fragment B-trees)
+    - ❌ Poor cache locality (hot keys scattered across index)
+    - ❌ Can't sort by creation time
 
 - **UUID v7** — Time-ordered (48-bit millisecond timestamp + 74 bits randomness)
-  - ✅ Natural insertion order (better B-tree locality)
-  - ✅ Better cache hit rate (recent IDs cluster together)
-  - ✅ Sortable by timestamp (useful for streams/events)
-  - ✅ Sufficient entropy (74 bits random = collision-resistant)
+    - ✅ Natural insertion order (better B-tree locality)
+    - ✅ Better cache hit rate (recent IDs cluster together)
+    - ✅ Sortable by timestamp (useful for streams/events)
+    - ✅ Sufficient entropy (74 bits random = collision-resistant)
 
 **Decision:** Use UUID v7 for time-series data (ServiceCallId, EnvelopeId).
 

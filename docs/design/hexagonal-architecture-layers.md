@@ -113,17 +113,11 @@ export const submitServiceCallWorkflow = (
 // packages/orchestration/src/ports/persistence.ts
 export interface OrchestrationPersistencePort {
 	// Interface shaped by DOMAIN needs, not DB capabilities
-	getServiceCall(
-		tenantId: TenantId,
-		id: ServiceCallId
-	): Effect<ServiceCall | null, PersistenceError>
+	getServiceCall(tenantId: TenantId, id: ServiceCallId): Effect<ServiceCall | null, PersistenceError>
 
 	saveServiceCall(serviceCall: ServiceCall): Effect<void, PersistenceError>
 
-	listServiceCalls(
-		tenantId: TenantId,
-		filters: ListFilters
-	): Effect<ServiceCall[], PersistenceError>
+	listServiceCalls(tenantId: TenantId, filters: ListFilters): Effect<ServiceCall[], PersistenceError>
 }
 
 // Tag for Effect dependency injection
@@ -187,10 +181,7 @@ export class OrchestrationSqliteAdapter implements OrchestrationPersistencePort 
 		})
 	}
 
-	getServiceCall(
-		tenantId: TenantId,
-		id: ServiceCallId
-	): Effect<ServiceCall | null, PersistenceError> {
+	getServiceCall(tenantId: TenantId, id: ServiceCallId): Effect<ServiceCall | null, PersistenceError> {
 		return Effect.gen(function* (_) {
 			const row = yield* _(
 				Effect.tryPromise({
@@ -278,15 +269,10 @@ const db = new Database('./data/event_service.db')
 const sqliteAdapter = new OrchestrationSqliteAdapter(db)
 
 // 3. Wire adapter to port (Dependency Injection)
-const OrchestrationPersistenceLayer = Layer.succeed(
-	OrchestrationPersistencePort,
-	sqliteAdapter
-)
+const OrchestrationPersistenceLayer = Layer.succeed(OrchestrationPersistencePort, sqliteAdapter)
 
 // 4. Provide layer to use cases
-const program = submitServiceCall(request).pipe(
-	Effect.provide(OrchestrationPersistenceLayer)
-)
+const program = submitServiceCall(request).pipe(Effect.provide(OrchestrationPersistenceLayer))
 
 // 5. Run the program
 Effect.runPromise(program)
@@ -302,7 +288,8 @@ container.bind(OrchestrationPersistencePort).to(OrchestrationSqliteAdapter)
 @Injectable()
 class UseCase {
 	constructor(
-		@Inject(OrchestrationPersistencePort) private readonly persistence: OrchestrationPersistencePort
+		@Inject(OrchestrationPersistencePort)
+		private readonly persistence: OrchestrationPersistencePort
 	) {}
 }
 ```
@@ -357,10 +344,14 @@ sequenceDiagram
 
 ```typescript ignore
 // ✅ Good: Domain depends on interface
-function useCase(port: PersistencePort) {/* ... */}
+function useCase(port: PersistencePort) {
+	/* ... */
+}
 
 // ❌ Bad: Domain depends on implementation
-function useCase(adapter: SqliteAdapter) {/* ... */}
+function useCase(adapter: SqliteAdapter) {
+	/* ... */
+}
 ```
 
 ### 2. **Repository Pattern**
@@ -396,10 +387,7 @@ function useCase(adapter: SqliteAdapter) {/* ... */}
 
 ```typescript ignore
 // Real adapter talks to SQLite
-const prodLayer = Layer.succeed(
-	PersistencePort,
-	new OrchestrationSqliteAdapter(db)
-)
+const prodLayer = Layer.succeed(PersistencePort, new OrchestrationSqliteAdapter(db))
 
 const program = submitServiceCall(request).pipe(Effect.provide(prodLayer))
 ```
@@ -423,10 +411,7 @@ class InMemoryPersistenceAdapter implements OrchestrationPersistencePort {
 }
 
 // Inject mock instead of real DB
-const testLayer = Layer.succeed(
-	PersistencePort,
-	new InMemoryPersistenceAdapter()
-)
+const testLayer = Layer.succeed(PersistencePort, new InMemoryPersistenceAdapter())
 
 const program = submitServiceCall(request).pipe(
 	Effect.provide(testLayer) // Same use case, different adapter!

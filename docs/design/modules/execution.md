@@ -113,12 +113,12 @@ Inputs/Outputs Recap
 
 - Inputs: [StartExecution] (command)
 - Outputs:
-  - [ExecutionStarted],
-  - [ExecutionSucceeded] OR [ExecutionFailed] (events)
+    - [ExecutionStarted],
+    - [ExecutionSucceeded] OR [ExecutionFailed] (events)
 - Ports:
-  - [HttpClientPort],
-  - [EventBusPort],
-  - [ClockPort]
+    - [HttpClientPort],
+    - [EventBusPort],
+    - [ClockPort]
 - Storage: none (stateless)
 
 Sequence (StartExecution HTTP Outcome)

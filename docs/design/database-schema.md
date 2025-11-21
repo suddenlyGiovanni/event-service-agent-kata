@@ -290,9 +290,9 @@ While all tables currently live in a single SQLite file (`event_service.db`), th
 
 ```sql
 -- Find ServiceCalls with tag "urgent" and status "Scheduled"
-SELECT sc.* 
+SELECT sc.*
 FROM service_calls sc
-JOIN service_call_tags sct ON sc.tenant_id = sct.tenant_id 
+JOIN service_call_tags sct ON sc.tenant_id = sct.tenant_id
                            AND sc.service_call_id = sct.service_call_id
 WHERE sc.tenant_id = ?
   AND sc.status = 'Scheduled'
@@ -314,16 +314,16 @@ WHERE sc.tenant_id = ?
 **Current constraint:** FK to `service_calls` ensures referential integrity
 
 ```sql
-FOREIGN KEY (tenant_id, service_call_id) 
-    REFERENCES service_calls(tenant_id, service_call_id) 
+FOREIGN KEY (tenant_id, service_call_id)
+    REFERENCES service_calls(tenant_id, service_call_id)
     ON DELETE CASCADE
 ```
 
 **Extraction strategy:**
 
 1. Replace FK with event-driven consistency:
-   - Orchestration publishes `ServiceCallDeleted` event
-   - Timer consumes event and deletes orphaned timers
+    - Orchestration publishes `ServiceCallDeleted` event
+    - Timer consumes event and deletes orphaned timers
 2. Timer validates `service_call_id` existence via query to Orchestration (tolerate stale data)
 3. Move `timer_schedules` table to `timer.db`
 
@@ -400,7 +400,7 @@ All query indexes lead with `tenant_id`:
 FKs include `tenant_id` to preserve referential integrity within tenant:
 
 ```sql
-FOREIGN KEY (tenant_id, service_call_id) 
+FOREIGN KEY (tenant_id, service_call_id)
     REFERENCES service_calls(tenant_id, service_call_id)
 ```
 
@@ -483,8 +483,8 @@ CREATE TABLE timer_schedules_new (
 ) STRICT;
 
 -- Step 2: Copy data from old table (with transformations if needed)
-INSERT INTO timer_schedules_new 
-SELECT tenant_id, service_call_id, ... 
+INSERT INTO timer_schedules_new
+SELECT tenant_id, service_call_id, ...
 FROM timer_schedules;
 
 -- Step 3: Drop old table
@@ -494,7 +494,7 @@ DROP TABLE timer_schedules;
 ALTER TABLE timer_schedules_new RENAME TO timer_schedules;
 
 -- Step 5: Recreate indexes
-CREATE INDEX idx_timer_schedules_due_at 
+CREATE INDEX idx_timer_schedules_due_at
 ON timer_schedules(tenant_id, state, due_at);
 ```
 
@@ -582,18 +582,18 @@ Every module adapter MUST test:
 Detailed schema documentation per module:
 
 - **Timer:** [`packages/timer/docs/schema.md`](../../packages/timer/docs/schema.md)
-  - Timer polling query patterns
-  - State transition semantics
-  - Idempotency guarantees
+    - Timer polling query patterns
+    - State transition semantics
+    - Idempotency guarantees
 
 - **Orchestration:** (Future) `packages/orchestration/docs/schema.md`
-  - ServiceCall aggregate schema
-  - Tag query patterns
-  - Status transition rules
+    - ServiceCall aggregate schema
+    - Tag query patterns
+    - Status transition rules
 
 - **Execution:** (Future) `packages/execution/docs/schema.md`
-  - Execution log schema
-  - Retry tracking patterns
+    - Execution log schema
+    - Retry tracking patterns
 
 ---
 

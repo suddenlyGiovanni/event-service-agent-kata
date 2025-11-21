@@ -13,9 +13,9 @@ Responsibility
 Core Model
 
 - **Aggregate**: ServiceCall
-  - Identity: `(tenantId, serviceCallId)`
-  - State: name, submittedAt, dueAt, requestSpec, status (Scheduled|Running|Succeeded|Failed), tags, startedAt?, finishedAt?, outcome meta
-  - Invariants: single attempt, legal transitions, terminal immutability, dueAt eligibility
+    - Identity: `(tenantId, serviceCallId)`
+    - State: name, submittedAt, dueAt, requestSpec, status (Scheduled|Running|Succeeded|Failed), tags, startedAt?, finishedAt?, outcome meta
+    - Invariants: single attempt, legal transitions, terminal immutability, dueAt eligibility
 
 Commands (intent)
 
@@ -222,12 +222,12 @@ sequenceDiagram
 Inputs/Outputs Recap
 
 - Inputs:
-  - [SubmitServiceCall] (command),
-  - [DueTimeReached] (event),
-  - [ExecutionStarted] OR [ExecutionSucceeded] OR [ExecutionFailed] (events)
+    - [SubmitServiceCall] (command),
+    - [DueTimeReached] (event),
+    - [ExecutionStarted] OR [ExecutionSucceeded] OR [ExecutionFailed] (events)
 - Outputs:
-  - [ServiceCallSubmitted], [ServiceCallScheduled], [ServiceCallRunning], [ServiceCallSucceeded], [ServiceCallFailed] (events via outbox)
-  - [StartExecution], [ScheduleTimer] (commands)
+    - [ServiceCallSubmitted], [ServiceCallScheduled], [ServiceCallRunning], [ServiceCallSucceeded], [ServiceCallFailed] (events via outbox)
+    - [StartExecution], [ScheduleTimer] (commands)
 - Ports: [PersistencePort], [OutboxPublisherPort], [EventBusPort], [TimerPort], [ClockPort]
 - Read Side: API reads domain DB; no projections
 

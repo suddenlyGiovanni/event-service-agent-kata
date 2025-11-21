@@ -36,9 +36,9 @@ Choose a broker family that satisfies:
 - Messaging conventions (see [Messages]): unique `messageId`, identity `(tenantId, serviceCallId)`, per-aggregate ordering, outbox after-commit publication.
 - Topology (see [ADR-0001]): Modular Monolith initially, real broker from day one; Timer may be broker-delegated (see [ADR-0003]).
 - Tenancy goals:
-  - Identity: `tenantId` present in every envelope; used for routing/partitioning.
-  - Isolation: per-tenant quotas/limits and ACLs where feasible; avoid per-tenant infra sprawl unless automated.
-  - Observability: per-tenant metrics/log correlation; DLQ per tenant preferred.
+    - Identity: `tenantId` present in every envelope; used for routing/partitioning.
+    - Isolation: per-tenant quotas/limits and ACLs where feasible; avoid per-tenant infra sprawl unless automated.
+    - Observability: per-tenant metrics/log correlation; DLQ per tenant preferred.
 
 ### Evaluation Criteria
 
@@ -127,8 +127,8 @@ For Tenancy isolation and failure/redelivery diagrams, see Appendix.
 
 - **Ordering**: per-partition order; use partition key `tenantId.serviceCallId`.
 - **Tenancy**:
-  - Shared: single topic; ACLs at topic level; quotas per client.
-  - Namespaced: topic per tenant; stronger retention/ACL control; more entities to manage.
+    - Shared: single topic; ACLs at topic level; quotas per client.
+    - Namespaced: topic per tenant; stronger retention/ACL control; more entities to manage.
 - **Delays**: no native per-message delay; implement delay topics or external scheduler.
 - **Dev/Ops**: heavier footprint; mature tooling; strong durability, storage, and observability ecosystem.
 
@@ -168,17 +168,17 @@ See Appendix for variants and alternative patterns.
 #### Tenant separation and routing (MVP → scale)
 
 - MVP layout
-  - Topic: `service.events` (shared)
-  - Partition key: `tenantId.serviceCallId` (strict per-aggregate ordering)
-  - Consumer group: one group for execution workers
-  - DLQ: per-tenant topic `service.events.<tenant>.dlq`
-  - Delay: external Timer publishes at `dueAt` back into `service.events` (or a dedicated delay topic pattern)
+    - Topic: `service.events` (shared)
+    - Partition key: `tenantId.serviceCallId` (strict per-aggregate ordering)
+    - Consumer group: one group for execution workers
+    - DLQ: per-tenant topic `service.events.<tenant>.dlq`
+    - Delay: external Timer publishes at `dueAt` back into `service.events` (or a dedicated delay topic pattern)
 - Scale-up path
-  - Per-tenant topics when retention/ACL/quotas must differ
-  - Increase partitions for hot tenants (in per-tenant topics) while keeping small tenants on the shared topic
-  - Use client quotas to contain noisy neighbors
+    - Per-tenant topics when retention/ACL/quotas must differ
+    - Increase partitions for hot tenants (in per-tenant topics) while keeping small tenants on the shared topic
+    - Use client quotas to contain noisy neighbors
 - One vs many topics
-  - Start with one shared topic; split only when policy or load isolation requires it
+    - Start with one shared topic; split only when policy or load isolation requires it
 
 For a diagrammed view, see Appendix (Kafka MVP→Scale).
 
@@ -218,8 +218,8 @@ For a diagrammed view, see Appendix (Kafka MVP→Scale).
 
 - **Ordering**: subjects/streams with ordered consumers; shard by `svc.<tenantId>.<aggregate>`.
 - **Tenancy**:
-  - Shared: one stream with per-tenant subjects; consumers subscribe to `svc.<tenantId>.>`.
-  - Namespaced: stream per tenant or account-level isolation; quotas via account limits.
+    - Shared: one stream with per-tenant subjects; consumers subscribe to `svc.<tenantId>.>`.
+    - Namespaced: stream per tenant or account-level isolation; quotas via account limits.
 - **Delays**: no native per-message delayed delivery; requires external Timer service (same as Kafka).
 - **Dev/Ops**: lightweight; simple local setup; good client ergonomics.
 
@@ -261,17 +261,17 @@ See Appendix for variants and alternative patterns.
 #### Tenant separation and routing (MVP → scale)
 
 - MVP layout
-  - Stream: `svc` (covers subjects `svc.>`)
-  - Subject: `svc.<tenantId>.<aggregate>`
-  - Consumer: durable, pull-based for pacing (one per worker group)
-  - DLQ: subject `svc.<tenantId>.dlq`
-  - Delay: external Timer service publishes at `dueAt`
+    - Stream: `svc` (covers subjects `svc.>`)
+    - Subject: `svc.<tenantId>.<aggregate>`
+    - Consumer: durable, pull-based for pacing (one per worker group)
+    - DLQ: subject `svc.<tenantId>.dlq`
+    - Delay: external Timer service publishes at `dueAt`
 - Scale-up path
-  - Per-tenant stream when policies/retention must differ
-  - Account-level isolation for stronger multi-tenancy controls and quotas
-  - Cap subject cardinality with a constrained subject schema
+    - Per-tenant stream when policies/retention must differ
+    - Account-level isolation for stronger multi-tenancy controls and quotas
+    - Cap subject cardinality with a constrained subject schema
 - One vs many streams
-  - Start with one shared stream; split to per-tenant streams or accounts only for policy or load isolation
+    - Start with one shared stream; split to per-tenant streams or accounts only for policy or load isolation
 
 For a diagrammed view, see Appendix (NATS MVP→Scale).
 
@@ -303,8 +303,8 @@ For a diagrammed view, see Appendix (NATS MVP→Scale).
 
 - **Ordering**: per-queue order with single consumer; multiple consumers may affect ordering.
 - **Tenancy**:
-  - Shared: one exchange; routing key `tenantId.serviceCallId` with consumer-bound queues.
-  - Namespaced: vhost per tenant or per-tenant exchanges/queues; strong ACLs; more entities.
+    - Shared: one exchange; routing key `tenantId.serviceCallId` with consumer-bound queues.
+    - Namespaced: vhost per tenant or per-tenant exchanges/queues; strong ACLs; more entities.
 - **Delays**: via delayed-exchange plugin; workable but adds dependency.
 - **Dev/Ops**: moderate footprint; flexible routing; mature management UI.
 
@@ -344,18 +344,18 @@ See Appendix for variants and alternative patterns.
 #### Tenant separation and routing (MVP → scale)
 
 - MVP layout
-  - Exchange: `svc.direct`
-  - Queue: per-tenant `svc.<tenantId>.q`
-  - Binding: routing key = `tenantId.serviceCallId` (or a pattern if aggregate is part of the key)
-  - Consumer: single consumer per queue for strict ordering
-  - DLQ: per-tenant via DLX to `svc.<tenantId>.dlq`
-  - Delay: delayed-exchange plugin (preferred) or TTL + DLX
+    - Exchange: `svc.direct`
+    - Queue: per-tenant `svc.<tenantId>.q`
+    - Binding: routing key = `tenantId.serviceCallId` (or a pattern if aggregate is part of the key)
+    - Consumer: single consumer per queue for strict ordering
+    - DLQ: per-tenant via DLX to `svc.<tenantId>.dlq`
+    - Delay: delayed-exchange plugin (preferred) or TTL + DLX
 - Scale-up path
-  - vhost per tenant when stronger isolation/ACLs/quotas are needed
-  - Dedicated queue for “hot” aggregates within a tenant; serialize per-aggregate inside worker if sharing
-  - Tune `prefetch` and use backoff policies to protect workers
+    - vhost per tenant when stronger isolation/ACLs/quotas are needed
+    - Dedicated queue for “hot” aggregates within a tenant; serialize per-aggregate inside worker if sharing
+    - Tune `prefetch` and use backoff policies to protect workers
 - One vs many queues
-  - Start with one queue per tenant; add hot-aggregate queues only as needed to balance isolation vs complexity
+    - Start with one queue per tenant; add hot-aggregate queues only as needed to balance isolation vs complexity
 
 For a diagrammed view, see Appendix (RabbitMQ MVP→Scale).
 

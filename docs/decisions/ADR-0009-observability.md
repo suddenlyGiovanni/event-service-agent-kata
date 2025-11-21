@@ -78,8 +78,8 @@ OpenTelemetry traces with automatic span propagation via `traceparent` headers. 
 **Integration Strategy**:
 
 - `correlationId` and OpenTelemetry `trace_id` serve **different purposes**:
-  - **correlationId**: Business/domain correlation ("this timer fired because of API request X")
-  - **trace_id**: Infrastructure tracing ("how long did message X take to propagate?")
+    - **correlationId**: Business/domain correlation ("this timer fired because of API request X")
+    - **trace_id**: Infrastructure tracing ("how long did message X take to propagate?")
 - Both coexist: logs/spans can include both fields
 - Example: Query logs by `correlationId`, drill into specific spans by `trace_id`
 

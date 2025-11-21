@@ -56,10 +56,7 @@ interface PublishContext {
 	readonly causationId: Option.Option<EnvelopeId>
 }
 
-declare const publishDueTimeReached: (
-	event: DueTimeReached,
-	context: PublishContext
-) => Effect<void, PublishError>
+declare const publishDueTimeReached: (event: DueTimeReached, context: PublishContext) => Effect<void, PublishError>
 
 // Workflow
 yield * eventBus.publishDueTimeReached(
@@ -102,21 +99,18 @@ Include infrastructure metadata in domain event schema.
 
 ```typescript ignore
 // Domain event with metadata
-export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
-	'DueTimeReached',
-	{
-		...ServiceCallEventBase.fields,
-		reachedAt: Schema.DateTimeUtc,
-		correlationId: Schema.optionalWith(CorrelationId, {
-			as: 'Option',
-			exact: true
-		}),
-		causationId: Schema.optionalWith(EnvelopeId, {
-			as: 'Option',
-			exact: true
-		})
-	}
-) {}
+export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTimeReached', {
+	...ServiceCallEventBase.fields,
+	reachedAt: Schema.DateTimeUtc,
+	correlationId: Schema.optionalWith(CorrelationId, {
+		as: 'Option',
+		exact: true
+	}),
+	causationId: Schema.optionalWith(EnvelopeId, {
+		as: 'Option',
+		exact: true
+	})
+}) {}
 ```
 
 **Pros**:
@@ -176,10 +170,7 @@ const publishDueTimeReached = (event: DueTimeReached) =>
 Domain events carry aggregate reference.
 
 ```typescript ignore
-declare const publishDueTimeReached: (
-	event: DueTimeReached,
-	timer: TimerEntry
-) => Effect<void, PublishError>
+declare const publishDueTimeReached: (event: DueTimeReached, timer: TimerEntry) => Effect<void, PublishError>
 ```
 
 **Pros**:
@@ -205,17 +196,15 @@ Use Effect's Context system to carry metadata implicitly.
 ```typescript ignore
 // 1. Define Context Tag (platform package)
 export class MessageMetadata extends Context.Tag('MessageMetadata')<
-  MessageMetadata,
-  {
-    readonly correlationId: Option<CorrelationId>
-    readonly causationId: Option<EnvelopeId>
-  }
+	MessageMetadata,
+	{
+		readonly correlationId: Option<CorrelationId>
+		readonly causationId: Option<EnvelopeId>
+	}
 >() {}
 
 // 2. Port signature requires context (R parameter)
-declare const publishDueTimeReached: (
-  event: DueTimeReached
-) => Effect<void, PublishError, MessageMetadata>  // ← Requires context
+declare const publishDueTimeReached: (event: DueTimeReached) => Effect<void, PublishError, MessageMetadata> // ← Requires context
 
 // 3. Workflow provisions context (per-request data)
 yield* eventBus.publishDueTimeReached(event).pipe(
@@ -226,12 +215,12 @@ yield* eventBus.publishDueTimeReached(event).pipe(
 )
 
 // 4. Adapter consumes context (type-safe)
-const metadata = yield* MessageMetadata  // Type-driven requirement
+const metadata = yield * MessageMetadata // Type-driven requirement
 const envelope = new MessageEnvelope({
-  payload: event,
-  correlationId: metadata.correlationId,
-  causationId: metadata.causationId,
-  // ...
+	payload: event,
+	correlationId: metadata.correlationId,
+	causationId: metadata.causationId
+	// ...
 })
 ```
 
@@ -310,16 +299,16 @@ See `docs/plan/correlation-context-implementation.md` for 14-task breakdown (PL-
 **Clarification**: MessageMetadata Context is **orthogonal** to OpenTelemetry:
 
 - **MessageMetadata (This ADR)**: Application-level business workflow tracking
-  - Lives in: MessageEnvelope payload
-  - Purpose: Link messages in business logic (ServiceCall lifecycle)
-  - Tools: Structured logs, event store queries
-  - Lifecycle: Generated at API entry, constant across flow
+    - Lives in: MessageEnvelope payload
+    - Purpose: Link messages in business logic (ServiceCall lifecycle)
+    - Tools: Structured logs, event store queries
+    - Lifecycle: Generated at API entry, constant across flow
 
 - **OpenTelemetry (ADR-0009 Phase 2)**: Infrastructure-level distributed tracing
-  - Lives in: HTTP headers, broker message headers (NOT payload)
-  - Purpose: Infrastructure observability (latency, errors, dependencies)
-  - Tools: APM systems (Jaeger, Zipkin, Datadog)
-  - Lifecycle: New trace/span per hop
+    - Lives in: HTTP headers, broker message headers (NOT payload)
+    - Purpose: Infrastructure observability (latency, errors, dependencies)
+    - Tools: APM systems (Jaeger, Zipkin, Datadog)
+    - Lifecycle: New trace/span per hop
 
 **Bridge**: Inject `correlationId` into OTEL span attributes for cross-referencing.
 
