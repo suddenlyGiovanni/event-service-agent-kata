@@ -4,12 +4,12 @@ import * as Effect from 'effect/Effect'
 /**
  * Migration 0003: Extend timer_schedules with timer domain columns, constraints, and indexes
  *
- * **Transaction Safety**: This migration executes as a single atomic transaction.
- * The @effect/sql Migrator automatically wraps all migration steps in `sql.withTransaction()`,
- * ensuring all-or-nothing semantics. If any step fails (e.g., ALTER, CREATE, INSERT, DROP),
- * the entire migration rolls back, preventing partial schema states.
+ * **Transaction Safety**: This migration executes as a single atomic transaction. The @effect/sql Migrator
+ * automatically wraps all migration steps in `sql.withTransaction()`, ensuring all-or-nothing semantics. If any step
+ * fails (e.g., ALTER, CREATE, INSERT, DROP), the entire migration rolls back, preventing partial schema states.
  *
  * Steps:
+ *
  * 1. Add new nullable columns to the existing table
  * 2. Create timer_schedules_new with NOT NULL, CHECK, FK, and STRICT constraints
  * 3. Copy and normalize existing data into timer_schedules_new
@@ -144,12 +144,10 @@ const migration: Effect.Effect<void, Sql.SqlError.SqlError, Sql.SqlClient.SqlCli
 	`
 
 	/**
-	 * Step 6: Create indexes
-	 * Index optimized for global polling query: WHERE state = 'Scheduled' AND due_at <= ?
-	 * Leading with state allows SQLite to quickly filter out 'Reached' timers,
-	 * then scan by due_at for chronological ordering, with tenant_id included
-	 * for covering index benefits (avoids table lookup).
-	 * See: ADR-0003 (global polling pattern), findDue implementation in adapter
+	 * Step 6: Create indexes Index optimized for global polling query: WHERE state = 'Scheduled' AND due_at <= ? Leading
+	 * with state allows SQLite to quickly filter out 'Reached' timers, then scan by due_at for chronological ordering,
+	 * with tenant_id included for covering index benefits (avoids table lookup). See: ADR-0003 (global polling pattern),
+	 * findDue implementation in adapter
 	 */
 	yield* sql`
       CREATE INDEX idx_timer_schedules_due_at

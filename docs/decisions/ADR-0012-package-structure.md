@@ -21,27 +21,31 @@ During PL-14 schema migration, we discovered that the `@event-service-agent/cont
 
 ### Option 1: Define DTO shapes in contracts (REJECTED)
 
-```typescript
+```typescript ignore
 // contracts defines plain DTO shape
+import { Effect, Schema } from 'effect'
+
 export const DomainMessage = Schema.Union(
 	Schema.Struct({
-		_tag: Literal('DueTimeReached'),
+		_tag: Schema.Literal('DueTimeReached'),
 		tenantId: Schema.String, // ← Lost TenantId brand!
-	})
+	}),
 )
 
-// Consumer can't use decoded payload:
-const envelope = yield* MessageEnvelope.decodeJson(json)
-yield * workflow.handle(envelope.payload)
-//                     ^^^^^^^^^^^^^^^^
-// ❌ TYPE MISMATCH: plain object vs branded types
+Effect.gen(function* () {
+	// Consumer can't use decoded payload:
+	const envelope = yield* MessageEnvelope.decodeJson(json)
+	yield* workflow.handle(envelope.payload)
+	//                     ^^^^^^^^^^^^^^^^
+	// ❌ TYPE MISMATCH: plain object vs branded types
+})
 ```
 
 **Fatal DX flaw**: Decoded payload loses type information (brands, validation), defeating the purpose of Effect Schema.
 
 ### Option 2: Import schemas from modules (REJECTED)
 
-```typescript
+```typescript ignore
 // contracts imports from timer
 import { DueTimeReached } from '@event-service-agent/timer/domain'
 ```
@@ -217,7 +221,7 @@ From `timer/src/domain/`:
 
 **Before**:
 
-```typescript
+```typescript ignore
 import { TenantId } from '@event-service-agent/contracts/types'
 import { EventBusPort } from '@event-service-agent/contracts/ports'
 import { Topics } from '@event-service-agent/contracts/routing'
@@ -225,7 +229,7 @@ import { Topics } from '@event-service-agent/contracts/routing'
 
 **After**:
 
-```typescript
+```typescript ignore
 import { TenantId } from '@event-service-agent/schemas/shared'
 import { DueTimeReached } from '@event-service-agent/schemas/messages/timer'
 import { MessageEnvelope } from '@event-service-agent/schemas/envelope'
@@ -361,7 +365,7 @@ import { Topics } from '@event-service-agent/platform/routing'
 
 ### C. Type-only circular imports (REJECTED)
 
-```typescript
+```typescript ignore
 import type { DueTimeReached } from '@event-service-agent/timer/domain'
 ```
 

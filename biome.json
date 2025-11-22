@@ -74,7 +74,7 @@
 			"enabled": true
 		},
 		"formatter": {
-			"arrowParentheses": "asNeeded",
+			"arrowParentheses": "always",
 			"attributePosition": "multiline",
 			"bracketSameLine": false,
 			"bracketSpacing": true,

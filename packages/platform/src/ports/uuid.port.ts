@@ -5,8 +5,8 @@ import * as Context from 'effect/Context'
 /**
  * UUIDPort — UUID generation service
  *
- * Provides UUIDv7 generation for time-ordered unique identifiers.
- * Use for envelope IDs, correlation IDs, and entity identifiers.
+ * Provides UUIDv7 generation for time-ordered unique identifiers. Use for envelope IDs, correlation IDs, and entity
+ * identifiers.
  */
 export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/UUID')<
 	UUIDPort,
@@ -14,26 +14,11 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 		/**
 		 * Generate a UUIDv7, which is a sequential ID based on the current timestamp with a random component.
 		 *
-		 * When the same timestamp is used multiple times, a monotonically increasing
-		 * counter is appended to allow sorting. The final 8 bytes are
-		 * cryptographically random. When the timestamp changes, the counter resets to
-		 * a pseudo-random integer.
+		 * When the same timestamp is used multiple times, a monotonically increasing counter is appended to allow sorting.
+		 * The final 8 bytes are cryptographically random. When the timestamp changes, the counter resets to a pseudo-random
+		 * integer.
 		 *
 		 * @param timestamp Unix timestamp in milliseconds, defaults to `Date.now()`
-		 *
-		 * @example
-		 * ```ts ignore
-		 * const array = [
-		 *   randomUUIDv7(),
-		 *   randomUUIDv7(),
-		 *   randomUUIDv7(),
-		 * ]
-		 * [
-		 *   "0192ce07-8c4f-7d66-afec-2482b5c9b03c",
-		 *   "0192ce07-8c4f-7d67-805f-0f71581b5622",
-		 *   "0192ce07-8c4f-7d68-8170-6816e4451a58"
-		 * ]
-		 * ```
 		 */
 		randomUUIDv7: (
 			/**
@@ -46,30 +31,31 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	/**
 	 * Default adapter - Uses Bun's native UUID v7 implementation
 	 *
-	 * Delegates to Bun.randomUUIDv7() which provides a native, high-performance
-	 * implementation of the UUID version 7 specification.
+	 * Delegates to Bun.randomUUIDv7() which provides a native, high-performance implementation of the UUID version 7
+	 * specification.
 	 *
 	 * @example
-	 * ```typescript ignore
+	 *
+	 * ```typescript
 	 * import { Effect } from 'effect'
 	 * import { UUIDPort } from '@event-service-agent/platform/ports'
 	 *
 	 * // In domain code
 	 * const program: Effect.Effect<string, never, UUIDPort> = Effect.gen(function* () {
-	 *     const uuid = yield* UUIDPort
-	 *     const rawId = uuid.randomUUIDv7()
-	 *     return rawId
+	 * 	const uuid = yield* UUIDPort
+	 * 	const rawId = uuid.randomUUIDv7()
+	 * 	return rawId
 	 * })
 	 *
 	 * // Provide default implementation
-	 * const runnable = program.pipe(Effect.provideService(UUIDPort.Default))
+	 * const runnable = program.pipe(Effect.provideService(UUIDPort, UUIDPort.Default))
 	 *
 	 * // Run the program
 	 * await Effect.runPromise(runnable) // "0192ce07-8c4f-7d66-afec-2482b5c9b03c"
 	 * ```
 	 */
 	static readonly Default: Context.Tag.Service<UUIDPort> = UUIDPort.of({
-		randomUUIDv7: timestamp => Bun.randomUUIDv7('hex', timestamp),
+		randomUUIDv7: (timestamp) => Bun.randomUUIDv7('hex', timestamp),
 	})
 
 	/**
@@ -77,26 +63,29 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 *
 	 * Useful for tests requiring predictable UUIDs.
 	 *
-	 * @param fixed - The fixed UUID v7 string to return (must be valid UUID v7)
-	 *
 	 * @example
-	 * ```typescript ignore
-	 * import { Effect } from 'effect'
+	 *
+	 * ```typescript
+	 * import { Effect, Console } from 'effect'
 	 * import { UUIDPort } from '@event-service-agent/platform/ports'
 	 *
 	 * // In domain code
 	 * const program: Effect.Effect<void, never, UUIDPort> = Effect.gen(function* () {
-	 *     const uuid = yield* UUIDPort
-	 *     const rawId = uuid.randomUUIDv7()
-	 *     yield* Console.log(rawId)
+	 * 	const uuid = yield* UUIDPort
+	 * 	const rawId = uuid.randomUUIDv7()
+	 * 	yield* Console.log(rawId)
 	 * })
 	 *
 	 * // in test code
-	 * const testable: Effect.Effect<void, never, never> = program.pipe(Effect.provideService(UUIDPort.Test("fixed-uuid-000-000-000-000")))
+	 * const testable: Effect.Effect<void, never, never> = program.pipe(
+	 * 	Effect.provideService(UUIDPort, UUIDPort.Test('fixed-uuid-000-000-000-000')),
+	 * )
 	 *
 	 * // Run the program
 	 * await Effect.runPromise(testable) // "fixed-uuid-000-000-000-000"
 	 * ```
+	 *
+	 * @param fixed - The fixed UUID v7 string to return (must be valid UUID v7)
 	 */
 	static readonly Test = <A extends `${string}-${string}-${string}-${string}-${string}`>(
 		fixed: A,
@@ -105,26 +94,27 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	/**
 	 * Sequence adapter - Generates sequential UUIDs with incrementing counter (deterministic)
 	 *
-	 * Useful for tests requiring multiple unique but predictable UUIDs.
-	 * Format: `{prefix}-0000-7000-8000-{counter}` where counter increments from 000000000000.
-	 *
-	 * @param prefix - Optional 8-char hex prefix (default: "00000000")
+	 * Useful for tests requiring multiple unique but predictable UUIDs. Format: `{prefix}-0000-7000-8000-{counter}` where
+	 * counter increments from 000000000000.
 	 *
 	 * @example
-	 * ```typescript ignore
-	 * import { Effect } from 'effect'
+	 *
+	 * ```typescript
+	 * import { Effect, Console } from 'effect'
 	 * import { UUIDPort } from '@event-service-agent/platform/ports'
 	 *
 	 * const program = Effect.gen(function* () {
-	 *   const uuid = yield* UUIDPort
-	 *   const uuid1 = uuid.randomUUIDv7() // "12345678-0000-7000-8000-000000000000"
-	 *   const uuid2 = uuid.randomUUIDv7() // "12345678-0000-7000-8000-000000000001"
-	 *   const uuid3 = uuid.randomUUIDv7() // "12345678-0000-7000-8000-000000000002"
-	 *   yield* Console.log([uuid1, uuid2, uuid3])
-	 * }).pipe(Effect.provideService(UUIDPort.Sequence("12345678")))
+	 * 	const uuid = yield* UUIDPort
+	 * 	const uuid1 = uuid.randomUUIDv7() // "12345678-0000-7000-8000-000000000000"
+	 * 	const uuid2 = uuid.randomUUIDv7() // "12345678-0000-7000-8000-000000000001"
+	 * 	const uuid3 = uuid.randomUUIDv7() // "12345678-0000-7000-8000-000000000002"
+	 * 	yield* Console.log([uuid1, uuid2, uuid3])
+	 * }).pipe(Effect.provideService(UUIDPort, UUIDPort.Sequence('12345678')))
 	 *
 	 * await Effect.runPromise(program) // [ "12345678-0000-7000-8000-000000000000", "12345678-0000-7000-8000-000000000001", "12345678-0000-7000-8000-000000000002" ]
 	 * ```
+	 *
+	 * @param prefix - Optional 8-char hex prefix (default: "00000000")
 	 */
 	static readonly Sequence = (prefix = '00000000'): Context.Tag.Service<UUIDPort> => {
 		// Create new counter instance per call

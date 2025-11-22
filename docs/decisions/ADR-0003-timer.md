@@ -262,7 +262,7 @@ erDiagram
 
 **Table: `timer_schedules`**
 
-```typescript
+```typescript ignore
 type TimerSchedule = {
 	// Composite Primary Key
 	readonly tenantId: TenantId // Why first: Tenant-scoped queries
@@ -345,7 +345,7 @@ LIMIT 100;
 
 **Pattern: Publish-then-update** (accept at-least-once duplicates)
 
-```typescript
+```typescript ignore
 for (const schedule of dueSchedules) {
 	// Envelope is self-contained with all routing metadata
 	const envelope = {
@@ -358,17 +358,17 @@ for (const schedule of dueSchedules) {
 	}
 
 	await eventBus.publish([envelope]) // First
-	await db.update('SET state = \'Reached\' WHERE ...') // Second
+	await db.update("SET state = 'Reached' WHERE ...") // Second
 }
 ```
 
 **Failure Scenarios:**
 
 | Scenario                       | Outcome                    | Acceptable? |
-|--------------------------------|----------------------------|-------------|
-| Publish succeeds, update fails | Duplicate event next poll  | ✅ Yes       |
-| Update succeeds, publish fails | Event never sent           | ❌ No        |
-| Crash after publish            | Duplicate event on restart | ✅ Yes       |
+| ------------------------------ | -------------------------- | ----------- |
+| Publish succeeds, update fails | Duplicate event next poll  | ✅ Yes      |
+| Update succeeds, publish fails | Event never sent           | ❌ No       |
+| Crash after publish            | Duplicate event on restart | ✅ Yes      |
 
 **Rationale:**
 

@@ -8,7 +8,7 @@ Minimal domain-facing ports to keep the system simple and broker/storage agnosti
 
 ## Shared Types
 
-```ts
+```typescript ignore
 export type TenantId = string & { readonly __tag: 'TenantId' }
 export type CorrelationId = string & { readonly __tag: 'CorrelationId' }
 export type EnvelopeId = string & { readonly __tag: 'EnvelopeId' }
@@ -30,7 +30,7 @@ Minimal envelope shared by publishers/consumers. See [Semantics](./messages.md#s
 
 The schema provides JSON serialization (`parseJson`/`encodeJson`) and validation at infrastructure boundaries.
 
-```ts
+```typescript ignore
 export interface MessageEnvelope<T = unknown> {
 	id: EnvelopeId // unique id
 	type: string // message type
@@ -53,7 +53,7 @@ export interface MessageEnvelope<T = unknown> {
 Adapter responsibilities: Provide stable UTC milliseconds; no blocking; test fake allowed.\
 Used in: [Orchestration] (timeouts), [Timer] (scheduling).
 
-```ts
+```typescript ignore
 export interface ClockPort {
 	nowMs(): number // Epoch millis (UTC)
 }
@@ -66,19 +66,17 @@ Used in: [Orchestration], [Execution], [Timer], [API] (publish only).
 
 **Design Note**: The envelope is self-contained with all routing metadata (tenantId, correlationId, aggregateId). No separate context parameter needed - this eliminates duplication and ensures single source of truth.
 
-```ts
+```typescript ignore
 import * as Data from 'effect/Data'
 import type * as Effect from 'effect/Effect'
 import type { NonEmptyReadonlyArray } from 'effect/Array'
 
 export interface EventBusPort {
-	publish(
-		envelopes: NonEmptyReadonlyArray<MessageEnvelope>
-	): Effect.Effect<void, PublishError>
+	publish(envelopes: NonEmptyReadonlyArray<MessageEnvelope>): Effect.Effect<void, PublishError>
 
 	subscribe<E>(
 		topics: string[],
-		handler: (env: MessageEnvelope) => Effect.Effect<void, E>
+		handler: (env: MessageEnvelope) => Effect.Effect<void, E>,
 	): Effect.Effect<void, SubscribeError>
 }
 
@@ -98,7 +96,7 @@ export class SubscribeError extends Data.TaggedError('SubscribeError')<{
 Adapter responsibilities: Schedule/cancel one-shot timers with at-least-once delivery semantics.\
 Used in: [Orchestration].
 
-```ts
+```typescript ignore
 export interface TimerSpec {
 	id: string // idempotent key
 	dueTimeMs: number // epoch millis when due
@@ -116,7 +114,7 @@ export interface TimerPort {
 Adapter responsibilities: Perform HTTP call and return status/headers/body without extra concerns.\
 Used in: [Execution].
 
-```ts
+```typescript ignore
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 export interface HttpRequest {
@@ -133,10 +131,7 @@ export interface HttpResponse<T = unknown> {
 }
 
 export interface HttpClientPort {
-	request<T = unknown>(
-		req: HttpRequest,
-		ctx: RequestContext
-	): Promise<HttpResponse<T>>
+	request<T = unknown>(req: HttpRequest, ctx: RequestContext): Promise<HttpResponse<T>>
 }
 ```
 
@@ -147,42 +142,33 @@ Used in: [Orchestration] (write), [API] (read-only).
 
 Note: `responseMeta` and `errorMeta` follow the payload shapes defined in the messages catalog — see [ExecutionSucceeded] (responseMeta) and [ExecutionFailed] (errorMeta) in `design/messages.md`.
 
-```ts
+```typescript ignore
 export interface PersistencePort {
 	// Read models for API
-	getServiceCall(
-		tenantId: string,
-		serviceCallId: string,
-		ctx: RequestContext
-	): Promise<unknown | null>
+	getServiceCall(tenantId: string, serviceCallId: string, ctx: RequestContext): Promise<unknown | null>
 	listServiceCalls(
 		tenantId: string,
 		filters: Record<string, unknown>,
 		paging: { limit: number; offset: number },
-		ctx: RequestContext
+		ctx: RequestContext,
 	): Promise<unknown[]>
 
 	// Single-writer transitions (guarded updates)
 	createServiceCall(dto: unknown, ctx: RequestContext): Promise<void>
-	setRunning(
-		tenantId: string,
-		serviceCallId: string,
-		startedAtMs: number,
-		ctx: RequestContext
-	): Promise<boolean> // returns true if updated from Scheduled
+	setRunning(tenantId: string, serviceCallId: string, startedAtMs: number, ctx: RequestContext): Promise<boolean> // returns true if updated from Scheduled
 	setSucceeded(
 		tenantId: string,
 		serviceCallId: string,
 		finishedAtMs: number,
 		responseMeta: unknown,
-		ctx: RequestContext
+		ctx: RequestContext,
 	): Promise<boolean>
 	setFailed(
 		tenantId: string,
 		serviceCallId: string,
 		finishedAtMs: number,
 		errorMeta: unknown,
-		ctx: RequestContext
+		ctx: RequestContext,
 	): Promise<boolean>
 }
 ```
@@ -192,7 +178,7 @@ export interface PersistencePort {
 Role: ensure messages are published after DB commit. Orchestration appends messages to an outbox table within the same transaction; a dispatcher publishes them to the broker in order.\
 Used in: [Orchestration].
 
-```ts
+```typescript ignore
 export interface OutboxPublisher {
 	append(envelopes: MessageEnvelope[], ctx: RequestContext): Promise<void> // called within DB tx
 	dispatch(batchSize?: number): Promise<void> // background loop
@@ -206,7 +192,7 @@ Used in: [Timer] (workflows publish events, handlers consume commands).
 
 **Design Pattern**: Port accepts **pure domain events**, not infrastructure DTOs. Adapter wraps events in `MessageEnvelope` and delegates to shared `EventBusPort`. See [Hexagonal Architecture: Event Publishing Pattern](./hexagonal-architecture-layers.md#event-publishing-pattern-domain-events-at-port-boundary) for rationale.
 
-```ts
+```typescript ignore
 import type * as Effect from 'effect/Effect'
 import type * as Messages from '@event-service-agent/schemas/messages'
 import type { MessageMetadata } from '@event-service-agent/platform/context'
@@ -215,53 +201,60 @@ export interface TimerEventBusPort {
 	/**
 	 * Publish DueTimeReached domain event with MessageMetadata Context
 	 *
-	 * MessageMetadata is a Context.Tag from the platform layer that carries
-	 * correlation and causation identifiers for distributed tracing.
+	 * MessageMetadata is a Context.Tag from the platform layer that carries correlation and causation identifiers for
+	 * distributed tracing.
 	 *
 	 * Note the asymmetry in how MessageMetadata is referenced:
-	 *   - In Effect R parameter: Use the tag itself (MessageMetadata)
-	 *   - In handler parameters: Use the extracted type (MessageMetadata.Type)
+	 *
+	 * - In Effect R parameter: Use the tag itself (MessageMetadata)
+	 * - In handler parameters: Use the extracted type (MessageMetadata.Type)
 	 *
 	 * Workflow provides MessageMetadata via Effect.provideService:
-	 *   - correlationId: From timer aggregate (original ScheduleTimer command)
-	 *   - causationId: Option.none() (time-triggered, not command-caused)
+	 *
+	 * - CorrelationId: From timer aggregate (original ScheduleTimer command)
+	 * - CausationId: Option.none() (time-triggered, not command-caused)
 	 *
 	 * Adapter responsibility:
-	 *   - Extract MessageMetadata from Context: `yield* MessageMetadata`
-	 *   - Generate EnvelopeId (UUID v7)
-	 *   - Wrap event in MessageEnvelope with metadata fields
-	 *   - Delegate to EventBusPort.publish([envelope])
+	 *
+	 * - Extract MessageMetadata from Context: `yield* MessageMetadata`
+	 * - Generate EnvelopeId (UUID v7)
+	 * - Wrap event in MessageEnvelope with metadata fields
+	 * - Delegate to EventBusPort.publish([envelope])
 	 *
 	 * @param event - Pure domain event (DueTimeReached.Type)
+	 *
 	 * @returns Effect requiring MessageMetadata Context
 	 */
 	publishDueTimeReached(
-		event: Messages.Timer.Events.DueTimeReached.Type
+		event: Messages.Timer.Events.DueTimeReached.Type,
 	): Effect.Effect<void, PublishError, MessageMetadata>
 
 	/**
 	 * Subscribe to ScheduleTimer commands from Orchestration
 	 *
-	 * Asymmetric pattern: Adapter passes MessageMetadata as handler parameter
-	 * (not via Context). This aligns with Effect ecosystem conventions:
-	 *   - Publishing: Workflow provides Context (ambient data)
-	 *   - Subscribing: Adapter passes parameter (explicit data flow)
+	 * Asymmetric pattern: Adapter passes MessageMetadata as handler parameter (not via Context). This aligns with Effect
+	 * ecosystem conventions:
+	 *
+	 * - Publishing: Workflow provides Context (ambient data)
+	 * - Subscribing: Adapter passes parameter (explicit data flow)
 	 *
 	 * Adapter responsibility:
-	 *   - Subscribe to timer.commands topic
-	 *   - Parse MessageEnvelope<ScheduleTimer>
-	 *   - Extract MessageMetadata from envelope:
-	 *       correlationId: envelope.correlationId
-	 *       causationId: Option.some(envelope.id)  // Command envelope becomes causation
-	 *   - Invoke handler with command + metadata
+	 *
+	 * - Subscribe to timer.commands topic
+	 * - Parse MessageEnvelope<ScheduleTimer>
+	 * - Extract MessageMetadata from envelope:
+	 *
+	 *   - CorrelationId: envelope.correlationId
+	 *   - CausationId: Option.some(envelope.id) // Command envelope becomes causation
+	 * - Invoke handler with command + metadata
 	 *
 	 * @param handler - Command handler (workflow invocation)
 	 */
 	subscribeToScheduleTimerCommands<E, R>(
 		handler: (
 			command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-			metadata: MessageMetadata.Type
-		) => Effect.Effect<void, E, R>
+			metadata: MessageMetadata.Type,
+		) => Effect.Effect<void, E, R>,
 	): Effect.Effect<void, Ports.SubscribeError | E, R>
 }
 ```

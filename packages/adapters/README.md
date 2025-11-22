@@ -105,37 +105,51 @@ This package exists to establish the structure but doesn't contain adapters yet.
 
 ### Phase 1: Broker Adapter (PL-3)
 
-```typescript
+```typescript ignore
 // packages/adapters/src/broker/nats-event-bus.adapter.ts
 export class NatsEventBus {
-  static readonly Live: Layer.Layer<EventBusPort, NatsError /*, ... */> =
-    Layer.effect(EventBusPort, Effect.gen(function* () {
-      const nc = yield* connectNats()
-      const js = nc.jetstream()
+	static readonly Live: Layer.Layer<EventBusPort, NatsError /*, ... */> = Layer.effect(
+		EventBusPort,
+		Effect.gen(function* () {
+			const nc = yield* connectNats()
+			const js = nc.jetstream()
 
-      return EventBusPort.of({
-        publish: (envelopes) => {/* ... */},
-        subscribe: (topics, handler) => {/* ... */},
-      })
-    }))
+			return EventBusPort.of({
+				publish: (envelopes) => {
+					/* ... */
+				},
+				subscribe: (topics, handler) => {
+					/* ... */
+				},
+			})
+		}),
+	)
 }
 ```
 
 ### Phase 2: Persistence Adapter (PL-6)
 
-```typescript
+```typescript ignore
 // packages/adapters/src/persistence/sqlite-timer-persistence.adapter.ts
 export class SqliteTimerPersistence {
-  static readonly Live: Layer.Layer<TimerPersistencePort /*, ...*/> =
-    Layer.effect(TimerPersistencePort, Effect.gen(function* () {
-      const db = yield* Database
+	static readonly Live: Layer.Layer<TimerPersistencePort /*, ...*/> = Layer.effect(
+		TimerPersistencePort,
+		Effect.gen(function* () {
+			const db = yield* Database
 
-      return TimerPersistencePort.of({
-        save: (timer) => {/* <SQL INSERT> */},
-        findScheduledTimer: (id) => {/* <SQL SELECT> */},
-        findDue: (tenantId, now) => {/* <SQL SELECT WHERE due> */}
-      })
-    }))
+			return TimerPersistencePort.of({
+				save: (timer) => {
+					/* <SQL INSERT> */
+				},
+				findScheduledTimer: (id) => {
+					/* <SQL SELECT> */
+				},
+				findDue: (tenantId, now) => {
+					/* <SQL SELECT WHERE due> */
+				},
+			})
+		}),
+	)
 }
 ```
 

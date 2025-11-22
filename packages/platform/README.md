@@ -18,7 +18,7 @@ Type definitions for all commands and events in the system:
 
 **Usage:**
 
-```typescript
+```typescript ignore
 import type * as Messages from '@event-service-agent/platform/messages'
 
 // Type-safe message handling
@@ -38,7 +38,7 @@ Ports define **what** the domain needs, adapters provide **how** it works.
 
 **Usage:**
 
-```typescript
+```typescript ignore
 import { EventBusPort } from '@event-service-agent/platform/ports'
 
 // Depend on port, not implementation
@@ -58,11 +58,11 @@ Centralized topic/routing configuration:
 
 **Usage:**
 
-```typescript
+```typescript ignore
 import { Topics } from '@event-service-agent/platform/routing'
 
 // Subscribe with type-safe topics
-yield* bus.subscribe([Topics.Timer.Commands], handler)
+yield * bus.subscribe([Topics.Timer.Commands], handler)
 ```
 
 ### 📦 Types (`./types`)
@@ -73,7 +73,7 @@ Shared HTTP type definitions for request specifications:
 
 **Note**: For message envelope types, import from `@event-service-agent/schemas/envelope`:
 
-```typescript
+```typescript ignore
 import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 
 // Use the schema-derived type
@@ -88,7 +88,7 @@ const envelope: MessageEnvelope.Type = {
 
 **HTTP Types Usage:**
 
-```typescript
+```typescript ignore
 import type { RequestSpec } from '@event-service-agent/platform/types'
 
 const request: RequestSpec = {

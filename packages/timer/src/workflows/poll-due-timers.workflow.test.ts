@@ -24,16 +24,19 @@ import * as Workflows from './poll-due-timers.workflow.ts'
 
 /**
  * Base test layers - static resources shared across most tests:
+ *
  * - ClockPortTest: TestClock for time manipulation
  * - UUID7.Default: Deterministic UUID generation
  * - TimerPersistence.Test: In-memory SQLite persistence adapter
  * - SQL.Test: In-memory SQLite database
  *
- * CRITICAL: Using `it.scoped()` instead of `it.effect()` ensures each test gets
- * a FRESH layer scope with its own database instance. This prevents test pollution
- * where data from one test affects another.
+ * CRITICAL: Using `it.scoped()` instead of `it.effect()` ensures each test gets a FRESH layer scope with its own
+ * database instance.
+ *
+ * This prevents test pollution where data from one test affects another.
  *
  * Why scoped?
+ *
  * - Each test gets a fresh SQLite `:memory:` database
  * - No data persists between tests (full isolation)
  * - Tests can use the same IDs without conflicts
@@ -47,6 +50,7 @@ const BaseTestLayers = Layer.mergeAll(Adapters.ClockPortTest, UUID7.Default, Ada
  * Test suite for pollDueTimersWorkflow
  *
  * Covers:
+ *
  * - Happy path (timers found and processed)
  * - Edge cases (no timers, empty batches)
  * - Error handling (publish failures, persistence failures)
@@ -60,7 +64,7 @@ describe('pollDueTimersWorkflow', () => {
 			// Mock EventBus to track published events
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: event =>
+				publishDueTimeReached: (event) =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
 					}),
@@ -71,11 +75,13 @@ describe('pollDueTimersWorkflow', () => {
 
 			return Effect.gen(function* () {
 				/**
+				 * ```txt
 				 * GIVEN a single timer that is due
 				 * WHEN pollDueTimersWorkflow executes
 				 * THEN the DueTimeReached event should be published
 				 *   AND the timer should be marked as Reached
 				 *   AND workflow should complete successfully
+				 * ```
 				 */
 
 				// Arrange: Create a timer that will be due
@@ -132,11 +138,13 @@ describe('pollDueTimersWorkflow', () => {
 
 		it.scoped('processes multiple due timers sequentially', () => {
 			/**
+			 * ```txt
 			 * GIVEN three timers that are due
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN all three DueTimeReached events should be published in order
 			 *   AND all three timers should be marked as Reached
 			 *   AND workflow should complete successfully
+			 * ```
 			 */
 
 			// Track the order of operations to verify sequential processing
@@ -144,7 +152,7 @@ describe('pollDueTimersWorkflow', () => {
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: event =>
+				publishDueTimeReached: (event) =>
 					Effect.sync(() => {
 						operations.push(`publish:${event.serviceCallId}`)
 						publishedEvents.push(event)
@@ -166,7 +174,7 @@ describe('pollDueTimersWorkflow', () => {
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
 				// Create and save timers using iteration
-				const timers = serviceCallIds.map(serviceCallId =>
+				const timers = serviceCallIds.map((serviceCallId) =>
 					Domain.ScheduledTimer.make({
 						correlationId: Option.none(),
 						dueAt,
@@ -178,14 +186,14 @@ describe('pollDueTimersWorkflow', () => {
 
 				yield* Effect.forEach(
 					timers,
-					t =>
+					(t) =>
 						Effect.andThen(
 							// Ensure each serviceCallId has a corresponding service_calls row before saving.
 							withServiceCall({
 								serviceCallId: t.serviceCallId,
 								tenantId: t.tenantId,
 							}),
-							_ => persistence.save(t),
+							(_) => persistence.save(t),
 						),
 					{
 						concurrency: 1,
@@ -206,10 +214,12 @@ describe('pollDueTimersWorkflow', () => {
 				yield* pipe(
 					serviceCallIds,
 					// biome-ignore lint/suspicious/useIterableCallbackReturn: Ensure proper iteration
-					Effect.forEach(serviceCallId => persistence.find({ serviceCallId, tenantId }), { concurrency: 1 }),
-					Effect.tap(foundTimers =>
+					Effect.forEach((serviceCallId) => persistence.find({ serviceCallId, tenantId }), {
+						concurrency: 1,
+					}),
+					Effect.tap((foundTimers) =>
 						Effect.sync(() => {
-							foundTimers.forEach(found => {
+							foundTimers.forEach((found) => {
 								expect(Option.isSome(found)).toBe(true)
 								expect(found.pipe(Option.exists(Domain.TimerEntry.isReached))).toBe(true)
 							})
@@ -220,23 +230,25 @@ describe('pollDueTimersWorkflow', () => {
 				expect(Chunk.isEmpty(afterFired)).toBe(true)
 
 				// Assert: All operations should have occurred (3 publishes)
-				expect(operations.filter(op => op.startsWith('publish:'))).toHaveLength(serviceCallIds.length)
+				expect(operations.filter((op) => op.startsWith('publish:'))).toHaveLength(serviceCallIds.length)
 			}).pipe(Effect.provide(Layer.mergeAll(BaseTestLayers, TimerEventBusTest)))
 		})
 
 		it.scoped('publishes event before marking timer as fired', () => {
 			/**
+			 * ```txt
 			 * GIVEN a timer that is due
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN the event should be published first
 			 *   AND the timer should be marked as fired second
 			 *   AND the order should be verifiable via call sequence
+			 * ```
 			 */
 
 			const operations: string[] = []
 
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: timer =>
+				publishDueTimeReached: (timer) =>
 					Effect.sync(() => {
 						operations.push(`publish:${timer.serviceCallId}`)
 					}),
@@ -271,7 +283,7 @@ describe('pollDueTimersWorkflow', () => {
 					Ports.TimerPersistencePort,
 					Ports.TimerPersistencePort.of({
 						...basePersistence,
-						markFired: params =>
+						markFired: (params) =>
 							Effect.gen(function* () {
 								operations.push(`markFired:${params.key.serviceCallId}`)
 								yield* basePersistence.markFired(params)
@@ -295,9 +307,8 @@ describe('pollDueTimersWorkflow', () => {
 		/**
 		 * Verifies correlationId propagation from timer aggregate to published event.
 		 *
-		 * The workflow provisions MessageMetadata Context with the timer's correlationId
-		 * before calling publishDueTimeReached. The adapter then accesses this context
-		 * to populate the envelope's correlationId field.
+		 * The workflow provisions MessageMetadata Context with the timer's correlationId before calling
+		 * publishDueTimeReached. The adapter then accesses this context to populate the envelope's correlationId field.
 		 *
 		 * This ensures correlation chains remain intact across module boundaries.
 		 *
@@ -305,10 +316,12 @@ describe('pollDueTimersWorkflow', () => {
 		 */
 		it.scoped('propagates correlationId from timer to event via MessageMetadata Context', () => {
 			/**
+			 * ```txt
 			 * GIVEN a timer with a correlationId
 			 * WHEN pollDueTimersWorkflow executes with MessageMetadata Context provisioning
 			 * THEN the published DueTimeReached event should include the correlationId
 			 *   AND the correlationId should match the timer's correlationId
+			 * ```
 			 */
 
 			let publishedMetadata: MessageMetadata.Type | undefined
@@ -368,16 +381,18 @@ describe('pollDueTimersWorkflow', () => {
 	describe('Edge Cases - Empty Results', () => {
 		it.scoped('completes successfully when no timers are due', () => {
 			/**
+			 * ```txt
 			 * GIVEN no timers are due (findDue returns empty Chunk)
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN no events should be published
 			 *   AND no persistence operations should occur
 			 *   AND workflow should complete successfully
+			 * ```
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: event =>
+				publishDueTimeReached: (event) =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
 					}),
@@ -433,15 +448,17 @@ describe('pollDueTimersWorkflow', () => {
 
 		it.scoped('completes successfully when persistence is empty', () => {
 			/**
+			 * ```txt
 			 * GIVEN persistence has no timers at all
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN findDue should return empty Chunk
 			 *   AND workflow should complete successfully
+			 * ```
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: event =>
+				publishDueTimeReached: (event) =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
 					}),
@@ -471,15 +488,17 @@ describe('pollDueTimersWorkflow', () => {
 	describe('Edge Cases - Timing Boundaries', () => {
 		it.scoped('processes timer exactly at dueAt time', () => {
 			/**
+			 * ```txt
 			 * GIVEN a timer with dueAt exactly equal to current time (now === dueAt)
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN the timer should be included in due timers
 			 *   AND should be processed successfully
+			 * ```
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: event =>
+				publishDueTimeReached: (event) =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
 					}),
@@ -517,7 +536,7 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Timer should be marked as Reached
 				yield* pipe(
 					persistence.find({ serviceCallId, tenantId }),
-					Effect.tap(found =>
+					Effect.tap((found) =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
@@ -529,15 +548,17 @@ describe('pollDueTimersWorkflow', () => {
 
 		it.scoped('does not process timer scheduled in the future', () => {
 			/**
+			 * ```txt
 			 * GIVEN a timer with dueAt > now (future timer)
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN the timer should NOT be included in due timers
 			 *   AND should NOT be processed
+			 * ```
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: event =>
+				publishDueTimeReached: (event) =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
 					}),
@@ -578,7 +599,7 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Timer should still be in Scheduled state
 				yield* pipe(
 					persistence.find({ serviceCallId, tenantId }),
-					Effect.tap(found =>
+					Effect.tap((found) =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isScheduled)).toBe(true)
@@ -590,16 +611,18 @@ describe('pollDueTimersWorkflow', () => {
 
 		it.scoped('processes timer that is overdue', () => {
 			/**
+			 * ```txt
 			 * GIVEN a timer scheduled for 5 minutes from now
 			 *   AND time advances 15 minutes (timer is 10 minutes overdue)
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN the timer should be included in due timers
 			 *   AND should be processed successfully
+			 * ```
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: event =>
+				publishDueTimeReached: (event) =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
 					}),
@@ -643,7 +666,7 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Timer should be marked as Reached
 				yield* pipe(
 					persistence.find({ serviceCallId, tenantId }),
-					Effect.tap(found =>
+					Effect.tap((found) =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
@@ -708,6 +731,7 @@ describe('pollDueTimersWorkflow', () => {
 
 		it.scoped('propagates batch failure when some timers fail', () => {
 			/**
+			 * ```txt
 			 * GIVEN three timers that are due
 			 *   AND the second timer's publish will fail
 			 * WHEN pollDueTimersWorkflow executes
@@ -716,8 +740,10 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND timer 3 should still be processed successfully
 			 *   AND workflow should fail with BatchProcessingError
 			 *   AND BatchProcessingError should show 1 failure out of 3 total
+			 * ```
 			 *
 			 * Strategy: Use Effect.partition for error accumulation
+			 *
 			 * - Process all timers regardless of individual failures
 			 * - Collect failures separately from successes
 			 * - Workflow fails with BatchProcessingError containing failure details
@@ -728,7 +754,7 @@ describe('pollDueTimersWorkflow', () => {
 			let callCount = 0
 
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: event => {
+				publishDueTimeReached: (event) => {
 					callCount++
 					// Fail on second timer (callCount === 2)
 					if (callCount === 2) {
@@ -757,7 +783,7 @@ describe('pollDueTimersWorkflow', () => {
 				const registeredAt = yield* clock.now()
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
-				const timers = serviceCallIds.map(serviceCallId =>
+				const timers = serviceCallIds.map((serviceCallId) =>
 					Domain.ScheduledTimer.make({
 						correlationId: Option.none(),
 						dueAt,
@@ -769,7 +795,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				yield* Effect.forEach(
 					timers,
-					t =>
+					(t) =>
 						Effect.andThen(
 							withServiceCall({
 								serviceCallId: t.serviceCallId,
@@ -808,7 +834,7 @@ describe('pollDueTimersWorkflow', () => {
 				expect(publishedEvents).toHaveLength(2) // Assert: Timer 1 should be marked as Reached
 				yield* pipe(
 					persistence.find({ serviceCallId: serviceCallId1, tenantId }),
-					Effect.tap(found =>
+					Effect.tap((found) =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
@@ -818,7 +844,7 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Timer 2 should still be Scheduled (publish failed)
 				yield* pipe(
 					persistence.find({ serviceCallId: serviceCallId2, tenantId }),
-					Effect.tap(found =>
+					Effect.tap((found) =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isScheduled)).toBe(true)
@@ -828,7 +854,7 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: Timer 3 should be marked as Reached
 				yield* pipe(
 					persistence.find({ serviceCallId: serviceCallId3, tenantId }),
-					Effect.tap(found =>
+					Effect.tap((found) =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
@@ -844,6 +870,7 @@ describe('pollDueTimersWorkflow', () => {
 	describe('Error Handling - Persistence Failures', () => {
 		it.scoped('propagates batch failure when markFired fails', () => {
 			/**
+			 * ```txt
 			 * GIVEN a timer that is due
 			 *   AND eventBus.publish succeeds
 			 *   AND persistence.markFired will fail
@@ -852,14 +879,15 @@ describe('pollDueTimersWorkflow', () => {
 			 *   AND markFired failure should be collected
 			 *   AND the timer should remain in Scheduled state
 			 *   AND the workflow should fail with BatchProcessingError
+			 * ```
 			 *
-			 * Strategy: Effect.partition collects failures, workflow propagates to error channel
-			 * Note: Event is published but timer stays Scheduled (Orchestration handles duplicate via state guard)
+			 * Strategy: Effect.partition collects failures, workflow propagates to error channel Note: Event is published but
+			 * timer stays Scheduled (Orchestration handles duplicate via state guard)
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: event =>
+				publishDueTimeReached: (event) =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
 					}),
@@ -928,7 +956,7 @@ describe('pollDueTimersWorkflow', () => {
 				expect(publishedEvents).toHaveLength(1) // Assert: Timer should still be in Scheduled state (markFired failed but collected)
 				yield* pipe(
 					basePersistence.find({ serviceCallId, tenantId }),
-					Effect.tap(found =>
+					Effect.tap((found) =>
 						Effect.sync(() => {
 							expect(Option.isSome(found)).toBe(true)
 							expect(Option.exists(found, Domain.TimerEntry.isScheduled)).toBe(true)
@@ -942,16 +970,18 @@ describe('pollDueTimersWorkflow', () => {
 	describe('Error Handling - Query Failures', () => {
 		it.scoped('propagates error when findDue fails', () => {
 			/**
+			 * ```txt
 			 * GIVEN persistence.findDue will fail with PersistenceError
 			 * WHEN pollDueTimersWorkflow executes
 			 * THEN the workflow should fail with PersistenceError
 			 *   AND no events should be published
 			 *   AND no timers should be marked
+			 * ```
 			 */
 
 			const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
-				publishDueTimeReached: event =>
+				publishDueTimeReached: (event) =>
 					Effect.sync(() => {
 						publishedEvents.push(event)
 					}),

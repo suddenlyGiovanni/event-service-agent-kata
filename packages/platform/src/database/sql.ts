@@ -16,8 +16,8 @@ import * as StringModule from 'effect/String'
 /**
  * Workspace root path service.
  *
- * Resolves the workspace root directory from this file's location.
- * Used by DatabaseConfig and MigratorLayer to consistently locate resources.
+ * Resolves the workspace root directory from this file's location. Used by DatabaseConfig and MigratorLayer to
+ * consistently locate resources.
  *
  * @internal Shared service for workspace-relative path resolution
  */
@@ -40,15 +40,17 @@ class WorkspaceRoot extends Effect.Service<WorkspaceRoot>()('WorkspaceRoot', {
  * Database configuration with environment variable overrides.
  *
  * Environment variables:
+ *
  * - `DB_PATH`: Database file path (default: '<workspace>/data/db.sqlite')
  * - `DB_SCHEMA_DIR`: Schema dump directory (default: '<workspace>/data')
  *
- * Defaults use workspace root (not CWD), so paths are consistent regardless
- * of where commands are executed (workspace root, package dir, etc.).
+ * Defaults use workspace root (not CWD), so paths are consistent regardless of where commands are executed (workspace
+ * root, package dir, etc.).
  *
- * Local dev: No configuration needed, uses workspace-root 'data/' directory
- * Production: Override via env vars (e.g., DB_PATH=/var/lib/myapp/db.sqlite)
- * Testing: Override via Layer.mock (e.g., ':memory:' database, no schema dump)
+ * Local dev: No configuration needed, uses workspace-root 'data/' directory.
+ *
+ * - Production: Override via env vars (e.g., DB_PATH=/var/lib/myapp/db.sqlite)
+ * - Testing: Override via Layer.mock (e.g., ':memory:' database, no schema dump)
  *
  * @internal Consumed by ClientLayer and MigratorLayer via dependency injection
  */
@@ -85,31 +87,35 @@ class DatabaseConfig extends Effect.Service<DatabaseConfig>()('DatabaseConfig', 
  * Migrator layer with automatic migration discovery and execution.
  *
  * Discovery strategy:
+ *
  * - Finds all migration files across all packages in the monorepo
  * - Uses Bun.Glob with pattern to discover package migration directories
  * - Sorts by filename for deterministic execution order
  * - Tracks executed migrations in effect_sql_migrations table
  *
  * Migration Organization:
+ *
  * - Bootstrap migration (0001) in platform package creates table skeletons
  * - Module migrations (0003+) add domain-specific columns and constraints
  * - Filename-based ordering ensures bootstrap runs before module migrations
  * - Each module owns its schema evolution via migrations in its src/database/migrations/
  *
  * Schema Dump Behavior:
+ *
  * - Reads schemaDirectory from DatabaseConfig
  * - If schemaDirectory defined: dumps schema to _schema.sql after migrations
  * - If schemaDirectory undefined: skips schema dump (test environments)
  *
  * Dependencies:
+ *
  * - DatabaseConfig: For schema dump directory configuration
  * - WorkspaceRoot: For migration file discovery base path
  * - Platform.Path.Path: For cross-platform path operations
  * - SqlClient: For executing migrations
  *
+ * @internal Used by Live and Test layers via pure composition
  * @see ADR-0005 for schema design (bootstrap + module evolution pattern)
  * @see ADR-0012 for package structure (module ownership)
- * @internal Used by Live and Test layers via pure composition
  */
 const MigratorLayer: Layer.Layer<
 	never,
@@ -129,7 +135,7 @@ const MigratorLayer: Layer.Layer<
 	const migrationsRecord = yield* pipe(
 		Stream.fromAsyncIterable(
 			new Bun.Glob('packages/*/src/database/migrations/*.ts').scan({ cwd: workspaceRoot.path }),
-			error =>
+			(error) =>
 				new Platform.Error.SystemError({
 					cause: error,
 					description: String(error),
@@ -187,17 +193,18 @@ const MigratorLayer: Layer.Layer<
 /**
  * SQLite session pragma configuration layer.
  *
- * Configures session-level SQLite pragmas after client initialization.
- * These pragmas apply per-connection and must be set on each session.
+ * Configures session-level SQLite pragmas after client initialization. These pragmas apply per-connection and must be
+ * set on each session.
  *
  * Configured pragmas:
+ *
  * - `foreign_keys = ON`: Enable foreign key constraint enforcement (CRITICAL)
  * - `synchronous = NORMAL`: Balance durability vs performance (WAL mode)
  * - `temp_store = MEMORY`: Store temporary tables in RAM for speed
  * - `cache_size = -64000`: 64MB page cache for better performance
  *
- * @see ADR-0005 for pragma strategy (database-level vs session-level)
  * @internal Used by ClientLayer to configure session on connection
+ * @see ADR-0005 for pragma strategy (database-level vs session-level)
  */
 const PragmaLayer: Layer.Layer<never, Sql.SqlError.SqlError, Sql.SqlClient.SqlClient> = Effect.gen(function* () {
 	yield* Effect.logInfo('Configuring SQLite session pragmas')
@@ -206,19 +213,27 @@ const PragmaLayer: Layer.Layer<never, Sql.SqlError.SqlError, Sql.SqlClient.SqlCl
 
 	yield* Effect.logDebug('Setting PRAGMA foreign_keys = ON')
 	/* CRITICAL: Enable FK constraints */
-	yield* sql`PRAGMA foreign_keys = ON`
+	yield* sql`
+		PRAGMA foreign_keys = ON;
+	`
 
 	yield* Effect.logDebug('Setting PRAGMA synchronous = NORMAL')
 	/* Balance safety/performance */
-	yield* sql`PRAGMA synchronous = NORMAL`
+	yield* sql`
+		PRAGMA synchronous = NORMAL;
+	`
 
 	yield* Effect.logDebug('Setting PRAGMA temp_store = MEMORY')
 	/* Faster temp tables */
-	yield* sql`PRAGMA temp_store = MEMORY`
+	yield* sql`
+		PRAGMA temp_store = MEMORY;
+	`
 
 	yield* Effect.logDebug('Setting PRAGMA cache_size = -64000')
 	/* 64MB cache */
-	yield* sql`PRAGMA cache_size = -64000`
+	yield* sql`
+		PRAGMA cache_size = -64000;
+	`
 
 	yield* Effect.logInfo('SQLite session pragmas configured successfully')
 }).pipe(Effect.withSpan('SQL.PragmaLayer'), Layer.effectDiscard)
@@ -232,6 +247,7 @@ const PragmaLayer: Layer.Layer<never, Sql.SqlError.SqlError, Sql.SqlClient.SqlCl
  * - Session pragmas configured on initialization
  *
  * Dependencies:
+ *
  * - DatabaseConfig: For database filename configuration
  *
  * @internal Used by Live and Test layers via pure composition
@@ -271,25 +287,27 @@ const ClientLayer: Layer.Layer<
  * - Session pragmas configured (foreign_keys, synchronous, etc.)
  *
  * Environment configuration:
+ *
  * - DB_PATH: Database file path (default: '<workspace>/data/db.sqlite')
  * - DB_SCHEMA_DIR: Schema dump directory (default: '<workspace>/data')
  *
  * Self-contained: Provides all dependencies internally (no external requirements)
  *
  * @example
- * ```typescript ignore
- * import { Live } from '@event-service-agent/platform/database'
+ *
+ * ```typescript
  * import * as Effect from 'effect/Effect'
  * import * as Sql from '@effect/sql'
+ * import { SQL } from '@event-service-agent/platform/database'
  *
  * const program = Effect.gen(function* () {
- *   const sql = yield* Sql.SqlClient.SqlClient
- *   const result = yield* sql`SELECT * FROM service_calls`
- *   return result
+ * 	const sql = yield* Sql.SqlClient.SqlClient
+ * 	const result = yield* sql`SELECT * FROM service_calls`
+ * 	return result
  * })
  *
  * // Production layer (self-contained, no dependencies)
- * Effect.provide(program, Live)
+ * Effect.provide(program, SQL.Live)
  * ```
  */
 const Live: Layer.Layer<
@@ -315,25 +333,26 @@ const Live: Layer.Layer<
  * - Identical schema and pragma configuration to production
  * - No schema dump (schemaDirectory overridden to undefined)
  *
- * Architecture: Same composition as Live (MigratorLayer.pipe(provideMerge(ClientLayer))),
- * differs only in DatabaseConfig provision (Layer.succeed for test configuration).
+ * Architecture: Same composition as Live (MigratorLayer.pipe(provideMerge(ClientLayer))), differs only in
+ * DatabaseConfig provision (Layer.succeed for test configuration).
  *
  * Self-contained: Provides all dependencies internally (no external requirements)
  *
  * @example
- * ```typescript ignore
- * import { Test } from '@event-service-agent/platform/database'
+ *
+ * ```typescript
  * import * as Effect from 'effect/Effect'
  * import * as Sql from '@effect/sql'
+ * import { SQL } from '@event-service-agent/platform/database'
  *
  * const program = Effect.gen(function* () {
- *   const sql = yield* Sql.SqlClient.SqlClient
- *   const result = yield* sql`SELECT * FROM service_calls`
- *   return result
+ * 	const sql = yield* Sql.SqlClient.SqlClient
+ * 	const result = yield* sql`SELECT * FROM service_calls`
+ * 	return result
  * })
  *
  * // Test layer (in-memory, self-contained)
- * Effect.provide(program, Test)
+ * Effect.provide(program, SQL.Test)
  * ```
  */
 const Test: Layer.Layer<
@@ -361,15 +380,18 @@ const Test: Layer.Layer<
  * SQLite client layers with automatic migration execution.
  *
  * Layer composition pattern (both Live and Test):
+ *
  * 1. MigratorLayer requires: DatabaseConfig, WorkspaceRoot, Path, SqlClient
  * 2. Layer.provideMerge(ClientLayer) satisfies SqlClient requirement AND exports it
  * 3. Layer.provide(...) satisfies remaining dependencies (Config, WorkspaceRoot, Path)
  * 4. Live vs Test differ only in DatabaseConfig provision:
+ *
  *    - Live: DatabaseConfig.Default (env vars + workspace defaults)
  *    - Test: Layer.succeed override (in-memory DB, no schema dump)
  *
  * Dependency flow:
- * ```
+ *
+ * ```txt
  * Config + WorkspaceRoot + Path (provided at top level)
  *   └─> ClientLayer (uses Config)
  *         └─> MigratorLayer (uses all deps + SqlClient from ClientLayer)
@@ -378,24 +400,27 @@ const Test: Layer.Layer<
  * ```
  *
  * SQLite Pragmas Strategy:
+ *
  * - Database-level pragmas (journal_mode=WAL): Set in migration 0001_bootstrap_schema.ts
  * - Session-level pragmas (foreign_keys, synchronous, etc.): Set in ClientLayer on initialization
  *
  * Migrations:
- * - Discovers migrations from: packages/*\/src/database/migrations/*.ts (platform + modules)
+ *
+ * - Discovers migrations from: packages/_/src/database/migrations/_.ts (platform + modules)
  * - Runs migrations on layer initialization (before app code executes)
  * - Tracks executed migrations in effect_sql_migrations table
  *
  * @example
- * ```typescript ignore
+ *
+ * ```typescript
  * import { SQL } from '@event-service-agent/platform/database'
  * import * as Effect from 'effect/Effect'
  * import * as Sql from '@effect/sql'
  *
  * const program = Effect.gen(function* () {
- *   const sql = yield* Sql.SqlClient.SqlClient
- *   const result = yield* sql`SELECT * FROM service_calls`
- *   return result
+ * 	const sql = yield* Sql.SqlClient.SqlClient
+ * 	const result = yield* sql`SELECT * FROM service_calls`
+ * 	return result
  * })
  *
  * // Production layer (self-contained, no dependencies)

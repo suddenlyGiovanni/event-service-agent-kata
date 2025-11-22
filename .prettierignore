@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+**/dist/
+**/build/
+*.min.js
+*.bundle.js
+
+# Generated files
+**/coverage/
+
+# Database
+data/
+
+# Lockfiles
+bun.lock
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode/
+.idea/

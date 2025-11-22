@@ -3,35 +3,38 @@
 /**
  * Database reset script for local development.
  *
- * Drops all tables and re-runs migrations from scratch.
- * Useful for:
+ * Drops all tables and re-runs migrations from scratch. Useful for:
+ *
  * - Testing migrations on clean slate
  * - Fixing corrupted local database
  * - Starting fresh during development
  *
- * ⚠️  WARNING: This script DESTROYS ALL DATA in the database.
- *     Use only for local development, never in production.
+ * ⚠️ WARNING: This script DESTROYS ALL DATA in the database. Use only for local development, never in production.
  *
- * Usage:
- *   bun run db:reset                   # From workspace root
+ * Usage: `bun run db:reset` # From workspace root
  *
  * Environment Variables (.env or shell):
- *   DB_PATH        - Database file path (default: <workspace>/data/db.sqlite)
- *   DB_SCHEMA_DIR  - Schema dump directory (default: <workspace>/data)
+ *
+ * - `DB_PATH` - Database file path (default: <workspace>/data/db.sqlite)
+ * - `DB_SCHEMA_DIR` - Schema dump directory (default: <workspace>/data)
  *
  * Environment File:
- *   Scripts automatically load <workspace>/.env if present.
- *   See .env.example for available configuration options.
- *   Relative paths in .env work correctly when running from workspace root.
+ *
+ * - Scripts automatically load <workspace>/.env if present.
+ * - See .env.example for available configuration options.
+ * - Relative paths in .env work correctly when running from workspace root.
  *
  * Exit Codes:
- *   0 - Reset completed successfully
- *   1 - Reset failed (error details logged)
+ *
+ * - 0 - Reset completed successfully
+ * - 1 - Reset failed (error details logged)
  *
  * @see packages/platform/src/database/sql.ts for migration configuration
  * @see packages/platform/src/database/migrations/ for migration files
  * @see .env.example for environment configuration options
  */
+
+import console from 'node:console'
 
 import * as PlatformBun from '@effect/platform-bun'
 import * as Sql from '@effect/sql'
@@ -46,6 +49,7 @@ import { SQL } from '../sql.ts'
  * Reset program.
  *
  * Steps:
+ *
  * 1. Connect to database (SQL.Live runs migrations automatically on init)
  * 2. Query all tables from sqlite_master
  * 3. Drop each table including effect_sql_migrations (to clear migration state)
@@ -69,7 +73,7 @@ const program = Effect.gen(function* () {
      ORDER BY name;
 	`
 
-	const tableNames = tables.map(t => t.name)
+	const tableNames = tables.map((t) => t.name)
 	yield* Effect.logInfo('Found tables', { tables: tableNames })
 
 	// 2. Drop all tables (reverse order to handle FK dependencies)
@@ -77,7 +81,9 @@ const program = Effect.gen(function* () {
 		yield* Effect.logInfo('Dropping tables')
 
 		// Disable FK checks temporarily to avoid constraint errors
-		yield* sql`PRAGMA foreign_keys = OFF`
+		yield* sql`
+			PRAGMA foreign_keys = OFF;
+		`
 
 		for (const tableName of tableNames) {
 			yield* Effect.logDebug('Dropping table', { table: tableName })
@@ -86,7 +92,9 @@ const program = Effect.gen(function* () {
 		}
 
 		// Re-enable FK checks
-		yield* sql`PRAGMA foreign_keys = ON`
+		yield* sql`
+			PRAGMA foreign_keys = ON;
+		`
 
 		yield* Effect.logInfo('All tables dropped', { count: tableNames.length })
 	} else {
@@ -114,7 +122,7 @@ Effect.runPromise(program.pipe(Effect.provide(layer)))
 		console.log('ℹ️  Run "bun run db:migrate" to recreate schema')
 		process.exit(0)
 	})
-	.catch(error => {
+	.catch((error) => {
 		console.error('\n✗ Database reset failed:')
 		console.error(error)
 		process.exit(1)

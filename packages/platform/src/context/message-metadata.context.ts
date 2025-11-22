@@ -14,60 +14,93 @@
  *
  * ### In Workflows (Context Provisioning)
  * ```typescript ignore
- * // Extract correlationId from aggregate
- * const correlationId = timer.correlationId
+ * import * as Effect from 'effect/Effect'
+ * import * as Option from 'effect/Option'
+ * import type { CorrelationId } from '@event-service-agent/schemas/shared'
+ * import { MessageMetadata } from '@event-service-agent/platform/context'
  *
- * // Wrap port call with context
- * yield* eventBus.publishDueTimeReached(event).pipe(
- *   Effect.provideService(MessageMetadata, {
- *     correlationId,
- *     causationId: Option.none()
- *   })
- * )
+ * // Example: Workflow provisions context for port operations
+ * const publishEventWorkflow = (correlationId: Option.Option<CorrelationId.Type>) =>
+ * 	Effect.gen(function* () {
+ * 		// Provision context with correlation metadata
+ * 		const metadata: MessageMetadata.Type = {
+ * 			correlationId,
+ * 			causationId: Option.none(),
+ * 		}
+ *
+ * 		// Use Effect.provideService to inject context
+ * 		yield* Effect.succeed(undefined).pipe(
+ * 			Effect.provideService(MessageMetadata, metadata)
+ * 		)
+ * 	})
  * ```
  *
  * ### In Ports (Requirement Declaration)
  * ```typescript ignore
+ * import * as Context from 'effect/Context'
+ * import type * as Effect from 'effect/Effect'
+ * import { MessageMetadata } from '@event-service-agent/platform/context'
+ *
+ * // Example: Port declares MessageMetadata requirement via R parameter
  * class TimerEventBusPort extends Context.Tag('TimerEventBusPort')<
- *   TimerEventBusPort,
- *   {
- *     readonly publishDueTimeReached: (
- *       event: DueTimeReached
- *     ) => Effect.Effect<void, PublishError, MessageMetadata>
- *     //                                      ^^^^^^^^^^^^^^^^
- *     //                                      Requires context
- *   }
+ * 	TimerEventBusPort,
+ * 	{
+ * 		readonly publishDueTimeReached: (
+ * 			event: unknown
+ * 		) => Effect.Effect<void, Error, MessageMetadata>
+ * 		//                              ^^^^^^^^^^^^^^^^
+ * 		//                              Requires context
+ * 	}
  * >() {}
  * ```
  *
  * ### In Adapters (Context Consumption)
  * ```typescript ignore
- * publishDueTimeReached: (event) => Effect.gen(function* () {
- *   const metadata = yield* MessageMetadata
- *   //    ^^^^^^^^ Extract from context
+ * import * as Effect from 'effect/Effect'
+ * import { MessageMetadata } from '@event-service-agent/platform/context'
  *
- *   const envelope = new MessageEnvelope({
- *     correlationId: metadata.correlationId,  // From context
- *     causationId: metadata.causationId,      // From context
- *     // ...
- *   })
- * })
+ * // Example: Adapter extracts metadata from context
+ * const publishDueTimeReachedAdapter = (event: unknown) =>
+ * 	Effect.gen(function* () {
+ * 		const metadata = yield* MessageMetadata
+ * 		//    ^^^^^^^^ Extract from Effect context
+ *
+ * 		// Use metadata to construct envelope
+ * 		const envelope = {
+ * 			correlationId: metadata.correlationId, // From context
+ * 			causationId: metadata.causationId, // From context
+ * 			payload: event,
+ * 		}
+ *
+ * 		return envelope
+ * 	})
  * ```
  *
  * ### In Tests (Test Data Provisioning)
  * ```typescript ignore
- * it.effect('should propagate correlationId', () =>
- *   Effect.gen(function* () {
- *     const correlationId = yield* CorrelationId.makeUUID7()
+ * import { describe, expect, it } from '@effect/vitest'
+ * import * as Effect from 'effect/Effect'
+ * import * as Option from 'effect/Option'
+ * import { CorrelationId } from '@event-service-agent/schemas/shared'
+ * import { MessageMetadata } from '@event-service-agent/platform/context'
  *
- *     yield* workflow().pipe(
- *       Effect.provideService(MessageMetadata, {
- *         correlationId: Option.some(correlationId),
- *         causationId: Option.none()
- *       })
- *     )
- *   })
- * )
+ * describe('MessageMetadata', () => {
+ * 	it.effect('should propagate correlationId', () =>
+ * 		Effect.gen(function* () {
+ * 			const correlationId = yield* CorrelationId.makeUUID7()
+ *
+ * 			// Provision context for test
+ * 			const result = yield* Effect.succeed('test').pipe(
+ * 				Effect.provideService(MessageMetadata, {
+ * 					correlationId: Option.some(correlationId),
+ * 					causationId: Option.none(),
+ * 				})
+ * 			)
+ *
+ * 			expect(result).toBe('test')
+ * 		})
+ * 	)
+ * })
  * ```
  *
  * ## Design Rationale
@@ -91,35 +124,28 @@ import type { CorrelationId, EnvelopeId } from '@event-service-agent/schemas/sha
 /**
  * Message Metadata Context
  *
- * Provides correlation and causation identifiers for message envelope
- * construction. Propagated implicitly through Effect's Context system (R
- * parameter).
+ * Provides correlation and causation identifiers for message envelope construction. Propagated implicitly through
+ * Effect's Context system (R parameter).
  *
  * @example
- * 	import * as Effect from 'effect/Effect'
- * 	import * as Option from 'effect/Option'
  *
- * 	import type { CorrelationId, EnvelopeId } from '@event-service-agent/schemas/shared'
+ * ```typescript ignore
+ * // Provision context in workflow
+ * yield* publishEvent(event).pipe(
+ *   Effect.provideService(MessageMetadata, {
+ *     correlationId: Option.some(correlationId),
+ *     causationId: Option.none()
+ *   })
+ * )
  *
- * 	// Provision context in workflow
- * 	const program = Effect.gen(function* () {
+ * // Extract in adapter
+ * const metadata = yield* MessageMetadata
  *
- * 	yield* publishEvent(event).pipe(
- * 	  Effect.provideService(MessageMetadata, {
- * 	    correlationId: Option.some(correlationId),
- * 	    causationId: Option.none()
- * 	  })
- * 	})
- *
- * 	// Extract in adapter
- * 	const adapter = Effect.gen(function* () {
- * 		const metadata = yield* MessageMetadata
- *
- * 		const envelope = new MessageEnvelope({
- * 			correlationId: metadata.correlationId,
- * 	  		causationId: Option.none(),
- * 		})
- * 	})
+ * const envelope = {
+ *   correlationId: metadata.correlationId,
+ *   causationId: Option.none(),
+ * }
+ * ```
  */
 export class MessageMetadata extends Context.Tag('MessageMetadata')<
 	MessageMetadata,
@@ -143,8 +169,7 @@ export class MessageMetadata extends Context.Tag('MessageMetadata')<
 		/**
 		 * Causation identifier (parent message envelope ID)
 		 *
-		 * Links child messages to immediate parent for causality chain
-		 * reconstruction.
+		 * Links child messages to immediate parent for causality chain reconstruction.
 		 *
 		 * - **Some(id)**: Message caused by specific parent message
 		 * - **None**: Message is root cause (no parent)

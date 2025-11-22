@@ -53,7 +53,7 @@ TimerEntry: `(tenantId, serviceCallId, dueAt, registeredAt, status)`
 
 **Pattern:**
 
-```typescript
+```typescript ignore
 // Receive IDs from ScheduleTimer command
 const { tenantId, serviceCallId, dueAt } = command
 
@@ -73,13 +73,13 @@ yield *
 		Effect.provideService(MessageMetadata, {
 			correlationId: timer.correlationId, // From timer aggregate
 			causationId: Option.none(), // Time-triggered
-		})
+		}),
 	)
 ```
 
 **Real Implementation** (timer-event-bus.adapter.ts):
 
-```typescript
+```typescript ignore
 // Adapter extracts MessageMetadata from Context
 const metadata = yield * MessageMetadata
 

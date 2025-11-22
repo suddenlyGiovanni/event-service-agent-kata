@@ -138,11 +138,11 @@ Submitted → Scheduled → Running → Succeeded
 
 ```typescript
 type ServiceCall =
-  | { status: 'Submitted'; name: string; requestSpec: RequestSpec; /* ...*/ }
-  | { status: 'Scheduled'; dueAt: DateTime.Utc; /* ...*/ }
-  | { status: 'Running'; startedAt: DateTime.Utc; /* ...*/ }
-  | { status: 'Succeeded'; responseMeta: ResponseMeta; /* ...*/ }
-  | { status: 'Failed'; errorMeta: ErrorMeta; /* ...*/ }
+	| { status: 'Submitted'; name: string; requestSpec: RequestSpec /* ...*/ }
+	| { status: 'Scheduled'; dueAt: DateTime.Utc /* ...*/ }
+	| { status: 'Running'; startedAt: DateTime.Utc /* ...*/ }
+	| { status: 'Succeeded'; responseMeta: ResponseMeta /* ...*/ }
+	| { status: 'Failed'; errorMeta: ErrorMeta /* ...*/ }
 
 // State transition functions (pure)
 declare const schedule: (call: Submitted, dueAt: DateTime.Utc) => Scheduled
@@ -155,10 +155,8 @@ declare const fail: (call: Running, meta: ErrorMeta) => Failed
 
 ### submitWorkflow
 
-```typescript
-const submitWorkflow = Effect.fn('Orchestration.Submit')(function* (
-	command: SubmitServiceCall
-) {
+```typescript ignore
+const submitWorkflow = Effect.fn('Orchestration.Submit')(function* (command: SubmitServiceCall) {
 	// Generate ID
 	const serviceCallId = yield* ServiceCallId.makeUUID7()
 
@@ -184,21 +182,13 @@ const submitWorkflow = Effect.fn('Orchestration.Submit')(function* (
 
 ### dueWorkflow
 
-```typescript
-const dueWorkflow = Effect.fn('Orchestration.Due')(function* (
-	event: DueTimeReached
-) {
+```typescript ignore
+const dueWorkflow = Effect.fn('Orchestration.Due')(function* (event: DueTimeReached) {
 	// Load aggregate
-	const serviceCall = yield* persistence.find(
-		event.tenantId,
-		event.serviceCallId
-	)
+	const serviceCall = yield* persistence.find(event.tenantId, event.serviceCallId)
 
 	// Transition
-	const running = ServiceCall.start(
-		serviceCall,
-		yield* Clock.currentTimeMillis
-	)
+	const running = ServiceCall.start(serviceCall, yield* Clock.currentTimeMillis)
 
 	// Persist
 	yield* persistence.save(running)

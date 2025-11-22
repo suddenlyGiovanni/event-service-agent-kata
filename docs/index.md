@@ -11,7 +11,7 @@ Architecture decision records (ADRs), design documentation, and development plan
 → Start with **[Design Documentation](design/)**
 
 - Domain models and core concepts
-- Module boundaries and interactions  
+- Module boundaries and interactions
 - Hexagonal architecture patterns
 - Port interfaces and contracts
 
@@ -62,7 +62,7 @@ Architecture decision records (ADRs), design documentation, and development plan
 ## 📚 Documentation Structure
 
 | Section                             | Purpose                            | When to Use                            |
-|-------------------------------------|------------------------------------|----------------------------------------|
+| ----------------------------------- | ---------------------------------- | -------------------------------------- |
 | **[ADRs](decisions/)**              | Records **why** we made decisions  | Understanding trade-offs and rationale |
 | **[Design](design/)**               | Describes **what** the system does | Learning architecture and patterns     |
 | **[Plan](plan/)**                   | Tracks **when** we'll build it     | Finding current work and roadmap       |
