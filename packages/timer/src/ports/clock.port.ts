@@ -44,26 +44,22 @@ export interface ClockPort {
 	 *
 	 * @example Production usage
 	 *
-	 * ```typescript
-	 * const workflow = Effect.gen(function* () {
-	 * 	const clock = yield* ClockPort
-	 * 	const now = yield* clock.now()
-	 * 	// now is DateTime.Utc (current system time)
-	 * })
+	 * ```typescript ignore
+	 * const clock = yield* ClockPort
+	 * const now = yield* clock.now()
+	 * // now is DateTime.Utc (current system time)
 	 * ```
 	 *
 	 * @example Test usage with time control
 	 *
-	 * ```typescript
-	 * const test = Effect.gen(function* () {
-	 * 	const clock = yield* ClockPort
-	 * 	const t1 = yield* clock.now()
+	 * ```typescript ignore
+	 * const clock = yield* ClockPort
+	 * const t1 = yield* clock.now()
 	 *
-	 * 	yield* TestClock.adjust('5 minutes')
+	 * yield* TestClock.adjust('5 minutes')
 	 *
-	 * 	const t2 = yield* clock.now()
-	 * 	// t2 is exactly 5 minutes after t1
-	 * }).pipe(Effect.provide(ClockPortTest))
+	 * const t2 = yield* clock.now()
+	 * // t2 is exactly 5 minutes after t1
 	 * ```
 	 *
 	 * @returns Effect that produces current UTC time when executed

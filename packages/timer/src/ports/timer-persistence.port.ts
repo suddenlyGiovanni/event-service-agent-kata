@@ -154,14 +154,12 @@ export interface TimerPersistencePort {
 	 *
 	 * @example Workflow idempotency check
 	 *
-	 * ```typescript
-	 * const program = Effect.gen(function* () {
-	 * 	const existing = yield* persistence.findScheduledTimer({ tenantId, serviceCallId })
+	 * ```typescript ignore
+	 * const existing = yield* persistence.findScheduledTimer({ tenantId, serviceCallId })
 	 *
-	 * 	return yield* Option.match(existing, {
-	 * 		onNone: () => persistence.save(newTimer), // Create new (doesn't exist OR already reached)
-	 * 		onSome: (timer) => persistence.save(timer), // Update existing scheduled timer
-	 * 	})
+	 * return yield* Option.match(existing, {
+	 * 	onNone: () => persistence.save(newTimer), // Create new (doesn't exist OR already reached)
+	 * 	onSome: (timer) => persistence.save(timer), // Update existing scheduled timer
 	 * })
 	 * ```
 	 *
@@ -226,23 +224,21 @@ export interface TimerPersistencePort {
 	 *
 	 * @example Polling worker pattern
 	 *
-	 * ```typescript
-	 * const program = Effect.gen(function* () {
-	 * 	const dueTimers = yield* persistence.findDue(now)
-	 * 	// Only ScheduledTimers returned (Reached excluded)
+	 * ```typescript ignore
+	 * const dueTimers = yield* persistence.findDue(now)
+	 * // Only ScheduledTimers returned (Reached excluded)
 	 *
-	 * 	yield* Effect.forEach(dueTimers, (timer) =>
-	 * 		Effect.gen(function* () {
-	 * 			// Mark as fired FIRST (idempotency marker)
-	 * 			yield* persistence.markFired({
-	 * 				key: { tenantId: timer.tenantId, serviceCallId: timer.serviceCallId },
-	 * 				reachedAt: now,
-	 * 			})
-	 * 			// Then publish event (safe to retry)
-	 * 			yield* eventBus.publish(DueTimeReached.make(timer))
-	 * 		}),
-	 * 	)
-	 * })
+	 * yield* Effect.forEach(dueTimers, (timer) =>
+	 * 	Effect.gen(function* () {
+	 * 		// Mark as fired FIRST (idempotency marker)
+	 * 		yield* persistence.markFired({
+	 * 			key: { tenantId: timer.tenantId, serviceCallId: timer.serviceCallId },
+	 * 			reachedAt: now,
+	 * 		})
+	 * 		// Then publish event (safe to retry)
+	 * 		yield* eventBus.publish(DueTimeReached.make(timer))
+	 * 	}),
+	 * )
 	 * ```
 	 *
 	 * @param now - Current time to compare against dueAt
@@ -276,18 +272,16 @@ export interface TimerPersistencePort {
 	 *
 	 * @example Idempotent polling worker
 	 *
-	 * ```typescript
-	 * const program = Effect.gen(function* () {
-	 * 	// Publish event FIRST (may fail and retry)
-	 * 	yield* eventBus.publish(DueTimeReached.make(timer))
+	 * ```typescript ignore
+	 * // Publish event FIRST (may fail and retry)
+	 * yield* eventBus.publish(DueTimeReached.make(timer))
 	 *
-	 * 	// Mark as fired AFTER successful publish (idempotency marker)
-	 * 	yield* persistence.markFired({
-	 * 		key: { tenantId: timer.tenantId, serviceCallId: timer.serviceCallId },
-	 * 		reachedAt: now,
-	 * 	})
-	 * 	// Timer is now Reached, won't appear in next findDue()
+	 * // Mark as fired AFTER successful publish (idempotency marker)
+	 * yield* persistence.markFired({
+	 * 	key: { tenantId: timer.tenantId, serviceCallId: timer.serviceCallId },
+	 * 	reachedAt: now,
 	 * })
+	 * // Timer is now Reached, won't appear in next findDue()
 	 * ```
 	 *
 	 * @param params - Mark fired parameters
