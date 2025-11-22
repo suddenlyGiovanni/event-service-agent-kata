@@ -296,9 +296,9 @@ const ClientLayer: Layer.Layer<
  * @example
  *
  * ```typescript
- * import { Live } from '@event-service-agent/platform/database'
  * import * as Effect from 'effect/Effect'
  * import * as Sql from '@effect/sql'
+ * import { SQL } from '@event-service-agent/platform/database'
  *
  * const program = Effect.gen(function* () {
  * 	const sql = yield* Sql.SqlClient.SqlClient
@@ -307,7 +307,7 @@ const ClientLayer: Layer.Layer<
  * })
  *
  * // Production layer (self-contained, no dependencies)
- * Effect.provide(program, Live)
+ * Effect.provide(program, SQL.Live)
  * ```
  */
 const Live: Layer.Layer<
@@ -341,9 +341,9 @@ const Live: Layer.Layer<
  * @example
  *
  * ```typescript
- * import { Test } from '@event-service-agent/platform/database'
  * import * as Effect from 'effect/Effect'
  * import * as Sql from '@effect/sql'
+ * import { SQL } from '@event-service-agent/platform/database'
  *
  * const program = Effect.gen(function* () {
  * 	const sql = yield* Sql.SqlClient.SqlClient
@@ -352,7 +352,7 @@ const Live: Layer.Layer<
  * })
  *
  * // Test layer (in-memory, self-contained)
- * Effect.provide(program, Test)
+ * Effect.provide(program, SQL.Test)
  * ```
  */
 const Test: Layer.Layer<

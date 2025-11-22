@@ -18,16 +18,6 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 		 * The final 8 bytes are cryptographically random. When the timestamp changes, the counter resets to a pseudo-random
 		 * integer.
 		 *
-		 * @example
-		 *
-		 * ```ts
-		 * const array = [randomUUIDv7(), randomUUIDv7(), randomUUIDv7()][
-		 * 	('0192ce07-8c4f-7d66-afec-2482b5c9b03c',
-		 * 	'0192ce07-8c4f-7d67-805f-0f71581b5622',
-		 * 	'0192ce07-8c4f-7d68-8170-6816e4451a58')
-		 * ]
-		 * ```
-		 *
 		 * @param timestamp Unix timestamp in milliseconds, defaults to `Date.now()`
 		 */
 		randomUUIDv7: (
@@ -58,7 +48,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 * })
 	 *
 	 * // Provide default implementation
-	 * const runnable = program.pipe(Effect.provideService(UUIDPort.Default))
+	 * const runnable = program.pipe(Effect.provideService(UUIDPort, UUIDPort.Default))
 	 *
 	 * // Run the program
 	 * await Effect.runPromise(runnable) // "0192ce07-8c4f-7d66-afec-2482b5c9b03c"
@@ -76,7 +66,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 * @example
 	 *
 	 * ```typescript
-	 * import { Effect } from 'effect'
+	 * import { Effect, Console } from 'effect'
 	 * import { UUIDPort } from '@event-service-agent/platform/ports'
 	 *
 	 * // In domain code
@@ -88,7 +78,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 *
 	 * // in test code
 	 * const testable: Effect.Effect<void, never, never> = program.pipe(
-	 * 	Effect.provideService(UUIDPort.Test('fixed-uuid-000-000-000-000')),
+	 * 	Effect.provideService(UUIDPort, UUIDPort.Test('fixed-uuid-000-000-000-000')),
 	 * )
 	 *
 	 * // Run the program
@@ -110,7 +100,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 * @example
 	 *
 	 * ```typescript
-	 * import { Effect } from 'effect'
+	 * import { Effect, Console } from 'effect'
 	 * import { UUIDPort } from '@event-service-agent/platform/ports'
 	 *
 	 * const program = Effect.gen(function* () {
@@ -119,7 +109,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 	 * 	const uuid2 = uuid.randomUUIDv7() // "12345678-0000-7000-8000-000000000001"
 	 * 	const uuid3 = uuid.randomUUIDv7() // "12345678-0000-7000-8000-000000000002"
 	 * 	yield* Console.log([uuid1, uuid2, uuid3])
-	 * }).pipe(Effect.provideService(UUIDPort.Sequence('12345678')))
+	 * }).pipe(Effect.provideService(UUIDPort, UUIDPort.Sequence('12345678')))
 	 *
 	 * await Effect.runPromise(program) // [ "12345678-0000-7000-8000-000000000000", "12345678-0000-7000-8000-000000000001", "12345678-0000-7000-8000-000000000002" ]
 	 * ```
