@@ -39,19 +39,19 @@ import { ServiceCallEventBase } from '../common/service-call-event-base.schema.t
  *
  * @example
  *
- * ```typescript
+ * ```typescript ignore
  * // Decode from wire format (JSON → validated domain event)
- * const event = yield * DueTimeReached.decode(rawJson)
+ * const event = yield* DueTimeReached.decode(rawJson)
  *
  * // Construct in domain code
- * const event = new DueTimeReached({
+ * const event2 = new DueTimeReached({
  * 	tenantId,
  * 	serviceCallId,
  * 	reachedAt: firedAt, // DateTime.Utc
  * })
  *
  * // Encode to wire format (validated domain → JSON DTO)
- * const dto = yield * DueTimeReached.encode(event)
+ * const dto = yield* DueTimeReached.encode(event)
  * ```
  */
 export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTimeReached', {
@@ -75,15 +75,13 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 *
 	 * @example
 	 *
-	 * ```typescript
-	 * const event =
-	 * 	yield *
-	 * 	DueTimeReached.decode({
-	 * 		type: 'DueTimeReached',
-	 * 		tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-	 * 		serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
-	 * 		reachedAt: '2025-10-27T12:00:00.000Z',
-	 * 	})
+	 * ```typescript ignore
+	 * const event = yield* DueTimeReached.decode({
+	 * 	type: 'DueTimeReached',
+	 * 	tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
+	 * 	serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
+	 * 	reachedAt: '2025-10-27T12:00:00.000Z',
+	 * })
 	 * ```
 	 */
 	static readonly decode = Schema.decode(DueTimeReached)
@@ -99,8 +97,8 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 *
 	 * @example
 	 *
-	 * ```typescript
-	 * const dto = yield * DueTimeReached.encode(event)
+	 * ```typescript ignore
+	 * const dto = yield* DueTimeReached.encode(event)
 	 * // dto: { type: 'DueTimeReached', tenantId: string, ... }
 	 * await broker.publish(JSON.stringify(dto))
 	 * ```

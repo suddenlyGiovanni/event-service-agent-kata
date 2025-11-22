@@ -84,16 +84,10 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 *
 	 * @example
 	 *
-	 * ```typescript
-	 * import * as Effect from 'effect/Effect'
-	 * import { UUID7 } from '@event-service-agent/platform'
-	 *
-	 * const testProgram = Effect.gen(function* () {
-	 * 	const id1 = yield* UUID7.randomUUIDv7()
-	 * 	const id2 = yield* UUID7.randomUUIDv7()
-	 * 	// Both will be "01234567-89ab-7cde-89ab-0123456789ab"
-	 * 	return [id1, id2]
-	 * }).pipe(Effect.provide(UUID7.Test('01234567-89ab-7cde-89ab-0123456789ab')))
+	 * ```typescript ignore
+	 * const id1 = yield* UUID7.randomUUIDv7()
+	 * const id2 = yield* UUID7.randomUUIDv7()
+	 * // Both will be "01234567-89ab-7cde-89ab-0123456789ab" when using Test layer
 	 * ```
 	 *
 	 * @param fixed - The fixed UUID v7 string to return (must be valid UUID v7)
@@ -113,16 +107,11 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 *
 	 * @example
 	 *
-	 * ```typescript
-	 * import * as Effect from 'effect/Effect'
-	 * import { UUID7 } from '@event-service-agent/platform'
-	 *
-	 * const testProgram = Effect.gen(function* () {
-	 * 	const id1 = yield* UUID7.randomUUIDv7() // "12345678-0000-7000-8000-000000000000"
-	 * 	const id2 = yield* UUID7.randomUUIDv7() // "12345678-0000-7000-8000-000000000001"
-	 * 	const id3 = yield* UUID7.randomUUIDv7() // "12345678-0000-7000-8000-000000000002"
-	 * 	return [id1, id2, id3]
-	 * }).pipe(Effect.provide(UUID7.Sequence('12345678')))
+	 * ```typescript ignore
+	 * const id1 = yield* UUID7.randomUUIDv7() // "12345678-0000-7000-8000-000000000000"
+	 * const id2 = yield* UUID7.randomUUIDv7() // "12345678-0000-7000-8000-000000000001"
+	 * const id3 = yield* UUID7.randomUUIDv7() // "12345678-0000-7000-8000-000000000002"
+	 * // When using Sequence layer
 	 * ```
 	 *
 	 * @param prefix - Optional 8-char hex prefix (default: "00000000")

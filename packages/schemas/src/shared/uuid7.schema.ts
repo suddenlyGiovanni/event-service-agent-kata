@@ -65,12 +65,12 @@ export const UUID7Regex =
  *
  * @example
  *
- * ```typescript
+ * ```typescript ignore
  * // Generate new UUID v7 (requires UUID7 service in context)
- * const id = yield * UUID7.makeUUID7()
+ * const id = yield* UUID7.makeUUID7()
  *
  * // Decode from string (validation)
- * const parsed = yield * Schema.decode(UUID7)('01234567-89ab-7cde-89ab-0123456789ab')
+ * const parsed = yield* Schema.decode(UUID7)('01234567-89ab-7cde-89ab-0123456789ab')
  *
  * // Encode to string (no-op, already string)
  * const str = Schema.encodeSync(UUID7)(id)

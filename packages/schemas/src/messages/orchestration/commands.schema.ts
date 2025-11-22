@@ -40,19 +40,19 @@ import { RequestSpecWithoutBody } from '../http/request-spec.schema.ts'
  *
  * @example
  *
- * ```typescript
+ * ```typescript ignore
  * // Decode from wire format (JSON → validated command)
- * const command = yield * ScheduleTimer.decode(rawJson)
+ * const command = yield* ScheduleTimer.decode(rawJson)
  *
  * // Construct in domain code
- * const command = new ScheduleTimer({
+ * const command2 = new ScheduleTimer({
  * 	tenantId,
  * 	serviceCallId,
  * 	dueAt: scheduledTime, // DateTime.Utc directly
  * })
  *
  * // Encode to wire format (validated command → JSON DTO)
- * const dto = yield * ScheduleTimer.encode(command)
+ * const dto = yield* ScheduleTimer.encode(command)
  * ```
  */
 export class ScheduleTimer extends Schema.TaggedClass<ScheduleTimer>()('ScheduleTimer', {

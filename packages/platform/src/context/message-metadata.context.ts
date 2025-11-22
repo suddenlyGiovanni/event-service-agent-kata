@@ -129,30 +129,22 @@ import type { CorrelationId, EnvelopeId } from '@event-service-agent/schemas/sha
  *
  * @example
  *
- * ```typescript
- * import * as Effect from 'effect/Effect'
- * import * as Option from 'effect/Option'
- * import type { CorrelationId, EnvelopeId } from '@event-service-agent/schemas/shared'
- *
+ * ```typescript ignore
  * // Provision context in workflow
- * const program = Effect.gen(function* () {
- *
  * yield* publishEvent(event).pipe(
  *   Effect.provideService(MessageMetadata, {
  *     correlationId: Option.some(correlationId),
  *     causationId: Option.none()
  *   })
- * })
+ * )
  *
  * // Extract in adapter
- * const adapter = Effect.gen(function* () {
- * 	const metadata = yield* MessageMetadata
+ * const metadata = yield* MessageMetadata
  *
- * 	const envelope = new MessageEnvelope({
- * 		correlationId: metadata.correlationId,
- *   		causationId: Option.none(),
- * 	})
- * })
+ * const envelope = {
+ *   correlationId: metadata.correlationId,
+ *   causationId: Option.none(),
+ * }
  * ```
  */
 export class MessageMetadata extends Context.Tag('MessageMetadata')<

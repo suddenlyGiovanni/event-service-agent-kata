@@ -270,9 +270,9 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 *
 		 * @example
 		 *
-		 * ```typescript
+		 * ```typescript ignore
 		 * // Generate unique envelope ID when publishing
-		 * const envelopeId = yield * EnvelopeId.makeUUID7()
+		 * const envelopeId = yield* EnvelopeId.makeUUID7()
 		 *
 		 * const envelope = new MessageEnvelope({
 		 * 	id: envelopeId, // e.g., "018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0"
@@ -281,7 +281,7 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 		 *
 		 * // Later, another message can reference this as its cause
 		 * const childEnvelope = new MessageEnvelope({
-		 * 	id: yield * EnvelopeId.makeUUID7(), // New unique ID
+		 * 	id: yield* EnvelopeId.makeUUID7(), // New unique ID
 		 * 	causationId: Option.some(envelopeId), // Parent's ID
 		 * 	// ...
 		 * })
@@ -396,31 +396,26 @@ export class MessageEnvelope extends Schema.Class<MessageEnvelope>('MessageEnvel
 	 *
 	 * @example
 	 *
-	 * ```typescript
+	 * ```typescript ignore
 	 * // In workflow/adapter with pattern matching
-	 * import { Match, Option } from 'effect'
-	 * import { Messages } from '@event-service-agent/schemas'
+	 * const envelope = yield* MessageEnvelope.decodeJson(jsonFromNats)
 	 *
-	 * const program = Effect.gen(function* () {
-	 * 	const envelope = yield* MessageEnvelope.decodeJson(jsonFromNats)
+	 * // Type-safe pattern matching on payload using matchPayload helper
+	 * yield* MessageEnvelope.matchPayload(envelope).pipe(
+	 * 	Match.tag('DueTimeReached', (payload) =>
+	 * 		handleDueTimeReached(payload, envelope.correlationId),
+	 * 	),
+	 * 	Match.tag('ScheduleTimer', (payload) =>
+	 * 		handleScheduleTimer(payload, envelope.correlationId),
+	 * 	),
+	 * 	Match.orElse(() => Effect.logWarning('Unhandled message type', envelope.type)),
+	 * )
 	 *
-	 * 	// Type-safe pattern matching on payload using matchPayload helper
-	 * 	yield* MessageEnvelope.matchPayload(envelope).pipe(
-	 * 		Match.tag(Messages.Timer.Events.DueTimeReached.Tag, (payload) =>
-	 * 			handleDueTimeReached(payload, envelope.correlationId),
-	 * 		),
-	 * 		Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, (payload) =>
-	 * 			handleScheduleTimer(payload, envelope.correlationId),
-	 * 		),
-	 * 		Match.orElse(() => Effect.logWarning('Unhandled message type', envelope.type)),
-	 * 	)
-	 *
-	 * 	// Or use traditional if/else for simple cases
-	 * 	if (envelope.payload._tag === 'DueTimeReached') {
-	 * 		const correlationId = Option.getOrUndefined(envelope.correlationId)
-	 * 		yield* handleDueTimeReached(envelope.payload, correlationId)
-	 * 	}
-	 * })
+	 * // Or use traditional if/else for simple cases
+	 * if (envelope.payload._tag === 'DueTimeReached') {
+	 * 	const correlationId = Option.getOrUndefined(envelope.correlationId)
+	 * 	yield* handleDueTimeReached(envelope.payload, correlationId)
+	 * }
 	 * ```
 	 *
 	 * @param jsonString - JSON string from NATS/wire (e.g., `'{"id":"...","type":"DueTimeReached",...}'`)
