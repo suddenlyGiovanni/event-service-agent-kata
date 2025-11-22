@@ -41,30 +41,6 @@ jobs:
       - name: 🔍 Typecheck source code
         run: bun run type-check
 
-  markdown:
-    name: 📋 Markdown
-    runs-on: ubuntu-latest
-    continue-on-error: true
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: 🧩 Install dependencies
-        uses: ./.github/actions/setup
-
-      - name: 📝 Validate Markdown formatting
-        shell: sh
-        run: |
-          bun run format:docs:markdown
-          if ! git diff --quiet; then
-            echo "❌ Markdown files need formatting. Run: bun run format:docs:markdown"
-            git diff --stat
-            exit 1
-          fi
-
   tests:
     name: 🧪 Tests (Source)
     runs-on: ubuntu-latest
@@ -84,7 +60,6 @@ jobs:
   documentation:
     name: 📚 Documentation (All Checks)
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
       - name: 📥 Checkout code
@@ -96,6 +71,8 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: 💅 Validate JSDoc formatting
+        id: jsdoc-format
+        continue-on-error: true
         shell: sh
         run: |
           bun run format:docs:jsdoc
@@ -106,18 +83,26 @@ jobs:
           fi
 
       - name: 📚 Validate TSDoc structure
+        id: tsdoc-structure
+        continue-on-error: true
         shell: sh
         run: deno task docs:check
 
       - name: 📖 Type-check JSDoc examples
+        id: jsdoc-typecheck
+        continue-on-error: true
         shell: sh
         run: deno task docs:type-check
 
       - name: 🧪 Test JSDoc examples
+        id: jsdoc-test
+        continue-on-error: true
         shell: sh
         run: deno task docs:test
 
       - name: 📝 Validate Markdown formatting
+        id: markdown-format
+        continue-on-error: true
         shell: sh
         run: |
           bun run format:docs:markdown
@@ -128,5 +113,66 @@ jobs:
           fi
 
       - name: 📄 Type-check Markdown code blocks
+        id: markdown-typecheck
+        continue-on-error: true
         shell: sh
         run: deno task docs:type-check:md
+
+      - name: 📊 Report documentation check results
+        if: always()
+        shell: sh
+        run: |
+          echo "## Documentation Check Results"
+          echo ""
+          
+          FAILED=0
+          
+          if [ "${{ steps.jsdoc-format.outcome }}" != "success" ]; then
+            echo "❌ JSDoc formatting validation failed"
+            FAILED=1
+          else
+            echo "✅ JSDoc formatting validation passed"
+          fi
+          
+          if [ "${{ steps.tsdoc-structure.outcome }}" != "success" ]; then
+            echo "❌ TSDoc structure validation failed"
+            FAILED=1
+          else
+            echo "✅ TSDoc structure validation passed"
+          fi
+          
+          if [ "${{ steps.jsdoc-typecheck.outcome }}" != "success" ]; then
+            echo "❌ JSDoc examples type-checking failed"
+            FAILED=1
+          else
+            echo "✅ JSDoc examples type-checking passed"
+          fi
+          
+          if [ "${{ steps.jsdoc-test.outcome }}" != "success" ]; then
+            echo "❌ JSDoc examples testing failed"
+            FAILED=1
+          else
+            echo "✅ JSDoc examples testing passed"
+          fi
+          
+          if [ "${{ steps.markdown-format.outcome }}" != "success" ]; then
+            echo "❌ Markdown formatting validation failed"
+            FAILED=1
+          else
+            echo "✅ Markdown formatting validation passed"
+          fi
+          
+          if [ "${{ steps.markdown-typecheck.outcome }}" != "success" ]; then
+            echo "❌ Markdown code blocks type-checking failed"
+            FAILED=1
+          else
+            echo "✅ Markdown code blocks type-checking passed"
+          fi
+          
+          echo ""
+          if [ $FAILED -eq 1 ]; then
+            echo "❌ Some documentation checks failed. See above for details."
+            exit 1
+          else
+            echo "✅ All documentation checks passed!"
+          fi
