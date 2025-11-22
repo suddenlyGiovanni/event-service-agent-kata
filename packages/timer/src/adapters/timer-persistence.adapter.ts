@@ -130,10 +130,10 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 								timer_schedules
 							WHERE
 								${sql.and([
-								sql`
+									sql`
 										tenant_id = ${tenantId}
 									`,
-								sql`
+									sql`
 										service_call_id = ${serviceCallId}
 									`,
 								])};
