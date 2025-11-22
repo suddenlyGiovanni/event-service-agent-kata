@@ -34,8 +34,6 @@
 	"devDependencies": {
 		"@biomejs/biome": "catalog:lint",
 		"@effect/vitest": "catalog:test",
-		"prettier": "3.6.2",
-		"prettier-plugin-jsdoc": "1.5.0",
 		"vitest": "catalog:test"
 	},
 	"devEngines": {
@@ -72,12 +70,9 @@
 		"format:all": "bun run format:code && bun run format:docs",
 		"format:code": "bun run format:ts",
 		"format:docs": "bun run format:docs:jsdoc && bun run format:docs:markdown",
-		"format:docs:jsdoc": "bun run format:jsdoc && bun run format:jsdoc:examples",
-		"format:docs:markdown": "bun run format:markdown:structure && bun run format:markdown:prose && bun run format:markdown:code",
-		"format:jsdoc": "prettier --write 'packages/*/src/**/*.ts' 'packages/*/**/*.md'",
-		"format:jsdoc:examples": "deno fmt packages/*/src",
+		"format:docs:jsdoc": "deno fmt packages/*/src",
+		"format:docs:markdown": "bun run format:markdown:structure && bun run format:markdown:code",
 		"format:markdown:code": "deno fmt docs",
-		"format:markdown:prose": "prettier --write 'docs/**/*.md' 'packages/*/**/*.md'",
 		"format:markdown:structure": "bunx --bun markdownlint-cli2 --fix docs/**/*.md packages/*/**/*.md",
 		"format:ts": "biome format --write .",
 		"lint": "biome lint --write .",
