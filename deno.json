@@ -1,15 +1,17 @@
 {
 	"$schema": "https://raw.githubusercontent.com/denoland/deno/refs/heads/main/cli/schemas/config-file.v1.json",
+	"compilerOptions": {
+		"noUnusedLocals": false
+	},
 	"exclude": ["node_modules/", "packages/*/node_modules/", "packages/*/dist/", "**/*.test.ts", "**/vitest.config.ts"],
 	"fmt": {
-		"exclude": ["**/*.test.ts", "**/vitest.config.ts"],
 		"include": ["packages/*/src/**/*.ts"],
-		"indentWidth": 4,
+		"indentWidth": 2,
 		"lineWidth": 120,
 		"proseWrap": "preserve",
 		"semiColons": false,
 		"singleQuote": true,
-		"useBraces": "preferNone",
+		"trailingCommas": "onlyMultiLine",
 		"useTabs": true
 	},
 	"lint": {
