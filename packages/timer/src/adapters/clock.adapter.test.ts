@@ -13,7 +13,7 @@ describe('ClockPort Adapters', () => {
 		describe('service provision', () => {
 			it('provides ClockPort service', async () => {
 				const program = ClockPort.pipe(
-					Effect.andThen(clock => {
+					Effect.andThen((clock) => {
 						expect(clock).toBeDefined()
 						expect(typeof clock.now).toBe('function')
 					}),
@@ -28,8 +28,8 @@ describe('ClockPort Adapters', () => {
 		describe('now() behavior', () => {
 			it('returns DateTime.Utc', async () => {
 				const program = ClockPort.pipe(
-					Effect.flatMap(clock => clock.now()),
-					Effect.andThen(time => {
+					Effect.flatMap((clock) => clock.now()),
+					Effect.andThen((time) => {
 						// Verify it's a DateTime
 						expect(DateTime.isDateTime(time)).toBe(true)
 

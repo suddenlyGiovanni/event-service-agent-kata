@@ -1,4 +1,5 @@
-/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag` discriminators */
+/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag`
+discriminators */
 import * as Schema from 'effect/Schema'
 
 import { TenantId } from '../../shared/index.ts'
@@ -7,23 +8,21 @@ import { RequestSpec } from '../http/request-spec.schema.ts'
 /**
  * SubmitServiceCall - Create and schedule a new ServiceCall
  *
- * Produced by: API
- * Consumed by: Orchestration
+ * Produced by: API. Consumed by: Orchestration.
  */
 export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('SubmitServiceCall', {
 	/**
 	 * Timestamp when execution should start
 	 *
-	 * Domain type: DateTime.Utc
-	 * Wire format: epoch milliseconds
+	 * Domain type: DateTime.Utc . Wire format: epoch milliseconds.
 	 */
 	dueAt: Schema.DateTimeUtc,
 
 	/**
 	 * Optional idempotency key for duplicate detection
 	 *
-	 * If provided, duplicate submissions with the same key will be deduplicated.
-	 * See ADR-0006 for idempotency strategy details.
+	 * If provided, duplicate submissions with the same key will be deduplicated. See ADR-0006 for idempotency strategy
+	 * details.
 	 */
 	idempotencyKey: Schema.optional(Schema.String),
 
@@ -33,8 +32,8 @@ export class SubmitServiceCall extends Schema.TaggedClass<SubmitServiceCall>()('
 	/**
 	 * Complete HTTP request specification (includes body)
 	 *
-	 * The body is stored separately in the database after submission.
-	 * Subsequent commands/events use RequestSpecWithoutBody to keep payloads small.
+	 * The body is stored separately in the database after submission. Subsequent commands/events use
+	 * RequestSpecWithoutBody to keep payloads small.
 	 */
 	requestSpec: RequestSpec,
 

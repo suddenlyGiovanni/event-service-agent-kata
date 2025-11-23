@@ -23,7 +23,7 @@ erDiagram
     service_calls ||--o{ service_call_tags : "has tags"
     service_calls ||--o{ timer_schedules : "schedules"
     service_calls ||--o{ http_execution_log : "executes"
-    
+
     service_calls {
         TEXT tenant_id PK "Multi-tenant partition key"
         TEXT service_call_id PK "Aggregate root ID (UUID v7)"
@@ -36,13 +36,13 @@ erDiagram
         TEXT request_spec "JSON HttpRequest"
         TEXT outcome_meta "JSON response/error (nullable)"
     }
-    
+
     service_call_tags {
         TEXT tenant_id PK,FK "Multi-tenant partition key"
         TEXT service_call_id PK,FK "References service_calls"
         TEXT tag PK "Tag value"
     }
-    
+
     timer_schedules {
         TEXT tenant_id PK,FK "Multi-tenant partition key"
         TEXT service_call_id PK,FK "References service_calls"
@@ -52,7 +52,7 @@ erDiagram
         TEXT reached_at "ISO8601 UTC (nullable)"
         TEXT state "CHECK: Scheduled | Reached"
     }
-    
+
     http_execution_log {
         TEXT tenant_id PK,FK "Multi-tenant partition key"
         TEXT service_call_id PK,FK "References service_calls"
@@ -68,7 +68,7 @@ erDiagram
         TEXT response_body "Response payload (nullable)"
         TEXT error_message "Error details (nullable)"
     }
-    
+
     outbox {
         INTEGER id PK "Auto-increment sequence"
         TEXT tenant_id "Multi-tenant partition key"
@@ -274,13 +274,13 @@ While all tables currently live in a single SQLite file (`event_service.db`), th
 
 ### Extraction Readiness
 
-| Table                 | Owner Module  | Extraction Complexity | Blocker                                        |
-| --------------------- | ------------- | --------------------- | ---------------------------------------------- |
-| `service_calls`       | Orchestration | 🔴 High               | Referenced by all other domain tables (FK)     |
-| `service_call_tags`   | Orchestration | 🔴 High               | Requires JOIN with `service_calls` for queries |
-| `timer_schedules`     | Timer         | 🟡 Medium             | FK to `service_calls` (could use events)       |
-| `http_execution_log`  | Execution     | 🟢 Low                | FK to `service_calls` (could use events)       |
-| `outbox`              | Platform      | 🔴 High               | Shared infrastructure (all modules append)     |
+| Table                | Owner Module  | Extraction Complexity | Blocker                                        |
+| -------------------- | ------------- | --------------------- | ---------------------------------------------- |
+| `service_calls`      | Orchestration | 🔴 High               | Referenced by all other domain tables (FK)     |
+| `service_call_tags`  | Orchestration | 🔴 High               | Requires JOIN with `service_calls` for queries |
+| `timer_schedules`    | Timer         | 🟡 Medium             | FK to `service_calls` (could use events)       |
+| `http_execution_log` | Execution     | 🟢 Low                | FK to `service_calls` (could use events)       |
+| `outbox`             | Platform      | 🔴 High               | Shared infrastructure (all modules append)     |
 
 **Key Principle:** Think of each table as if it could live in its own database, even though we use a single file today. This mental model ensures clean module boundaries and event-driven communication.
 
@@ -290,9 +290,9 @@ While all tables currently live in a single SQLite file (`event_service.db`), th
 
 ```sql
 -- Find ServiceCalls with tag "urgent" and status "Scheduled"
-SELECT sc.* 
+SELECT sc.*
 FROM service_calls sc
-JOIN service_call_tags sct ON sc.tenant_id = sct.tenant_id 
+JOIN service_call_tags sct ON sc.tenant_id = sct.tenant_id
                            AND sc.service_call_id = sct.service_call_id
 WHERE sc.tenant_id = ?
   AND sc.status = 'Scheduled'
@@ -314,16 +314,16 @@ WHERE sc.tenant_id = ?
 **Current constraint:** FK to `service_calls` ensures referential integrity
 
 ```sql
-FOREIGN KEY (tenant_id, service_call_id) 
-    REFERENCES service_calls(tenant_id, service_call_id) 
+FOREIGN KEY (tenant_id, service_call_id)
+    REFERENCES service_calls(tenant_id, service_call_id)
     ON DELETE CASCADE
 ```
 
 **Extraction strategy:**
 
 1. Replace FK with event-driven consistency:
-    - Orchestration publishes `ServiceCallDeleted` event
-    - Timer consumes event and deletes orphaned timers
+   - Orchestration publishes `ServiceCallDeleted` event
+   - Timer consumes event and deletes orphaned timers
 2. Timer validates `service_call_id` existence via query to Orchestration (tolerate stale data)
 3. Move `timer_schedules` table to `timer.db`
 
@@ -400,7 +400,7 @@ All query indexes lead with `tenant_id`:
 FKs include `tenant_id` to preserve referential integrity within tenant:
 
 ```sql
-FOREIGN KEY (tenant_id, service_call_id) 
+FOREIGN KEY (tenant_id, service_call_id)
     REFERENCES service_calls(tenant_id, service_call_id)
 ```
 
@@ -483,8 +483,8 @@ CREATE TABLE timer_schedules_new (
 ) STRICT;
 
 -- Step 2: Copy data from old table (with transformations if needed)
-INSERT INTO timer_schedules_new 
-SELECT tenant_id, service_call_id, ... 
+INSERT INTO timer_schedules_new
+SELECT tenant_id, service_call_id, ...
 FROM timer_schedules;
 
 -- Step 3: Drop old table
@@ -494,7 +494,7 @@ DROP TABLE timer_schedules;
 ALTER TABLE timer_schedules_new RENAME TO timer_schedules;
 
 -- Step 5: Recreate indexes
-CREATE INDEX idx_timer_schedules_due_at 
+CREATE INDEX idx_timer_schedules_due_at
 ON timer_schedules(tenant_id, state, due_at);
 ```
 

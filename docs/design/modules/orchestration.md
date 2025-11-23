@@ -57,7 +57,7 @@ Identity & Context
 
 **Pattern:**
 
-```typescript
+```typescript ignore
 // Typical: ServiceCallId provided by API in SubmitServiceCall command
 // correlationId is Option<CorrelationId> from command schema
 const { tenantId, serviceCallId, correlationId, ...commandData } = command
@@ -84,13 +84,13 @@ yield *
 		Effect.provideService(MessageMetadata, {
 			correlationId, // From command (pass-through)
 			causationId: commandMetadata.causationId, // From command envelope
-		})
+		}),
 	)
 ```
 
 **Pattern** (orchestration-event-bus.adapter.ts - future implementation):
 
-```typescript
+```typescript ignore
 // Adapter extracts MessageMetadata from Context
 const metadata = yield * MessageMetadata
 

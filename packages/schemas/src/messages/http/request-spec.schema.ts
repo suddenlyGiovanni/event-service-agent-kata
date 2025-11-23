@@ -1,8 +1,8 @@
 import * as Schema from 'effect/Schema'
 
 /**
- * Minimal RequestSpec schemas to match platform interfaces.
- * These are intentionally conservative and can be expanded later.
+ * Minimal RequestSpec schemas to match platform interfaces. These are intentionally conservative and can be expanded
+ * later.
  */
 export const RequestSpec = Schema.Struct({
 	body: Schema.optional(Schema.String),

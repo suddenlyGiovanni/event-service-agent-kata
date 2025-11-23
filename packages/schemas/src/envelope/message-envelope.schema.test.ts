@@ -49,7 +49,7 @@ describe('MessageEnvelope', () => {
 
 				// Assert: Payload is DueTimeReached with correct structure
 				MessageEnvelope.matchPayload(envelope).pipe(
-					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
+					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, (payload) => {
 						expect(payload.tenantId).toBe(tenantId)
 						expect(payload.serviceCallId).toBe(serviceCallId)
 						expect(DateTime.isDateTime(payload.reachedAt)).toBe(true)
@@ -88,7 +88,7 @@ describe('MessageEnvelope', () => {
 
 				// Assert: Payload tag
 				MessageEnvelope.matchPayload(envelope).pipe(
-					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
+					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, (payload) => {
 						expect(payload._tag).toBe(Messages.Timer.Events.DueTimeReached.Tag)
 					}),
 					Match.orElseAbsurd,
@@ -254,7 +254,7 @@ describe('MessageEnvelope', () => {
 
 				// Assert: Payload matches using matchPayload
 				MessageEnvelope.matchPayload(decoded).pipe(
-					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, payload => {
+					Match.tag(Messages.Timer.Events.DueTimeReached.Tag, (payload) => {
 						expect(payload._tag).toBe(original.payload._tag)
 					}),
 					Match.orElseAbsurd,

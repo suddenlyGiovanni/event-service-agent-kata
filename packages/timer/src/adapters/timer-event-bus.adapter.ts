@@ -17,14 +17,15 @@ import * as Ports from '../ports/index.ts'
 /**
  * TimerEventBus — Adapter implementation for timer event publishing
  *
- * Wraps timer domain events in MessageEnvelope and publishes via EventBusPort.
- * Generates envelope IDs and correlation context for each published event.
+ * Wraps timer domain events in MessageEnvelope and publishes via EventBusPort. Generates envelope IDs and correlation
+ * context for each published event.
  */
 export class TimerEventBus {
 	/**
 	 * Live adapter implementation that composes over shared EventBusPort
 	 *
 	 * Layer requirements:
+	 *
 	 * - EventBusPort: Shared broker abstraction
 	 * - UUID7: Service for generating validated EnvelopeId
 	 */
@@ -42,18 +43,17 @@ export class TimerEventBus {
 					/**
 					 * Extract observability metadata from Effect Context
 					 *
-					 * MessageMetadata is provisioned by workflow with correlationId/causationId
-					 * extracted from timer aggregate. This enables distributed tracing without
-					 * polluting domain event types.
+					 * MessageMetadata is provisioned by workflow with correlationId/causationId extracted from timer aggregate.
+					 * This enables distributed tracing without polluting domain event types.
 					 *
-					 * Type-safe: Port signature requires MessageMetadata in R parameter,
-					 * so missing context at workflow level causes compile error.
+					 * Type-safe: Port signature requires MessageMetadata in R parameter, so missing context at workflow level
+					 * causes compile error.
 					 */
 					const metadata = yield* MessageMetadata
 
 					const envelopeId: EnvelopeId.Type = yield* EnvelopeId.makeUUID7().pipe(
 						Effect.mapError(
-							parseError =>
+							(parseError) =>
 								new Ports.PublishError({
 									cause: `Failed to generate EnvelopeId: ${parseError}`,
 								}),
@@ -65,6 +65,7 @@ export class TimerEventBus {
 					 * Annotate span with message-level metadata for distributed tracing
 					 *
 					 * Infrastructure-level annotations complement workflow's domain-level ones:
+					 *
 					 * - Workflow annotates: timer.dueAt, timer.serviceCallId, timer.tenantId
 					 * - Adapter annotates: message.envelope.id, message.correlationId, message.causationId
 					 *
@@ -95,6 +96,7 @@ export class TimerEventBus {
 						 * Extract correlationId from MessageMetadata Context
 						 *
 						 * Workflow provisions this from timer aggregate:
+						 *
 						 * - Some(id): Timer scheduled with correlationId (from HTTP request or parent workflow)
 						 * - None: Timer scheduled without correlation context
 						 *
@@ -106,11 +108,12 @@ export class TimerEventBus {
 						tenantId: dueTimeReached.tenantId,
 
 						/**
-						 * Get current time for envelope timestamp (infrastructure timing)
-						 * Distinct from payload.reachedAt (domain timing):
-						 * - timestampMs: When message was created/published (now)
-						 * - reachedAt: When timer became due (domain event time)
-						 * Gap between them reveals publishing latency for observability.
+						 * Get current time for envelope timestamp (infrastructure timing) Distinct from payload.reachedAt (domain
+						 * timing):
+						 *
+						 * - `timestampMs`: When message was created/published (now)
+						 * - `reachedAt`: When timer became due (domain event time) Gap between them reveals publishing latency for
+						 *   observability.
 						 */
 						timestampMs: yield* clock.now(),
 						type: dueTimeReached._tag,
@@ -122,6 +125,7 @@ export class TimerEventBus {
 					 * Log successful publish with envelope details
 					 *
 					 * Infrastructure-level logging complements workflow's domain-level logs:
+					 *
 					 * - Workflow logs: "Timer fired successfully" (business event)
 					 * - Adapter logs: "Published DueTimeReached event" (technical event)
 					 *
@@ -147,21 +151,22 @@ export class TimerEventBus {
 							/**
 							 * Log subscription establishment
 							 *
-							 * One-time log when subscription is set up, showing which topics
-							 * the Timer module is listening to for commands.
+							 * One-time log when subscription is set up, showing which topics the Timer module is listening to for
+							 * commands.
 							 */
 							yield* Effect.logInfo('Subscribed to ScheduleTimer commands', {
 								topics: Topics.Timer.Commands,
 							})
 
-							yield* eventBus.subscribe([Topics.Timer.Commands], envelope =>
+							yield* eventBus.subscribe([Topics.Timer.Commands], (envelope) =>
 								MessageEnvelope.matchPayload(envelope).pipe(
-									Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, command =>
+									Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, (command) =>
 										Effect.gen(function* () {
 											/**
 											 * Annotate span with inbound message metadata
 											 *
 											 * Infrastructure-level annotations for command reception (inbound):
+											 *
 											 * - Adapter annotates: message.envelope.id, message.correlationId (from upstream)
 											 * - Handler annotates: domain-level command details
 											 *
@@ -178,6 +183,7 @@ export class TimerEventBus {
 											 * Log command reception at adapter boundary
 											 *
 											 * Infrastructure-level logging for inbound commands:
+											 *
 											 * - Adapter logs: "Received ScheduleTimer command" (message arrived)
 											 * - Handler logs: domain-level processing events
 											 *

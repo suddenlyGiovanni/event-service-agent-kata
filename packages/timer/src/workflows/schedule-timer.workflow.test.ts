@@ -25,8 +25,8 @@ describe('scheduleTimerWorkflow', () => {
 	const correlationId = CorrelationId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a2')
 
 	/**
-	 * Base test layers with SQL.Test for fresh database per test.
-	 * Using it.scoped() ensures each test gets isolated database instance.
+	 * Base test layers with SQL.Test for fresh database per test. Using it.scoped() ensures each test gets isolated
+	 * database instance.
 	 */
 	const BaseTestLayers = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.ClockPortTest, SQL.Test)
 

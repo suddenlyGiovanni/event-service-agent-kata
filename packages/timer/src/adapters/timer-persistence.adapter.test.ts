@@ -21,6 +21,7 @@ import * as Adapters from './index.ts'
 
 /**
  * Test helper: Creates a ScheduledTimer with default values
+ *
  * @param now - Current time (registeredAt)
  * @param tenantId - Tenant identifier
  * @param serviceCallId - Service call identifier
@@ -52,13 +53,15 @@ const makeScheduledTimer = ({
  * Base test layers for all adapter tests.
  *
  * Layer composition rationale:
+ *
  * - TimerPersistence.Test: SQLite-backed adapter under test (internally uses SQL.Test for adapter implementation)
- * - SQL.Test: ALSO needed separately because test fixtures (withServiceCall) require SqlClient directly to insert FK-compliant data
+ * - SQL.Test: ALSO needed separately because test fixtures (withServiceCall) require SqlClient directly to insert
+ *   FK-compliant data
  * - ClockPort: Test clock for time control
  * - UUID7: Default UUID generator
  *
- * Note: SQL.Test appears in both TimerPersistence.Test (internal) and BaseTestLayers (external).
- * This is NOT duplication - Layer.mergeAll deduplicates identical layers, so SQL.Test is only initialized once.
+ * Note: SQL.Test appears in both TimerPersistence.Test (internal) and BaseTestLayers (external). This is NOT
+ * duplication - Layer.mergeAll deduplicates identical layers, so SQL.Test is only initialized once.
  */
 const BaseTestLayers = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.ClockPortTest, UUID7.Default, SQL.Test)
 
@@ -81,13 +84,15 @@ describe('TimerPersistenceAdapter', () => {
 	/**
 	 * Test helper: Creates and persists a scheduled timer with a service call record.
 	 *
-	 * This helper combines service call insertion and timer creation/persistence
-	 * for the Live (SQLite) adapter tests, respecting foreign key constraints.
+	 * This helper combines service call insertion and timer creation/persistence for the Live (SQLite) adapter tests,
+	 * respecting foreign key constraints.
 	 *
-	 * @param dueIn - Duration until timer is due (default: '5 minutes'). Accepts Duration.DurationInput format (e.g., '5 minutes', { minutes: 5 }, Duration.minutes(5)).
+	 * @param dueIn - Duration until timer is due (default: '5 minutes'). Accepts Duration.DurationInput format (e.g., '5
+	 *   minutes', { minutes: 5 }, Duration.minutes(5)).
 	 * @param tenantId - Tenant identifier (default: mocks.tenantId)
 	 * @param serviceCallId - Service call identifier (default: mocks.serviceCallId)
 	 * @param correlationId - Correlation identifier (default: mocks.correlationId)
+	 *
 	 * @returns An Effect that yields the current time and the saved timer
 	 */
 	const withScheduledTimer = ({
@@ -430,7 +435,7 @@ describe('TimerPersistenceAdapter', () => {
 				expect(Chunk.size(dueTimers)).toBe(2)
 				const timerIds = pipe(
 					dueTimers,
-					Chunk.map(t => t.serviceCallId),
+					Chunk.map((t) => t.serviceCallId),
 					Chunk.toReadonlyArray,
 				)
 				expect(timerIds).toContain(mocks.tenantA.serviceCallId)
@@ -508,7 +513,10 @@ describe('TimerPersistenceAdapter', () => {
 				})
 
 				// Verify timer is Reached
-				const beforeSave = yield* persistence.find({ serviceCallId: timer.serviceCallId, tenantId: timer.tenantId })
+				const beforeSave = yield* persistence.find({
+					serviceCallId: timer.serviceCallId,
+					tenantId: timer.tenantId,
+				})
 				const reachedTimer = Option.getOrThrow(beforeSave)
 				expect(reachedTimer._tag).toBe('Reached')
 
@@ -532,7 +540,10 @@ describe('TimerPersistenceAdapter', () => {
 				yield* persistence.save(newScheduledTimer)
 
 				// Assert: Timer remains in Reached state (NO resurrection)
-				const afterSave = yield* persistence.find({ serviceCallId: timer.serviceCallId, tenantId: timer.tenantId })
+				const afterSave = yield* persistence.find({
+					serviceCallId: timer.serviceCallId,
+					tenantId: timer.tenantId,
+				})
 				const finalTimer = Option.getOrThrow(afterSave)
 				expect(finalTimer._tag).toBe('Reached')
 
@@ -578,7 +589,10 @@ describe('TimerPersistenceAdapter', () => {
 				yield* withScheduledTimer()
 
 				// Act
-				yield* persistence.delete({ serviceCallId: mocks.tenantA.serviceCallId, tenantId: mocks.tenantA.tenantId })
+				yield* persistence.delete({
+					serviceCallId: mocks.tenantA.serviceCallId,
+					tenantId: mocks.tenantA.tenantId,
+				})
 
 				// Assert
 				const afterDelete = yield* persistence.find({

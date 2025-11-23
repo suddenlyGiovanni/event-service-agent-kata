@@ -1,4 +1,5 @@
-/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag` discriminators */
+/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag`
+discriminators */
 import * as Schema from 'effect/Schema'
 
 import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'
@@ -212,7 +213,7 @@ export class ServiceCallFailed extends Schema.TaggedClass<ServiceCallFailed>()('
 	...ServiceCallEventBase.fields,
 
 	/**
-	 *  Error details (kind, message, latency, additional context)
+	 * Error details (kind, message, latency, additional context)
 	 */
 	errorMeta: ErrorMeta,
 

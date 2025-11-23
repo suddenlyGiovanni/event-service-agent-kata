@@ -1,17 +1,19 @@
 /**
  * Timer Module Ports
  *
- * Port interfaces that the Timer module depends on, following hexagonal
- * architecture principles (dependency inversion).
+ * Port interfaces that the Timer module depends on, following hexagonal architecture principles (dependency inversion).
  *
  * Ports defined here:
+ *
  * - ClockPort: Time operations (current time)
  * - TimerPersistencePort: Timer storage operations
  *
  * Ports reused from platform:
+ *
  * - EventBusPort: Message publishing/subscribing
  *
  * Usage in Timer module:
+ *
  * - Command handlers depend on these ports
  * - Polling worker depends on these ports
  * - Adapters implement these interfaces (in-memory, SQLite, etc.)

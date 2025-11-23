@@ -49,33 +49,28 @@ Port signature changed from `publishDueTimeReached(timer, firedAt)` to `publishD
 
 Pass metadata alongside domain event via separate context object.
 
-```typescript
+```typescript ignore
 // Port signature
 interface PublishContext {
-  readonly correlationId: Option.Option<CorrelationId>
-  readonly causationId: Option.Option<EnvelopeId>
+	readonly correlationId: Option.Option<CorrelationId>
+	readonly causationId: Option.Option<EnvelopeId>
 }
 
-declare const publishDueTimeReached: (
-  event: DueTimeReached,
-  context: PublishContext
-) => Effect<void, PublishError>
+declare const publishDueTimeReached: (event: DueTimeReached, context: PublishContext) => Effect<void, PublishError>
 
 // Workflow
-yield* eventBus.publishDueTimeReached(
-  dueTimeReachedEvent,
-  {
-    correlationId: timer.correlationId,
-    causationId: Option.none()
-  }
-)
+yield *
+	eventBus.publishDueTimeReached(dueTimeReachedEvent, {
+		correlationId: timer.correlationId,
+		causationId: Option.none(),
+	})
 
 // Adapter
 const envelope = new MessageEnvelope({
-  payload: event,
-  correlationId: context.correlationId,
-  causationId: context.causationId,
-  // ...
+	payload: event,
+	correlationId: context.correlationId,
+	causationId: context.causationId,
+	// ...
 })
 ```
 
@@ -100,23 +95,20 @@ const envelope = new MessageEnvelope({
 
 Include infrastructure metadata in domain event schema.
 
-```typescript
+```typescript ignore
 // Domain event with metadata
-export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
-	'DueTimeReached',
-	{
-		...ServiceCallEventBase.fields,
-		reachedAt: Schema.DateTimeUtc,
-		correlationId: Schema.optionalWith(CorrelationId, {
-			as: 'Option',
-			exact: true,
-		}),
-		causationId: Schema.optionalWith(EnvelopeId, {
-			as: 'Option',
-			exact: true,
-		}),
-	}
-) {}
+export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTimeReached', {
+	...ServiceCallEventBase.fields,
+	reachedAt: Schema.DateTimeUtc,
+	correlationId: Schema.optionalWith(CorrelationId, {
+		as: 'Option',
+		exact: true,
+	}),
+	causationId: Schema.optionalWith(EnvelopeId, {
+		as: 'Option',
+		exact: true,
+	}),
+}) {}
 ```
 
 **Pros**:
@@ -139,19 +131,19 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
 
 Adapter fetches aggregate to get metadata before wrapping.
 
-```typescript
+```typescript ignore
 // Adapter queries persistence
-const publishDueTimeReached = (event: DueTimeReached) => Effect.gen(function* () {
-	const persistence = yield* TimerPersistencePort
-	const timer = yield* persistence.find(event.tenantId, event.serviceCallId)
+const publishDueTimeReached = (event: DueTimeReached) =>
+	Effect.gen(function* () {
+		const persistence = yield* TimerPersistencePort
+		const timer = yield* persistence.find(event.tenantId, event.serviceCallId)
 
-	const envelope = new MessageEnvelope({
-		payload: event,
-		correlationId: Option.flatMap(timer, t => t.correlationId),
-		// ...
+		const envelope = new MessageEnvelope({
+			payload: event,
+			correlationId: Option.flatMap(timer, (t) => t.correlationId),
+			// ...
+		})
 	})
-})
-
 ```
 
 **Pros**:
@@ -175,11 +167,8 @@ const publishDueTimeReached = (event: DueTimeReached) => Effect.gen(function* ()
 
 Domain events carry aggregate reference.
 
-```typescript
-declare const publishDueTimeReached: (
-  event: DueTimeReached,
-  timer: TimerEntry
-) => Effect<void, PublishError>
+```typescript ignore
+declare const publishDueTimeReached: (event: DueTimeReached, timer: TimerEntry) => Effect<void, PublishError>
 ```
 
 **Pros**:
@@ -202,36 +191,35 @@ declare const publishDueTimeReached: (
 
 Use Effect's Context system to carry metadata implicitly.
 
-```typescript
+```typescript ignore
 // 1. Define Context Tag (platform package)
 export class MessageMetadata extends Context.Tag('MessageMetadata')<
-  MessageMetadata,
-  {
-    readonly correlationId: Option<CorrelationId>
-    readonly causationId: Option<EnvelopeId>
-  }
+	MessageMetadata,
+	{
+		readonly correlationId: Option<CorrelationId>
+		readonly causationId: Option<EnvelopeId>
+	}
 >() {}
 
 // 2. Port signature requires context (R parameter)
-declare const publishDueTimeReached: (
-  event: DueTimeReached
-) => Effect<void, PublishError, MessageMetadata>  // ← Requires context
+declare const publishDueTimeReached: (event: DueTimeReached) => Effect<void, PublishError, MessageMetadata> // ← Requires context
 
 // 3. Workflow provisions context (per-request data)
-yield* eventBus.publishDueTimeReached(event).pipe(
-  Effect.provideService(MessageMetadata, {
-    correlationId: timer.correlationId,  // Extract from aggregate
-    causationId: Option.none()
-  })
-)
+yield *
+	eventBus.publishDueTimeReached(event).pipe(
+		Effect.provideService(MessageMetadata, {
+			correlationId: timer.correlationId, // Extract from aggregate
+			causationId: Option.none(),
+		}),
+	)
 
 // 4. Adapter consumes context (type-safe)
-const metadata = yield* MessageMetadata  // Type-driven requirement
+const metadata = yield * MessageMetadata // Type-driven requirement
 const envelope = new MessageEnvelope({
-  payload: event,
-  correlationId: metadata.correlationId,
-  causationId: metadata.causationId,
-  // ...
+	payload: event,
+	correlationId: metadata.correlationId,
+	causationId: metadata.causationId,
+	// ...
 })
 ```
 

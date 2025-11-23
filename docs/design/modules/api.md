@@ -64,7 +64,7 @@ Identity & Context
 
 **Pattern:**
 
-```typescript
+```typescript ignore
 // Entry point: validate and generate IDs
 const correlationId = Schema.make(CorrelationId)(crypto.randomUUID())
 
