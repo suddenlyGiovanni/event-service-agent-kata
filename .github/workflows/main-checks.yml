@@ -7,7 +7,7 @@ on:
 
 jobs:
   lint:
-    name: 🎨 Lint
+    name: 🎨 Lint (Source)
     runs-on: ubuntu-latest
 
     steps:
@@ -26,8 +26,18 @@ jobs:
           --max-diagnostics=none \
           --reporter=github
 
+      - name: 💅 Validate comprehensive formatting
+        shell: sh
+        run: |
+          bun run format:all
+          if ! git diff --quiet; then
+            echo "❌ Files need formatting. Run: bun run format:all"
+            git diff --stat
+            exit 1
+          fi
+
   typecheck:
-    name: 🔍 Typecheck
+    name: 🔍 Typecheck (Source)
     runs-on: ubuntu-latest
 
     steps:
@@ -43,7 +53,7 @@ jobs:
         run: bun run type-check
 
   tests:
-    name: 🧪 Tests
+    name: 🧪 Tests (Source)
     runs-on: ubuntu-latest
 
     steps:

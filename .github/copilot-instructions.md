@@ -109,7 +109,7 @@ const MyServiceLive = Layer.effect(
 		return MyService.of({
 			doThing: Effect.succeed(/* ... */),
 		})
-	})
+	}),
 )
 
 // Use in tests
@@ -197,9 +197,8 @@ describe('FeatureName', () => {
 			const result = yield* service.doThing()
 			expect(result).toBe(expected)
 		}).pipe(
-			Effect.provide(MyServiceTest) // Inject test dependencies
-		)
-	)
+			Effect.provide(MyServiceTest), // Inject test dependencies
+		))
 
 	// ✅ Use TestClock for time control
 	it.effect('should handle time', () =>
@@ -208,8 +207,7 @@ describe('FeatureName', () => {
 			yield* TestClock.adjust('5 minutes')
 			const result = yield* checkResult()
 			expect(result).toBeDefined()
-		}).pipe(Effect.provide(testLayer))
-	)
+		}).pipe(Effect.provide(testLayer)))
 })
 ```
 
@@ -357,22 +355,22 @@ When you need up-to-date information about libraries and tools:
 
 1. **🔴 RED**: Write failing test
 
-    - Start with domain model test (pure functions, Schema validation)
-    - Use `.effect()` tests with test layers
-    - Test should compile but fail with expected error
-    - **Commit**: `test(scope): add failing test for <feature>`
+   - Start with domain model test (pure functions, Schema validation)
+   - Use `.effect()` tests with test layers
+   - Test should compile but fail with expected error
+   - **Commit**: `test(scope): add failing test for <feature>`
 
 2. **🟢 GREEN**: Minimum code to pass
 
-    - Implement simplest solution (no premature optimization)
-    - Domain → Ports → Workflows → Adapters (inside-out)
-    - All tests must pass before commit
-    - **Commit**: `feat(scope): implement <feature> (TDD green)`
+   - Implement simplest solution (no premature optimization)
+   - Domain → Ports → Workflows → Adapters (inside-out)
+   - All tests must pass before commit
+   - **Commit**: `feat(scope): implement <feature> (TDD green)`
 
 3. **🔵 REFACTOR**: Improve without changing behavior
-    - Extract functions, improve names, simplify logic
-    - Tests still pass (no new tests in refactor commits)
-    - **Commit**: `refactor(scope): extract <helper> for clarity`
+   - Extract functions, improve names, simplify logic
+   - Tests still pass (no new tests in refactor commits)
+   - **Commit**: `refactor(scope): extract <helper> for clarity`
 
 **Atomic Commit Rule**:
 
@@ -470,21 +468,18 @@ Tracked in TODO; non-blocking for current workflow.
 it.effect('should create TimerEntry with valid inputs', () =>
 	Effect.gen(() => {
 		/*...*/
-	})
-)
+	}))
 
 // Add constraint tests
 it.effect('should reject past dueAt', () =>
 	Effect.gen(() => {
 		/*...*/
-	})
-)
+	}))
 
 it.effect('should reject invalid UUID format', () =>
 	Effect.gen(() => {
 		/*...*/
-	})
-)
+	}))
 ```
 
 **GREEN phase** (workflow):
@@ -541,8 +536,8 @@ git commit -m "refactor(timer): extract state validation to pure function"
 ```markdown
 ## Doing
 
--   [x] (PL-4.1) TimerEntry domain model + tests [Timer] — 5/5 tests passing
--   [o] (PL-4.3) ScheduleTimer workflow + tests [Timer] — 8/9 tests (one TODO)
+- [x] (PL-4.1) TimerEntry domain model + tests [Timer] — 5/5 tests passing
+- [o] (PL-4.3) ScheduleTimer workflow + tests [Timer] — 8/9 tests (one TODO)
 ```
 
 **Link commits to Kanban items**:
@@ -565,33 +560,33 @@ Refs: PL-4.5
 
 1. **Domain Model** (pure, no ports)
 
-    - Effect Schema classes (`Schema.TaggedClass`)
-    - Pure constructors/transformations
-    - Test: unit tests with no dependencies
+   - Effect Schema classes (`Schema.TaggedClass`)
+   - Pure constructors/transformations
+   - Test: unit tests with no dependencies
 
 2. **Port Interface** (defined by domain needs)
 
-    - Create `packages/<module>/src/ports/<name>.port.ts`
-    - Define `Context.Tag` service
-    - Test: N/A (no logic to test)
+   - Create `packages/<module>/src/ports/<name>.port.ts`
+   - Define `Context.Tag` service
+   - Test: N/A (no logic to test)
 
 3. **Test Adapter** (in-memory, for TDD)
 
-    - Implement port with `Ref` + `HashMap`
-    - Use `Layer.effect` for lifecycle
-    - Export as `<Name>Test` or `<Name>.inMemory`
-    - Test: adapter-specific tests (lifecycle, state transitions)
+   - Implement port with `Ref` + `HashMap`
+   - Use `Layer.effect` for lifecycle
+   - Export as `<Name>Test` or `<Name>.inMemory`
+   - Test: adapter-specific tests (lifecycle, state transitions)
 
 4. **Workflow** (domain orchestration)
 
-    - Use `Effect.gen` to compose domain + ports
-    - Inject ports via `yield* PortName`
-    - Test: use test adapter, validate domain logic
+   - Use `Effect.gen` to compose domain + ports
+   - Inject ports via `yield* PortName`
+   - Test: use test adapter, validate domain logic
 
 5. **Production Adapter** (SQLite, HTTP, etc.)
-    - Implement same port interface
-    - Map infrastructure errors to domain errors
-    - Test: integration tests with real infrastructure
+   - Implement same port interface
+   - Map infrastructure errors to domain errors
+   - Test: integration tests with real infrastructure
 
 ---
 
@@ -608,7 +603,7 @@ class TimerPersistencePort extends Context.Tag('TimerPersistence')<
 	TimerPersistencePort,
 	{
 		readonly scheduleTimer: (
-			entry: TimerEntry
+			entry: TimerEntry,
 		) => Effect.Effect<void, PersistenceError>
 	}
 >() {}
@@ -619,10 +614,9 @@ const inMemory = Layer.effect(
 	Effect.gen(function* () {
 		const ref = yield* Ref.make(HashMap.empty<string, TimerEntry>())
 		return TimerPersistencePort.of({
-			scheduleTimer: (entry) =>
-				Ref.update(ref, HashMap.set(entry.id, entry)),
+			scheduleTimer: (entry) => Ref.update(ref, HashMap.set(entry.id, entry)),
 		})
-	})
+	}),
 )
 
 // 4. Workflow (RED → GREEN)
@@ -642,7 +636,7 @@ const sqlite = Layer.effect(
 					catch: (error) => new PersistenceError({ cause: error }),
 				}),
 		})
-	})
+	}),
 )
 ```
 
@@ -665,12 +659,12 @@ const sqlite = Layer.effect(
 // Define domain errors
 export class ValidationError extends Schema.TaggedError<ValidationError>()(
 	'ValidationError',
-	{ message: Schema.String, field: Schema.String }
+	{ message: Schema.String, field: Schema.String },
 ) {}
 
 export class PersistenceError extends Schema.TaggedError<PersistenceError>()(
 	'PersistenceError',
-	{ message: Schema.String, cause: Schema.Unknown }
+	{ message: Schema.String, cause: Schema.Unknown },
 ) {}
 
 // Workflow signatures include all error types
@@ -696,8 +690,7 @@ const sqliteAdapter = {
 	save: (entry: TimerEntry) =>
 		Effect.tryPromise({
 			try: () => db.run('INSERT ...'),
-			catch: (cause) =>
-				new PersistenceError({ message: 'DB insert failed', cause }),
+			catch: (cause) => new PersistenceError({ message: 'DB insert failed', cause }),
 		}),
 }
 
@@ -716,12 +709,11 @@ const badAdapter = {
 it.effect('should fail on past dueAt', () =>
 	Effect.gen(function* () {
 		const result = yield* TimerEntry.schedule({ dueAt: pastTime }).pipe(
-			Effect.either // ← catch error in Either
+			Effect.either, // ← catch error in Either
 		)
 		expect(Either.isLeft(result)).toBe(true)
 		expect(result.left).toBeInstanceOf(ValidationError)
-	})
-)
+	}))
 ```
 
 ---
@@ -785,128 +777,126 @@ yield * persistence.markFired(timer.tenantId, timer.serviceCallId, now)
 
 1. **Trade-offs and architectural decisions**:
 
-    ```typescript
-    /*
-     * Use partition instead of forEach to collect ALL failures, not fail-fast.
-     * This ensures partial batch success: processed timers are marked fired,
-     * failed timers remain Scheduled for retry on next poll.
-     * Trade-off: Higher memory usage for large batches, but better resilience.
-     */
-    const [failures, successes] =
-    	yield * Effect.partition(dueTimers, processTimer)
-    ```
+   ```typescript
+   /*
+    * Use partition instead of forEach to collect ALL failures, not fail-fast.
+    * This ensures partial batch success: processed timers are marked fired,
+    * failed timers remain Scheduled for retry on next poll.
+    * Trade-off: Higher memory usage for large batches, but better resilience.
+    */
+   const [failures, successes] = yield * Effect.partition(dueTimers, processTimer)
+   ```
 
 2. **Domain concepts and business rules**:
 
-    ```typescript
-    /**
-     * Scheduled state represents a timer awaiting its due time.
-     *
-     * Domain semantics:
-     * - Timer is persisted in database (durable)
-     * - Will fire when clock reaches dueAt timestamp
-     * - Can be canceled before firing
-     * - Transitions to Reached when fired, or Canceled if explicitly canceled
-     */
-    export class ScheduledTimer {
-    	/*...*/
-    }
-    ```
+   ```typescript
+   /**
+    * Scheduled state represents a timer awaiting its due time.
+    *
+    * Domain semantics:
+    * - Timer is persisted in database (durable)
+    * - Will fire when clock reaches dueAt timestamp
+    * - Can be canceled before firing
+    * - Transitions to Reached when fired, or Canceled if explicitly canceled
+    */
+   export class ScheduledTimer {
+   	/*...*/
+   }
+   ```
 
 3. **Gotchas, edge cases, and timing assumptions**:
 
-    ```typescript
-    /*
-     * GOTCHA: findDue query uses inclusive comparison (<=) to ensure we don't
-     * miss timers due at exact microsecond boundary. Clock precision varies.
-     */
-    const dueTimers = yield * persistence.findDue(now) // WHERE due_at <= now
+   ```typescript
+   /*
+    * GOTCHA: findDue query uses inclusive comparison (<=) to ensure we don't
+    * miss timers due at exact microsecond boundary. Clock precision varies.
+    */
+   const dueTimers = yield * persistence.findDue(now) // WHERE due_at <= now
 
-    // EDGE CASE: Empty batch early return prevents unnecessary event bus calls
-    if (Chunk.isEmpty(dueTimers)) {
-    	yield * Effect.logDebug('No due timers found')
-    	return // Skip partition, no failures to report
-    }
-    ```
+   // EDGE CASE: Empty batch early return prevents unnecessary event bus calls
+   if (Chunk.isEmpty(dueTimers)) {
+   	yield * Effect.logDebug('No due timers found')
+   	return // Skip partition, no failures to report
+   }
+   ```
 
 4. **Non-obvious performance or concurrency choices**:
 
-    ```typescript
-    /*
-     * Process sequentially (concurrency: 1) to preserve partition key ordering.
-     * Kafka guarantees order only within a partition; concurrent processing
-     * could reorder DueTimeReached events for same serviceCallId.
-     * See ADR-0002 for broker ordering guarantees.
-     */
-    const results =
-    	yield *
-    	Effect.partition(timers, processTimer, {
-    		concurrency: 1,
-    	})
-    ```
+   ```typescript
+   /*
+    * Process sequentially (concurrency: 1) to preserve partition key ordering.
+    * Kafka guarantees order only within a partition; concurrent processing
+    * could reorder DueTimeReached events for same serviceCallId.
+    * See ADR-0002 for broker ordering guarantees.
+    */
+   const results = yield *
+   	Effect.partition(timers, processTimer, {
+   		concurrency: 1,
+   	})
+   ```
 
 5. **Links to ADRs and design docs**:
 
-    ```typescript
-    /*
-     * Generate UUID v7 in application code, not database.
-     * See ADR-0010 for identity generation strategy.
-     */
-    const envelopeId = EnvelopeId.make()
+   ```typescript
+   /*
+    * Generate UUID v7 in application code, not database.
+    * See ADR-0010 for identity generation strategy.
+    */
+   const envelopeId = EnvelopeId.make()
 
-    /*
-     * Outbox pattern: append events to outbox table in same transaction.
-     * Events published after commit to avoid dual-write problem.
-     * See ADR-0008 for detailed rationale and failure mode analysis.
-     */
-    yield * outbox.append(events)
-    ```
+   /*
+    * Outbox pattern: append events to outbox table in same transaction.
+    * Events published after commit to avoid dual-write problem.
+    * See ADR-0008 for detailed rationale and failure mode analysis.
+    */
+   yield * outbox.append(events)
+   ```
 
 **❌ DON'T comment**:
 
 1. **Obvious operations** (code is self-documenting):
 
-    ```typescript
-    /*
-     * ❌ Redundant: name already says what it does
-     * Get current time
-     */
-    const now = yield * clock.now()
+   ```typescript
+   /*
+    * ❌ Redundant: name already says what it does
+    * Get current time
+    */
+   const now = yield * clock.now()
 
-    // ✅ Just write the code
-    const now = yield * clock.now()
-    ```
+   // ✅ Just write the code
+   const now = yield * clock.now()
+   ```
 
 2. **What type signatures already express**:
 
-    ```typescript
-    // ❌ Redundant: types + name already document this
-    /**
-     * @param timer - The timer to process
-     * @returns void
-     */
-    function processTimer(timer: ScheduledTimer): Effect.Effect<void, Error> {
-    	/*...*/
-    }
+   ```typescript
+   // ❌ Redundant: types + name already document this
+   /**
+    * @param timer - The timer to process
+    * @returns void
+    */
+   function processTimer(timer: ScheduledTimer): Effect.Effect<void, Error> {
+   	/*...*/
+   }
 
-    // ✅ Types document parameters; only add comment if explaining WHY or edge cases
-    function processTimer(timer: ScheduledTimer): Effect.Effect<void, Error> {
-    	/*...*/
-    }
-    ```
+   // ✅ Types document parameters; only add comment if explaining WHY or edge cases
+   function processTimer(timer: ScheduledTimer): Effect.Effect<void, Error> {
+   	/*...*/
+   }
+   ```
 
 3. **Implementation details of pure functions**:
 
-    ```typescript
-    /*
-     * ❌ Don't explain HOW sorting works
-     * Sort timers by dueAt ascending
-     */
-    const sorted = timers.sort((a, b) => a.dueAt - b.dueAt)
+   ```typescript
+   /*
+    * ❌ Don't explain HOW sorting works
+    * Sort timers by dueAt ascending
+    */
+   const sorted = timers.sort((a, b) => a.dueAt - b.dueAt)
 
-    // ✅ Function name + types are sufficient
-    const sortedByDueTime = timers.sort((a, b) => a.dueAt - b.dueAt)
-    ```
+   // ✅ Function name + types are sufficient
+   const sortedByDueTime = timers.sort((a, b) => a.dueAt - b.dueAt)
+   ```
 
 ---
 
@@ -935,7 +925,7 @@ yield * persistence.markFired(timer.tenantId, timer.serviceCallId, now)
  * @see TimerPersistencePort for storage contract
  */
 export const scheduleTimer = (
-	command: ScheduleTimerCommand
+	command: ScheduleTimerCommand,
 ): Effect.Effect<
 	ScheduledTimer,
 	ValidationError | PersistenceError,
@@ -1063,7 +1053,7 @@ See the [Documentation Validation Workflow](#documentation-validation-workflow) 
  * ```
  */
 export class ScheduledTimer extends Schema.Class<ScheduledTimer>(
-	'ScheduledTimer'
+	'ScheduledTimer',
 )({
 	tenantId: TenantId,
 	serviceCallId: ServiceCallId,
@@ -1244,7 +1234,7 @@ export const pollDueTimers: Effect.Effect<
  * Use pollDueTimersWorkflow for event publishing after timer fires.
  */
 export const scheduleTimer = (
-	command: ScheduleTimerCommand
+	command: ScheduleTimerCommand,
 ): Effect.Effect<
 	ScheduledTimer,
 	ValidationError | PersistenceError,
@@ -1342,14 +1332,13 @@ describe('TimerEntry.schedule', () => {
 
 			// Act: Attempt to schedule timer
 			const result = yield* TimerEntry.schedule(command).pipe(
-				Effect.either
+				Effect.either,
 			)
 
 			// Assert: ValidationError with specific field
 			expect(Either.isLeft(result)).toBe(true)
 			expect(result.left.field).toBe('dueAt')
-		})
-	)
+		}))
 })
 ```
 
@@ -1377,7 +1366,7 @@ describe('TimerEntry.schedule', () => {
  * ```
  */
 export const schedule = (
-	command: ScheduleTimerCommand
+	command: ScheduleTimerCommand,
 ): Effect.Effect<ScheduledTimer, ValidationError, ClockPort> => {
 	// Implementation now documents itself with clear steps
 	return Effect.gen(function* () {
@@ -1390,7 +1379,7 @@ export const schedule = (
 				new ValidationError({
 					field: 'dueAt',
 					message: 'Must be future timestamp',
-				})
+				}),
 			)
 		}
 
@@ -1408,8 +1397,7 @@ export const schedule = (
 
 ```typescript
 // Before refactor: Inline validation
-const result =
-	command.dueAt > now ? new ScheduledTimer(/*... */) : fail(/*... */)
+const result = command.dueAt > now ? new ScheduledTimer() /*... */ : fail() /*... */
 
 // After refactor: Extracted helper
 const validateFutureTimestamp = (dueAt: DateTime, now: DateTime) => {
@@ -1417,14 +1405,12 @@ const validateFutureTimestamp = (dueAt: DateTime, now: DateTime) => {
 	 * Domain rule: timers cannot be scheduled in the past
 	 * Clock precision may vary; use strict greater-than comparison
 	 */
-	return DateTime.greaterThan(dueAt, now)
-		? Effect.succeed(dueAt)
-		: Effect.fail(
-				new ValidationError({
-					field: 'dueAt',
-					message: 'Must be future',
-				})
-		  )
+	return DateTime.greaterThan(dueAt, now) ? Effect.succeed(dueAt) : Effect.fail(
+		new ValidationError({
+			field: 'dueAt',
+			message: 'Must be future',
+		}),
+	)
 }
 
 // Update workflow to use extracted function (comment removed—name is clear)
@@ -1516,16 +1502,14 @@ yield * persistence.scheduleTimer(timer)
 ```typescript
 // ❌ Bad: Comment doesn't match code anymore
 // Process timers one at a time
-const results =
-	yield * Effect.all(timers.map(processTimer), { concurrency: 10 }) // ← Now concurrent!
+const results = yield * Effect.all(timers.map(processTimer), { concurrency: 10 }) // ← Now concurrent!
 
 // ✅ Good: Update comment or remove if code is self-documenting
 /*
  * Process timers concurrently (max 10 at once) for throughput.
  * Note: Out-of-order event publishing; only safe for independent timers.
  */
-const results =
-	yield * Effect.all(timers.map(processTimer), { concurrency: 10 })
+const results = yield * Effect.all(timers.map(processTimer), { concurrency: 10 })
 ```
 
 **❌ Apologetic comments without action items**:
@@ -1619,7 +1603,7 @@ const allTimers = db.query('SELECT * FROM timer_schedules WHERE due_at <= ?')
 // ✅ Tenant-scoped query
 const tenantTimers = db.query(
 	'SELECT * FROM timer_schedules WHERE tenant_id = ? AND due_at <= ?',
-	[tenantId, dueAt]
+	[tenantId, dueAt],
 )
 ```
 
@@ -1714,14 +1698,14 @@ When encountering a choice:
 
 1. **Check ADR Status** in `docs/decisions/README.md`:
 
-    - **Accepted**: Implement per decision (no deviation without new ADR)
-    - **Proposed**: Do NOT implement; flag in PR/discussion
-    - **Superseded**: Use replacement ADR (follow links)
+   - **Accepted**: Implement per decision (no deviation without new ADR)
+   - **Proposed**: Do NOT implement; flag in PR/discussion
+   - **Superseded**: Use replacement ADR (follow links)
 
 2. **If No ADR Exists**:
-    - For architectural choice: Create ADR draft
-    - For tactical choice: Discuss in PR
-    - For urgent: Document as TODO in code + add Kanban item
+   - For architectural choice: Create ADR draft
+   - For tactical choice: Discuss in PR
+   - For urgent: Document as TODO in code + add Kanban item
 
 ---
 
