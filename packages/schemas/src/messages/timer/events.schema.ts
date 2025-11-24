@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag`
 discriminators */
+
 import * as Schema from 'effect/Schema'
 
 import { ServiceCallEventBase } from '../common/service-call-event-base.schema.ts'
@@ -75,12 +76,15 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 *
 	 * @example
 	 *
-	 * ```typescript ignore
-	 * const event = yield* DueTimeReached.decode({
-	 * 	type: 'DueTimeReached',
-	 * 	tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
-	 * 	serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
+	 * ```typescript
+	 * import type * as Effect from 'effect/Effect'
+	 * import type * as ParseResult from 'effect/ParseResult'
+	 *
+	 * export const event: Effect.Effect<DueTimeReached, ParseResult.ParseError, never> = DueTimeReached.decode({
+	 * 	_tag: 'DueTimeReached',
 	 * 	reachedAt: '2025-10-27T12:00:00.000Z',
+	 * 	serviceCallId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a1',
+	 * 	tenantId: '018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a0',
 	 * })
 	 * ```
 	 */
