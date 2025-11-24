@@ -22,6 +22,7 @@ import type * as ParseResult from 'effect/ParseResult'
 
 import * as Schema from '@event-service-agent/schemas/shared'
 
+import * as Adapters from './adapters/index.ts'
 import * as Ports from './ports/index.ts'
 
 /**
@@ -47,7 +48,7 @@ import * as Ports from './ports/index.ts'
 export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas/UUID7', {
 	accessors: true,
 
-	dependencies: [Layer.succeed(Ports.UUIDPort, Ports.UUIDPort.Default)],
+	dependencies: [Adapters.UUID.Default],
 
 	effect: Ports.UUIDPort.pipe(
 		Effect.map((uuid) => ({
@@ -94,8 +95,7 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 */
 	static readonly Test = <A extends `${string}-${string}-${string}-${string}-${string}`>(
 		fixed: A,
-	): Layer.Layer<UUID7> =>
-		UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(Ports.UUIDPort, Ports.UUIDPort.Test(fixed))))
+	): Layer.Layer<UUID7> => UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Adapters.UUID.Test(fixed)))
 
 	/**
 	 * Test implementation with sequential UUIDs
@@ -117,5 +117,5 @@ export class UUID7 extends Effect.Service<UUID7>()('@event-service-agent/schemas
 	 * @param prefix - Optional 8-char hex prefix (default: "00000000")
 	 */
 	static readonly Sequence = (prefix = '00000000'): Layer.Layer<UUID7> =>
-		UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Layer.succeed(Ports.UUIDPort, Ports.UUIDPort.Sequence(prefix))))
+		UUID7.DefaultWithoutDependencies.pipe(Layer.provide(Adapters.UUID.Sequence(prefix)))
 }

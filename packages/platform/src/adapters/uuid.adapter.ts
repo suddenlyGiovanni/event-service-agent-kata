@@ -3,6 +3,22 @@ import * as Layer from 'effect/Layer'
 
 import { UUIDPort } from '../ports/uuid.port.ts'
 
+/**
+ * UUID — Adapter implementations for UUIDPort
+ *
+ * Provides different UUID v7 generation strategies:
+ *
+ * - {@link Default} — Production adapter using Bun's native UUID v7 implementation
+ * - {@link Test} — Test adapter returning fixed UUID for deterministic tests
+ * - {@link Sequence} — Test adapter generating sequential UUIDs with incrementing counter
+ *
+ * @remarks
+ * This namespace follows the established adapter pattern (TimerPersistence, TimerEventBus) where the namespace name
+ * drops the "Port" suffix from the port name to avoid naming collisions in adapter implementation files.
+ *
+ * @see {@link UUIDPort} for the port interface specification
+ * @see {@link ../../../../docs/design/hexagonal-architecture-layers.md} for adapter layer guidelines
+ */
 export class UUID {
 	/**
 	 * Default adapter - Uses Bun's native UUID v7 implementation
