@@ -16,6 +16,7 @@
 		"typescript": "catalog:typescript"
 	},
 	"exports": {
+		"./adapters": "./src/adapters/index.ts",
 		"./context": "./src/context/index.ts",
 		"./database": "./src/database/sql.ts",
 		"./ports": "./src/ports/index.ts",
