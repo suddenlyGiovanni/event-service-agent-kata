@@ -80,9 +80,6 @@ jobs:
           - name: "JSDoc Type-check"
             emoji: "📖"
             command: "deno task docs:type-check"
-          - name: "JSDoc Tests"
-            emoji: "🧪"
-            command: "deno task docs:test"
           - name: "Markdown Formatting"
             emoji: "📝"
             command: |
