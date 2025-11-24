@@ -682,7 +682,7 @@ describe('pollDueTimersWorkflow', () => {
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: () =>
 					Effect.fail(
-						new Ports.PublishError({
+						new Ports.Platform.PublishError({
 							cause: 'Event bus publish failed',
 						}),
 					),
@@ -759,7 +759,7 @@ describe('pollDueTimersWorkflow', () => {
 					// Fail on second timer (callCount === 2)
 					if (callCount === 2) {
 						return Effect.fail(
-							new Ports.PublishError({
+							new Ports.Platform.PublishError({
 								cause: 'Event bus publish failed',
 							}),
 						)

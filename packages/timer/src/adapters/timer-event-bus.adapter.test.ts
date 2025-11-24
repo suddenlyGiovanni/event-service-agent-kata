@@ -31,9 +31,12 @@ describe('TimerEventBus', () => {
 			it.effect('should publish DueTimeReached event with correlationId from MessageMetadata context', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
-				const EventBusTest: Layer.Layer<PortsTimer.EventBusPort, never, never> = Layer.mock(PortsTimer.EventBusPort, {
-					publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
-				})
+				const EventBusTest: Layer.Layer<PortsTimer.Platform.EventBusPort, never, never> = Layer.mock(
+					PortsTimer.Platform.EventBusPort,
+					{
+						publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
+					},
+				)
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
@@ -84,9 +87,12 @@ describe('TimerEventBus', () => {
 			it.effect('should publish DueTimeReached event without correlation ID', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
-				const EventBusTest: Layer.Layer<PortsTimer.EventBusPort, never, never> = Layer.mock(PortsTimer.EventBusPort, {
-					publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
-				})
+				const EventBusTest: Layer.Layer<PortsTimer.Platform.EventBusPort, never, never> = Layer.mock(
+					PortsTimer.Platform.EventBusPort,
+					{
+						publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
+					},
+				)
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
@@ -129,9 +135,12 @@ describe('TimerEventBus', () => {
 			it.effect('should generate unique envelope IDs for each publish', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
-				const EventBusTest: Layer.Layer<PortsTimer.EventBusPort, never, never> = Layer.mock(PortsTimer.EventBusPort, {
-					publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
-				})
+				const EventBusTest: Layer.Layer<PortsTimer.Platform.EventBusPort, never, never> = Layer.mock(
+					PortsTimer.Platform.EventBusPort,
+					{
+						publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
+					},
+				)
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
@@ -184,9 +193,12 @@ describe('TimerEventBus', () => {
 				 */
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
-				const EventBusTest: Layer.Layer<PortsTimer.EventBusPort, never, never> = Layer.mock(PortsTimer.EventBusPort, {
-					publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
-				})
+				const EventBusTest: Layer.Layer<PortsTimer.Platform.EventBusPort, never, never> = Layer.mock(
+					PortsTimer.Platform.EventBusPort,
+					{
+						publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
+					},
+				)
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
@@ -239,14 +251,17 @@ describe('TimerEventBus', () => {
 
 		describe('Error Handling', () => {
 			it.effect('should propagate PublishError from EventBusPort', () => {
-				const EventBusTest: Layer.Layer<PortsTimer.EventBusPort, never, never> = Layer.mock(PortsTimer.EventBusPort, {
-					publish: () =>
-						Effect.fail(
-							new PortsTimer.PublishError({
-								cause: 'Connection failed',
-							}),
-						),
-				})
+				const EventBusTest: Layer.Layer<PortsTimer.Platform.EventBusPort, never, never> = Layer.mock(
+					PortsTimer.Platform.EventBusPort,
+					{
+						publish: () =>
+							Effect.fail(
+								new PortsTimer.Platform.PublishError({
+									cause: 'Connection failed',
+								}),
+							),
+					},
+				)
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
@@ -288,7 +303,7 @@ describe('TimerEventBus', () => {
 			it.effect('should subscribe to Timer.Commands topic', () => {
 				let subscribedTopics: readonly Topics.Type[] = []
 
-				const EventBusTest = Layer.mock(PortsTimer.EventBusPort, {
+				const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 					subscribe: (topics, _handler) =>
 						Effect.sync(() => {
 							subscribedTopics = topics
@@ -335,7 +350,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
-				const EventBusTest = Layer.mock(PortsTimer.EventBusPort, {
+				const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -391,7 +406,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Timer.Events.DueTimeReached.Tag,
 				}
 
-				const EventBusTest = Layer.mock(PortsTimer.EventBusPort, {
+				const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -440,7 +455,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
-				const EventBusTest = Layer.mock(PortsTimer.EventBusPort, {
+				const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -488,7 +503,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
-				const EventBusTest = Layer.mock(PortsTimer.EventBusPort, {
+				const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -513,10 +528,10 @@ describe('TimerEventBus', () => {
 			})
 
 			it.effect('should propagate SubscribeError from EventBusPort', () => {
-				const EventBusTest = Layer.mock(PortsTimer.EventBusPort, {
+				const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 					subscribe: () =>
 						Effect.fail(
-							new PortsTimer.SubscribeError({
+							new PortsTimer.Platform.SubscribeError({
 								cause: 'Consumer creation failed',
 							}),
 						),
@@ -548,7 +563,7 @@ describe('TimerEventBus', () => {
 			// If we try to use it without providing EventBusPort, it should fail at compile time
 			// At runtime, we verify it works when EventBusPort is provided
 
-			const EventBusTest = Layer.mock(PortsTimer.EventBusPort, {
+			const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 				publish: () => Effect.void,
 				subscribe: () => Effect.never,
 			})
@@ -570,7 +585,7 @@ describe('TimerEventBus', () => {
 		it.effect('should integrate with UUID7 service', () => {
 			const publishedEnvelopes: MessageEnvelope.Type[] = []
 
-			const EventBusTest = Layer.mock(PortsTimer.EventBusPort, {
+			const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 				publish: (envelopes) =>
 					Effect.sync(() => {
 						publishedEnvelopes.push(...envelopes)

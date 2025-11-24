@@ -20,12 +20,7 @@
  */
 
 // Re-export EventBusPort from platform for convenience
-export {
-	EventBusPort,
-	type EventBusPort as EventBusPortType,
-	PublishError,
-	SubscribeError,
-} from '@event-service-agent/platform/ports'
+export * as Platform from '@event-service-agent/platform/ports'
 
 export * from './clock.port.ts'
 export * from './timer-event-bus.port.ts'

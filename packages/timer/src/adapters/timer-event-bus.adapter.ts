@@ -32,11 +32,11 @@ export class TimerEventBus {
 	static readonly Live: Layer.Layer<
 		Ports.TimerEventBusPort,
 		never,
-		Ports.EventBusPort | Ports.ClockPort | PlatformAdapters.UUID7
+		Ports.Platform.EventBusPort | Ports.ClockPort | PlatformAdapters.UUID7
 	> = Layer.effect(
 		Ports.TimerEventBusPort,
 		Effect.gen(function* () {
-			const eventBus = yield* Ports.EventBusPort
+			const eventBus = yield* Ports.Platform.EventBusPort
 			const clock = yield* Ports.ClockPort
 			const uuid = yield* PlatformAdapters.UUID7
 
@@ -57,7 +57,7 @@ export class TimerEventBus {
 				const envelopeId: EnvelopeId.Type = yield* EnvelopeId.makeUUID7().pipe(
 					Effect.mapError(
 						(parseError) =>
-							new Ports.PublishError({
+							new Ports.Platform.PublishError({
 								cause: `Failed to generate EnvelopeId: ${parseError}`,
 							}),
 					),
@@ -149,7 +149,7 @@ export class TimerEventBus {
 						command: Messages.Orchestration.Commands.ScheduleTimer.Type,
 						metadata: MessageMetadata.Type,
 					) => Effect.Effect<void, E, R>,
-				): Effect.Effect<void, Ports.SubscribeError | E, R> =>
+				): Effect.Effect<void, Ports.Platform.SubscribeError | E, R> =>
 					Effect.gen(function* () {
 						/**
 						 * Log subscription establishment
