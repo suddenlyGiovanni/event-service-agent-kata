@@ -91,7 +91,7 @@ export class EventBusPort extends Context.Tag('@event-service-agent/platform/Eve
 		 * import type * as Messages from "@event-service-agent/schemas/messages"
 		 * import { type CorrelationId, EnvelopeId, type ServiceCallId, type TenantId } from "@event-service-agent/schemas/shared"
 		 *
-		 * import type { UUID7 } from "../uuid7.service.ts"
+		 * import type { UUID7 } from "../adapters/uuid7.adapter.ts"
 		 *
 		 * declare const correlationId: CorrelationId.Type
 		 * declare const tenantId: TenantId.Type

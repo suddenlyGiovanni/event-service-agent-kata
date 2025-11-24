@@ -138,7 +138,7 @@ export class TimerEventBusPort extends Context.Tag('@event-service-agent/timer/T
 		 * ) => Effect.Effect<void, never, never>
 		 *
 		 * // Subscribe to ScheduleTimer commands
-		 * const subscribeToCommands: Effect.Effect<void, Ports.SubscribeError, TimerEventBusPort> = Effect.gen(function* () {
+		 * const subscribeToCommands: Effect.Effect<void, Ports.Platform.SubscribeError, TimerEventBusPort> = Effect.gen(function* () {
 		 *   const timerEventBus = yield* TimerEventBusPort
 		 *
 		 *   yield* timerEventBus.subscribeToScheduleTimerCommands(scheduleTimerWorkflow)
