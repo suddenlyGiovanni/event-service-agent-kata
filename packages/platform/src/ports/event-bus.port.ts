@@ -199,6 +199,24 @@ export class EventBusPort extends Context.Tag('@event-service-agent/platform/Eve
 	}
 >() {}
 
+/**
+ * EventBusPort type utilities namespace.
+ *
+ * Provides ergonomic type helpers for working with EventBusPort in Effect signatures.
+ */
 export declare namespace EventBusPort {
+	/**
+	 * Service interface type for EventBusPort.
+	 *
+	 * Alias for `Context.Tag.Service<EventBusPort>` to reduce verbosity in Effect signatures.
+	 *
+	 * @example
+	 * ```typescript ignore
+	 * import type { EventBusPort } from "@event-service-agent/platform/ports"
+	 *
+	 * // Instead of: Context.Tag.Service<EventBusPort>
+	 * const service: EventBusPort.Type = yield* EventBusPort
+	 * ```
+	 */
 	type Type = Context.Tag.Service<EventBusPort>
 }
