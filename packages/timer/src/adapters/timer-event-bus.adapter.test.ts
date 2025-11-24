@@ -7,9 +7,9 @@ import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
+import * as PlatformAdapters from '@event-service-agent/platform/adapters'
 import { MessageMetadata } from '@event-service-agent/platform/context'
 import { Topics } from '@event-service-agent/platform/routing'
-import * as PlatformAdapters from '@event-service-agent/platform/adapters'
 import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { CorrelationId, EnvelopeId, ServiceCallId, TenantId, UUID7Regex } from '@event-service-agent/schemas/shared'
@@ -24,7 +24,7 @@ describe('TimerEventBus', () => {
 	const correlationId = CorrelationId.make('aaaabbbb-cccc-7ddd-8eee-ffffffffffff')
 
 	// These are shared across all tests via @effect/vitest layer()
-	const BaseTestLayers = Layer.merge(PlatformAdapters.UUID7.Default, AdaptersTimer.ClockPortTest)
+	const BaseTestLayers = Layer.merge(PlatformAdapters.UUID7.Default, AdaptersTimer.Clock.Test)
 
 	layer(BaseTestLayers)('publishDueTimeReached', (it) => {
 		describe('Happy Path', () => {

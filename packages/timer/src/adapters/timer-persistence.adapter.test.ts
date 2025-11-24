@@ -65,7 +65,7 @@ const makeScheduledTimer = ({
  */
 const BaseTestLayers = Layer.mergeAll(
 	Adapters.TimerPersistence.Test,
-	Adapters.ClockPortTest,
+	Adapters.Clock.Test,
 	PlatformAdapters.UUID7.Default,
 	SQL.Test,
 )

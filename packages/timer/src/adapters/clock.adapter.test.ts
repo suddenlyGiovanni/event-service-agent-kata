@@ -5,19 +5,19 @@ import * as Layer from 'effect/Layer'
 import * as TestClock from 'effect/TestClock'
 import * as TestContext from 'effect/TestContext'
 
-import { ClockPort } from '../ports/clock.port.ts'
-import { ClockPortLive, ClockPortTest } from './clock.adapter.ts'
+import * as Ports from '../ports/index.ts'
+import * as Adapters from './index.ts'
 
 describe('ClockPort Adapters', () => {
-	describe('ClockPortLive', () => {
+	describe('Clock.Live', () => {
 		describe('service provision', () => {
 			it('provides ClockPort service', async () => {
-				const program = ClockPort.pipe(
+				const program = Ports.ClockPort.pipe(
 					Effect.andThen((clock) => {
 						expect(clock).toBeDefined()
 						expect(typeof clock.now).toBe('function')
 					}),
-					Effect.provide(ClockPortLive),
+					Effect.provide(Adapters.Clock.Live),
 				)
 
 				// ClockPortLive has no requirements (Clock is default service)
@@ -27,7 +27,7 @@ describe('ClockPort Adapters', () => {
 
 		describe('now() behavior', () => {
 			it('returns DateTime.Utc', async () => {
-				const program = ClockPort.pipe(
+				const program = Ports.ClockPort.pipe(
 					Effect.flatMap((clock) => clock.now()),
 					Effect.andThen((time) => {
 						// Verify it's a DateTime
@@ -36,7 +36,7 @@ describe('ClockPort Adapters', () => {
 						// Verify it's UTC specifically
 						expect(DateTime.isUtc(time)).toBe(true)
 					}),
-					Effect.provide(ClockPortLive),
+					Effect.provide(Adapters.Clock.Live),
 				)
 
 				await Effect.runPromise(program)
@@ -44,7 +44,7 @@ describe('ClockPort Adapters', () => {
 
 			it('returns advancing time on multiple calls', async () => {
 				const program = Effect.gen(function* () {
-					const clock = yield* ClockPort
+					const clock = yield* Ports.ClockPort
 
 					const time1 = yield* clock.now()
 					yield* Effect.sleep('10 millis') // Small delay
@@ -52,14 +52,14 @@ describe('ClockPort Adapters', () => {
 
 					// time2 should be >= time1 (time moves forward)
 					expect(DateTime.greaterThanOrEqualTo(time2, time1)).toBe(true)
-				}).pipe(Effect.provide(ClockPortLive))
+				}).pipe(Effect.provide(Adapters.Clock.Live))
 
 				await Effect.runPromise(program)
 			})
 
 			it('multiple calls to now() all succeed', async () => {
 				const program = Effect.gen(function* () {
-					const clock = yield* ClockPort
+					const clock = yield* Ports.ClockPort
 
 					// Call multiple times
 					const times = yield* Effect.all([clock.now(), clock.now(), clock.now()])
@@ -69,22 +69,22 @@ describe('ClockPort Adapters', () => {
 					for (const time of times) {
 						expect(DateTime.isDateTime(time)).toBe(true)
 					}
-				}).pipe(Effect.provide(ClockPortLive))
+				}).pipe(Effect.provide(Adapters.Clock.Live))
 
 				await Effect.runPromise(program)
 			})
 		})
 	})
 
-	describe('ClockPortTest', () => {
+	describe('Clock.Test', () => {
 		// Compose layers: TestContext.TestContext provides TestClock, ClockPortTest uses it to provide ClockPort
 		// Layer.provide feeds outer's output into inner's input
-		const testLayer = Layer.provide(ClockPortTest, TestContext.TestContext)
+		const testLayer = Layer.provide(Adapters.Clock.Test, TestContext.TestContext)
 
 		describe('service provision', () => {
 			it('provides ClockPort service', async () => {
 				const program = Effect.gen(function* () {
-					const clock = yield* ClockPort
+					const clock = yield* Ports.ClockPort
 
 					expect(clock).toBeDefined()
 					expect(typeof clock.now).toBe('function')
@@ -98,7 +98,7 @@ describe('ClockPort Adapters', () => {
 		describe('TestClock integration', () => {
 			it('returns time controlled by TestClock.adjust', async () => {
 				const program = Effect.gen(function* () {
-					const clock = yield* ClockPort
+					const clock = yield* Ports.ClockPort
 
 					const time1 = yield* clock.now()
 
@@ -123,7 +123,7 @@ describe('ClockPort Adapters', () => {
 					// Set TestClock to specific time
 					yield* TestClock.setTime(targetMillis)
 
-					const clock = yield* ClockPort
+					const clock = yield* Ports.ClockPort
 					const time = yield* clock.now()
 
 					// Verify ClockPort returns the set time
@@ -135,7 +135,7 @@ describe('ClockPort Adapters', () => {
 
 			it('accumulates multiple TestClock adjustments', async () => {
 				const program = Effect.gen(function* () {
-					const clock = yield* ClockPort
+					const clock = yield* Ports.ClockPort
 
 					const time1 = yield* clock.now()
 

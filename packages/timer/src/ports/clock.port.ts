@@ -64,7 +64,7 @@ export class ClockPort extends Context.Tag('@event-service-agent/timer/ClockPort
 		 * })
 		 *
 		 * // Resolve dependency via Effect.provide (hexagonal architecture + Effect DI)
-		 * validateFutureTime.pipe(Effect.provide(Adapters.ClockPortTest))
+		 * validateFutureTime.pipe(Effect.provide(Adapters.Clock.Test))
 		 * // Effect.Effect<DateTime.Utc, Error, never>
 		 * ```
 		 *
