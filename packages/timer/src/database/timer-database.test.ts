@@ -20,7 +20,7 @@ const insertServiceCall = (tenantId: string, serviceCallId: string) =>
 			`
 	})
 
-layer(TestLayer)('Timer database invariants', it => {
+layer(TestLayer)('Timer database invariants', (it) => {
 	it.scoped('allows inserting a well-formed timer', () =>
 		Effect.gen(function* () {
 			const sql = yield* Sql.SqlClient.SqlClient

@@ -42,12 +42,49 @@ bun install
 
 ## Available Scripts
 
+### Testing
+
 - `bun run test` - Run tests in watch mode
 - `bun run test --run` - Run tests once (CI mode)
+
+### Type Checking
+
 - `bun run type-check` - TypeScript type checking across all workspaces
+
+### Linting
+
 - `bun run lint` - Lint code with Biome
-- `bun run format` - Format code with Biome
 - `bun run check` - Run Biome checks with auto-fix
+
+### Formatting
+
+The project uses a **goal-based formatting pipeline** that orchestrates multiple tools to handle different contexts:
+
+**Quick Reference:**
+
+- `bun run format:code` - **Fast** (IDE/development) - Format source code only (~2s)
+- `bun run format:docs` - Format documentation only (JSDoc + Markdown)
+- `bun run format:all` - **Comprehensive** (CI/pre-commit) - Format everything (~10s)
+
+**Atomic Scripts** (for targeted formatting):
+
+- `bun run format:ts` - Format TypeScript/JavaScript/JSON source with Biome
+- `bun run format:jsdoc` - Format JSDoc prose with Prettier
+- `bun run format:jsdoc:examples` - Validate `@example` blocks with Deno
+- `bun run format:markdown:structure` - Lint Markdown syntax with markdownlint
+- `bun run format:markdown:prose` - Format Markdown prose with Prettier
+- `bun run format:markdown:code` - Validate Markdown code blocks with Deno
+
+**When to use which:**
+
+- **During development**: `bun run format:code` (fast, source-only)
+- **Before committing docs**: `bun run format:docs` (documentation-only)
+- **Before pushing/CI**: `bun run format:all` (comprehensive validation)
+
+See [Formatting Pipeline Design](./design/formatting-pipeline.md) for complete rationale and tool orchestration details.
+
+### Documentation Validation
+
 - `bun run docs:check` - Validate TSDoc documentation (see below)
 - `bun run docs:test` - Run code examples in JSDoc/TSDoc `@example` blocks as tests
 - `bun run docs:type-check` - Type-check code examples in JSDoc/TSDoc blocks (see below)
@@ -130,10 +167,22 @@ Before committing:
 
 - [ ] All tests pass (`bun run test --run`)
 - [ ] Type-checking passes (`bun run type-check`)
-- [ ] Code is formatted (`bun run format`)
+- [ ] Code is formatted (`bun run format:all`)
 - [ ] Code is linted (`bun run check`)
 - [ ] Documentation is valid (`bun run docs:check`)
 - [ ] Documentation examples type-check (`bun run docs:type-check`)
+
+**Fast pre-commit workflow** (for quick iterations):
+
+```bash
+bun run format:code && bun run check && bun run test --run
+```
+
+**Comprehensive pre-push workflow** (before CI):
+
+```bash
+bun run format:all && bun run check && bun run test --run && bun run type-check
+```
 
 ## Writing Documentation
 

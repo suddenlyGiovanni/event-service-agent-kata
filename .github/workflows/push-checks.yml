@@ -29,13 +29,10 @@ jobs:
           files: '**/*.md'
           separator: ","
 
-      - name: 📝 Fix Markdown lint issues
+      - name: 📝 Format Markdown files
         if: steps.changed-markdown-files.outputs.any_changed == 'true'
-        uses: DavidAnson/markdownlint-cli2-action@v21
-        with:
-          globs: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
-          separator: "," 
-          fix: true
+        shell: sh
+        run: bun run format:docs:markdown
 
       - name: 🚦 Commit Markdown fixes
         shell: bash
@@ -44,24 +41,12 @@ jobs:
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "chore: fix markdown lint issues"
+            git commit -m "chore: format markdown files"
           fi
 
       - name: 💅 Format code
         shell: sh
-        run: |
-          bun biome check \
-          --max-diagnostics=none \
-          --vcs-enabled=true \
-          --vcs-use-ignore-file=true \
-          --vcs-root="." \
-          --formatter-enabled=true \
-          --linter-enabled=false \
-          --assist-enabled=true \
-          --reporter=github \
-          --changed \
-          --no-errors-on-unmatched \
-          --write
+        run: bun run format:code
 
       - name: 🚦 Commit format fixes
         shell: bash
@@ -70,7 +55,21 @@ jobs:
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "chore: format code with Biome"
+            git commit -m "chore: format code"
+          fi
+
+      - name: 📚 Format JSDoc comments
+        shell: sh
+        run: bun run format:docs:jsdoc
+
+      - name: 🚦 Commit JSDoc fixes
+        shell: bash
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: format JSDoc comments"
           fi
 
       - name: 🚨 Lint code

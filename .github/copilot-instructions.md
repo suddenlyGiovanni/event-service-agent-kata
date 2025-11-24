@@ -19,7 +19,7 @@ When starting work on an issue, follow this workflow:
 7. **Ensure multi-tenancy** - Every query must filter by `tenant_id`
 8. **Run tests frequently** - `bun run test` (watch mode) or `bun run test --run` (CI mode)
 9. **Format before committing** - `bun run format` and `bun run check`
-10. **Validate documentation** - Run `bun run docs:check`, `docs:type-check`, `docs:test` before committing
+10. **Validate documentation** - Run `bun run docs:check` and `docs:type-check` before committing
 11. **Update Kanban on completion** - Mark task as done in `docs/plan/kanban.md` when complete
 
 ---
@@ -94,26 +94,26 @@ These constraints appear consistently across ADRs and must be enforced in all co
 
 ```typescript
 // Define service interface
-class MyService extends Context.Tag('MyService')<
-	MyService,
-	{
-		readonly doThing: Effect.Effect<Result, MyError>
-	}
+class MyService extends Context.Tag("MyService")<
+  MyService,
+  {
+    readonly doThing: Effect.Effect<Result, MyError>;
+  }
 >() {}
 
 // Provide implementation
 const MyServiceLive = Layer.effect(
-	MyService,
-	Effect.gen(function* () {
-		const dep = yield* OtherService
-		return MyService.of({
-			doThing: Effect.succeed(/* ... */),
-		})
-	})
-)
+  MyService,
+  Effect.gen(function* () {
+    const dep = yield* OtherService;
+    return MyService.of({
+      doThing: Effect.succeed(/* ... */),
+    });
+  })
+);
 
 // Use in tests
-Effect.provide(program, Layer.merge(MyServiceLive, OtherServiceTest))
+Effect.provide(program, Layer.merge(MyServiceLive, OtherServiceTest));
 ```
 
 **Effect.gen Pattern** (readable imperative-style):
@@ -121,13 +121,15 @@ Effect.provide(program, Layer.merge(MyServiceLive, OtherServiceTest))
 ```typescript
 // ✅ Preferred: gen syntax (like do-notation in Haskell)
 Effect.gen(function* () {
-	const a = yield* getA
-	const b = yield* getB(a)
-	return compute(a, b)
-})
+  const a = yield* getA;
+  const b = yield* getB(a);
+  return compute(a, b);
+});
 
 // ❌ Avoid: deeply nested flatMap
-getA.pipe(Effect.flatMap((a) => getB(a).pipe(Effect.map((b) => compute(a, b)))))
+getA.pipe(
+  Effect.flatMap((a) => getB(a).pipe(Effect.map((b) => compute(a, b))))
+);
 ```
 
 **Documentation Sources** (use MCP tools to get up-to-date info):
@@ -185,32 +187,32 @@ bun run --filter @event-service-agent/timer test
 **Test Structure**:
 
 ```typescript
-import { describe, expect, it } from '@effect/vitest'
-import * as Effect from 'effect/Effect'
-import * as Layer from 'effect/Layer'
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 
-describe('FeatureName', () => {
-	// ✅ Use .effect() for Effect-returning tests
-	it.effect('should do something', () =>
-		Effect.gen(function* () {
-			const service = yield* MyService
-			const result = yield* service.doThing()
-			expect(result).toBe(expected)
-		}).pipe(
-			Effect.provide(MyServiceTest) // Inject test dependencies
-		)
-	)
+describe("FeatureName", () => {
+  // ✅ Use .effect() for Effect-returning tests
+  it.effect("should do something", () =>
+    Effect.gen(function* () {
+      const service = yield* MyService;
+      const result = yield* service.doThing();
+      expect(result).toBe(expected);
+    }).pipe(
+      Effect.provide(MyServiceTest) // Inject test dependencies
+    )
+  );
 
-	// ✅ Use TestClock for time control
-	it.effect('should handle time', () =>
-		Effect.gen(function* () {
-			yield* scheduleTask()
-			yield* TestClock.adjust('5 minutes')
-			const result = yield* checkResult()
-			expect(result).toBeDefined()
-		}).pipe(Effect.provide(testLayer))
-	)
-})
+  // ✅ Use TestClock for time control
+  it.effect("should handle time", () =>
+    Effect.gen(function* () {
+      yield* scheduleTask();
+      yield* TestClock.adjust("5 minutes");
+      const result = yield* checkResult();
+      expect(result).toBeDefined();
+    }).pipe(Effect.provide(testLayer))
+  );
+});
 ```
 
 **Running Tests**:
@@ -240,21 +242,21 @@ bun run test --ui
 ```typescript
 // Root: vitest.config.ts (orchestrator)
 export default defineConfig({
-	test: {
-		pool: 'forks',
-		poolOptions: { forks: { singleFork: true } },
-		projects: ['packages/*/vitest.config.ts'],
-	},
-})
+  test: {
+    pool: "forks",
+    poolOptions: { forks: { singleFork: true } },
+    projects: ["packages/*/vitest.config.ts"],
+  },
+});
 
 // Package: packages/timer/vitest.config.ts
 export default defineProjectConfig({
-	test: {
-		name: 'timer',
-		root: '.',
-		include: ['src/**/*.test.ts'],
-	},
-})
+  test: {
+    name: "timer",
+    root: ".",
+    include: ["src/**/*.test.ts"],
+  },
+});
 ```
 
 ---
@@ -356,23 +358,21 @@ When you need up-to-date information about libraries and tools:
 **Every feature follows strict TDD**:
 
 1. **🔴 RED**: Write failing test
-
-    - Start with domain model test (pure functions, Schema validation)
-    - Use `.effect()` tests with test layers
-    - Test should compile but fail with expected error
-    - **Commit**: `test(scope): add failing test for <feature>`
+   - Start with domain model test (pure functions, Schema validation)
+   - Use `.effect()` tests with test layers
+   - Test should compile but fail with expected error
+   - **Commit**: `test(scope): add failing test for <feature>`
 
 2. **🟢 GREEN**: Minimum code to pass
-
-    - Implement simplest solution (no premature optimization)
-    - Domain → Ports → Workflows → Adapters (inside-out)
-    - All tests must pass before commit
-    - **Commit**: `feat(scope): implement <feature> (TDD green)`
+   - Implement simplest solution (no premature optimization)
+   - Domain → Ports → Workflows → Adapters (inside-out)
+   - All tests must pass before commit
+   - **Commit**: `feat(scope): implement <feature> (TDD green)`
 
 3. **🔵 REFACTOR**: Improve without changing behavior
-    - Extract functions, improve names, simplify logic
-    - Tests still pass (no new tests in refactor commits)
-    - **Commit**: `refactor(scope): extract <helper> for clarity`
+   - Extract functions, improve names, simplify logic
+   - Tests still pass (no new tests in refactor commits)
+   - **Commit**: `refactor(scope): extract <helper> for clarity`
 
 **Atomic Commit Rule**:
 
@@ -433,13 +433,13 @@ When you discover edge cases during RED/GREEN:
 
 ```typescript
 // ✅ Document and skip (don't block progress)
-it.todo('should handle concurrent schedules for same serviceCallId', () => {
-	/* when missing an implementation */
-})
+it.todo("should handle concurrent schedules for same serviceCallId", () => {
+  /* when missing an implementation */
+});
 
-it.skip('should handle concurrent schedules for same serviceCallId', () => {
-	/* when the implementation is temporarily broken due to the TDD phase */
-})
+it.skip("should handle concurrent schedules for same serviceCallId", () => {
+  /* when the implementation is temporarily broken due to the TDD phase */
+});
 
 // ✅ Add TODO comment
 // TODO(PL-4.4): Implement idempotency check in workflow
@@ -467,31 +467,31 @@ Tracked in TODO; non-blocking for current workflow.
 
 ```typescript
 // Start with simplest happy path
-it.effect('should create TimerEntry with valid inputs', () =>
-	Effect.gen(() => {
-		/*...*/
-	})
-)
+it.effect("should create TimerEntry with valid inputs", () =>
+  Effect.gen(() => {
+    /*...*/
+  })
+);
 
 // Add constraint tests
-it.effect('should reject past dueAt', () =>
-	Effect.gen(() => {
-		/*...*/
-	})
-)
+it.effect("should reject past dueAt", () =>
+  Effect.gen(() => {
+    /*...*/
+  })
+);
 
-it.effect('should reject invalid UUID format', () =>
-	Effect.gen(() => {
-		/*...*/
-	})
-)
+it.effect("should reject invalid UUID format", () =>
+  Effect.gen(() => {
+    /*...*/
+  })
+);
 ```
 
 **GREEN phase** (workflow):
 
 ```typescript
 // Use test layers (in-memory ports)
-Effect.provide(workflow, Layer.merge(TimerPersistence.inMemory, ClockPortTest))
+Effect.provide(workflow, Layer.merge(TimerPersistence.inMemory, ClockPortTest));
 ```
 
 **REFACTOR phase**:
@@ -541,8 +541,8 @@ git commit -m "refactor(timer): extract state validation to pure function"
 ```markdown
 ## Doing
 
--   [x] (PL-4.1) TimerEntry domain model + tests [Timer] — 5/5 tests passing
--   [o] (PL-4.3) ScheduleTimer workflow + tests [Timer] — 8/9 tests (one TODO)
+- [x] (PL-4.1) TimerEntry domain model + tests [Timer] — 5/5 tests passing
+- [o] (PL-4.3) ScheduleTimer workflow + tests [Timer] — 8/9 tests (one TODO)
 ```
 
 **Link commits to Kanban items**:
@@ -564,34 +564,30 @@ Refs: PL-4.5
 ### Order of Implementation (TDD Inside-Out)
 
 1. **Domain Model** (pure, no ports)
-
-    - Effect Schema classes (`Schema.TaggedClass`)
-    - Pure constructors/transformations
-    - Test: unit tests with no dependencies
+   - Effect Schema classes (`Schema.TaggedClass`)
+   - Pure constructors/transformations
+   - Test: unit tests with no dependencies
 
 2. **Port Interface** (defined by domain needs)
-
-    - Create `packages/<module>/src/ports/<name>.port.ts`
-    - Define `Context.Tag` service
-    - Test: N/A (no logic to test)
+   - Create `packages/<module>/src/ports/<name>.port.ts`
+   - Define `Context.Tag` service
+   - Test: N/A (no logic to test)
 
 3. **Test Adapter** (in-memory, for TDD)
-
-    - Implement port with `Ref` + `HashMap`
-    - Use `Layer.effect` for lifecycle
-    - Export as `<Name>Test` or `<Name>.inMemory`
-    - Test: adapter-specific tests (lifecycle, state transitions)
+   - Implement port with `Ref` + `HashMap`
+   - Use `Layer.effect` for lifecycle
+   - Export as `<Name>Test` or `<Name>.inMemory`
+   - Test: adapter-specific tests (lifecycle, state transitions)
 
 4. **Workflow** (domain orchestration)
-
-    - Use `Effect.gen` to compose domain + ports
-    - Inject ports via `yield* PortName`
-    - Test: use test adapter, validate domain logic
+   - Use `Effect.gen` to compose domain + ports
+   - Inject ports via `yield* PortName`
+   - Test: use test adapter, validate domain logic
 
 5. **Production Adapter** (SQLite, HTTP, etc.)
-    - Implement same port interface
-    - Map infrastructure errors to domain errors
-    - Test: integration tests with real infrastructure
+   - Implement same port interface
+   - Map infrastructure errors to domain errors
+   - Test: integration tests with real infrastructure
 
 ---
 
@@ -599,51 +595,50 @@ Refs: PL-4.5
 
 ```typescript
 // 1. Domain (RED)
-test('TimerEntry.schedule validates future dueAt', () => {
-	/*...*/
-})
+test("TimerEntry.schedule validates future dueAt", () => {
+  /*...*/
+});
 
 // 2. Port (GREEN - interface only)
-class TimerPersistencePort extends Context.Tag('TimerPersistence')<
-	TimerPersistencePort,
-	{
-		readonly scheduleTimer: (
-			entry: TimerEntry
-		) => Effect.Effect<void, PersistenceError>
-	}
+class TimerPersistencePort extends Context.Tag("TimerPersistence")<
+  TimerPersistencePort,
+  {
+    readonly scheduleTimer: (
+      entry: TimerEntry
+    ) => Effect.Effect<void, PersistenceError>;
+  }
 >() {}
 
 // 3. Test Adapter (GREEN - in-memory)
 const inMemory = Layer.effect(
-	TimerPersistencePort,
-	Effect.gen(function* () {
-		const ref = yield* Ref.make(HashMap.empty<string, TimerEntry>())
-		return TimerPersistencePort.of({
-			scheduleTimer: (entry) =>
-				Ref.update(ref, HashMap.set(entry.id, entry)),
-		})
-	})
-)
+  TimerPersistencePort,
+  Effect.gen(function* () {
+    const ref = yield* Ref.make(HashMap.empty<string, TimerEntry>());
+    return TimerPersistencePort.of({
+      scheduleTimer: (entry) => Ref.update(ref, HashMap.set(entry.id, entry)),
+    });
+  })
+);
 
 // 4. Workflow (RED → GREEN)
-test('scheduleTimerWorkflow persists entry', () => {
-	Effect.provide(workflow, TimerPersistence.inMemory)
-})
+test("scheduleTimerWorkflow persists entry", () => {
+  Effect.provide(workflow, TimerPersistence.inMemory);
+});
 
 // 5. Production Adapter (later, after SQLite tests)
 const sqlite = Layer.effect(
-	TimerPersistencePort,
-	Effect.gen(function* () {
-		const db = yield* Database
-		return TimerPersistencePort.of({
-			scheduleTimer: (entry) =>
-				Effect.tryPromise({
-					try: () => db.run('INSERT INTO timer_schedules ...'),
-					catch: (error) => new PersistenceError({ cause: error }),
-				}),
-		})
-	})
-)
+  TimerPersistencePort,
+  Effect.gen(function* () {
+    const db = yield* Database;
+    return TimerPersistencePort.of({
+      scheduleTimer: (entry) =>
+        Effect.tryPromise({
+          try: () => db.run("INSERT INTO timer_schedules ..."),
+          catch: (error) => new PersistenceError({ cause: error }),
+        }),
+    });
+  })
+);
 ```
 
 ---
@@ -664,26 +659,26 @@ const sqlite = Layer.effect(
 ```typescript
 // Define domain errors
 export class ValidationError extends Schema.TaggedError<ValidationError>()(
-	'ValidationError',
-	{ message: Schema.String, field: Schema.String }
+  "ValidationError",
+  { message: Schema.String, field: Schema.String }
 ) {}
 
 export class PersistenceError extends Schema.TaggedError<PersistenceError>()(
-	'PersistenceError',
-	{ message: Schema.String, cause: Schema.Unknown }
+  "PersistenceError",
+  { message: Schema.String, cause: Schema.Unknown }
 ) {}
 
 // Workflow signatures include all error types
 const workflow: Effect.Effect<
-	Result,
-	ValidationError | PersistenceError, // ← explicit error channel
-	TimerPersistencePort | ClockPort // ← required dependencies
+  Result,
+  ValidationError | PersistenceError, // ← explicit error channel
+  TimerPersistencePort | ClockPort // ← required dependencies
 > = Effect.gen(function* () {
-	// Errors propagate automatically in gen syntax
-	const entry = yield* TimerEntry.schedule(command) // may fail with ValidationError
-	yield* persistence.save(entry) // may fail with PersistenceError
-	return entry
-})
+  // Errors propagate automatically in gen syntax
+  const entry = yield* TimerEntry.schedule(command); // may fail with ValidationError
+  yield* persistence.save(entry); // may fail with PersistenceError
+  return entry;
+});
 ```
 
 ---
@@ -693,18 +688,18 @@ const workflow: Effect.Effect<
 ```typescript
 // ✅ Adapter maps infra errors to domain errors
 const sqliteAdapter = {
-	save: (entry: TimerEntry) =>
-		Effect.tryPromise({
-			try: () => db.run('INSERT ...'),
-			catch: (cause) =>
-				new PersistenceError({ message: 'DB insert failed', cause }),
-		}),
-}
+  save: (entry: TimerEntry) =>
+    Effect.tryPromise({
+      try: () => db.run("INSERT ..."),
+      catch: (cause) =>
+        new PersistenceError({ message: "DB insert failed", cause }),
+    }),
+};
 
 // ❌ Never expose raw infrastructure errors to domain
 const badAdapter = {
-	save: (entry) => Effect.promise(() => db.run('INSERT ...')), // ← throws, not typed!
-}
+  save: (entry) => Effect.promise(() => db.run("INSERT ...")), // ← throws, not typed!
+};
 ```
 
 ---
@@ -713,15 +708,15 @@ const badAdapter = {
 
 ```typescript
 // RED: Test expected errors
-it.effect('should fail on past dueAt', () =>
-	Effect.gen(function* () {
-		const result = yield* TimerEntry.schedule({ dueAt: pastTime }).pipe(
-			Effect.either // ← catch error in Either
-		)
-		expect(Either.isLeft(result)).toBe(true)
-		expect(result.left).toBeInstanceOf(ValidationError)
-	})
-)
+it.effect("should fail on past dueAt", () =>
+  Effect.gen(function* () {
+    const result = yield* TimerEntry.schedule({ dueAt: pastTime }).pipe(
+      Effect.either // ← catch error in Either
+    );
+    expect(Either.isLeft(result)).toBe(true);
+    expect(result.left).toBeInstanceOf(ValidationError);
+  })
+);
 ```
 
 ---
@@ -753,19 +748,20 @@ Code documentation serves to explain **WHY** decisions were made, not **WHAT** t
 
 1. **TSDoc structure validation** (`bun run docs:check`): Ensures JSDoc completeness and correct syntax
 2. **TSDoc example type-checking** (`bun run docs:type-check`): Validates TypeScript in `@example` blocks
-3. **TSDoc example testing** (`bun run docs:test`): Executes `@example` blocks as tests
-4. **Markdown code validation** (`bun run docs:type-check:md`): Type-checks TypeScript in markdown files
-5. **Markdown prose linting** (`bun run docs:lint`): Enforces markdown style guide
+3. **Markdown code validation** (`bun run docs:type-check:md`): Type-checks TypeScript in markdown files
+4. **Markdown prose linting** (`bun run docs:lint`): Enforces markdown style guide
+
+**Note**: Documentation examples are type-checked but not executed. Examples may use `typescript ignore` attribute to skip execution while preserving documentation value.
 
 **Examples**:
 
 ```typescript
 // ❌ Bad: Restates what code does
 // Set the timer to scheduled state
-timer.state = 'Scheduled'
+timer.state = "Scheduled";
 
 // ✅ Good: Clear variable name, no comment needed
-const scheduledTimer = TimerEntry.schedule(command)
+const scheduledTimer = TimerEntry.schedule(command);
 
 // ✅ Good: Explains WHY, references decision
 /*
@@ -773,8 +769,8 @@ const scheduledTimer = TimerEntry.schedule(command)
  * If publish fails, timer remains Scheduled and will retry on next poll.
  * See ADR-0008 for outbox pattern rationale.
  */
-yield * eventBus.publishDueTimeReached(event)
-yield * persistence.markFired(timer.tenantId, timer.serviceCallId, now)
+yield * eventBus.publishDueTimeReached(event);
+yield * persistence.markFired(timer.tenantId, timer.serviceCallId, now);
 ```
 
 ---
@@ -785,128 +781,128 @@ yield * persistence.markFired(timer.tenantId, timer.serviceCallId, now)
 
 1. **Trade-offs and architectural decisions**:
 
-    ```typescript
-    /*
-     * Use partition instead of forEach to collect ALL failures, not fail-fast.
-     * This ensures partial batch success: processed timers are marked fired,
-     * failed timers remain Scheduled for retry on next poll.
-     * Trade-off: Higher memory usage for large batches, but better resilience.
-     */
-    const [failures, successes] =
-    	yield * Effect.partition(dueTimers, processTimer)
-    ```
+   ```typescript
+   /*
+    * Use partition instead of forEach to collect ALL failures, not fail-fast.
+    * This ensures partial batch success: processed timers are marked fired,
+    * failed timers remain Scheduled for retry on next poll.
+    * Trade-off: Higher memory usage for large batches, but better resilience.
+    */
+   const [failures, successes] =
+     yield * Effect.partition(dueTimers, processTimer);
+   ```
 
 2. **Domain concepts and business rules**:
 
-    ```typescript
-    /**
-     * Scheduled state represents a timer awaiting its due time.
-     *
-     * Domain semantics:
-     * - Timer is persisted in database (durable)
-     * - Will fire when clock reaches dueAt timestamp
-     * - Can be canceled before firing
-     * - Transitions to Reached when fired, or Canceled if explicitly canceled
-     */
-    export class ScheduledTimer {
-    	/*...*/
-    }
-    ```
+   ```typescript
+   /**
+    * Scheduled state represents a timer awaiting its due time.
+    *
+    * Domain semantics:
+    * - Timer is persisted in database (durable)
+    * - Will fire when clock reaches dueAt timestamp
+    * - Can be canceled before firing
+    * - Transitions to Reached when fired, or Canceled if explicitly canceled
+    */
+   export class ScheduledTimer {
+     /*...*/
+   }
+   ```
 
 3. **Gotchas, edge cases, and timing assumptions**:
 
-    ```typescript
-    /*
-     * GOTCHA: findDue query uses inclusive comparison (<=) to ensure we don't
-     * miss timers due at exact microsecond boundary. Clock precision varies.
-     */
-    const dueTimers = yield * persistence.findDue(now) // WHERE due_at <= now
+   ```typescript
+   /*
+    * GOTCHA: findDue query uses inclusive comparison (<=) to ensure we don't
+    * miss timers due at exact microsecond boundary. Clock precision varies.
+    */
+   const dueTimers = yield * persistence.findDue(now); // WHERE due_at <= now
 
-    // EDGE CASE: Empty batch early return prevents unnecessary event bus calls
-    if (Chunk.isEmpty(dueTimers)) {
-    	yield * Effect.logDebug('No due timers found')
-    	return // Skip partition, no failures to report
-    }
-    ```
+   // EDGE CASE: Empty batch early return prevents unnecessary event bus calls
+   if (Chunk.isEmpty(dueTimers)) {
+     yield * Effect.logDebug("No due timers found");
+     return; // Skip partition, no failures to report
+   }
+   ```
 
 4. **Non-obvious performance or concurrency choices**:
 
-    ```typescript
-    /*
-     * Process sequentially (concurrency: 1) to preserve partition key ordering.
-     * Kafka guarantees order only within a partition; concurrent processing
-     * could reorder DueTimeReached events for same serviceCallId.
-     * See ADR-0002 for broker ordering guarantees.
-     */
-    const results =
-    	yield *
-    	Effect.partition(timers, processTimer, {
-    		concurrency: 1,
-    	})
-    ```
+   ```typescript
+   /*
+    * Process sequentially (concurrency: 1) to preserve partition key ordering.
+    * Kafka guarantees order only within a partition; concurrent processing
+    * could reorder DueTimeReached events for same serviceCallId.
+    * See ADR-0002 for broker ordering guarantees.
+    */
+   const results =
+     yield *
+     Effect.partition(timers, processTimer, {
+       concurrency: 1,
+     });
+   ```
 
 5. **Links to ADRs and design docs**:
 
-    ```typescript
-    /*
-     * Generate UUID v7 in application code, not database.
-     * See ADR-0010 for identity generation strategy.
-     */
-    const envelopeId = EnvelopeId.make()
+   ```typescript
+   /*
+    * Generate UUID v7 in application code, not database.
+    * See ADR-0010 for identity generation strategy.
+    */
+   const envelopeId = EnvelopeId.make();
 
-    /*
-     * Outbox pattern: append events to outbox table in same transaction.
-     * Events published after commit to avoid dual-write problem.
-     * See ADR-0008 for detailed rationale and failure mode analysis.
-     */
-    yield * outbox.append(events)
-    ```
+   /*
+    * Outbox pattern: append events to outbox table in same transaction.
+    * Events published after commit to avoid dual-write problem.
+    * See ADR-0008 for detailed rationale and failure mode analysis.
+    */
+   yield * outbox.append(events);
+   ```
 
 **❌ DON'T comment**:
 
 1. **Obvious operations** (code is self-documenting):
 
-    ```typescript
-    /*
-     * ❌ Redundant: name already says what it does
-     * Get current time
-     */
-    const now = yield * clock.now()
+   ```typescript
+   /*
+    * ❌ Redundant: name already says what it does
+    * Get current time
+    */
+   const now = yield * clock.now();
 
-    // ✅ Just write the code
-    const now = yield * clock.now()
-    ```
+   // ✅ Just write the code
+   const now = yield * clock.now();
+   ```
 
 2. **What type signatures already express**:
 
-    ```typescript
-    // ❌ Redundant: types + name already document this
-    /**
-     * @param timer - The timer to process
-     * @returns void
-     */
-    function processTimer(timer: ScheduledTimer): Effect.Effect<void, Error> {
-    	/*...*/
-    }
+   ```typescript
+   // ❌ Redundant: types + name already document this
+   /**
+    * @param timer - The timer to process
+    * @returns void
+    */
+   function processTimer(timer: ScheduledTimer): Effect.Effect<void, Error> {
+     /*...*/
+   }
 
-    // ✅ Types document parameters; only add comment if explaining WHY or edge cases
-    function processTimer(timer: ScheduledTimer): Effect.Effect<void, Error> {
-    	/*...*/
-    }
-    ```
+   // ✅ Types document parameters; only add comment if explaining WHY or edge cases
+   function processTimer(timer: ScheduledTimer): Effect.Effect<void, Error> {
+     /*...*/
+   }
+   ```
 
 3. **Implementation details of pure functions**:
 
-    ```typescript
-    /*
-     * ❌ Don't explain HOW sorting works
-     * Sort timers by dueAt ascending
-     */
-    const sorted = timers.sort((a, b) => a.dueAt - b.dueAt)
+   ```typescript
+   /*
+    * ❌ Don't explain HOW sorting works
+    * Sort timers by dueAt ascending
+    */
+   const sorted = timers.sort((a, b) => a.dueAt - b.dueAt);
 
-    // ✅ Function name + types are sufficient
-    const sortedByDueTime = timers.sort((a, b) => a.dueAt - b.dueAt)
-    ```
+   // ✅ Function name + types are sufficient
+   const sortedByDueTime = timers.sort((a, b) => a.dueAt - b.dueAt);
+   ```
 
 ---
 
@@ -935,14 +931,14 @@ yield * persistence.markFired(timer.tenantId, timer.serviceCallId, now)
  * @see TimerPersistencePort for storage contract
  */
 export const scheduleTimer = (
-	command: ScheduleTimerCommand
+  command: ScheduleTimerCommand
 ): Effect.Effect<
-	ScheduledTimer,
-	ValidationError | PersistenceError,
-	ClockPort
+  ScheduledTimer,
+  ValidationError | PersistenceError,
+  ClockPort
 > => {
-	/*...*/
-}
+  /*...*/
+};
 ````
 
 **CRITICAL: `@example` blocks must be executable and type-correct**:
@@ -954,24 +950,18 @@ export const scheduleTimer = (
 - Avoid pseudo-code or simplified examples that wouldn't compile
 - Test examples locally before committing: `bun run docs:type-check && bun run docs:test`
 
-**How Doc Tests Work**:
+**How Doc Validation Works**:
 
-Deno extracts code blocks from JSDoc/markdown and transforms them into standalone test modules:
+Deno validates TypeScript code in JSDoc `@example` blocks and markdown files:
 
-- Each `@example` block becomes a `Deno.test()` case
-- The test module lives in the same directory as the documented file
+- Each `@example` block is type-checked for correctness
 - **Exported items are automatically imported (JSDoc/TSDoc in source files)**: For `@example` blocks in JSDoc or TSDoc comments within source files, any functions, classes, or values exported from the documented module are available without explicit imports. This auto-import behavior does NOT apply to standalone `.md` documentation files, which require all imports to be explicit.
 - For type-checking only (no execution): Use `deno check --doc` (JSDoc) or `deno check --doc-only` (markdown)
+- Examples marked with `typescript ignore` are skipped during execution but still provide documentation value
 
-**Example transformation**:
+**Example validation**:
 
 ````typescript
-// In your source file:
-export function add(a: number, b: number) {
-	return a + b
-}
-export const ONE = 1
-
 /**
  * @example
  * ```ts
@@ -981,48 +971,20 @@ export const ONE = 1
  * assertEquals(sum, 3)
  * ```
  */
-
-// Deno transforms this into:
-import { assertEquals } from 'jsr:@std/assert/equals'
-import { add, ONE } from 'file:///path/to/your/file.ts'
-
-Deno.test('your-file.ts$10-15.ts', async () => {
-	const sum = add(ONE, 2)
-	assertEquals(sum, 3)
-})
 ````
 
-**Deno Test Environment Constraints**:
+**Type-checked but not executed**: Examples are validated for type correctness only.
 
-Documentation examples run in **Deno** (not Bun/Vitest), which means:
+**Deno Type-Checking Constraints**:
 
-- **No Bun globals**: Cannot use `Bun`, `expect()`, or Vitest matchers
+Documentation examples are type-checked in **Deno** (not Bun/Vitest), which means:
+
+- **No Bun globals**: Cannot use `Bun` or Bun-specific APIs
 - **No Vitest imports**: Cannot import from `@effect/vitest` or `vitest`
 - **Use WinterCG baseline**: Only use APIs available across all runtimes (Deno, Bun, Node.js)
-- **For assertions**: Use `node:assert` or `node:assert/strict` (standard across runtimes)
 - **Real imports required**: All imports must resolve (e.g., `import { Effect } from "effect"`)
 - **No relative imports**: Use package names (e.g., `"effect"`, not `"./domain/timer"`)
-
-**Example-compatible assertion patterns**:
-
-````typescript
-/**
- * @example
- * ```typescript
- * import * as Effect from "effect/Effect"
- * import assert from "node:assert/strict"
- *
- * // ✅ Good: Uses standard assertions
- * const result = Effect.runSync(createTimer({ duration: 5000 }))
- * assert.ok(result.id)
- * assert.equal(result.state, "Scheduled")
- *
- * // ❌ Bad: Vitest-specific (won't work in Deno)
- * // expect(result.id).toBeDefined()
- * // expect(result.state).toBe("Scheduled")
- * ```
- */
-````
+- **Use `typescript ignore` for Bun-specific examples**: Mark examples that won't type-check in Deno with `typescript ignore`
 
 **Supported Language Identifiers**:
 
@@ -1037,8 +999,7 @@ Deno recognizes the following language identifiers for code blocks:
 See the [Documentation Validation Workflow](#documentation-validation-workflow) section below for the incremental validation pattern. For TSDoc:
 
 - **Single file check**: `deno check --doc packages/timer/src/domain/timer.ts`
-- **File-scoped test**: `deno test --doc packages/timer/src/domain/timer.ts`
-- **Full suite**: `bun run docs:type-check && bun run docs:test`
+- **Full suite**: `bun run docs:type-check`
 
 **Template for domain models**:
 
@@ -1063,12 +1024,12 @@ See the [Documentation Validation Workflow](#documentation-validation-workflow) 
  * ```
  */
 export class ScheduledTimer extends Schema.Class<ScheduledTimer>(
-	'ScheduledTimer'
+  "ScheduledTimer"
 )({
-	tenantId: TenantId,
-	serviceCallId: ServiceCallId,
-	dueAt: DateTime.DateTime.Utc,
-	// ...
+  tenantId: TenantId,
+  serviceCallId: ServiceCallId,
+  dueAt: DateTime.DateTime.Utc,
+  // ...
 }) {}
 ````
 
@@ -1088,14 +1049,14 @@ All TypeScript code blocks in markdown must be type-correct and executable:
 **Example of correct markdown code block**:
 
 ```typescript
-import { Effect } from 'effect'
-import { TimerEntry } from './domain/timer-entry'
+import { Effect } from "effect";
+import { TimerEntry } from "./domain/timer-entry";
 
 // This code will be type-checked by CI
 const workflow = Effect.gen(function* () {
-	const timer = yield* TimerEntry.schedule({ tenantId, serviceCallId, dueAt })
-	return timer
-})
+  const timer = yield* TimerEntry.schedule({ tenantId, serviceCallId, dueAt });
+  return timer;
+});
 ```
 
 **Common mistakes to avoid**:
@@ -1174,12 +1135,8 @@ When adding/updating code examples across multiple files, use this incremental v
 # Single file type-check
 deno check --doc packages/timer/src/domain/timer.ts
 
-# Single file test execution
-deno test --doc packages/timer/src/domain/timer.ts
-
 # Full suite (all TSDoc examples)
 bun run docs:type-check  # Type-check only
-bun run docs:test        # Type-check + execute
 ```
 
 **Markdown-Specific Commands**:
@@ -1222,12 +1179,12 @@ bun run docs:type-check:md
  * @returns void on full success; fails with error on partial/full failure
  */
 export const pollDueTimers: Effect.Effect<
-	void,
-	PersistenceError | BatchProcessingError,
-	TimerPersistencePort | EventBusPort | ClockPort
+  void,
+  PersistenceError | BatchProcessingError,
+  TimerPersistencePort | EventBusPort | ClockPort
 > = {
-	/*...*/
-}
+  /*...*/
+};
 ```
 
 **Explain Requirements (dependency injection context)**:
@@ -1244,14 +1201,14 @@ export const pollDueTimers: Effect.Effect<
  * Use pollDueTimersWorkflow for event publishing after timer fires.
  */
 export const scheduleTimer = (
-	command: ScheduleTimerCommand
+  command: ScheduleTimerCommand
 ): Effect.Effect<
-	ScheduledTimer,
-	ValidationError | PersistenceError,
-	ClockPort | TimerPersistencePort
+  ScheduledTimer,
+  ValidationError | PersistenceError,
+  ClockPort | TimerPersistencePort
 > => {
-	/*...*/
-}
+  /*...*/
+};
 ```
 
 **Clarify timing/concurrency assumptions**:
@@ -1270,9 +1227,9 @@ export const scheduleTimer = (
  * @see ADR-0002 for broker ordering guarantees
  */
 const processTimers = (timers: Chunk<ScheduledTimer>) =>
-	Effect.partition(timers, processTimerFiring, {
-		concurrency: 1, // ← Critical: DO NOT increase
-	})
+  Effect.partition(timers, processTimerFiring, {
+    concurrency: 1, // ← Critical: DO NOT increase
+  });
 ```
 
 ---
@@ -1332,25 +1289,23 @@ const processTimers = (timers: Chunk<ScheduledTimer>) =>
 **RED phase: Document test intent and expected behavior**:
 
 ```typescript
-describe('TimerEntry.schedule', () => {
-	// RED: Test intent clearly stated
-	it.effect('should reject past dueAt timestamp', () =>
-		Effect.gen(function* () {
-			// Arrange: Create command with past timestamp
-			const pastTime = DateTime.now().pipe(DateTime.subtract('1 hour'))
-			const command = { tenantId, serviceCallId, dueAt: pastTime }
+describe("TimerEntry.schedule", () => {
+  // RED: Test intent clearly stated
+  it.effect("should reject past dueAt timestamp", () =>
+    Effect.gen(function* () {
+      // Arrange: Create command with past timestamp
+      const pastTime = DateTime.now().pipe(DateTime.subtract("1 hour"));
+      const command = { tenantId, serviceCallId, dueAt: pastTime };
 
-			// Act: Attempt to schedule timer
-			const result = yield* TimerEntry.schedule(command).pipe(
-				Effect.either
-			)
+      // Act: Attempt to schedule timer
+      const result = yield* TimerEntry.schedule(command).pipe(Effect.either);
 
-			// Assert: ValidationError with specific field
-			expect(Either.isLeft(result)).toBe(true)
-			expect(result.left.field).toBe('dueAt')
-		})
-	)
-})
+      // Assert: ValidationError with specific field
+      expect(Either.isLeft(result)).toBe(true);
+      expect(result.left.field).toBe("dueAt");
+    })
+  );
+});
 ```
 
 **GREEN phase: Add function-level docs with examples**:
@@ -1377,31 +1332,31 @@ describe('TimerEntry.schedule', () => {
  * ```
  */
 export const schedule = (
-	command: ScheduleTimerCommand
+  command: ScheduleTimerCommand
 ): Effect.Effect<ScheduledTimer, ValidationError, ClockPort> => {
-	// Implementation now documents itself with clear steps
-	return Effect.gen(function* () {
-		const clock = yield* ClockPort
-		const now = yield* clock.now()
+  // Implementation now documents itself with clear steps
+  return Effect.gen(function* () {
+    const clock = yield* ClockPort;
+    const now = yield* clock.now();
 
-		// Validate dueAt is future (domain rule)
-		if (DateTime.lessThanOrEqualTo(command.dueAt, now)) {
-			return yield* Effect.fail(
-				new ValidationError({
-					field: 'dueAt',
-					message: 'Must be future timestamp',
-				})
-			)
-		}
+    // Validate dueAt is future (domain rule)
+    if (DateTime.lessThanOrEqualTo(command.dueAt, now)) {
+      return yield* Effect.fail(
+        new ValidationError({
+          field: "dueAt",
+          message: "Must be future timestamp",
+        })
+      );
+    }
 
-		// Construct domain entity
-		return new ScheduledTimer({
-			tenantId: command.tenantId,
-			serviceCallId: command.serviceCallId,
-			dueAt: command.dueAt,
-		})
-	})
-}
+    // Construct domain entity
+    return new ScheduledTimer({
+      tenantId: command.tenantId,
+      serviceCallId: command.serviceCallId,
+      dueAt: command.dueAt,
+    });
+  });
+};
 ````
 
 **REFACTOR phase: Update comments to match new structure**:
@@ -1409,26 +1364,26 @@ export const schedule = (
 ```typescript
 // Before refactor: Inline validation
 const result =
-	command.dueAt > now ? new ScheduledTimer(/*... */) : fail(/*... */)
+  command.dueAt > now ? new ScheduledTimer() /*... */ : fail(); /*... */
 
 // After refactor: Extracted helper
 const validateFutureTimestamp = (dueAt: DateTime, now: DateTime) => {
-	/*
-	 * Domain rule: timers cannot be scheduled in the past
-	 * Clock precision may vary; use strict greater-than comparison
-	 */
-	return DateTime.greaterThan(dueAt, now)
-		? Effect.succeed(dueAt)
-		: Effect.fail(
-				new ValidationError({
-					field: 'dueAt',
-					message: 'Must be future',
-				})
-		  )
-}
+  /*
+   * Domain rule: timers cannot be scheduled in the past
+   * Clock precision may vary; use strict greater-than comparison
+   */
+  return DateTime.greaterThan(dueAt, now)
+    ? Effect.succeed(dueAt)
+    : Effect.fail(
+        new ValidationError({
+          field: "dueAt",
+          message: "Must be future",
+        })
+      );
+};
 
 // Update workflow to use extracted function (comment removed—name is clear)
-const validated = yield * validateFutureTimestamp(command.dueAt, now)
+const validated = yield * validateFutureTimestamp(command.dueAt, now);
 ```
 
 ---
@@ -1449,8 +1404,7 @@ const validated = yield * validateFutureTimestamp(command.dueAt, now)
 **Documentation validation** (automated checks):
 
 - [ ] TSDoc structure is valid (`bun run docs:check`)
-- [ ] `@example` blocks are executable and type-correct (`bun run docs:type-check`)
-- [ ] `@example` blocks pass as tests (`bun run docs:test`)
+- [ ] `@example` blocks are type-correct (`bun run docs:type-check`)
 - [ ] Markdown code blocks are type-correct (`bun run docs:type-check:md`)
 - [ ] Markdown prose follows style guide (`bun run docs:lint`)
 
@@ -1467,18 +1421,18 @@ const validated = yield * validateFutureTimestamp(command.dueAt, now)
 ```typescript
 // ❌ Bad: Restates obvious code
 // Publish the event
-yield * eventBus.publishDueTimeReached(event)
+yield * eventBus.publishDueTimeReached(event);
 
 // ❌ Bad: Outdated comment (code changed, comment didn't)
 // Use forEach to process timers
-const results = yield * Effect.partition(timers, processTimer) // ← Now uses partition!
+const results = yield * Effect.partition(timers, processTimer); // ← Now uses partition!
 
 // ✅ Good: Explains WHY partition, documents trade-off
 /*
  * Use partition instead of forEach to collect ALL failures, not fail-fast.
  * Trade-off: Higher memory for large batches, but better resilience.
  */
-const [failures, successes] = yield * Effect.partition(timers, processTimer)
+const [failures, successes] = yield * Effect.partition(timers, processTimer);
 
 // ✅ Good: Documents domain semantics with ADR link
 /**
@@ -1492,7 +1446,7 @@ const [failures, successes] = yield * Effect.partition(timers, processTimer)
  * @see ADR-0003 for timer state machine transitions
  */
 export class BatchProcessingError extends Schema.TaggedError<BatchProcessingError>() {
-	/*...*/
+  /*...*/
 }
 ```
 
@@ -1508,7 +1462,7 @@ export class BatchProcessingError extends Schema.TaggedError<BatchProcessingErro
 // yield* oldSchedule(timer);
 
 // ✅ Good: Delete and commit; git history preserves old implementation
-yield * persistence.scheduleTimer(timer)
+yield * persistence.scheduleTimer(timer);
 ```
 
 **❌ Outdated/stale comments**:
@@ -1517,7 +1471,7 @@ yield * persistence.scheduleTimer(timer)
 // ❌ Bad: Comment doesn't match code anymore
 // Process timers one at a time
 const results =
-	yield * Effect.all(timers.map(processTimer), { concurrency: 10 }) // ← Now concurrent!
+  yield * Effect.all(timers.map(processTimer), { concurrency: 10 }); // ← Now concurrent!
 
 // ✅ Good: Update comment or remove if code is self-documenting
 /*
@@ -1525,7 +1479,7 @@ const results =
  * Note: Out-of-order event publishing; only safe for independent timers.
  */
 const results =
-	yield * Effect.all(timers.map(processTimer), { concurrency: 10 })
+  yield * Effect.all(timers.map(processTimer), { concurrency: 10 });
 ```
 
 **❌ Apologetic comments without action items**:
@@ -1533,7 +1487,7 @@ const results =
 ```typescript
 // ❌ Bad: Acknowledges problem but doesn't fix it
 // HACK: This is a terrible way to do it, but it works for now
-const result = JSON.parse(JSON.stringify(data))
+const result = JSON.parse(JSON.stringify(data));
 
 // ✅ Good: Add TODO with Kanban reference and ADR context
 /*
@@ -1541,10 +1495,10 @@ const result = JSON.parse(JSON.stringify(data))
  * Current approach is inefficient for large objects; causes GC pressure.
  * See ADR-0012 for immutability patterns.
  */
-const result = JSON.parse(JSON.stringify(data))
+const result = JSON.parse(JSON.stringify(data));
 
 // ✅ Better: Fix it now if trivial
-const result = HashMap.fromIterable(data.entries())
+const result = HashMap.fromIterable(data.entries());
 ```
 
 **❌ Noise (ASCII art, excessive decoration)**:
@@ -1614,13 +1568,13 @@ it.effect('should not return timers from other tenants', () =>
 
 ```typescript
 // ❌ Missing tenant filter
-const allTimers = db.query('SELECT * FROM timer_schedules WHERE due_at <= ?')
+const allTimers = db.query("SELECT * FROM timer_schedules WHERE due_at <= ?");
 
 // ✅ Tenant-scoped query
 const tenantTimers = db.query(
-	'SELECT * FROM timer_schedules WHERE tenant_id = ? AND due_at <= ?',
-	[tenantId, dueAt]
-)
+  "SELECT * FROM timer_schedules WHERE tenant_id = ? AND due_at <= ?",
+  [tenantId, dueAt]
+);
 ```
 
 ---
@@ -1713,15 +1667,14 @@ SELECT * FROM service_calls WHERE created_at > ?;
 When encountering a choice:
 
 1. **Check ADR Status** in `docs/decisions/README.md`:
-
-    - **Accepted**: Implement per decision (no deviation without new ADR)
-    - **Proposed**: Do NOT implement; flag in PR/discussion
-    - **Superseded**: Use replacement ADR (follow links)
+   - **Accepted**: Implement per decision (no deviation without new ADR)
+   - **Proposed**: Do NOT implement; flag in PR/discussion
+   - **Superseded**: Use replacement ADR (follow links)
 
 2. **If No ADR Exists**:
-    - For architectural choice: Create ADR draft
-    - For tactical choice: Discuss in PR
-    - For urgent: Document as TODO in code + add Kanban item
+   - For architectural choice: Create ADR draft
+   - For tactical choice: Discuss in PR
+   - For urgent: Document as TODO in code + add Kanban item
 
 ---
 

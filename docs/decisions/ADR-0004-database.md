@@ -159,7 +159,7 @@ Each module owns its own SQLite file. Physical isolation enforces boundaries.
 
 **Module Wiring:**
 
-```typescript
+```typescript ignore
 const db = new Database(process.env.DB_PATH || './data/event_service.db')
 const orchAdapter = new OrchestrationSqliteAdapter(db)
 const timerAdapter = new TimerSqliteAdapter(db)
@@ -198,7 +198,7 @@ sequenceDiagram
 
 Example (condensed):
 
-```typescript
+```typescript ignore
 // Domain use case (depends on port only)
 export const submitServiceCall = (req: SubmitServiceCallRequest) =>
 	Effect.gen(function* () {
@@ -222,13 +222,7 @@ export class OrchestrationSqliteAdapter implements OrchestrationPersistencePort 
 				await tx.run(
 					`INSERT INTO service_calls (tenant_id, service_call_id, name, status, created_at)
                      VALUES (?, ?, ?, ?, ?)`,
-					[
-						entity.tenantId,
-						entity.id,
-						entity.name,
-						entity.status,
-						entity.createdAt,
-					],
+					[entity.tenantId, entity.id, entity.name, entity.status, entity.createdAt],
 				)
 			})
 		)

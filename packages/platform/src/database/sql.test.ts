@@ -122,7 +122,7 @@ describe('SQL Platform Client', () => {
 							Cause.failureOption,
 							Option.match({
 								onNone: () => '',
-								onSome: error => (error.cause instanceof Error ? error.cause.message : String(error.cause)),
+								onSome: (error) => (error.cause instanceof Error ? error.cause.message : String(error.cause)),
 							}),
 						),
 						onSuccess: () => {

@@ -1,4 +1,5 @@
-/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag` discriminators */
+/** biome-ignore-all lint/style/useNamingConvention: Effect Schema TaggedClass requires PascalCase types and `_tag`
+discriminators */
 import * as Schema from 'effect/Schema'
 
 import { ErrorMeta, ResponseMeta } from '../common/metadata.schema.ts'
@@ -7,8 +8,7 @@ import { ServiceCallEventBase } from '../common/service-call-event-base.schema.t
 /**
  * ExecutionStarted - Execution attempt started
  *
- * Produced by: Execution
- * Consumed by: Orchestration
+ * Produced by: Execution Consumed by: Orchestration
  */
 export class ExecutionStarted extends Schema.TaggedClass<ExecutionStarted>()('ExecutionStarted', {
 	...ServiceCallEventBase.fields,
@@ -50,8 +50,7 @@ export declare namespace ExecutionStarted {
 /**
  * ExecutionSucceeded - Call succeeded
  *
- * Produced by: Execution
- * Consumed by: Orchestration
+ * Produced by: Execution Consumed by: Orchestration
  */
 export class ExecutionSucceeded extends Schema.TaggedClass<ExecutionSucceeded>()('ExecutionSucceeded', {
 	...ServiceCallEventBase.fields,
@@ -85,7 +84,7 @@ export class ExecutionSucceeded extends Schema.TaggedClass<ExecutionSucceeded>()
 /** Type aliases for ExecutionSucceeded event */
 export declare namespace ExecutionSucceeded {
 	/**
-	 *  Validated domain type
+	 * Validated domain type
 	 */
 	type Type = typeof ExecutionSucceeded.Type
 
@@ -98,8 +97,7 @@ export declare namespace ExecutionSucceeded {
 /**
  * ExecutionFailed - Call failed
  *
- * Produced by: Execution
- * Consumed by: Orchestration
+ * Produced by: Execution Consumed by: Orchestration
  */
 export class ExecutionFailed extends Schema.TaggedClass<ExecutionFailed>()('ExecutionFailed', {
 	...ServiceCallEventBase.fields,

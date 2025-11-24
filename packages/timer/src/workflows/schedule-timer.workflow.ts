@@ -1,29 +1,29 @@
 /**
  * Schedule Timer Workflow
  *
- * Processes ScheduleTimer commands from the Orchestration module. This workflow
- * creates a new timer aggregate in Scheduled state, persisting it for future
- * polling and firing.
+ * Processes ScheduleTimer commands from the Orchestration module. This workflow creates a new timer aggregate in
+ * Scheduled state, persisting it for future polling and firing.
  *
  * **Architecture Pattern**: Command-triggered workflow
+ *
  * - Input: ScheduleTimer command (from Orchestration module)
  * - Output: Persisted ScheduledTimer aggregate (no event published yet)
  * - Idempotency: Handled by persistence layer (upsert on tenantId + serviceCallId)
  *
- * **Context Requirements**:
- * This workflow requires MessageMetadata to be provisioned by the command handler:
- * - correlationId: Traces back to originating request (e.g., user API call)
- * - causationId: Identifies the envelope that triggered this workflow
+ * **Context Requirements**: This workflow requires MessageMetadata to be provisioned by the command handler:
  *
- * The handler extracts metadata from the command envelope and passes it via
- * Effect.provideService, enabling full distributed tracing.
+ * - CorrelationId: Traces back to originating request (e.g., user API call)
+ * - CausationId: Identifies the envelope that triggered this workflow
  *
- * **Design Decision — Why MessageMetadata via Context**:
- * We pass MessageMetadata through Effect Context rather than as a workflow parameter
- * because it represents cross-cutting infrastructure concern (tracing), not domain
- * data. This keeps the workflow signature focused on domain inputs (the command).
+ * The handler extracts metadata from the command envelope and passes it via Effect.provideService, enabling full
+ * distributed tracing.
+ *
+ * **Design Decision — Why MessageMetadata via Context**: We pass MessageMetadata through Effect Context rather than as
+ * a workflow parameter because it represents cross-cutting infrastructure concern (tracing), not domain data. This
+ * keeps the workflow signature focused on domain inputs (the command).
  *
  * Alternative considered: Pass metadata as workflow parameter
+ *
  * - Rejected because: Mixes domain concerns with infrastructure concerns
  * - Benefit of Context approach: Clear separation, workflow signature stays pure
  *
@@ -43,6 +43,7 @@ import * as Ports from '../ports/index.ts'
  * Schedule a timer to fire at a specified future time
  *
  * See file-level documentation above for comprehensive details on:
+ *
  * - Architecture pattern and workflow steps
  * - Idempotency strategy
  * - Error handling approach

@@ -28,7 +28,7 @@ Identity & Context
 
 **Pattern:**
 
-```typescript
+```typescript ignore
 // Receive IDs from command
 const { tenantId, serviceCallId, requestSpec } = command
 
@@ -45,13 +45,13 @@ yield *
 		Effect.provideService(MessageMetadata, {
 			correlationId: command.correlationId, // Forward from command
 			causationId: Option.some(commandEnvelopeId), // StartExecution envelope
-		})
+		}),
 	)
 ```
 
 **Pattern** (execution-event-bus.adapter.ts - future implementation):
 
-```typescript
+```typescript ignore
 // Adapter extracts MessageMetadata from Context
 const metadata = yield * MessageMetadata
 

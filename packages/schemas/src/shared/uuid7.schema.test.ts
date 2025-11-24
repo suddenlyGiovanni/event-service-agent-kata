@@ -1,5 +1,3 @@
-/** biome-ignore-all lint/style/useNamingConvention: UUID7 follows Effect's convention for acronyms (UUID, ULID) */
-
 import { describe, expect, expectTypeOf, it } from '@effect/vitest'
 import * as Schema from 'effect/Schema'
 
@@ -8,37 +6,37 @@ import { UUID7 } from './uuid7.schema.ts'
 describe('UUID7 Schema', () => {
 	describe('decodeUnknown', () => {
 		it('should decode valid UUID v7', () => {
-			const validUUID7 = '01234567-89ab-7cde-89ab-0123456789ab'
+			const validUuid7 = '01234567-89ab-7cde-89ab-0123456789ab'
 
-			const result = Schema.decodeSync(UUID7)(validUUID7)
+			const result = Schema.decodeSync(UUID7)(validUuid7)
 
-			expect(result).toBe(validUUID7 as UUID7.Type)
+			expect(result).toBe(validUuid7 as UUID7.Type)
 			// Check brand is applied (TypeScript level, runtime is string)
 			expect(typeof result).toBe('string')
 		})
 
 		it('should decode valid UUID v7 with lowercase hex', () => {
-			const validUUID7 = '01234567-89ab-7cde-8fab-0123456789ab'
+			const validUuid7 = '01234567-89ab-7cde-8fab-0123456789ab'
 
-			const result = Schema.decodeSync(UUID7)(validUUID7)
+			const result = Schema.decodeSync(UUID7)(validUuid7)
 
-			expect(result).toBe(validUUID7 as UUID7.Type)
+			expect(result).toBe(validUuid7 as UUID7.Type)
 		})
 
 		it('should decode valid UUID v7 with uppercase hex', () => {
-			const validUUID7 = '01234567-89AB-7CDE-89AB-0123456789AB'
+			const validUuid7 = '01234567-89AB-7CDE-89AB-0123456789AB'
 
-			const result = Schema.decodeSync(UUID7)(validUUID7)
+			const result = Schema.decodeSync(UUID7)(validUuid7)
 
-			expect(result).toBe(validUUID7 as UUID7.Type)
+			expect(result).toBe(validUuid7 as UUID7.Type)
 		})
 
 		it('should decode valid UUID v7 with mixed case hex', () => {
-			const validUUID7 = '01234567-89aB-7CdE-8FaB-0123456789Ab'
+			const validUuid7 = '01234567-89aB-7CdE-8FaB-0123456789Ab'
 
-			const result = Schema.decodeSync(UUID7)(validUUID7)
+			const result = Schema.decodeSync(UUID7)(validUuid7)
 
-			expect(result).toBe(validUUID7 as UUID7.Type)
+			expect(result).toBe(validUuid7 as UUID7.Type)
 		})
 
 		it('should accept variant field [89ab]', () => {
@@ -105,12 +103,12 @@ describe('UUID7 Schema', () => {
 
 	describe('encode', () => {
 		it('should encode UUID7 back to string (no-op)', () => {
-			const validUUID7 = '01234567-89ab-7cde-89ab-0123456789ab'
-			const decoded = Schema.decodeSync(UUID7)(validUUID7)
+			const validUuid7 = '01234567-89ab-7cde-89ab-0123456789ab'
+			const decoded = Schema.decodeSync(UUID7)(validUuid7)
 
 			const encoded = Schema.encodeSync(UUID7)(decoded)
 
-			expect(encoded).toBe(validUUID7)
+			expect(encoded).toBe(validUuid7)
 		})
 	})
 })
@@ -120,22 +118,22 @@ describe('UUID7 Edge Cases', () => {
 		it('should support brand accumulation (type level)', () => {
 			// This test is primarily for TypeScript type checking
 			// At runtime, brands don't exist (just strings)
-			const validUUID7 = '01234567-89ab-7cde-89ab-0123456789ab'
-			const decoded = Schema.decodeSync(UUID7)(validUUID7)
+			const validUuid7 = '01234567-89ab-7cde-89ab-0123456789ab'
+			const decoded = Schema.decodeSync(UUID7)(validUuid7)
 
 			// At runtime, it's just a string (brands are type-level only)
 			expect(typeof decoded).toBe('string')
-			expect<string>(decoded).toBe(validUUID7)
+			expect<string>(decoded).toBe(validUuid7)
 			expectTypeOf(decoded).toEqualTypeOf<UUID7.Type>()
 		})
 	})
 
 	describe('schema composition', () => {
 		it('should work with Schema.Array', () => {
-			const UUID7Array = Schema.Array(UUID7)
+			const Uuid7Array = Schema.Array(UUID7)
 			const validUuids = ['01234567-89ab-7cde-89ab-0123456789ab', 'fedcba98-7654-7321-8fed-cba987654321']
 
-			const result = Schema.decodeSync(UUID7Array)(validUuids)
+			const result = Schema.decodeSync(Uuid7Array)(validUuids)
 
 			expect(result).toEqual(validUuids as UUID7.Type[])
 		})

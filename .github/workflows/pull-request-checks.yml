@@ -6,7 +6,7 @@ on:
 
 jobs:
   lint:
-    name: 🎨 Lint
+    name: 🎨 Lint (Source)
     runs-on: ubuntu-latest
 
     steps:
@@ -18,7 +18,7 @@ jobs:
       - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
-      - name: 🎨 Lint and format code
+      - name: 🎨 Lint and format source code
         shell: sh
         run: |
           bun biome ci \
@@ -26,7 +26,7 @@ jobs:
           --reporter=github
 
   typecheck:
-    name: 🚨 Typecheck
+    name: 🔍 Typecheck (Source)
     runs-on: ubuntu-latest
 
     steps:
@@ -38,40 +38,11 @@ jobs:
       - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
-      - name: 🔍 Typecheck code
+      - name: 🔍 Typecheck source code
         run: bun run type-check
 
-      - name: 📖 Type-check documentation examples
-        continue-on-error: true
-        shell: sh
-        run: bun run docs:type-check
-
-      - name: 📝 Type-check markdown code blocks
-        continue-on-error: true
-        shell: sh
-        run: bun run docs:type-check:md
-
-  markdown:
-    name: 📋 Markdown
-    runs-on: ubuntu-latest
-    continue-on-error: true
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: 📝 Lint Markdown files
-        uses: DavidAnson/markdownlint-cli2-action@v21
-        with:
-          globs: |
-            **/*.md
-            !node_modules/**
-            !**/node_modules/**
-
   tests:
-    name: 🧪 Tests
+    name: 🧪 Tests (Source)
     runs-on: ubuntu-latest
 
     steps:
@@ -83,18 +54,44 @@ jobs:
       - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
-      - name: 🧪 Run tests
+      - name: 🧪 Run source code tests
         run: bun run test --run
 
-      - name: 📚 Run documentation tests
-        continue-on-error: true
-        shell: sh
-        run: bun run docs:test
-
-  docs:
-    name: 📚 Docs
+  documentation:
+    name: 📚 ${{ matrix.check.name }}
     runs-on: ubuntu-latest
     continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        check:
+          - name: "JSDoc Formatting"
+            emoji: "💅"
+            command: |
+              bun run format:docs:jsdoc
+              if ! git diff --quiet; then
+                echo "❌ JSDoc comments need formatting. Run: bun run format:docs:jsdoc"
+                git diff --stat
+                exit 1
+              fi
+          - name: "TSDoc Structure"
+            emoji: "📚"
+            command: "deno task docs:check"
+          - name: "JSDoc Type-check"
+            emoji: "📖"
+            command: "deno task docs:type-check"
+          - name: "Markdown Formatting"
+            emoji: "📝"
+            command: |
+              bun run format:docs:markdown
+              if ! git diff --quiet; then
+                echo "❌ Markdown files need formatting. Run: bun run format:docs:markdown"
+                git diff --stat
+                exit 1
+              fi
+          - name: "Markdown Type-check"
+            emoji: "📄"
+            command: "deno task docs:type-check:md"
 
     steps:
       - name: 📥 Checkout code
@@ -105,6 +102,6 @@ jobs:
       - name: 🧩 Install dependencies
         uses: ./.github/actions/setup
 
-      - name: 📚 Validate TSDoc comments
+      - name: ${{ matrix.check.emoji }} ${{ matrix.check.name }}
         shell: sh
-        run: bun run docs:check
+        run: ${{ matrix.check.command }}
