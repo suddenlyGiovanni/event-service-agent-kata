@@ -26,12 +26,19 @@ import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 import type { Topics } from '../routing/topics.ts'
 
 /**
- * PublishError - Generic error when publishing messages fails
+ * PublishError - Generic error when publishing a message fails
  *
  * Adapter maps broker-specific errors (connection failure, stream not found, subject not allowed, etc.) to this generic
  * error. Specific details are logged by the adapter for observability.
+ *
+ * Error fields:
+ * - message: Human-readable description of what operation failed (optional, inferred from cause if omitted)
+ * - cause: Original error object preserving structured error information for downstream logging/observability
  */
-export class PublishError extends Data.TaggedError('PublishError')<{ readonly cause: string }> {}
+export class PublishError extends Data.TaggedError('PublishError')<{
+	readonly message?: string
+	readonly cause: unknown
+}> {}
 
 /**
  * SubscribeError - Generic error when subscribing or consuming messages fails

@@ -683,7 +683,8 @@ describe('pollDueTimersWorkflow', () => {
 				publishDueTimeReached: () =>
 					Effect.fail(
 						new Ports.Platform.PublishError({
-							cause: 'Event bus publish failed',
+							cause: new Error('Broker connection lost'),
+							message: 'Event bus publish failed',
 						}),
 					),
 			})
@@ -760,7 +761,8 @@ describe('pollDueTimersWorkflow', () => {
 					if (callCount === 2) {
 						return Effect.fail(
 							new Ports.Platform.PublishError({
-								cause: 'Event bus publish failed',
+								cause: new Error('Broker connection lost'),
+								message: 'Event bus publish failed',
 							}),
 						)
 					}

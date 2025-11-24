@@ -58,7 +58,8 @@ export class TimerEventBus {
 					Effect.mapError(
 						(parseError) =>
 							new Ports.Platform.PublishError({
-								cause: `Failed to generate EnvelopeId: ${parseError}`,
+								cause: parseError,
+								message: 'Failed to generate EnvelopeId',
 							}),
 					),
 					Effect.provideService(PlatformAdapters.UUID7, uuid),
