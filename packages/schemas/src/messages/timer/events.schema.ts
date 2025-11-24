@@ -103,7 +103,7 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()('DueTim
 	 *
 	 * ```typescript ignore
 	 * const dto = yield* DueTimeReached.encode(event)
-	 * // dto: { type: 'DueTimeReached', tenantId: string, ... }
+	 * // dto: { _tag: 'DueTimeReached', tenantId: string, ... }
 	 * await broker.publish(JSON.stringify(dto))
 	 * ```
 	 */
