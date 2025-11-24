@@ -32,50 +32,44 @@ import type * as Effect from 'effect/Effect'
  * - Time manipulation in tests (TestClock.adjust)
  * - Platform independence (Effect DateTime)
  */
-export interface ClockPort {
-	/**
-	 * Get current UTC time
-	 *
-	 * Returns Effect to enable:
-	 *
-	 * - Testability (TestClock.adjust in tests)
-	 * - Tracing (time access can be logged/traced)
-	 * - Composition (time can be part of Effect workflows)
-	 *
-	 * @example
-	 *
-	 * ```typescript
-	 * import * as Effect from "effect/Effect"
-	 * import * as DateTime from "effect/DateTime"
-	 * import * as Adapters from "../adapters/index.ts"
-	 *
-	 * // Validate timer is scheduled for future time (domain rule)
-	 * declare const dueAt: DateTime.Utc
-	 *
-	 * const validateFutureTime: Effect.Effect<DateTime.Utc, Error, ClockPort> = Effect.gen(function* () {
-	 *   const clock = yield* ClockPort
-	 *   const now = yield* clock.now()
-	 *   if (DateTime.lessThanOrEqualTo(dueAt, now)) {
-	 *     return yield* Effect.fail(new Error("Timer must be scheduled in future"))
-	 *   }
-	 *   return dueAt
-	 * })
-	 *
-	 * // Resolve dependency via Effect.provide (hexagonal architecture + Effect DI)
-	 * validateFutureTime.pipe(Effect.provide(Adapters.ClockPortTest))
-	 * // Effect.Effect<DateTime.Utc, Error, never>
-	 * ```
-	 *
-	 * @returns Effect that produces current UTC time when executed
-	 */
-	readonly now: () => Effect.Effect<DateTime.Utc>
-}
-
-/**
- * ClockPort service tag
- *
- * Use this to access ClockPort from the Effect context. Inject via Layer in production, TestLayer in tests.
- */
-export const ClockPort: Context.Tag<ClockPort, ClockPort> = Context.GenericTag<ClockPort>(
-	'@event-service-agent/timer/ClockPort',
-)
+export class ClockPort extends Context.Tag('@event-service-agent/timer/ClockPort')<
+	ClockPort,
+	{
+		/**
+		 * Get current UTC time
+		 *
+		 * Returns Effect to enable:
+		 *
+		 * - Testability (TestClock.adjust in tests)
+		 * - Tracing (time access can be logged/traced)
+		 * - Composition (time can be part of Effect workflows)
+		 *
+		 * @example
+		 *
+		 * ```typescript
+		 * import * as Effect from "effect/Effect"
+		 * import * as DateTime from "effect/DateTime"
+		 * import * as Adapters from "../adapters/index.ts"
+		 *
+		 * // Validate timer is scheduled for future time (domain rule)
+		 * declare const dueAt: DateTime.Utc
+		 *
+		 * const validateFutureTime: Effect.Effect<DateTime.Utc, Error, ClockPort> = Effect.gen(function* () {
+		 *   const clock = yield* ClockPort
+		 *   const now = yield* clock.now()
+		 *   if (DateTime.lessThanOrEqualTo(dueAt, now)) {
+		 *     return yield* Effect.fail(new Error("Timer must be scheduled in future"))
+		 *   }
+		 *   return dueAt
+		 * })
+		 *
+		 * // Resolve dependency via Effect.provide (hexagonal architecture + Effect DI)
+		 * validateFutureTime.pipe(Effect.provide(Adapters.ClockPortTest))
+		 * // Effect.Effect<DateTime.Utc, Error, never>
+		 * ```
+		 *
+		 * @returns Effect that produces current UTC time when executed
+		 */
+		readonly now: () => Effect.Effect<DateTime.Utc>
+	}
+>() {}
