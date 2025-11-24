@@ -54,11 +54,11 @@ const makeScheduledTimer = ({
  *
  * Layer composition rationale:
  *
- * - TimerPersistence.Test: SQLite-backed adapter under test (internally uses SQL.Test for adapter implementation)
+ * - Adapters.TimerPersistence.Test: SQLite-backed adapter under test (internally uses SQL.Test for adapter implementation)
  * - SQL.Test: ALSO needed separately because test fixtures (withServiceCall) require SqlClient directly to insert
  *   FK-compliant data
- * - ClockPort: Test clock for time control
- * - UUID7: Default UUID generator
+ * - Adapters.Clock.Test: Test clock for deterministic time control (Effect TestClock)
+ * - PlatformAdapters.UUID7.Default: UUID v7 generator for consistent ID generation
  *
  * Note: SQL.Test appears in both TimerPersistence.Test (internal) and BaseTestLayers (external). This is NOT
  * duplication - Layer.mergeAll deduplicates identical layers, so SQL.Test is only initialized once.
