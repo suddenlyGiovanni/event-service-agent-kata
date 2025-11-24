@@ -19,13 +19,13 @@
  * - Adapters implement these interfaces (in-memory, SQLite, etc.)
  */
 
-// Re-export EventBusPort from platform for convenience
-export {
-	EventBusPort,
-	type EventBusPort as EventBusPortType,
-	PublishError,
-	SubscribeError,
-} from '@event-service-agent/platform/ports'
+/**
+ * Platform-level ports namespace.
+ *
+ * Re-exports platform ports (EventBusPort, UUIDPort) for convenient access.
+ * Use `Ports.Platform.EventBusPort` instead of separate import from `@event-service-agent/platform/ports`.
+ */
+export * as Platform from '@event-service-agent/platform/ports'
 
 export * from './clock.port.ts'
 export * from './timer-event-bus.port.ts'

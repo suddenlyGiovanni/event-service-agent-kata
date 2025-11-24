@@ -28,7 +28,7 @@ describe('scheduleTimerWorkflow', () => {
 	 * Base test layers with SQL.Test for fresh database per test. Using it.scoped() ensures each test gets isolated
 	 * database instance.
 	 */
-	const BaseTestLayers = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.ClockPortTest, SQL.Test)
+	const BaseTestLayers = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.Clock.Test, SQL.Test)
 
 	describe('Happy Path', () => {
 		// Given: Valid ScheduleTimer command
@@ -375,7 +375,7 @@ describe('scheduleTimerWorkflow', () => {
 									),
 							}),
 						),
-						Adapters.ClockPortTest,
+						Adapters.Clock.Test,
 					),
 				),
 			),

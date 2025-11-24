@@ -5,10 +5,10 @@ import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Layer from 'effect/Layer'
 
+import * as PlatformAdapters from '@event-service-agent/platform/adapters'
 import { SQL } from '@event-service-agent/platform/database'
-import { UUID7 } from '@event-service-agent/platform/uuid7'
 
-const TestLayer = Layer.merge(SQL.Test, UUID7.Default)
+const TestLayer = Layer.merge(SQL.Test, PlatformAdapters.UUID7.Default)
 
 const insertServiceCall = (tenantId: string, serviceCallId: string) =>
 	Effect.gen(function* () {
@@ -24,7 +24,7 @@ layer(TestLayer)('Timer database invariants', (it) => {
 	it.scoped('allows inserting a well-formed timer', () =>
 		Effect.gen(function* () {
 			const sql = yield* Sql.SqlClient.SqlClient
-			const uuid = yield* UUID7
+			const uuid = yield* PlatformAdapters.UUID7
 
 			const serviceCallId = yield* uuid.randomUUIDv7()
 			const tenantId = yield* uuid.randomUUIDv7()
@@ -66,7 +66,7 @@ layer(TestLayer)('Timer database invariants', (it) => {
 	it.scoped('rejects timers with non ISO8601 due_at', () =>
 		Effect.gen(function* () {
 			const sql = yield* Sql.SqlClient.SqlClient
-			const uuid = yield* UUID7
+			const uuid = yield* PlatformAdapters.UUID7
 
 			const serviceCallId = yield* uuid.randomUUIDv7()
 			const tenantId = yield* uuid.randomUUIDv7()
@@ -100,7 +100,7 @@ layer(TestLayer)('Timer database invariants', (it) => {
 	it.scoped('rejects timers with reached_at/state mismatch', () =>
 		Effect.gen(function* () {
 			const sql = yield* Sql.SqlClient.SqlClient
-			const uuid = yield* UUID7
+			const uuid = yield* PlatformAdapters.UUID7
 
 			const serviceCallId = yield* uuid.randomUUIDv7()
 			const tenantId = yield* uuid.randomUUIDv7()

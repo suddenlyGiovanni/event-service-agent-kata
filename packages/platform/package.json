@@ -16,11 +16,11 @@
 		"typescript": "catalog:typescript"
 	},
 	"exports": {
+		"./adapters": "./src/adapters/index.ts",
 		"./context": "./src/context/index.ts",
 		"./database": "./src/database/sql.ts",
 		"./ports": "./src/ports/index.ts",
-		"./routing": "./src/routing/index.ts",
-		"./uuid7": "./src/uuid7.service.ts"
+		"./routing": "./src/routing/index.ts"
 	},
 	"name": "@event-service-agent/platform",
 	"private": true,

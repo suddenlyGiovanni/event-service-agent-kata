@@ -92,7 +92,7 @@ const scheduledTimerToTimerRecord = (scheduledTimer: TimerEntry.ScheduledTimer):
 		tenantId: scheduledTimer.tenantId,
 	})
 
-const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlClient> = Effect.gen(function* () {
+const make: Effect.Effect<Ports.TimerPersistencePort.Type, never, Sql.SqlClient.SqlClient> = Effect.gen(function* () {
 	const sql = yield* Sql.SqlClient.SqlClient
 
 	/**
@@ -104,7 +104,7 @@ const make: Effect.Effect<Ports.TimerPersistencePort, never, Sql.SqlClient.SqlCl
 	 * Only SQL-level errors (connection, syntax, constraint violations) become PersistenceError. Application-level errors
 	 * (like validation) should fail with their specific error types.
 	 */
-	const mapSqlError = (operation: keyof Ports.TimerPersistencePort) =>
+	const mapSqlError = (operation: 'save' | 'find' | 'findScheduledTimer' | 'findDue' | 'markFired' | 'delete') =>
 		Effect.mapError(
 			(error: unknown) =>
 				new Ports.PersistenceError({

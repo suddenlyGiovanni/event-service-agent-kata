@@ -10,8 +10,8 @@ import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
+import * as PlatformAdapters from '@event-service-agent/platform/adapters'
 import { SQL } from '@event-service-agent/platform/database'
-import { UUID7 } from '@event-service-agent/platform/uuid7'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import * as Domain from '../domain/timer-entry.domain.ts'
@@ -54,16 +54,21 @@ const makeScheduledTimer = ({
  *
  * Layer composition rationale:
  *
- * - TimerPersistence.Test: SQLite-backed adapter under test (internally uses SQL.Test for adapter implementation)
+ * - Adapters.TimerPersistence.Test: SQLite-backed adapter under test (internally uses SQL.Test for adapter implementation)
  * - SQL.Test: ALSO needed separately because test fixtures (withServiceCall) require SqlClient directly to insert
  *   FK-compliant data
- * - ClockPort: Test clock for time control
- * - UUID7: Default UUID generator
+ * - Adapters.Clock.Test: Test clock for deterministic time control (Effect TestClock)
+ * - PlatformAdapters.UUID7.Default: UUID v7 generator for consistent ID generation
  *
  * Note: SQL.Test appears in both TimerPersistence.Test (internal) and BaseTestLayers (external). This is NOT
  * duplication - Layer.mergeAll deduplicates identical layers, so SQL.Test is only initialized once.
  */
-const BaseTestLayers = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.ClockPortTest, UUID7.Default, SQL.Test)
+const BaseTestLayers = Layer.mergeAll(
+	Adapters.TimerPersistence.Test,
+	Adapters.Clock.Test,
+	PlatformAdapters.UUID7.Default,
+	SQL.Test,
+)
 
 describe('TimerPersistenceAdapter', () => {
 	const mocks = {

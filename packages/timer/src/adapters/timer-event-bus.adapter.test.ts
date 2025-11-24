@@ -7,14 +7,14 @@ import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
+import * as PlatformAdapters from '@event-service-agent/platform/adapters'
 import { MessageMetadata } from '@event-service-agent/platform/context'
 import { Topics } from '@event-service-agent/platform/routing'
-import { UUID7 } from '@event-service-agent/platform/uuid7'
 import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { CorrelationId, EnvelopeId, ServiceCallId, TenantId, UUID7Regex } from '@event-service-agent/schemas/shared'
 
-import * as Ports from '../ports/index.ts'
+import * as PortsTimer from '../ports/index.ts'
 import * as AdaptersTimer from './index.ts'
 
 describe('TimerEventBus', () => {
@@ -24,16 +24,19 @@ describe('TimerEventBus', () => {
 	const correlationId = CorrelationId.make('aaaabbbb-cccc-7ddd-8eee-ffffffffffff')
 
 	// These are shared across all tests via @effect/vitest layer()
-	const BaseTestLayers = Layer.merge(UUID7.Default, AdaptersTimer.ClockPortTest)
+	const BaseTestLayers = Layer.merge(PlatformAdapters.UUID7.Default, AdaptersTimer.Clock.Test)
 
 	layer(BaseTestLayers)('publishDueTimeReached', (it) => {
 		describe('Happy Path', () => {
 			it.effect('should publish DueTimeReached event with correlationId from MessageMetadata context', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
-				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
-					publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
-				})
+				const EventBusTest: Layer.Layer<PortsTimer.Platform.EventBusPort, never, never> = Layer.mock(
+					PortsTimer.Platform.EventBusPort,
+					{
+						publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
+					},
+				)
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
@@ -41,7 +44,7 @@ describe('TimerEventBus', () => {
 				)
 
 				return Effect.gen(function* () {
-					const clock = yield* Ports.ClockPort
+					const clock = yield* PortsTimer.ClockPort
 					const now = yield* clock.now()
 
 					const dueTimeReachedEvent = new Messages.Timer.Events.DueTimeReached({
@@ -50,7 +53,7 @@ describe('TimerEventBus', () => {
 						tenantId,
 					})
 
-					const timerEventBus = yield* Ports.TimerEventBusPort
+					const timerEventBus = yield* PortsTimer.TimerEventBusPort
 
 					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
 						Effect.provideService(MessageMetadata, {
@@ -84,9 +87,12 @@ describe('TimerEventBus', () => {
 			it.effect('should publish DueTimeReached event without correlation ID', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
-				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
-					publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
-				})
+				const EventBusTest: Layer.Layer<PortsTimer.Platform.EventBusPort, never, never> = Layer.mock(
+					PortsTimer.Platform.EventBusPort,
+					{
+						publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
+					},
+				)
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
@@ -94,7 +100,7 @@ describe('TimerEventBus', () => {
 				)
 
 				return Effect.gen(function* () {
-					const clock = yield* Ports.ClockPort
+					const clock = yield* PortsTimer.ClockPort
 					const now = yield* clock.now()
 
 					// Create domain event
@@ -105,7 +111,7 @@ describe('TimerEventBus', () => {
 					})
 
 					// Act
-					const timerEventBus = yield* Ports.TimerEventBusPort
+					const timerEventBus = yield* PortsTimer.TimerEventBusPort
 					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
 						Effect.provideService(MessageMetadata, {
 							causationId: Option.none(),
@@ -129,9 +135,12 @@ describe('TimerEventBus', () => {
 			it.effect('should generate unique envelope IDs for each publish', () => {
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
-				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
-					publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
-				})
+				const EventBusTest: Layer.Layer<PortsTimer.Platform.EventBusPort, never, never> = Layer.mock(
+					PortsTimer.Platform.EventBusPort,
+					{
+						publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
+					},
+				)
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
@@ -139,7 +148,7 @@ describe('TimerEventBus', () => {
 				)
 
 				return Effect.gen(function* () {
-					const clock = yield* Ports.ClockPort
+					const clock = yield* PortsTimer.ClockPort
 					const now = yield* clock.now()
 
 					// Create domain event
@@ -155,7 +164,7 @@ describe('TimerEventBus', () => {
 					})
 
 					// Act - publish twice
-					const timerEventBus = yield* Ports.TimerEventBusPort
+					const timerEventBus = yield* PortsTimer.TimerEventBusPort
 					yield* timerEventBus
 						.publishDueTimeReached(dueTimeReachedEvent)
 						.pipe(Effect.provideService(MessageMetadata, messageMetadata))
@@ -184,9 +193,12 @@ describe('TimerEventBus', () => {
 				 */
 				const publishedEnvelopes: MessageEnvelope.Type[] = []
 
-				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
-					publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
-				})
+				const EventBusTest: Layer.Layer<PortsTimer.Platform.EventBusPort, never, never> = Layer.mock(
+					PortsTimer.Platform.EventBusPort,
+					{
+						publish: (envelopes) => Effect.sync(() => publishedEnvelopes.push(...envelopes)),
+					},
+				)
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
@@ -194,7 +206,7 @@ describe('TimerEventBus', () => {
 				)
 
 				return Effect.gen(function* () {
-					const clock = yield* Ports.ClockPort
+					const clock = yield* PortsTimer.ClockPort
 					const initialTime = yield* clock.now()
 
 					// Domain event: timer reached at initial time
@@ -211,7 +223,7 @@ describe('TimerEventBus', () => {
 					})
 
 					// Act
-					const timerEventBus = yield* Ports.TimerEventBusPort
+					const timerEventBus = yield* PortsTimer.TimerEventBusPort
 					yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
 						Effect.provideService(MessageMetadata, {
 							causationId: Option.none(),
@@ -239,14 +251,17 @@ describe('TimerEventBus', () => {
 
 		describe('Error Handling', () => {
 			it.effect('should propagate PublishError from EventBusPort', () => {
-				const EventBusTest: Layer.Layer<Ports.EventBusPort, never, never> = Layer.mock(Ports.EventBusPort, {
-					publish: () =>
-						Effect.fail(
-							new Ports.PublishError({
-								cause: 'Connection failed',
-							}),
-						),
-				})
+				const EventBusTest: Layer.Layer<PortsTimer.Platform.EventBusPort, never, never> = Layer.mock(
+					PortsTimer.Platform.EventBusPort,
+					{
+						publish: () =>
+							Effect.fail(
+								new PortsTimer.Platform.PublishError({
+									cause: 'Connection failed',
+								}),
+							),
+					},
+				)
 
 				const TimerEventBusLive = Layer.provide(
 					AdaptersTimer.TimerEventBus.Live,
@@ -254,7 +269,7 @@ describe('TimerEventBus', () => {
 				)
 
 				return Effect.gen(function* () {
-					const clock = yield* Ports.ClockPort
+					const clock = yield* PortsTimer.ClockPort
 					const now = yield* clock.now()
 
 					const dueTimeReachedEvent = new Messages.Timer.Events.DueTimeReached({
@@ -264,7 +279,7 @@ describe('TimerEventBus', () => {
 					})
 
 					// Act
-					const timerEventBus = yield* Ports.TimerEventBusPort
+					const timerEventBus = yield* PortsTimer.TimerEventBusPort
 					const result = yield* Effect.either(timerEventBus.publishDueTimeReached(dueTimeReachedEvent)).pipe(
 						Effect.provideService(MessageMetadata, {
 							causationId: Option.none(),
@@ -288,7 +303,7 @@ describe('TimerEventBus', () => {
 			it.effect('should subscribe to Timer.Commands topic', () => {
 				let subscribedTopics: readonly Topics.Type[] = []
 
-				const EventBusTest = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 					subscribe: (topics, _handler) =>
 						Effect.sync(() => {
 							subscribedTopics = topics
@@ -302,7 +317,7 @@ describe('TimerEventBus', () => {
 
 				return Effect.gen(function* () {
 					// Act
-					const timerEventBus = yield* Ports.TimerEventBusPort
+					const timerEventBus = yield* PortsTimer.TimerEventBusPort
 					yield* timerEventBus.subscribeToScheduleTimerCommands(() => Effect.void)
 
 					// Assert
@@ -335,7 +350,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
-				const EventBusTest = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -349,7 +364,7 @@ describe('TimerEventBus', () => {
 
 				return Effect.gen(function* () {
 					// Act
-					const timerEventBus = yield* Ports.TimerEventBusPort
+					const timerEventBus = yield* PortsTimer.TimerEventBusPort
 					yield* timerEventBus.subscribeToScheduleTimerCommands((command, metadata) =>
 						Effect.sync(() => {
 							handlerCalled = true
@@ -391,7 +406,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Timer.Events.DueTimeReached.Tag,
 				}
 
-				const EventBusTest = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -405,7 +420,7 @@ describe('TimerEventBus', () => {
 
 				return Effect.gen(function* () {
 					// Act
-					const timerEventBus = yield* Ports.TimerEventBusPort
+					const timerEventBus = yield* PortsTimer.TimerEventBusPort
 					yield* timerEventBus.subscribeToScheduleTimerCommands(() =>
 						Effect.sync(() => {
 							handlerCalled = true
@@ -440,7 +455,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
-				const EventBusTest = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -454,7 +469,7 @@ describe('TimerEventBus', () => {
 
 				return Effect.gen(function* () {
 					// Act
-					const timerEventBus = yield* Ports.TimerEventBusPort
+					const timerEventBus = yield* PortsTimer.TimerEventBusPort
 					yield* timerEventBus.subscribeToScheduleTimerCommands((_command, metadata) =>
 						Effect.sync(() => {
 							receivedCorrelationId = Option.getOrUndefined(metadata.correlationId)
@@ -488,7 +503,7 @@ describe('TimerEventBus', () => {
 					type: Messages.Orchestration.Commands.ScheduleTimer.Tag,
 				}
 
-				const EventBusTest = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 					subscribe: <E, R>(
 						_topics: ReadonlyArray<Topics.Type>,
 						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
@@ -502,7 +517,7 @@ describe('TimerEventBus', () => {
 
 				return Effect.gen(function* () {
 					// Act
-					const timerEventBus = yield* Ports.TimerEventBusPort
+					const timerEventBus = yield* PortsTimer.TimerEventBusPort
 					const result = yield* Effect.either(
 						timerEventBus.subscribeToScheduleTimerCommands(() => Effect.fail(new Error('Handler processing failed'))),
 					)
@@ -513,10 +528,10 @@ describe('TimerEventBus', () => {
 			})
 
 			it.effect('should propagate SubscribeError from EventBusPort', () => {
-				const EventBusTest = Layer.mock(Ports.EventBusPort, {
+				const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 					subscribe: () =>
 						Effect.fail(
-							new Ports.SubscribeError({
+							new PortsTimer.Platform.SubscribeError({
 								cause: 'Consumer creation failed',
 							}),
 						),
@@ -529,7 +544,7 @@ describe('TimerEventBus', () => {
 
 				return Effect.gen(function* () {
 					// Act
-					const timerEventBus = yield* Ports.TimerEventBusPort
+					const timerEventBus = yield* PortsTimer.TimerEventBusPort
 					const result = yield* Effect.either(timerEventBus.subscribeToScheduleTimerCommands(() => Effect.void))
 
 					// Assert
@@ -548,7 +563,7 @@ describe('TimerEventBus', () => {
 			// If we try to use it without providing EventBusPort, it should fail at compile time
 			// At runtime, we verify it works when EventBusPort is provided
 
-			const EventBusTest = Layer.mock(Ports.EventBusPort, {
+			const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 				publish: () => Effect.void,
 				subscribe: () => Effect.never,
 			})
@@ -559,7 +574,7 @@ describe('TimerEventBus', () => {
 			)
 
 			return Effect.gen(function* () {
-				const timerEventBus = yield* Ports.TimerEventBusPort
+				const timerEventBus = yield* PortsTimer.TimerEventBusPort
 
 				expect(timerEventBus).toBeDefined()
 				expect(timerEventBus.publishDueTimeReached).toBeDefined()
@@ -570,7 +585,7 @@ describe('TimerEventBus', () => {
 		it.effect('should integrate with UUID7 service', () => {
 			const publishedEnvelopes: MessageEnvelope.Type[] = []
 
-			const EventBusTest = Layer.mock(Ports.EventBusPort, {
+			const EventBusTest = Layer.mock(PortsTimer.Platform.EventBusPort, {
 				publish: (envelopes) =>
 					Effect.sync(() => {
 						publishedEnvelopes.push(...envelopes)
@@ -593,7 +608,7 @@ describe('TimerEventBus', () => {
 				})
 
 				// Act
-				const timerEventBus = yield* Ports.TimerEventBusPort
+				const timerEventBus = yield* PortsTimer.TimerEventBusPort
 				yield* timerEventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.none(),

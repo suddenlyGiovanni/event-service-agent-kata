@@ -10,9 +10,9 @@ import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
+import { UUID7 } from '@event-service-agent/platform/adapters'
 import { MessageMetadata } from '@event-service-agent/platform/context'
 import { SQL } from '@event-service-agent/platform/database'
-import { UUID7 } from '@event-service-agent/platform/uuid7'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
@@ -44,7 +44,7 @@ import * as Workflows from './poll-due-timers.workflow.ts'
  *
  * Tests add dynamic resources (custom EventBus mocks) via Layer.mergeAll
  */
-const BaseTestLayers = Layer.mergeAll(Adapters.ClockPortTest, UUID7.Default, Adapters.TimerPersistence.Test, SQL.Test)
+const BaseTestLayers = Layer.mergeAll(Adapters.Clock.Test, UUID7.Default, Adapters.TimerPersistence.Test, SQL.Test)
 
 /**
  * Test suite for pollDueTimersWorkflow
@@ -682,8 +682,9 @@ describe('pollDueTimersWorkflow', () => {
 			const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
 				publishDueTimeReached: () =>
 					Effect.fail(
-						new Ports.PublishError({
-							cause: 'Event bus publish failed',
+						new Ports.Platform.PublishError({
+							cause: new Error('Broker connection lost'),
+							message: 'Event bus publish failed',
 						}),
 					),
 			})
@@ -759,8 +760,9 @@ describe('pollDueTimersWorkflow', () => {
 					// Fail on second timer (callCount === 2)
 					if (callCount === 2) {
 						return Effect.fail(
-							new Ports.PublishError({
-								cause: 'Event bus publish failed',
+							new Ports.Platform.PublishError({
+								cause: new Error('Broker connection lost'),
+								message: 'Event bus publish failed',
 							}),
 						)
 					}
@@ -1016,7 +1018,7 @@ describe('pollDueTimersWorkflow', () => {
 
 				// Assert: No events should have been published
 				expect(publishedEvents).toHaveLength(0)
-			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, Adapters.ClockPortTest, TimerEventBusTest, UUID7.Default)))
+			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, Adapters.Clock.Test, TimerEventBusTest, UUID7.Default)))
 		})
 	})
 })

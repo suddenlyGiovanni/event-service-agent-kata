@@ -61,14 +61,14 @@ import type * as Either from 'effect/Either'
 import type * as ParseResult from 'effect/ParseResult'
 import * as Schema from 'effect/Schema'
 
-import * as Service from '@event-service-agent/platform/uuid7'
+import * as Adapters from '@event-service-agent/platform/adapters'
 
 import { UUID7 } from './uuid7.schema.ts'
 
 /**
  * CorrelationId brand for internal use
  */
-export const CorrelationIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/CorrelationId')
+const CorrelationIdBrand: unique symbol = Symbol.for('@event-service-agent/schemas/shared/CorrelationId')
 
 /**
  * CorrelationId — Branded UUID7 for distributed request tracing
@@ -131,8 +131,8 @@ export class CorrelationId extends UUID7.pipe(Schema.brand(CorrelationIdBrand)) 
 	 */
 	static readonly makeUUID7: (
 		time?: DateTime.Utc,
-	) => Effect.Effect<CorrelationId.Type, ParseResult.ParseError, Service.UUID7> = (time) =>
-		Service.UUID7.pipe(
+	) => Effect.Effect<CorrelationId.Type, ParseResult.ParseError, Adapters.UUID7> = (time) =>
+		Adapters.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
 			/*
 			 * Use make() instead of decode() — UUID7 service already validates.
