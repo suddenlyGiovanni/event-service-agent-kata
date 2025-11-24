@@ -86,7 +86,7 @@ export class TimerEventBusPort extends Context.Tag('@event-service-agent/timer/T
 		 * void publishEvent.pipe(Effect.provide(Adapters.TimerEventBus.Live))
 		 * ```
 		 *
-		 * @param event - Pure domain event {@link DueTimeReached.Type} with all domain fields
+		 * @param event - Pure domain event {@link Messages.Timer.Events.DueTimeReached.Type} with all domain fields
 		 *
 		 * @returns Effect that succeeds when event is published
 		 * @throws PublishError - When broker publish fails
@@ -162,6 +162,17 @@ export class TimerEventBusPort extends Context.Tag('@event-service-agent/timer/T
 	}
 >() {}
 
+/**
+ * TimerEventBusPort type utilities namespace.
+ *
+ * Provides ergonomic type helpers for working with TimerEventBusPort in Effect signatures.
+ */
 export declare namespace TimerEventBusPort {
+	/**
+	 * Service interface type for TimerEventBusPort.
+	 *
+	 * Alias for `Context.Tag.Service<TimerEventBusPort>` to reduce verbosity in Effect signatures.
+	 * Use this type alias in function signatures and variable declarations for cleaner, more readable code.
+	 */
 	type Type = Context.Tag.Service<TimerEventBusPort>
 }
