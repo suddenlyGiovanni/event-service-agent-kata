@@ -12,7 +12,7 @@ import * as TestClock from 'effect/TestClock'
 
 import { MessageMetadata } from '@event-service-agent/platform/context'
 import { SQL } from '@event-service-agent/platform/database'
-import { UUID7 } from '@event-service-agent/platform/uuid7'
+import { UUID7 } from '@event-service-agent/platform/adapters'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 

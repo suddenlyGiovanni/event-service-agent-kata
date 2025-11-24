@@ -44,7 +44,7 @@ import type * as Either from 'effect/Either'
 import type * as ParseResult from 'effect/ParseResult'
 import * as Schema from 'effect/Schema'
 
-import * as Service from '@event-service-agent/platform/uuid7'
+import * as Adapters from '@event-service-agent/platform/adapters'
 
 import { UUID7 } from './uuid7.schema.ts'
 
@@ -86,25 +86,25 @@ export class ServiceCallId extends UUID7.pipe(Schema.brand(ServiceCallIdBrand)) 
 	 * import { pipe } from 'effect/Function'
 	 * import type * as ParseResult from 'effect/ParseResult'
 	 *
-	 * import { UUID7 } from '@event-service-agent/platform/uuid7'
+	 * import * as Adapters from '@event-service-agent/platform/adapters'
 	 *
 	 * import { ServiceCallId } from './service-call-id.schema.ts'
 	 *
 	 * // Generate new ServiceCallId (default: current time)
-	 * export const _program1: Effect.Effect<ServiceCallId.Type, ParseResult.ParseError, UUID7> = Effect.gen(function* () {
+	 * export const _program1: Effect.Effect<ServiceCallId.Type, ParseResult.ParseError, Adapters.UUID7> = Effect.gen(function* () {
 	 * 	const serviceCallId = yield* ServiceCallId.makeUUID7()
 	 * 	return serviceCallId
 	 * })
 	 *
 	 * // Generate ServiceCallId with specific timestamp (deterministic)
-	 * export const _program2: Effect.Effect<ServiceCallId.Type, ParseResult.ParseError, UUID7> = pipe(
+	 * export const _program2: Effect.Effect<ServiceCallId.Type, ParseResult.ParseError, Adapters.UUID7> = pipe(
 	 * 	DateTime.unsafeMake(1234567890000), // DateTime.Utc
 	 * 	ServiceCallId.makeUUID7,
 	 * )
 	 *
 	 * // Provide UUID7 service to satisfy requirements
 	 * export const _program3: Effect.Effect<ServiceCallId.Type, ParseResult.ParseError, never> = _program2.pipe(
-	 * 	Effect.provide(UUID7.Default),
+	 * 	Effect.provide(Adapters.UUID7.Default),
 	 * )
 	 * ```
 	 *
@@ -116,8 +116,8 @@ export class ServiceCallId extends UUID7.pipe(Schema.brand(ServiceCallIdBrand)) 
 	 */
 	static readonly makeUUID7: (
 		time?: DateTime.Utc,
-	) => Effect.Effect<ServiceCallId.Type, ParseResult.ParseError, Service.UUID7> = (time) =>
-		Service.UUID7.pipe(
+	) => Effect.Effect<ServiceCallId.Type, ParseResult.ParseError, Adapters.UUID7> = (time) =>
+		Adapters.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
 			/*
 			 * Use make() instead of decode() — UUID7 service already validates.

@@ -22,8 +22,8 @@ import type * as ParseResult from 'effect/ParseResult'
 
 import * as Schema from '@event-service-agent/schemas/shared'
 
-import * as Adapters from './adapters/index.ts'
-import * as Ports from './ports/index.ts'
+import * as Ports from '../ports/index.ts'
+import * as Adapters from './uuid.adapter.ts'
 
 /**
  * UUID7 - Domain service for generating validated UUID7 values

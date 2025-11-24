@@ -11,7 +11,7 @@ import type * as ParseResult from 'effect/ParseResult'
 
 import * as Schema from '@event-service-agent/schemas/shared'
 
-import * as Services from './uuid7.service.ts'
+import * as Services from './uuid7.adapter.ts'
 
 describe('UUID7', () => {
 	describe('UUID7.Default', () => {

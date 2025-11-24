@@ -36,7 +36,7 @@ import type * as Either from 'effect/Either'
 import type * as ParseResult from 'effect/ParseResult'
 import * as Schema from 'effect/Schema'
 
-import * as Service from '@event-service-agent/platform/uuid7'
+import * as Adapters from '@event-service-agent/platform/adapters'
 
 import { UUID7 } from './uuid7.schema.ts'
 
@@ -81,7 +81,7 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	 * import { pipe } from 'effect/Function'
 	 * import type * as ParseResult from 'effect/ParseResult'
 	 *
-	 * import { UUID7 } from '@event-service-agent/platform/uuid7'
+	 * import { UUID7 } from '@event-service-agent/platform/adapters'
 	 *
 	 * // Generate new TenantId (default: current time)
 	 * export const _program1: Effect.Effect<TenantId.Type, ParseResult.ParseError, UUID7> = Effect.gen(function* () {
@@ -109,8 +109,8 @@ export class TenantId extends UUID7.pipe(Schema.brand(TenantIdBrand)) {
 	 */
 	static readonly makeUUID7: (
 		time?: DateTime.Utc,
-	) => Effect.Effect<TenantId.Type, ParseResult.ParseError, Service.UUID7> = (time) =>
-		Service.UUID7.pipe(
+	) => Effect.Effect<TenantId.Type, ParseResult.ParseError, Adapters.UUID7> = (time) =>
+		Adapters.UUID7.pipe(
 			Effect.flatMap(({ randomUUIDv7 }) => randomUUIDv7(time)),
 			Effect.map(
 				/*
