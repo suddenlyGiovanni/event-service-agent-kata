@@ -74,6 +74,17 @@ export class ClockPort extends Context.Tag('@event-service-agent/timer/ClockPort
 	}
 >() {}
 
+/**
+ * ClockPort type utilities namespace.
+ *
+ * Provides ergonomic type helpers for working with ClockPort in Effect signatures.
+ */
 export declare namespace ClockPort {
+	/**
+	 * Service interface type for ClockPort.
+	 *
+	 * Alias for `Context.Tag.Service<ClockPort>` to reduce verbosity in Effect signatures.
+	 * Use this type alias in function signatures and variable declarations for cleaner, more readable code.
+	 */
 	type Type = Context.Tag.Service<ClockPort>
 }
