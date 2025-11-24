@@ -3,8 +3,8 @@
  *
  * Provides production and test implementations of ClockPort:
  *
- * - **ClockPortLive**: Uses Effect's Clock service (real system time)
- * - **ClockPortTest**: Uses Effect's TestClock service (controlled time for testing)
+ * - **Clock.Live**: Uses Effect's Clock service (real system time)
+ * - **Clock.Test**: Uses Effect's TestClock service (controlled time for testing)
  *
  * Both adapters follow the Effect Layer pattern for dependency injection, ensuring proper resource management and test
  * isolation.
