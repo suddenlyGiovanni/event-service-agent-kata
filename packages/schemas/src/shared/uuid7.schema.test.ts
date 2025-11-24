@@ -1,5 +1,3 @@
-/** Biome-ignore-all lint/style/useNamingConvention: UUID7 follows Effect's convention for acronyms (UUID, ULID) */
-
 import { describe, expect, expectTypeOf, it } from '@effect/vitest'
 import * as Schema from 'effect/Schema'
 
