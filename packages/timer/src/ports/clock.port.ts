@@ -73,3 +73,7 @@ export class ClockPort extends Context.Tag('@event-service-agent/timer/ClockPort
 		readonly now: () => Effect.Effect<DateTime.Utc>
 	}
 >() {}
+
+export declare namespace ClockPort {
+	type Type = Context.Tag.Service<ClockPort>
+}

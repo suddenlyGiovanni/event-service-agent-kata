@@ -161,3 +161,7 @@ export class TimerEventBusPort extends Context.Tag('@event-service-agent/timer/T
 		) => Effect.Effect<void, Ports.SubscribeError | E, R>
 	}
 >() {}
+
+export declare namespace TimerEventBusPort {
+	type Type = Context.Tag.Service<TimerEventBusPort>
+}

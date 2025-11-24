@@ -30,3 +30,7 @@ export class UUIDPort extends Context.Tag('@event-service-agent/platform/ports/U
 		) => string
 	}
 >() {}
+
+export declare namespace UUIDPort {
+	type Type = Context.Tag.Service<UUIDPort>
+}

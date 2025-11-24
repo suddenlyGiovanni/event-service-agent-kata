@@ -198,3 +198,7 @@ export class EventBusPort extends Context.Tag('@event-service-agent/platform/Eve
 		) => Effect.Effect<void, SubscribeError | E, R>
 	}
 >() {}
+
+export declare namespace EventBusPort {
+	type Type = Context.Tag.Service<EventBusPort>
+}
