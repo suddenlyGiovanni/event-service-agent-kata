@@ -45,6 +45,8 @@ Prioritized queue.
 <!-- Only what you're actively working on. Move one item at a time. -->
 
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
+ 
+- (PL-4.4) Poll-based timer worker implementation [Timer] — branch `timer/pl-4.4-polling-worker` created; plan drafted in `.github/prompts/plan-pl44PollBasedTimerWorkerImplementation.prompt.md`. Depends on PL-4.6 (persistence) and PL-23/PL-24 (EventBus + MessageMetadata).
 
 ## Blocked
 
@@ -80,6 +82,7 @@ Prioritized queue.
 
 - **PL-4.6 COMPLETE** ✅ (Nov 19, 2025): SQLite persistence adapter finished. All 3 phases complete (Bootstrap, SQLite Adapter, Test Consolidation). Branch `timer/pl-4.6-sqlite-persistence` ready for review/merge.
 - **Next logical work**: **PL-4.4** — Poll-based timer worker implementation. This is the missing piece to make timers actually fire. Depends on completed PL-4.6 (persistence) and existing workflows. Natural progression in Timer module completion.
+    - Work started: branch created and plan added (see Doing). Next up: implement worker runner with interval and tests.
 - **Alternative consideration**: Could tackle **PL-2** (Orchestration domain model) or **PL-3** (Broker adapter) to unblock multi-module integration, but PL-4.4 provides immediate value (end-to-end timer functionality).
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
