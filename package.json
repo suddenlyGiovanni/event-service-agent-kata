@@ -75,7 +75,7 @@
 		"format:markdown:structure": "bunx --bun markdownlint-cli2 --fix docs/**/*.md packages/*/**/*.md",
 		"lint": "biome lint --write .",
 		"test": "bun --bun vitest",
-		"type-check": "bun --bun --workspaces type-check"
+		"type-check": "tsc --build"
 	},
 	"type": "module",
 	"workspaces": ["packages/*"]
