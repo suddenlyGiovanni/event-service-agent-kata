@@ -47,11 +47,11 @@ Prioritized queue.
 <!-- Move the top Ready item here when you start it. Keep ≤ 2. -->
 
 - (PL-4.4) Timer module entry point & polling loop [Timer] — branch `timer/pl-4.4-polling-worker`. Incremental approach: in-process polling first, worker extraction later.
-  - (PL-4.4.1) Layer composition (`TimerLive`) — compose persistence, event bus, clock adapters
-  - (PL-4.4.2) Polling loop — `pollDueTimersWorkflow` on 5s interval with error recovery
-  - (PL-4.4.3) Command subscription — subscribe to `ScheduleTimer` commands
-  - (PL-4.4.4) Module main program (`TimerMain`) — concurrent polling + subscription with graceful shutdown
-  - (PL-4.4.5) Integration tests — end-to-end module behavior with `TestClock`
+  - (PL-4.4.1) Layer composition (`TimerLive`) + validation test — compose adapters, verify no missing deps
+  - (PL-4.4.2) Polling loop + tests — `pollDueTimersWorkflow` on 5s interval, error recovery, `TestClock` validation
+  - (PL-4.4.3) Command subscription + tests — subscribe to `ScheduleTimer`, verify persistence & metadata propagation
+  - (PL-4.4.4) Module main program (`TimerMain`) + tests — concurrent loops, graceful shutdown, resource cleanup
+  - (PL-4.4.5) E2E integration tests — schedule → poll → fire flow, multi-tenant isolation, error recovery
   - (PL-4.4.6) Documentation & export — update README, design docs, package exports
 
 ## Blocked
@@ -86,9 +86,9 @@ Prioritized queue.
 
 ## Notes (today)
 
-- **PL-4.4 IN PROGRESS** (Dec 1, 2025): Timer module entry point & polling loop. Plan revised to incremental approach — `main.ts` owns module lifecycle, runs polling in-process (same thread), worker extraction deferred. See `.github/prompts/plan-pl44PollBasedTimerWorkerImplementation.prompt.md` for detailed phases.
-- **Architecture decision**: Each module has its own `main.ts` as entry point, isolating lifecycle from monolith. Enables future extraction to separate process without changing domain code.
-- **Next sub-task**: PL-4.4.1 — Layer composition (`TimerLive`)
+- **PL-4.4 IN PROGRESS** (Dec 1, 2025): Timer module entry point & polling loop. Incremental TDD approach — each phase has validation tests that must pass before proceeding. `main.ts` owns module lifecycle, runs polling in-process (same thread), worker extraction deferred.
+- **Testing infrastructure needed**: `FakeEventBus` (capture events, simulate commands), `TestClock` integration, scoped test layers.
+- **Next sub-task**: PL-4.4.1 — Layer composition (`TimerLive`) + validation test
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 
