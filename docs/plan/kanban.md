@@ -48,7 +48,7 @@ Prioritized queue.
 
 - (PL-4.4) Timer module entry point & polling loop [Timer] — branch `timer/pl-4.4-polling-worker`. Incremental approach: in-process polling first, worker extraction later.
   - [x] (PL-4.4.1) Layer composition (`TimerLive`) — compose adapters, verify no missing deps
-  - (PL-4.4.2) Polling loop + tests — `pollDueTimersWorkflow` on 5s interval, error recovery, `TestClock` validation
+  - [x] (PL-4.4.2) Polling loop — `pollDueTimersWorkflow` on 5s interval, error recovery (tests next)
   - (PL-4.4.3) Command subscription + tests — subscribe to `ScheduleTimer`, verify persistence & metadata propagation
   - (PL-4.4.4) Module main program (`TimerMain`) + tests — concurrent loops, graceful shutdown, resource cleanup
   - (PL-4.4.5) E2E integration tests — schedule → poll → fire flow, multi-tenant isolation, error recovery
@@ -86,8 +86,8 @@ Prioritized queue.
 
 ## Notes (today)
 
-- **PL-4.4 IN PROGRESS** (Dec 2, 2025): Timer module entry point & polling loop. `main.ts` owns module lifecycle, runs polling in-process (same thread).
-- **Next sub-task**: PL-4.4.2 — Polling loop with `Effect.repeat`, error recovery, `TestClock` tests
+- **PL-4.4 IN PROGRESS** (Dec 2, 2025): Timer module entry point & polling loop. Polling loop implemented with error recovery. Tests next.
+- **Next**: Add `TestClock` tests for polling loop, then PL-4.4.3 (command subscription)
 
 <!-- 2-3 bullets max. What you focus on, current risks, next up. -->
 

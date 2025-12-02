@@ -17,7 +17,7 @@
 		"typescript": "catalog:typescript"
 	},
 	"exports": {
-		"./main.ts": "./src/main.ts"
+		".": "./src/index.ts"
 	},
 	"name": "@event-service-agent/timer",
 	"private": true,
