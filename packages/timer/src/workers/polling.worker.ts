@@ -45,5 +45,5 @@ export const run = () =>
 					operation: err.operation,
 				}),
 		}),
-		Effect.repeat(Schedule.spaced(Duration.seconds(5))),
+		Effect.repeat(Schedule.fixed(Duration.seconds(5))),
 	)
