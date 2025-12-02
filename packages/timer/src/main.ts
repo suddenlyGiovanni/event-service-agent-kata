@@ -37,14 +37,14 @@ const TimerLive = Layer.merge(Adapters.TimerPersistence.Live, Adapters.TimerEven
  *
  * The sole public API of the Timer module. Runs concurrently:
  *
- * 1. **Polling worker** (forked fiber): Queries for due timers every 5 seconds,
+ * 1. **Polling worker** (scoped fiber): Queries for due timers every 5 seconds,
  *    publishes `DueTimeReached` events, marks timers as fired
  * 2. **Command subscription** (main fiber): Listens for ScheduleTimer commands,
  *    persists timers via {@link scheduleTimerWorkflow}
  *
- * **Fiber semantics**: Polling runs in a forked daemon fiber — it will be
- * interrupted if the main fiber (command subscription) terminates. This ensures
- * clean shutdown when the broker connection closes.
+ * **Fiber semantics**: Polling runs in a scoped fiber — its lifetime is tied
+ * to the local scope. When the scope closes (graceful shutdown, broker disconnect),
+ * the polling fiber is automatically interrupted. This ensures clean resource cleanup.
  *
  * **Usage**: Run this Effect with a provided `EventBusPort` adapter:
  *
@@ -73,8 +73,8 @@ const TimerLive = Layer.merge(Adapters.TimerPersistence.Live, Adapters.TimerEven
  */
 export const main = Effect.fn('Timer.main')(
 	function* () {
-		// Fork polling worker as daemon — interrupted when main fiber terminates
-		yield* Effect.forkDaemon(PollingWorker.run())
+		// Fork polling worker in local scope — interrupted when scope closes
+		yield* Effect.forkScoped(PollingWorker.run())
 
 		const eventBus = yield* Ports.TimerEventBusPort
 
