@@ -4,9 +4,9 @@ import { defineProject } from 'vitest/config'
 export default defineProject({
 	test: {
 		environment: 'node',
-		// Exclude integration tests from unit test runs (handled by root config)
-		exclude: ['src/**/*.integration.test.ts'],
-		include: ['src/**/*.{test,spec}.{ts,tsx}'],
-		name: { color: 'yellow', label: 'timer' },
+		hookTimeout: 10_000,
+		include: ['src/**/*.integration.test.ts'],
+		name: { color: 'yellow', label: 'timer:integration' },
+		testTimeout: 30_000,
 	},
 })

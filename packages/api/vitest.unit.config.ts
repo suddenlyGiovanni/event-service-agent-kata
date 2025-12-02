@@ -5,6 +5,6 @@ export default defineProject({
 	test: {
 		environment: 'node',
 		include: ['src/**/*.test.ts'],
-		name: { color: 'white', label: 'schemas' },
+		name: { color: 'cyan', label: 'api:unit' },
 	},
 })

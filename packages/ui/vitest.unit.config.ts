@@ -4,7 +4,7 @@ import { defineProject } from 'vitest/config'
 export default defineProject({
 	test: {
 		environment: 'node',
-		include: ['src/**/*.{test,spec}.{ts,tsx}'],
-		name: { color: 'blue', label: 'orchestration' },
+		include: ['src/**/*.test.{ts,tsx}'],
+		name: { color: 'red', label: 'ui:unit' },
 	},
 })

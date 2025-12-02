@@ -4,20 +4,14 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
 	test: {
 		projects: [
-			// Package-based projects (unit tests)
-			'packages/*',
-			'!packages/typescript',
+			// Unit tests: {package}:unit (e.g., timer:unit, api:unit)
+			'packages/*/vitest.unit.config.ts',
 
-			// Integration tests (separate project for filtering)
-			{
-				extends: true,
-				test: {
-					hookTimeout: 10_000,
-					include: ['packages/**/*.integration.test.ts'],
-					name: { color: 'magenta', label: 'integration' },
-					testTimeout: 30_000,
-				},
-			},
+			// Integration tests: {package}:integration (e.g., timer:integration)
+			'packages/*/vitest.integration.config.ts',
+
+			// Exclude typescript package (no tests)
+			'!packages/typescript',
 		],
 	},
 })
