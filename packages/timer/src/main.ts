@@ -1,10 +1,14 @@
+import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import * as Schedule from 'effect/Schedule'
+
+import { MessageMetadata } from '@event-service-agent/platform/context'
 
 import * as Adapters from './adapters/index.ts'
+import * as Ports from './ports/index.ts'
 import { PollingWorker } from './workers/index.ts'
-
-// import type * as Ports from './ports/index.ts'
+import { scheduleTimerWorkflow } from './workflows/schedule-timer.workflow.ts'
 
 /**
  * Timer module production layer composition
@@ -31,12 +35,16 @@ const TimerLive = Layer.merge(Adapters.TimerPersistence.Live, Adapters.TimerEven
 /**
  * Timer module main program entry point
  *
- * The sole public API of the Timer module. Starts the polling loop that:
+ * The sole public API of the Timer module. Runs concurrently:
  *
- * 1. Queries for due timers every 5 seconds
- * 2. Publishes `DueTimeReached` events for each due timer
- * 3. Marks timers as fired (Scheduled → Reached)
- * 4. Recovers from errors and continues polling
+ * 1. **Polling worker** (forked fiber): Queries for due timers every 5 seconds,
+ *    publishes `DueTimeReached` events, marks timers as fired
+ * 2. **Command subscription** (main fiber): Listens for ScheduleTimer commands,
+ *    persists timers via {@link scheduleTimerWorkflow}
+ *
+ * **Fiber semantics**: Polling runs in a forked daemon fiber — it will be
+ * interrupted if the main fiber (command subscription) terminates. This ensures
+ * clean shutdown when the broker connection closes.
  *
  * **Usage**: Run this Effect with a provided `EventBusPort` adapter:
  *
@@ -56,13 +64,27 @@ const TimerLive = Layer.merge(Adapters.TimerPersistence.Live, Adapters.TimerEven
  *
  * @public
  *
- * @returns Effect that runs indefinitely, polling for due timers
+ * @returns Effect that runs indefinitely, processing commands and polling for due timers
  *
  * @see {@link PollingWorker.run} — Polling loop with error recovery
+ * @see {@link commandSubscription} — Command handler with retry
  * @see docs/design/modules/timer.md — Module responsibilities
  * @see ADR-0003 — Polling interval (5s) rationale
  */
 export const main = Effect.fn('Timer.main')(
-	() => Effect.asVoid(PollingWorker.run()),
+	function* () {
+		// Fork polling worker as daemon — interrupted when main fiber terminates
+		yield* Effect.forkDaemon(PollingWorker.run())
+
+		const eventBus = yield* Ports.TimerEventBusPort
+
+		// Run command subscription in main fiber (blocks until broker closes)
+		yield* eventBus.subscribeToScheduleTimerCommands((command, metadata) =>
+			scheduleTimerWorkflow(command).pipe(
+				Effect.provideService(MessageMetadata, metadata),
+				Effect.retry(Schedule.compose(Schedule.exponential(Duration.millis(100)), Schedule.recurs(3))),
+			),
+		)
+	},
 	(effect) => effect.pipe(Effect.provide(TimerLive)),
 )
