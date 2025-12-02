@@ -8,7 +8,7 @@ import { MessageMetadata } from '@event-service-agent/platform/context'
 import * as Adapters from './adapters/index.ts'
 import * as Ports from './ports/index.ts'
 import { PollingWorker } from './workers/index.ts'
-import { scheduleTimerWorkflow } from './workflows/schedule-timer.workflow.ts'
+import * as Workflows from './workflows/index.ts'
 
 /**
  * Timer module production layer composition
@@ -40,7 +40,7 @@ const TimerLive = Layer.merge(Adapters.TimerPersistence.Live, Adapters.TimerEven
  * 1. **Polling worker** (scoped fiber): Queries for due timers every 5 seconds,
  *    publishes `DueTimeReached` events, marks timers as fired
  * 2. **Command subscription** (main fiber): Listens for ScheduleTimer commands,
- *    persists timers via {@link scheduleTimerWorkflow}
+ *    persists timers via {@link Workflows.scheduleTimerWorkflow}
  *
  * **Fiber semantics**: Polling runs in a scoped fiber — its lifetime is tied
  * to the local scope. When the scope closes (graceful shutdown, broker disconnect),
@@ -74,17 +74,19 @@ const TimerLive = Layer.merge(Adapters.TimerPersistence.Live, Adapters.TimerEven
 export const main = Effect.fn('Timer.main')(
 	function* () {
 		// Fork polling worker in local scope — interrupted when scope closes
-		yield* Effect.forkScoped(PollingWorker.run())
+		yield* Effect.forkScoped(PollingWorker.run)
 
 		const eventBus = yield* Ports.TimerEventBusPort
 
 		// Run command subscription in main fiber (blocks until broker closes)
-		yield* eventBus.subscribeToScheduleTimerCommands((command, metadata) =>
-			scheduleTimerWorkflow(command).pipe(
-				Effect.provideService(MessageMetadata, metadata),
-				Effect.retry(Schedule.compose(Schedule.exponential(Duration.millis(100)), Schedule.recurs(3))),
-			),
-		)
+		yield* eventBus
+			.subscribeToScheduleTimerCommands((command, metadata) =>
+				Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, metadata),
+					Effect.retry(Schedule.compose(Schedule.exponential(Duration.millis(100)), Schedule.recurs(3))),
+				),
+			)
+			.pipe(Effect.withSpan('Timer.CommandSubscription.run'))
 	},
 	(effect) => effect.pipe(Effect.provide(TimerLive)),
 )
