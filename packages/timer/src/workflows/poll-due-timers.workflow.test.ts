@@ -3,8 +3,10 @@ import { assertNone, assertSome } from '@effect/vitest/utils'
 import * as Cause from 'effect/Cause'
 import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
+import * as Deferred from 'effect/Deferred'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
+import * as Fiber from 'effect/Fiber'
 import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
@@ -1019,6 +1021,107 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: No events should have been published
 				expect(publishedEvents).toHaveLength(0)
 			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, Adapters.Clock.Test, TimerEventBusTest, UUID7.Default)))
+		})
+	})
+
+	describe('Interruption Safety', () => {
+		it.scoped('completes publish and markFired atomically when interrupted mid-execution', () => {
+			/**
+			 * ```txt
+			 * GIVEN a timer that is due
+			 *   AND an interruption signal arrives AFTER publish starts but BEFORE markFired
+			 * WHEN processTimerFiring is executing the critical section
+			 * THEN both publishDueTimeReached AND markFired should complete
+			 *   AND the timer should be marked as Reached (not left in Scheduled)
+			 *   AND the event should be published exactly once
+			 * ```
+			 *
+			 * This test verifies that Effect.uninterruptible protects the critical
+			 * section (publish + markFired) from being partially executed.
+			 *
+			 * Strategy: Use Deferred to synchronize test with workflow execution:
+			 * 1. Publish signals "I started" via Deferred
+			 * 2. Test waits for signal, then interrupts
+			 * 3. This guarantees interrupt arrives mid-critical-section
+			 */
+
+			return Effect.gen(function* () {
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+
+				// Synchronization: Deferred signals when publish has started
+				const publishStarted = yield* Deferred.make<void>()
+				const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
+				let markFiredCalled = false
+
+				// EventBus mock that signals when publish starts
+				const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
+					publishDueTimeReached: (event) =>
+						Effect.gen(function* () {
+							// Signal that we've entered the critical section
+							yield* Deferred.succeed(publishStarted, undefined)
+							// Small delay to give interrupt time to arrive
+							yield* Effect.yieldNow()
+							publishedEvents.push(event)
+						}),
+				})
+
+				// Arrange: Create a timer that will be due
+				const clock = yield* Ports.ClockPort
+				const basePersistence = yield* Ports.TimerPersistencePort
+				const registeredAt = yield* clock.now()
+				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
+
+				const scheduledTimer = Domain.ScheduledTimer.make({
+					correlationId: Option.none(),
+					dueAt,
+					registeredAt,
+					serviceCallId,
+					tenantId,
+				})
+
+				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* basePersistence.save(scheduledTimer)
+
+				// Create wrapped persistence that tracks markFired
+				const TestPersistence = Layer.succeed(
+					Ports.TimerPersistencePort,
+					Ports.TimerPersistencePort.of({
+						...basePersistence,
+						markFired: (params) =>
+							Effect.gen(function* () {
+								markFiredCalled = true
+								yield* basePersistence.markFired(params)
+							}),
+					}),
+				)
+
+				// Act: Advance time to make timer due
+				yield* TestClock.adjust('6 minutes')
+
+				// Fork the workflow
+				const fiber = yield* Effect.fork(
+					Workflows.pollDueTimersWorkflow().pipe(Effect.provide(Layer.merge(TestPersistence, TimerEventBusTest))),
+				)
+
+				// Wait until publish has started (we're inside critical section)
+				yield* Deferred.await(publishStarted)
+
+				// NOW interrupt - we're guaranteed to be mid-critical-section
+				yield* Fiber.interrupt(fiber)
+
+				// Assert: Both operations should have completed (uninterruptible)
+				// Event should be published
+				expect(publishedEvents).toHaveLength(1)
+
+				// markFired should have been called (critical section completed)
+				expect(markFiredCalled).toBe(true)
+
+				// Timer should be marked as Reached (not stuck in Scheduled)
+				const found = yield* basePersistence.find({ serviceCallId, tenantId })
+				expect(Option.isSome(found)).toBe(true)
+				expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
+			}).pipe(Effect.provide(BaseTestLayers))
 		})
 	})
 })
