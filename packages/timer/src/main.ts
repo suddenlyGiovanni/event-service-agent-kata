@@ -1,10 +1,8 @@
-import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import * as Schedule from 'effect/Schedule'
 
 import * as Adapters from './adapters/index.ts'
-import { pollDueTimersWorkflow } from './workflows/poll-due-timers.workflow.ts'
+import { PollingWorker } from './workers/index.ts'
 
 // import type * as Ports from './ports/index.ts'
 
@@ -29,44 +27,6 @@ const TimerLive = Layer.merge(Adapters.TimerPersistence.Live, Adapters.TimerEven
 	Layer.provideMerge(Adapters.Clock.Live),
 	Layer.provide(Adapters.Platform.UUID7.Default),
 )
-
-/**
- * Polling loop with error recovery
- *
- * Wraps {@link pollDueTimersWorkflow} with:
- * - Error recovery: catches workflow errors, logs recovery, continues polling
- * - Scheduled repetition: runs every 5s per ADR-0003
- *
- * **Error handling strategy**: Errors are logged at `debug` level here because
- * the workflow already logs with full context at `warn` level. This log signals
- * that recovery happened and polling continues.
- *
- * @internal Exported for testing purposes only
- *
- * @todo Identify proper error recovery strategy:
- *   - What are the failure modes? (transient vs permanent)
- *   - How do we classify them?
- *   - Should we implement circuit breaker / backoff?
- *   - If failed N times consecutively, should we panic?
- *
- * For now: log recovery and continue, relying on idempotency for retries.
- */
-export const _pollDueTimersWorkflow = () =>
-	pollDueTimersWorkflow().pipe(
-		Effect.catchTags({
-			BatchProcessingError: (err) =>
-				Effect.logDebug('Recovered from BatchProcessingError, continuing polling', {
-					failedCount: err.failedCount,
-					totalCount: err.totalCount,
-				}),
-			PersistenceError: (err) =>
-				Effect.logDebug('Recovered from PersistenceError, continuing polling', {
-					message: err.message,
-					operation: err.operation,
-				}),
-		}),
-		Effect.repeat(Schedule.spaced(Duration.seconds(5))),
-	)
 
 /**
  * Timer module main program entry point
@@ -98,11 +58,11 @@ export const _pollDueTimersWorkflow = () =>
  *
  * @returns Effect that runs indefinitely, polling for due timers
  *
- * @see {@link pollDueTimersWorkflow} — Core polling logic
+ * @see {@link PollingWorker.run} — Polling loop with error recovery
  * @see docs/design/modules/timer.md — Module responsibilities
  * @see ADR-0003 — Polling interval (5s) rationale
  */
 export const main = Effect.fn('Timer.main')(
-	() => Effect.asVoid(_pollDueTimersWorkflow()),
+	() => Effect.asVoid(PollingWorker.run()),
 	(effect) => effect.pipe(Effect.provide(TimerLive)),
 )
