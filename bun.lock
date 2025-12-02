@@ -10,20 +10,6 @@
         "vitest": "catalog:test",
       },
     },
-    "packages/adapters": {
-      "name": "@event-service-agent/adapters",
-      "version": "0.0.1",
-      "dependencies": {
-        "@event-service-agent/platform": "workspace:*",
-      },
-      "devDependencies": {
-        "@effect/vitest": "catalog:test",
-        "@event-service-agent/typescript": "workspace:*",
-        "@total-typescript/ts-reset": "catalog:types",
-        "@types/bun": "catalog:types",
-        "typescript": "catalog:typescript",
-      },
-    },
     "packages/api": {
       "name": "@event-service-agent/api",
       "version": "0.0.1",
@@ -265,8 +251,6 @@
     "@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.25.12", "", { "os": "win32", "cpu": "ia32" }, "sha512-HkqnmmBoCbCwxUKKNPBixiWDGCpQGVsrQfJoVGYLPT41XWF8lHuE5N6WhVia2n4o5QK5M4tYr21827fNhi4byQ=="],
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.12", "", { "os": "win32", "cpu": "x64" }, "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA=="],
-
-    "@event-service-agent/adapters": ["@event-service-agent/adapters@workspace:packages/adapters"],
 
     "@event-service-agent/api": ["@event-service-agent/api@workspace:packages/api"],
 

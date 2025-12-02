@@ -5,6 +5,6 @@ export default defineProject({
 	test: {
 		environment: 'node',
 		include: ['src/**/*.{test,spec}.{ts,tsx}'],
-		name: 'execution',
+		name: { color: 'green', label: 'execution' },
 	},
 })

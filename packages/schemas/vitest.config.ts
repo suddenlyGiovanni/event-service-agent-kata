@@ -5,6 +5,6 @@ export default defineProject({
 	test: {
 		environment: 'node',
 		include: ['src/**/*.test.ts'],
-		name: 'schemas',
+		name: { color: 'white', label: 'schemas' },
 	},
 })
