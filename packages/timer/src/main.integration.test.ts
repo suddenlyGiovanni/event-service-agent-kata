@@ -53,19 +53,15 @@ import { withServiceCall } from './test/service-call.fixture.ts'
  */
 
 describe('Timer.main', () => {
+	// ═══════════════════════════════════════════════════════════════════════
+	// TEST INFRASTRUCTURE
+	// ═══════════════════════════════════════════════════════════════════════
 	/**
 	 * Layer providing both EventBusPort (mock) and TestEventCapture.
 	 *
 	 * - EventBusPort.publish: appends events to internal Ref
 	 * - EventBusPort.subscribe: returns Effect.never (no commands delivered)
 	 * - TestEventCapture: exposes the Ref for test assertions
-	 *
-	 * @example
-	 * ```typescript
-	 * const events = yield* TestEventCapture
-	 * const published = yield* Ref.get(events)
-	 * expect(Chunk.size(published)).toBe(1)
-	 * ```
 	 */
 	const EventBusTest: Layer.Layer<Ports.Platform.EventBusPort | TestEventCapture> = Layer.unwrapEffect(
 		Effect.gen(function* () {
@@ -103,11 +99,17 @@ describe('Timer.main', () => {
 		),
 	} as const
 
+	// ═══════════════════════════════════════════════════════════════════════
+	// TEST DSL (shared across all tests in this describe block)
+	// ═══════════════════════════════════════════════════════════════════════
+
 	/**
 	 * Time control DSL - wraps TestClock with domain-meaningful names
 	 */
 	const Time = {
-		/** Advance virtual clock and yield to allow fibers to execute */
+		/**
+		 * Advance virtual clock and yield to allow fibers to execute
+		 */
 		advance: (duration: DurationInput) =>
 			pipe(
 				duration,
@@ -115,7 +117,9 @@ describe('Timer.main', () => {
 				Effect.andThen(() => Effect.yieldNow()),
 			),
 
-		/** Get current virtual time */
+		/**
+		 * Get current virtual time
+		 */
 		now: pipe(
 			Ports.ClockPort,
 			Effect.flatMap((clock) => clock.now()),
@@ -126,13 +130,20 @@ describe('Timer.main', () => {
 	 * Event capture DSL - query published events
 	 */
 	const Events = {
-		/** Get all published events */
+		/**
+		 * Get all published events
+		 */
 		all: pipe(TestEventCapture, Effect.flatMap(Ref.get)),
 
-		/** Get event at specific index */
-		at: (index: number) => pipe(TestEventCapture, Effect.flatMap(Ref.get), Effect.flatMap(Chunk.get(index))),
+		/**
+		 * Get event at specific index
+		 */
+		at: <Idx extends number>(index: Idx) =>
+			pipe(TestEventCapture, Effect.flatMap(Ref.get), Effect.flatMap(Chunk.get(index))),
 
-		/** Get count of published events */
+		/**
+		 * Get count of published events
+		 */
 		count: pipe(TestEventCapture, Effect.flatMap(Ref.get), Effect.map(Chunk.size)),
 	} as const
 
@@ -151,7 +162,7 @@ describe('Timer.main', () => {
 		/**
 		 * Find timer by key (any state)
 		 */
-		find: ({ serviceCallId, tenantId }: TimerDomain.ScheduledTimer) =>
+		find: ({ serviceCallId, tenantId }: TimerDomain.TimerEntry.Type) =>
 			pipe(
 				Ports.TimerPersistencePort,
 				Effect.flatMap((timerPersistence) => timerPersistence.find({ serviceCallId, tenantId })),
@@ -297,10 +308,10 @@ describe('Timer.main', () => {
 					verify: (context: string) => countAssertion(context),
 				}
 			},
-		} /**
+		},
+		/**
 		 * Assert no timers are currently due
-		 */,
-		noTimersDue: (context: string) =>
+		 */ noTimersDue: (context: string) =>
 			pipe(
 				Timers.due,
 				Effect.tap((due) => expect(Chunk.isEmpty(due), `${context}: no timers should be due`).toBe(true)),
