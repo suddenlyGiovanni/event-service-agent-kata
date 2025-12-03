@@ -228,71 +228,102 @@ describe('Timer.main', () => {
 			const Expect = {
 				/**
 				 * Event assertions namespace - all EventBus-related checks
+				 *
+				 * @example
+				 * ```typescript
+				 * // Chain count check with specific event assertion
+				 * yield* Expect.event
+				 *   .toHaveCount(1)
+				 *   .atIndex(0)
+				 *   .toBeForTimer(timerA)
+				 *   .toHaveType('DueTimeReached')
+				 *   .toHaveTenant(timerA.tenantId)
+				 *   .verify('At t=5:01')
+				 *
+				 * // Or just check count
+				 * yield* Expect.event.toBeEmpty().verify('Baseline')
+				 * ```
 				 */
 				event: {
 					/**
-					 * Chainable assertion builder for event at position.
-					 *
-					 * @example
-					 * ```typescript
-					 * yield* Expect.event
-					 *   .atIndex(0)
-					 *   .toBeForTimer(timerA)
-					 *   .toHaveType('DueTimeReached')
-					 *   .toHaveTenant(timerA.tenantId)
-					 *   .verify('At t=5:01')
-					 * ```
+					 * Start assertion chain at specific event index (no count check)
 					 */
-					atIndex: (position: number) => {
+					atIndex: (position: number) => Expect.event.toHaveCount(position + 1).atIndex(position),
+					/**
+					 * Assert no events were published
+					 */
+					toBeEmpty: () => Expect.event.toHaveCount(0),
+					/**
+					 * Assert exact number of events were published.
+					 * Returns a builder that can chain to atIndex or verify directly.
+					 */
+					toHaveCount: (expected: number) => {
 						type AssertionFn = (ctx: string) => Effect.Effect<void, any, TestEventCapture>
 
-						const createBuilder = (assertions: AssertionFn[]) => ({
+						const countAssertion: AssertionFn = (ctx) =>
+							pipe(
+								Events.count,
+								Effect.tap((actual) =>
+									expect(actual, `${ctx}: expected ${expected} event(s) published`).toBe(expected),
+								),
+							)
+
+						const createIndexBuilder = (assertions: AssertionFn[], position: number) => ({
 							/**
 							 * Assert event is for the given timer (serviceCallId matches)
 							 */
 							toBeForTimer: (timer: TimerDomain.ScheduledTimer) =>
-								createBuilder([
-									...assertions,
-									(ctx) =>
-										pipe(
-											Events.at(position),
-											Effect.tap((event) => {
-												expect(event.payload.serviceCallId, `${ctx}: event[${position}].serviceCallId`).toBe(
-													timer.serviceCallId,
-												)
-											}),
-										),
-								]),
+								createIndexBuilder(
+									[
+										...assertions,
+										(ctx) =>
+											pipe(
+												Events.at(position),
+												Effect.tap((event) => {
+													expect(event.payload.serviceCallId, `${ctx}: event[${position}].serviceCallId`).toBe(
+														timer.serviceCallId,
+													)
+												}),
+											),
+									],
+									position,
+								),
 
 							/**
 							 * Assert event has the given tenantId
 							 */
 							toHaveTenant: (tenantId: TenantId.Type) =>
-								createBuilder([
-									...assertions,
-									(ctx) =>
-										pipe(
-											Events.at(position),
-											Effect.tap((event) => {
-												expect(event.tenantId, `${ctx}: event[${position}].tenantId`).toBe(tenantId)
-											}),
-										),
-								]),
+								createIndexBuilder(
+									[
+										...assertions,
+										(ctx) =>
+											pipe(
+												Events.at(position),
+												Effect.tap((event) => {
+													expect(event.tenantId, `${ctx}: event[${position}].tenantId`).toBe(tenantId)
+												}),
+											),
+									],
+									position,
+								),
 
 							/**
 							 * Assert event has the given type
 							 */
 							toHaveType: (type: MessageEnvelope.Type['type']) =>
-								createBuilder([
-									...assertions,
-									(ctx) =>
-										pipe(
-											Events.at(position),
-											Effect.tap((event) => {
-												expect(event.type, `${ctx}: event[${position}].type`).toBe(type)
-											}),
-										),
-								]),
+								createIndexBuilder(
+									[
+										...assertions,
+										(ctx) =>
+											pipe(
+												Events.at(position),
+												Effect.tap((event) => {
+													expect(event.type, `${ctx}: event[${position}].type`).toBe(type)
+												}),
+											),
+									],
+									position,
+								),
 
 							/**
 							 * Execute all chained assertions with the given context
@@ -304,29 +335,21 @@ describe('Timer.main', () => {
 								),
 						})
 
-						return createBuilder([])
+						return {
+							/**
+							 * Continue to assert on event at specific index
+							 */
+							atIndex: (position: number) => createIndexBuilder([countAssertion], position),
+
+							/**
+							 * Execute count assertion only
+							 */
+							verify: (context: string) => countAssertion(context),
+						}
 					},
-
-					/**
-					 * Assert exact number of events were published
-					 */
-					count: (expected: number, context: string) =>
-						pipe(
-							Events.count,
-							Effect.tap((actual) =>
-								expect(actual, `${context}: expected ${expected} event(s) published`).toBe(expected),
-							),
-						),
-
-					/**
-					 * Assert no events were published
-					 */
-					none: (context: string) => Expect.event.count(0, context),
-				},
-
-				/**
+				} /**
 				 * Assert no timers are currently due
-				 */
+				 */,
 				noTimersDue: (context: string) =>
 					pipe(
 						Timers.due,
@@ -427,19 +450,19 @@ describe('Timer.main', () => {
 
 						// ─── Baseline ───────────────────────────────────────────────────────
 						yield* Expect.noTimersDue('Baseline')
-						yield* Expect.event.none('Baseline')
+						yield* Expect.event.toBeEmpty().verify('Baseline')
 
 						// ─── Act: Start Timer.main ──────────────────────────────────────────
 						const fiber = yield* Effect.fork(_main)
 						yield* Effect.yieldNow()
 
-						yield* Expect.event.none('After fork (no time passed)')
+						yield* Expect.event.toBeEmpty().verify('After fork (no time passed)')
 
 						// ─── Timer A fires at t=5:01 ────────────────────────────────────────
 						yield* Time.advance(Duration.sum('5 minutes', '1 seconds'))
 
-						yield* Expect.event.count(1, 'At t=5:01')
 						yield* Expect.event
+							.toHaveCount(1)
 							.atIndex(0)
 							.toBeForTimer(timerA)
 							.toHaveType('DueTimeReached')
@@ -450,8 +473,8 @@ describe('Timer.main', () => {
 						// ─── Timer B fires at t=6:01 ────────────────────────────────────────
 						yield* Time.advance('1 minute')
 
-						yield* Expect.event.count(2, 'At t=6:01')
 						yield* Expect.event
+							.toHaveCount(2)
 							.atIndex(1)
 							.toBeForTimer(timerB)
 							.toHaveType('DueTimeReached')
@@ -462,8 +485,8 @@ describe('Timer.main', () => {
 						// ─── Timer C fires at t=7:01 ────────────────────────────────────────
 						yield* Time.advance('1 minute')
 
-						yield* Expect.event.count(3, 'At t=7:01')
 						yield* Expect.event
+							.toHaveCount(3)
 							.atIndex(2)
 							.toBeForTimer(timerC)
 							.toHaveType('DueTimeReached')
