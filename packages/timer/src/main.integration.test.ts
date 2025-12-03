@@ -3,10 +3,13 @@ import * as Chunk from 'effect/Chunk'
 import * as Context from 'effect/Context'
 import * as DateTime from 'effect/DateTime'
 import type { DurationInput } from 'effect/Duration'
+import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
+import * as Fiber from 'effect/Fiber'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as Ref from 'effect/Ref'
+import * as TestClock from 'effect/TestClock'
 
 import { SQL } from '@event-service-agent/platform/database'
 import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
@@ -178,7 +181,7 @@ describe('Timer.main', () => {
 						Layer.provideMerge(SQL.Test),
 					)
 
-					const x = Effect.gen(function* () {
+					return Effect.gen(function* () {
 						// Arrange:
 						const clock = yield* Ports.ClockPort
 						const persistence = yield* Ports.TimerPersistencePort
@@ -186,26 +189,71 @@ describe('Timer.main', () => {
 
 						const now = yield* clock.now()
 
-						const scheduledTimerA = yield* scheduledTimerEffect(now, '5 minutes')
-						const scheduledTimerB = yield* scheduledTimerEffect(now, '6 minutes')
-						const scheduledTimerC = yield* scheduledTimerEffect(now, '7 minutes')
+						const timerA = yield* scheduledTimerEffect(now, '5 minutes')
+						const timerB = yield* scheduledTimerEffect(now, '6 minutes')
+						const timerC = yield* scheduledTimerEffect(now, '7 minutes')
 
-						// verify timer is not due yet
-						const notDueYet = yield* persistence.findDue(now)
-						expect(Chunk.isEmpty(notDueYet)).toBe(true)
+						// Baseline: no timers due yet, no events published
+						expect(Chunk.isEmpty(yield* persistence.findDue(now))).toBe(true)
 						expect(Chunk.isEmpty(yield* Ref.get(captureRef))).toBe(true)
 
-						// Act: start the main fiber
+						// Act: start Timer.main (forks polling worker, blocks on subscribe)
 						const fiber = yield* Effect.fork(_main)
 
-						// Assert: no events published yet
-						// Advance clock past dueAt some timers
-						// Assert: DueTimeReached events published for due timers and they have been marked as Reached
-						// advance clock past all dueAts
-						// Assert: DueTimeReached event published for final timer and marked as Reached
-					}).pipe(Effect.provide(TestLayer))
+						// Give the forked fiber a chance to start
+						yield* Effect.yieldNow()
 
-					return x
+						// Assert: no events published yet (no time has passed)
+						expect(Chunk.isEmpty(yield* Ref.get(captureRef))).toBe(true)
+
+						// Advance clock past first timer (5 min) + poll interval buffer
+						yield* TestClock.adjust(Duration.sum('5  minutes', '1  seconds'))
+						yield* Effect.yieldNow()
+
+						// Assert: 1 event published (timerA fired)
+						const eventsAfterA = yield* Ref.get(captureRef)
+						expect(Chunk.size(eventsAfterA)).toBe(1)
+						const eventA = Chunk.unsafeGet(eventsAfterA, 0)
+						expect(eventA.type).toBe('DueTimeReached')
+						expect(eventA.tenantId).toBe(timerA.tenantId)
+
+						// Verify timerA is no longer scheduled (check via find - any state)
+						const timerAAfterFire = yield* persistence.find({
+							serviceCallId: timerA.serviceCallId,
+							tenantId: timerA.tenantId,
+						})
+						expect(Option.isSome(timerAAfterFire)).toBe(true)
+						expect(timerAAfterFire.pipe(Option.map((t) => t._tag))).toEqual(Option.some('Reached'))
+
+						// Advance clock past second timer (6 min total)
+						yield* TestClock.adjust('1 minute')
+						yield* Effect.yieldNow()
+
+						// Assert: 2 events total (timerA + timerB)
+						const eventsAfterB = yield* Ref.get(captureRef)
+						expect(Chunk.size(eventsAfterB)).toBe(2)
+						const eventB = Chunk.unsafeGet(eventsAfterB, 1)
+						expect(eventB.type).toBe('DueTimeReached')
+						expect(eventB.tenantId).toBe(timerB.tenantId)
+
+						// Advance clock past third timer (7 min total)
+						yield* TestClock.adjust('1 minute')
+						yield* Effect.yieldNow()
+
+						// Assert: 3 events total (all timers fired)
+						const eventsAfterC = yield* Ref.get(captureRef)
+						expect(Chunk.size(eventsAfterC)).toBe(3)
+						const eventC = Chunk.unsafeGet(eventsAfterC, 2)
+						expect(eventC.type).toBe('DueTimeReached')
+						expect(eventC.tenantId).toBe(timerC.tenantId)
+
+						// Verify no timers remain scheduled
+						const stillDueAfterAll = yield* persistence.findDue(yield* clock.now())
+						expect(Chunk.isEmpty(stillDueAfterAll)).toBe(true)
+
+						// Cleanup: interrupt the main fiber
+						yield* Fiber.interrupt(fiber)
+					}).pipe(Effect.provide(TestLayer))
 				},
 			)
 
