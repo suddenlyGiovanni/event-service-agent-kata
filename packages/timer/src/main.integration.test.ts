@@ -137,31 +137,6 @@ describe('Timer.main', () => {
 
 		describe('Polling Worker', (): void => {
 			/**
-			 * Creates and persists a scheduled timer at a future due date while
-			 * ensuring a corresponding service call fixture exists.
-			 */
-			const scheduledTimerEffect = Effect.fn(function* (now: DateTime.Utc, dueAt: DurationInput) {
-				const persistence = yield* Ports.TimerPersistencePort
-
-				const scheduledTimer = TimerDomain.ScheduledTimer.make({
-					correlationId: Option.none(),
-					dueAt: DateTime.addDuration(now, dueAt),
-					registeredAt: now,
-					serviceCallId: yield* ServiceCallId.makeUUID7(),
-					tenantId: yield* TenantId.makeUUID7(),
-				})
-
-				yield* withServiceCall({
-					serviceCallId: scheduledTimer.serviceCallId,
-					tenantId: scheduledTimer.tenantId,
-				})
-
-				yield* persistence.save(scheduledTimer)
-
-				return scheduledTimer
-			})
-
-			/**
 			 * Time control DSL - wraps TestClock with domain-meaningful names
 			 */
 			const Time = {
@@ -172,30 +147,30 @@ describe('Timer.main', () => {
 						TestClock.adjust,
 						Effect.andThen(() => Effect.yieldNow()),
 					),
+
+				/** Get current virtual time */
+				now: pipe(
+					Ports.ClockPort,
+					Effect.flatMap((clock) => clock.now()),
+				),
 			} as const
 
 			/**
 			 * Event capture DSL - query published events
 			 */
 			const Events = {
-				/**
-				 * Get all published events
-				 */
+				/** Get all published events */
 				all: pipe(TestEventCapture, Effect.flatMap(Ref.get)),
 
-				/**
-				 * Get event at specific index
-				 */
+				/** Get event at specific index */
 				at: (index: number) => pipe(TestEventCapture, Effect.flatMap(Ref.get), Effect.flatMap(Chunk.get(index))),
 
-				/**
-				 * Get count of published events
-				 */
+				/** Get count of published events */
 				count: pipe(TestEventCapture, Effect.flatMap(Ref.get), Effect.map(Chunk.size)),
 			} as const
 
 			/**
-			 * Timer state DSL - query timer persistence
+			 * Timer state DSL - query and create timers
 			 */
 			const Timers = {
 				/**
@@ -206,9 +181,7 @@ describe('Timer.main', () => {
 					Effect.flatMap(([persistence, clock]) => clock.now().pipe(Effect.flatMap(persistence.findDue))),
 				),
 
-				/**
-				 * Find timer by key (any state)
-				 */
+				/** Find timer by key (any state) */
 				find: (timer: TimerDomain.ScheduledTimer) =>
 					pipe(
 						Ports.TimerPersistencePort,
@@ -219,6 +192,33 @@ describe('Timer.main', () => {
 							}),
 						),
 					),
+
+				/**
+				 * Schedule a timer at given duration from now.
+				 * Creates service call fixture and persists timer.
+				 */
+				scheduleAt: (dueIn: DurationInput) =>
+					Effect.gen(function* () {
+						const now = yield* Time.now
+						const persistence = yield* Ports.TimerPersistencePort
+
+						const scheduledTimer = TimerDomain.ScheduledTimer.make({
+							correlationId: Option.none(),
+							dueAt: DateTime.addDuration(now, dueIn),
+							registeredAt: now,
+							serviceCallId: yield* ServiceCallId.makeUUID7(),
+							tenantId: yield* TenantId.makeUUID7(),
+						})
+
+						yield* withServiceCall({
+							serviceCallId: scheduledTimer.serviceCallId,
+							tenantId: scheduledTimer.tenantId,
+						})
+
+						yield* persistence.save(scheduledTimer)
+
+						return scheduledTimer
+					}),
 			} as const
 
 			/**
@@ -300,12 +300,9 @@ describe('Timer.main', () => {
 
 					return Effect.gen(function* () {
 						// ─── Arrange ────────────────────────────────────────────────────────
-						const clock = yield* Ports.ClockPort
-						const now = yield* clock.now()
-
-						const timerA = yield* scheduledTimerEffect(now, '5 minutes')
-						const timerB = yield* scheduledTimerEffect(now, '6 minutes')
-						const timerC = yield* scheduledTimerEffect(now, '7 minutes')
+						const timerA = yield* Timers.scheduleAt('5 minutes')
+						const timerB = yield* Timers.scheduleAt('6 minutes')
+						const timerC = yield* Timers.scheduleAt('7 minutes')
 
 						// ─── Baseline ───────────────────────────────────────────────────────
 						yield* Expect.noTimersDue('Baseline')
