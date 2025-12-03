@@ -226,38 +226,28 @@ describe('Timer.main', () => {
 				type AssertionFn = (ctx: string) => Effect.Effect<void, any, TestEventCapture>
 
 				const countAssertion: AssertionFn = (ctx) =>
-					pipe(
-						Events.count,
+					Events.count.pipe(
 						Effect.tap((actual) => expect(actual, `${ctx}: expected ${expected} event(s) published`).toBe(expected)),
 					)
 
-				const createIndexBuilder = (assertions: AssertionFn[], position: number) => ({
-					/**
-					 * Assert event is for the given timer (serviceCallId matches)
-					 */
-					toBeForTimer: (timer: TimerDomain.ScheduledTimer) =>
+				const createIndexBuilder = (assertions: AssertionFn[], position: number) => {
+					const toBeForTimer = (timer: TimerDomain.ScheduledTimer) =>
 						createIndexBuilder(
 							[
 								...assertions,
 								(ctx) =>
-									pipe(
-										Events.at(position),
+									Events.at(position).pipe(
 										Effect.tap((event) => {
-											// Type assertion safe: test should also call toHaveType() to narrow
-											const payload = event.payload as { serviceCallId?: string }
-											expect(payload.serviceCallId, `${ctx}: event[${position}].serviceCallId`).toBe(
-												timer.serviceCallId,
-											)
+											const { serviceCallId } = event.payload as { serviceCallId?: string }
+
+											expect(serviceCallId, `${ctx}: event[${position}].serviceCallId`).toBe(timer.serviceCallId)
 										}),
 									),
 							],
 							position,
-						),
+						)
 
-					/**
-					 * Assert event has the given tenantId
-					 */
-					toHaveTenant: (tenantId: TenantId.Type) =>
+					const toHaveTenant = (tenantId: TenantId.Type) =>
 						createIndexBuilder(
 							[
 								...assertions,
@@ -270,12 +260,9 @@ describe('Timer.main', () => {
 									),
 							],
 							position,
-						),
+						)
 
-					/**
-					 * Assert event has the given type
-					 */
-					toHaveType: (type: MessageEnvelope.Type['type']) =>
+					const toHaveType = (type: MessageEnvelope.Type['type']) =>
 						createIndexBuilder(
 							[
 								...assertions,
@@ -288,17 +275,36 @@ describe('Timer.main', () => {
 									),
 							],
 							position,
-						),
+						)
 
-					/**
-					 * Execute all chained assertions with the given context
-					 */
-					verify: (context: string) =>
+					const verify = (context: string) =>
 						Effect.all(
 							assertions.map((fn) => fn(context)),
 							{ discard: true },
-						),
-				})
+						)
+
+					return {
+						/**
+						 * Assert event is for the given timer (serviceCallId matches)
+						 */
+						toBeForTimer,
+
+						/**
+						 * Assert event has the given tenantId
+						 */
+						toHaveTenant,
+
+						/**
+						 * Assert event has the given type
+						 */
+						toHaveType,
+
+						/**
+						 * Execute all chained assertions with the given context
+						 */
+						verify,
+					}
+				}
 
 				return {
 					/**
