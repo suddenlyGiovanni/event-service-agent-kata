@@ -6,6 +6,7 @@ import type { DurationInput } from 'effect/Duration'
 import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
 import * as Fiber from 'effect/Fiber'
+import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
 import * as Ref from 'effect/Ref'
@@ -159,7 +160,56 @@ describe('Timer.main', () => {
 			)
 		})
 
-		describe('Polling Worker', () => {
+		describe('Polling Worker', (): void => {
+			/**
+			 * Helper to advance TestClock and yield to allow fibers to execute.
+			 * Combines the common pattern of adjust + yieldNow.
+			 */
+			const advanceTimeBy = (duration: DurationInput) =>
+				pipe(
+					duration,
+					TestClock.adjust,
+					Effect.andThen(() => Effect.yieldNow()),
+				)
+
+			/**
+			 * Helper to get the current count of published events.
+			 */
+			const getPublishedEventCount = pipe(TestEventCapture, Effect.flatMap(Ref.get), Effect.map(Chunk.size))
+
+			/**
+			 * Helper to assert a timer has transitioned to 'Reached' state.
+			 */
+			const assertTimerReached = (timer: TimerDomain.ScheduledTimer, description: string) =>
+				Effect.gen(function* () {
+					const persistence = yield* Ports.TimerPersistencePort
+					const timerAfterFire = yield* persistence.find({
+						serviceCallId: timer.serviceCallId,
+						tenantId: timer.tenantId,
+					})
+					expect(Option.isSome(timerAfterFire), `${description}: timer should still exist in DB`).toBe(true)
+					expect(
+						timerAfterFire.pipe(Option.map((t) => t._tag)),
+						`${description}: timer should have transitioned to Reached state`,
+					).toEqual(Option.some('Reached'))
+				})
+
+			/**
+			 * Helper to assert an event at a given index matches expected properties.
+			 */
+			const assertEventAt = (index: number, expectedTimer: TimerDomain.ScheduledTimer, description: string) =>
+				pipe(
+					TestEventCapture,
+					Effect.flatMap(Ref.get),
+					Effect.flatMap(Chunk.get(index)),
+					Effect.andThen((messageEnvelope) => {
+						expect(messageEnvelope.type, `${description}: event type should be DueTimeReached`).toBe('DueTimeReached')
+						expect(messageEnvelope.tenantId, `${description}: event tenantId should match timer`).toBe(
+							expectedTimer.tenantId,
+						)
+					}),
+				)
+
 			it.scoped(
 				'should detect due timers and publish DueTimeReached events',
 				/**
@@ -182,89 +232,53 @@ describe('Timer.main', () => {
 					)
 
 					return Effect.gen(function* () {
-						// Arrange:
+						// ─── Arrange ────────────────────────────────────────────────────────
 						const clock = yield* Ports.ClockPort
 						const persistence = yield* Ports.TimerPersistencePort
-						const captureRef = yield* TestEventCapture
-
 						const now = yield* clock.now()
 
+						// Schedule 3 timers at staggered intervals
 						const timerA = yield* scheduledTimerEffect(now, '5 minutes')
 						const timerB = yield* scheduledTimerEffect(now, '6 minutes')
 						const timerC = yield* scheduledTimerEffect(now, '7 minutes')
 
-						// Baseline: no timers due yet, no events published
+						// ─── Baseline assertions ────────────────────────────────────────────
 						expect(
 							yield* persistence.findDue(now).pipe(Effect.map(Chunk.isEmpty)),
-							'DB should show no timers due yet',
+							'Baseline: no timers should be due at t=0',
 						).toBe(true)
-						expect(
-							yield* Ref.get(captureRef).pipe(Effect.map(Chunk.isEmpty)),
-							'No events should have been published yet',
-						).toBe(true)
+						expect(yield* getPublishedEventCount, 'Baseline: no events should be published at t=0').toBe(0)
 
-						// Act: start Timer.main (forks polling worker, blocks on subscribe)
+						// ─── Act: Start Timer.main ──────────────────────────────────────────
 						const fiber = yield* Effect.fork(_main)
+						yield* Effect.yieldNow() // Let polling worker start
 
-						// Give the forked fiber a chance to start
-						yield* Effect.yieldNow()
+						expect(yield* getPublishedEventCount, 'After fork: no events yet (no time has passed)').toBe(0)
 
-						expect(
-							yield* Ref.get(captureRef).pipe(Effect.map(Chunk.isEmpty)),
-							'No events should have been published yet (no time has passed)',
-						).toBe(true)
+						// ─── Timer A fires at t=5:01 ────────────────────────────────────────
+						yield* advanceTimeBy(Duration.sum('5 minutes', '1 seconds'))
 
-						// Advance clock past first timer (5 min) + poll interval buffer
-						yield* TestClock.adjust(Duration.sum('5  minutes', '1  seconds'))
-						yield* Effect.yieldNow()
+						expect(yield* getPublishedEventCount, 'At t=5:01: timerA should have fired').toBe(1)
+						yield* assertEventAt(0, timerA, 'At t=5:01')
+						yield* assertTimerReached(timerA, 'At t=5:01')
 
-						// Assert: 1 event published (timerA fired)
-						const eventsAfterA = yield* Ref.get(captureRef)
-						expect(Chunk.size(eventsAfterA), 'After 5min+1s: exactly 1 event should be published (timerA)').toBe(1)
-						const eventA = Chunk.unsafeGet(eventsAfterA, 0)
-						expect(eventA.type, 'First event should be DueTimeReached').toBe('DueTimeReached')
-						expect(eventA.tenantId, 'First event tenantId should match timerA').toBe(timerA.tenantId)
+						// ─── Timer B fires at t=6:01 ────────────────────────────────────────
+						yield* advanceTimeBy('1 minute')
 
-						// Verify timerA is no longer scheduled (check via find - any state)
-						const timerAAfterFire = yield* persistence.find({
-							serviceCallId: timerA.serviceCallId,
-							tenantId: timerA.tenantId,
-						})
-						expect(Option.isSome(timerAAfterFire), 'timerA should still exist in DB after firing').toBe(true)
-						expect(
-							timerAAfterFire.pipe(Option.map((t) => t._tag)),
-							'timerA should have transitioned to Reached state',
-						).toEqual(Option.some('Reached'))
+						expect(yield* getPublishedEventCount, 'At t=6:01: timerA + timerB should have fired').toBe(2)
+						yield* assertEventAt(1, timerB, 'At t=6:01')
 
-						// Advance clock past second timer (6 min total)
-						yield* TestClock.adjust('1 minute')
-						yield* Effect.yieldNow()
+						// ─── Timer C fires at t=7:01 ────────────────────────────────────────
+						yield* advanceTimeBy('1 minute')
 
-						// Assert: 2 events total (timerA + timerB)
-						const eventsAfterB = yield* Ref.get(captureRef)
-						expect(Chunk.size(eventsAfterB), 'After 6min: exactly 2 events should be published (timerA + timerB)').toBe(
-							2,
-						)
-						const eventB = Chunk.unsafeGet(eventsAfterB, 1)
-						expect(eventB.type, 'Second event should be DueTimeReached').toBe('DueTimeReached')
-						expect(eventB.tenantId, 'Second event tenantId should match timerB').toBe(timerB.tenantId)
+						expect(yield* getPublishedEventCount, 'At t=7:01: all timers should have fired').toBe(3)
+						yield* assertEventAt(2, timerC, 'At t=7:01')
 
-						// Advance clock past third timer (7 min total)
-						yield* TestClock.adjust('1 minute')
-						yield* Effect.yieldNow()
+						// ─── Final verification ─────────────────────────────────────────────
+						const remainingDue = yield* persistence.findDue(yield* clock.now())
+						expect(Chunk.isEmpty(remainingDue), 'Final: no timers should remain due').toBe(true)
 
-						// Assert: 3 events total (all timers fired)
-						const eventsAfterC = yield* Ref.get(captureRef)
-						expect(Chunk.size(eventsAfterC), 'After 7min: exactly 3 events should be published (all timers)').toBe(3)
-						const eventC = Chunk.unsafeGet(eventsAfterC, 2)
-						expect(eventC.type, 'Third event should be DueTimeReached').toBe('DueTimeReached')
-						expect(eventC.tenantId, 'Third event tenantId should match timerC').toBe(timerC.tenantId)
-
-						// Verify no timers remain scheduled
-						const stillDueAfterAll = yield* persistence.findDue(yield* clock.now())
-						expect(Chunk.isEmpty(stillDueAfterAll), 'No timers should remain due after all fired').toBe(true)
-
-						// Cleanup: interrupt the main fiber
+						// ─── Cleanup ────────────────────────────────────────────────────────
 						yield* Fiber.interrupt(fiber)
 					}).pipe(Effect.provide(TestLayer))
 				},
