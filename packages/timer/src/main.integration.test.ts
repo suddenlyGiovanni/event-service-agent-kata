@@ -52,47 +52,47 @@ import { withServiceCall } from './test/service-call.fixture.ts'
  * @see schedule-timer.workflow.test.ts — Workflow unit tests
  */
 
-/**
- * Test-only service for capturing published events.
- *
- * Provides access to the internal Ref used by the mocked EventBusPort,
- * enabling test assertions on published messages.
- */
-class TestEventCapture extends Context.Tag('TestEventCapture')<
-	TestEventCapture,
-	Ref.Ref<Chunk.Chunk<MessageEnvelope.Type>>
->() {}
-
-/**
- * Layer providing both EventBusPort (mock) and TestEventCapture.
- *
- * - EventBusPort.publish: appends events to internal Ref
- * - EventBusPort.subscribe: returns Effect.never (no commands delivered)
- * - TestEventCapture: exposes the Ref for test assertions
- *
- * @example
- * ```typescript
- * const events = yield* TestEventCapture
- * const published = yield* Ref.get(events)
- * expect(Chunk.size(published)).toBe(1)
- * ```
- */
-const EventBusTest: Layer.Layer<Ports.Platform.EventBusPort | TestEventCapture> = Layer.unwrapEffect(
-	Effect.gen(function* () {
-		const ref = yield* Ref.make(Chunk.empty<MessageEnvelope.Type>())
-
-		const EventBusMock = Layer.mock(Ports.Platform.EventBusPort, {
-			publish: (events) => Ref.update(ref, (existing) => Chunk.appendAll(existing, Chunk.fromIterable(events))),
-			subscribe: () => Effect.never,
-		})
-
-		const TestEventCaptureLayer = Layer.succeed(TestEventCapture, ref)
-
-		return Layer.merge(EventBusMock, TestEventCaptureLayer)
-	}),
-)
-
 describe('Timer.main', () => {
+	/**
+	 * Layer providing both EventBusPort (mock) and TestEventCapture.
+	 *
+	 * - EventBusPort.publish: appends events to internal Ref
+	 * - EventBusPort.subscribe: returns Effect.never (no commands delivered)
+	 * - TestEventCapture: exposes the Ref for test assertions
+	 *
+	 * @example
+	 * ```typescript
+	 * const events = yield* TestEventCapture
+	 * const published = yield* Ref.get(events)
+	 * expect(Chunk.size(published)).toBe(1)
+	 * ```
+	 */
+	const EventBusTest: Layer.Layer<Ports.Platform.EventBusPort | TestEventCapture> = Layer.unwrapEffect(
+		Effect.gen(function* () {
+			const ref = yield* Ref.make(Chunk.empty<MessageEnvelope.Type>())
+
+			const EventBusMock = Layer.mock(Ports.Platform.EventBusPort, {
+				publish: (events) => Ref.update(ref, (existing) => Chunk.appendAll(existing, Chunk.fromIterable(events))),
+				subscribe: () => Effect.never,
+			})
+
+			const TestEventCaptureLayer = Layer.succeed(TestEventCapture, ref)
+
+			return Layer.merge(EventBusMock, TestEventCaptureLayer)
+		}),
+	)
+
+	/**
+	 * Test-only service for capturing published events.
+	 *
+	 * Provides access to the internal Ref used by the mocked EventBusPort,
+	 * enabling test assertions on published messages.
+	 */
+	class TestEventCapture extends Context.Tag('TestEventCapture')<
+		TestEventCapture,
+		Ref.Ref<Chunk.Chunk<MessageEnvelope.Type>>
+	>() {}
+
 	const TestHarness = {
 		Layer: Adapters.TimerEventBus.Live.pipe(
 			Layer.provideMerge(EventBusTest),
