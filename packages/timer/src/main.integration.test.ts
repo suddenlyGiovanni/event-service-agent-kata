@@ -222,100 +222,107 @@ describe('Timer.main', () => {
 			 * Assertion DSL - domain-focused expectations
 			 *
 			 * Two-phase design:
-			 * - `Expect.event(n)` — EventBus assertions (published events)
+			 * - `Expect.event.*` — EventBus assertions (published events)
 			 * - `Expect.timer(t)` — Database assertions (persisted state)
 			 */
 			const Expect = {
 				/**
-				 * Event assertion builder - chainable API for EventBus assertions.
-				 *
-				 * @example
-				 * ```typescript
-				 * // Assert event at position 0 is for timerA and is DueTimeReached
-				 * yield* Expect.event(0)
-				 *   .isForTimer(timerA)
-				 *   .hasType('DueTimeReached')
-				 *   .verify('At t=5:01')
-				 * ```
+				 * Event assertions namespace - all EventBus-related checks
 				 */
-				event: (position: number) => {
-					type AssertionFn = (ctx: string) => Effect.Effect<void, any, TestEventCapture>
+				event: {
+					/**
+					 * Chainable assertion builder for event at position.
+					 *
+					 * @example
+					 * ```typescript
+					 * yield* Expect.event
+					 *   .atIndex(0)
+					 *   .toBeForTimer(timerA)
+					 *   .toHaveType('DueTimeReached')
+					 *   .toHaveTenant(timerA.tenantId)
+					 *   .verify('At t=5:01')
+					 * ```
+					 */
+					atIndex: (position: number) => {
+						type AssertionFn = (ctx: string) => Effect.Effect<void, any, TestEventCapture>
 
-					const createBuilder = (assertions: AssertionFn[]) => ({
-						/**
-						 * Assert event has the given tenantId
-						 */
-						hasTenant: (tenantId: TenantId.Type) =>
-							createBuilder([
-								...assertions,
-								(ctx) =>
-									pipe(
-										Events.at(position),
-										Effect.tap((event) => {
-											expect(event.tenantId, `${ctx}: event[${position}].tenantId`).toBe(tenantId)
-										}),
-									),
-							]),
+						const createBuilder = (assertions: AssertionFn[]) => ({
+							/**
+							 * Assert event is for the given timer (serviceCallId matches)
+							 */
+							toBeForTimer: (timer: TimerDomain.ScheduledTimer) =>
+								createBuilder([
+									...assertions,
+									(ctx) =>
+										pipe(
+											Events.at(position),
+											Effect.tap((event) => {
+												expect(event.payload.serviceCallId, `${ctx}: event[${position}].serviceCallId`).toBe(
+													timer.serviceCallId,
+												)
+											}),
+										),
+								]),
 
-						/**
-						 * Assert event has the given type
-						 */
-						hasType: (type: MessageEnvelope.Type['type']) =>
-							createBuilder([
-								...assertions,
-								(ctx) =>
-									pipe(
-										Events.at(position),
-										Effect.tap((event) => {
-											expect(event.type, `${ctx}: event[${position}].type`).toBe(type)
-										}),
-									),
-							]),
-						/**
-						 * Assert event is for the given timer (serviceCallId matches)
-						 */
-						isForTimer: (timer: TimerDomain.ScheduledTimer) =>
-							createBuilder([
-								...assertions,
-								(ctx) =>
-									pipe(
-										Events.at(position),
-										Effect.tap((event) => {
-											expect(
-												event.payload.serviceCallId,
-												`${ctx}: event[${position}].serviceCallId should match timer`,
-											).toBe(timer.serviceCallId)
-										}),
-									),
-							]),
+							/**
+							 * Assert event has the given tenantId
+							 */
+							toHaveTenant: (tenantId: TenantId.Type) =>
+								createBuilder([
+									...assertions,
+									(ctx) =>
+										pipe(
+											Events.at(position),
+											Effect.tap((event) => {
+												expect(event.tenantId, `${ctx}: event[${position}].tenantId`).toBe(tenantId)
+											}),
+										),
+								]),
 
-						/**
-						 * Execute all chained assertions with the given context
-						 */
-						verify: (context: string) =>
-							Effect.all(
-								assertions.map((fn) => fn(context)),
-								{ discard: true },
+							/**
+							 * Assert event has the given type
+							 */
+							toHaveType: (type: MessageEnvelope.Type['type']) =>
+								createBuilder([
+									...assertions,
+									(ctx) =>
+										pipe(
+											Events.at(position),
+											Effect.tap((event) => {
+												expect(event.type, `${ctx}: event[${position}].type`).toBe(type)
+											}),
+										),
+								]),
+
+							/**
+							 * Execute all chained assertions with the given context
+							 */
+							verify: (context: string) =>
+								Effect.all(
+									assertions.map((fn) => fn(context)),
+									{ discard: true },
+								),
+						})
+
+						return createBuilder([])
+					},
+
+					/**
+					 * Assert exact number of events were published
+					 */
+					count: (expected: number, context: string) =>
+						pipe(
+							Events.count,
+							Effect.tap((actual) =>
+								expect(actual, `${context}: expected ${expected} event(s) published`).toBe(expected),
 							),
-					})
-
-					return createBuilder([])
-				},
-				/**
-				 * Assert exact number of events were published
-				 */
-				eventCount: (expected: number, context: string) =>
-					pipe(
-						Events.count,
-						Effect.tap((actual) =>
-							expect(actual, `${context}: expected ${expected} event(s) published`).toBe(expected),
 						),
-					),
 
-				/**
-				 * Assert no events were published
-				 */
-				noEvents: (context: string) => Expect.eventCount(0, context),
+					/**
+					 * Assert no events were published
+					 */
+					none: (context: string) => Expect.event.count(0, context),
+				},
 
 				/**
 				 * Assert no timers are currently due
@@ -333,7 +340,7 @@ describe('Timer.main', () => {
 				 * ```typescript
 				 * // Assert timer has transitioned to Reached state
 				 * yield* Expect.timer(timerA)
-				 *   .isReached()
+				 *   .toBeReached()
 				 *   .verify('At t=5:01')
 				 * ```
 				 */
@@ -344,7 +351,7 @@ describe('Timer.main', () => {
 						/**
 						 * Assert timer has transitioned to Reached state in persistence
 						 */
-						isReached: () =>
+						toBeReached: () =>
 							createBuilder([
 								...assertions,
 								(ctx) =>
@@ -362,7 +369,7 @@ describe('Timer.main', () => {
 						/**
 						 * Assert timer is still in Scheduled state
 						 */
-						isScheduled: () =>
+						toBeScheduled: () =>
 							createBuilder([
 								...assertions,
 								(ctx) =>
@@ -420,46 +427,49 @@ describe('Timer.main', () => {
 
 						// ─── Baseline ───────────────────────────────────────────────────────
 						yield* Expect.noTimersDue('Baseline')
-						yield* Expect.noEvents('Baseline')
+						yield* Expect.event.none('Baseline')
 
 						// ─── Act: Start Timer.main ──────────────────────────────────────────
 						const fiber = yield* Effect.fork(_main)
 						yield* Effect.yieldNow()
 
-						yield* Expect.noEvents('After fork (no time passed)')
+						yield* Expect.event.none('After fork (no time passed)')
 
 						// ─── Timer A fires at t=5:01 ────────────────────────────────────────
 						yield* Time.advance(Duration.sum('5 minutes', '1 seconds'))
 
-						yield* Expect.eventCount(1, 'At t=5:01')
-						yield* Expect.event(0)
-							.isForTimer(timerA)
-							.hasType('DueTimeReached')
-							.hasTenant(timerA.tenantId)
+						yield* Expect.event.count(1, 'At t=5:01')
+						yield* Expect.event
+							.atIndex(0)
+							.toBeForTimer(timerA)
+							.toHaveType('DueTimeReached')
+							.toHaveTenant(timerA.tenantId)
 							.verify('At t=5:01')
-						yield* Expect.timer(timerA).isReached().verify('At t=5:01')
+						yield* Expect.timer(timerA).toBeReached().verify('At t=5:01')
 
 						// ─── Timer B fires at t=6:01 ────────────────────────────────────────
 						yield* Time.advance('1 minute')
 
-						yield* Expect.eventCount(2, 'At t=6:01')
-						yield* Expect.event(1)
-							.isForTimer(timerB)
-							.hasType('DueTimeReached')
-							.hasTenant(timerB.tenantId)
+						yield* Expect.event.count(2, 'At t=6:01')
+						yield* Expect.event
+							.atIndex(1)
+							.toBeForTimer(timerB)
+							.toHaveType('DueTimeReached')
+							.toHaveTenant(timerB.tenantId)
 							.verify('At t=6:01')
-						yield* Expect.timer(timerB).isReached().verify('At t=6:01')
+						yield* Expect.timer(timerB).toBeReached().verify('At t=6:01')
 
 						// ─── Timer C fires at t=7:01 ────────────────────────────────────────
 						yield* Time.advance('1 minute')
 
-						yield* Expect.eventCount(3, 'At t=7:01')
-						yield* Expect.event(2)
-							.isForTimer(timerC)
-							.hasType('DueTimeReached')
-							.hasTenant(timerC.tenantId)
+						yield* Expect.event.count(3, 'At t=7:01')
+						yield* Expect.event
+							.atIndex(2)
+							.toBeForTimer(timerC)
+							.toHaveType('DueTimeReached')
+							.toHaveTenant(timerC.tenantId)
 							.verify('At t=7:01')
-						yield* Expect.timer(timerC).isReached().verify('At t=7:01')
+						yield* Expect.timer(timerC).toBeReached().verify('At t=7:01')
 
 						// ─── Final ──────────────────────────────────────────────────────────
 						yield* Expect.noTimersDue('Final')
