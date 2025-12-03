@@ -129,23 +129,26 @@ describe('Timer.main', () => {
 	/**
 	 * Event capture DSL - query published events
 	 */
-	const Events = {
-		/**
-		 * Get all published events
-		 */
-		all: pipe(TestEventCapture, Effect.flatMap(Ref.get)),
+	const Events = (() => {
+		const all = TestEventCapture.pipe(Effect.flatMap(Ref.get))
 
-		/**
-		 * Get event at specific index
-		 */
-		at: <Idx extends number>(index: Idx) =>
-			pipe(TestEventCapture, Effect.flatMap(Ref.get), Effect.flatMap(Chunk.get(index))),
+		return {
+			/**
+			 * Get all published events
+			 */
+			all,
 
-		/**
-		 * Get count of published events
-		 */
-		count: pipe(TestEventCapture, Effect.flatMap(Ref.get), Effect.map(Chunk.size)),
-	} as const
+			/**
+			 * Get event at specific index
+			 */
+			at: <Idx extends number>(index: Idx) => all.pipe(Effect.flatMap(Chunk.get(index))),
+
+			/**
+			 * Get count of published events
+			 */
+			count: all.pipe(Effect.map(Chunk.size)),
+		} as const
+	})()
 
 	/**
 	 * Timer state DSL - query and create timers
@@ -154,17 +157,15 @@ describe('Timer.main', () => {
 		/**
 		 * Get all currently due timers
 		 */
-		due: pipe(
-			Effect.all([Ports.TimerPersistencePort, Ports.ClockPort]),
-			Effect.flatMap(([persistence, clock]) => clock.now().pipe(Effect.flatMap(persistence.findDue))),
+		due: Effect.all([Ports.TimerPersistencePort, Ports.ClockPort]).pipe(
+			Effect.flatMap(([persistence, clock]) => Effect.flatMap(clock.now(), persistence.findDue)),
 		),
 
 		/**
 		 * Find timer by key (any state)
 		 */
 		find: ({ serviceCallId, tenantId }: TimerDomain.TimerEntry.Type) =>
-			pipe(
-				Ports.TimerPersistencePort,
+			Ports.TimerPersistencePort.pipe(
 				Effect.flatMap((timerPersistence) => timerPersistence.find({ serviceCallId, tenantId })),
 			),
 
