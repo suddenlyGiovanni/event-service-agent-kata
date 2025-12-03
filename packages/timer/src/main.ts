@@ -32,6 +32,23 @@ const TimerLive = Layer.merge(Adapters.TimerPersistence.Live, Adapters.TimerEven
 	Layer.provide(Adapters.Platform.UUID7.Default),
 )
 
+export const _main = Effect.gen(function* () {
+	// Fork polling worker in local scope — interrupted when scope closes
+	yield* Effect.forkScoped(PollingWorker.run)
+
+	const eventBus = yield* Ports.TimerEventBusPort
+
+	// Run command subscription in main fiber (blocks until broker closes)
+	yield* eventBus
+		.subscribeToScheduleTimerCommands((command, metadata) =>
+			Workflows.scheduleTimerWorkflow(command).pipe(
+				Effect.provideService(MessageMetadata, metadata),
+				Effect.retry(Schedule.compose(Schedule.exponential(Duration.millis(100)), Schedule.recurs(3))),
+			),
+		)
+		.pipe(Effect.withSpan('Timer.CommandSubscription.run'))
+})
+
 /**
  * Timer module main program entry point
  *
@@ -72,21 +89,6 @@ const TimerLive = Layer.merge(Adapters.TimerPersistence.Live, Adapters.TimerEven
  * @see ADR-0003 — Polling interval (5s) rationale
  */
 export const main = Effect.fn('Timer.main')(
-	function* () {
-		// Fork polling worker in local scope — interrupted when scope closes
-		yield* Effect.forkScoped(PollingWorker.run)
-
-		const eventBus = yield* Ports.TimerEventBusPort
-
-		// Run command subscription in main fiber (blocks until broker closes)
-		yield* eventBus
-			.subscribeToScheduleTimerCommands((command, metadata) =>
-				Workflows.scheduleTimerWorkflow(command).pipe(
-					Effect.provideService(MessageMetadata, metadata),
-					Effect.retry(Schedule.compose(Schedule.exponential(Duration.millis(100)), Schedule.recurs(3))),
-				),
-			)
-			.pipe(Effect.withSpan('Timer.CommandSubscription.run'))
-	},
+	() => _main,
 	(effect) => effect.pipe(Effect.provide(TimerLive)),
 )

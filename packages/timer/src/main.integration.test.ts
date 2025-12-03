@@ -1,12 +1,22 @@
-import { describe, it } from '@effect/vitest'
+import { describe, expect, it } from '@effect/vitest'
+import * as Chunk from 'effect/Chunk'
+import * as Context from 'effect/Context'
+import * as DateTime from 'effect/DateTime'
+import type { DurationInput } from 'effect/Duration'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import * as Option from 'effect/Option'
+import * as Ref from 'effect/Ref'
 
-import { UUID7 } from '@event-service-agent/platform/adapters'
 import { SQL } from '@event-service-agent/platform/database'
+import type { MessageEnvelope } from '@event-service-agent/schemas/envelope'
+import { ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import * as Adapters from './adapters/index.ts'
+import { TimerDomain } from './domain/index.ts'
+import { _main } from './main.ts'
 import * as Ports from './ports/index.ts'
+import { withServiceCall } from './test/service-call.fixture.ts'
 
 /**
  * Integration tests for Timer.main entry point
@@ -39,32 +49,69 @@ import * as Ports from './ports/index.ts'
  */
 
 /**
- * Base test layers for Timer.main integration tests
+ * Test-only service for capturing published events.
  *
- * - Clock.Test: TestClock for deterministic time control
- * - UUID7.Default: Deterministic UUID generation
- * - TimerPersistence.Test: SQLite-backed persistence adapter
- * - SQL.Test: In-memory SQLite database (fresh per test via it.scoped())
+ * Provides access to the internal Ref used by the mocked EventBusPort,
+ * enabling test assertions on published messages.
  */
-const BaseTestLayers = Layer.mergeAll(Adapters.Clock.Test, UUID7.Default, Adapters.TimerPersistence.Test, SQL.Test)
+class TestEventCapture extends Context.Tag('TestEventCapture')<
+	TestEventCapture,
+	Ref.Ref<Chunk.Chunk<MessageEnvelope.Type>>
+>() {}
 
 /**
- * Creates a mock Platform.EventBusPort and composes TimerEventBus.Live on top
+ * Layer providing both EventBusPort (mock) and TestEventCapture.
  *
- * This pattern enables:
- * - Capturing published events for assertions
- * - Simulating incoming commands via subscribe handler
- * - Testing real adapter logic (TimerEventBus.Live) with mocked infrastructure
+ * - EventBusPort.publish: appends events to internal Ref
+ * - EventBusPort.subscribe: returns Effect.never (no commands delivered)
+ * - TestEventCapture: exposes the Ref for test assertions
  *
- * @see timer-event-bus.adapter.test.ts for similar pattern
+ * @example
+ * ```typescript
+ * const events = yield* TestEventCapture
+ * const published = yield* Ref.get(events)
+ * expect(Chunk.size(published)).toBe(1)
+ * ```
  */
-const _makeTimerEventBusTest = () => {
-	const EventBusMock = Layer.mock(Ports.Platform.EventBusPort, {
-		publish: () => Effect.void,
-		subscribe: () => Effect.never,
+const EventBusTest: Layer.Layer<Ports.Platform.EventBusPort | TestEventCapture> = Layer.unwrapEffect(
+	Effect.gen(function* () {
+		const ref = yield* Ref.make(Chunk.empty<MessageEnvelope.Type>())
+
+		const EventBusMock = Layer.mock(Ports.Platform.EventBusPort, {
+			publish: (events) => Ref.update(ref, (existing) => Chunk.appendAll(existing, Chunk.fromIterable(events))),
+			subscribe: () => Effect.never,
+		})
+
+		const TestEventCaptureLayer = Layer.succeed(TestEventCapture, ref)
+
+		return Layer.merge(EventBusMock, TestEventCaptureLayer)
+	}),
+)
+
+/**
+ * Creates and persists a scheduled timer at a future due date while
+ * ensuring a corresponding service call fixture exists.
+ */
+const scheduledTimerEffect = Effect.fn(function* (now: DateTime.Utc, dueAt: DurationInput) {
+	const persistence = yield* Ports.TimerPersistencePort
+
+	const scheduledTimer = TimerDomain.ScheduledTimer.make({
+		correlationId: Option.none(),
+		dueAt: DateTime.addDuration(now, dueAt),
+		registeredAt: now,
+		serviceCallId: yield* ServiceCallId.makeUUID7(),
+		tenantId: yield* TenantId.makeUUID7(),
 	})
-	return Layer.provide(Adapters.TimerEventBus.Live, Layer.merge(EventBusMock, BaseTestLayers))
-}
+
+	yield* withServiceCall({
+		serviceCallId: scheduledTimer.serviceCallId,
+		tenantId: scheduledTimer.tenantId,
+	})
+
+	yield* persistence.save(scheduledTimer)
+
+	return scheduledTimer
+})
 
 describe('Timer.main', () => {
 	describe('Happy Path', () => {
@@ -110,7 +157,7 @@ describe('Timer.main', () => {
 		})
 
 		describe('Polling Worker', () => {
-			it.todo(
+			it.scoped(
 				'should detect due timers and publish DueTimeReached events',
 				/**
 				 * ```txt
@@ -121,6 +168,45 @@ describe('Timer.main', () => {
 				 *   AND event should contain correct tenantId, serviceCallId, reachedAt
 				 * ```
 				 */
+
+				() => {
+					const TestLayer = Adapters.TimerEventBus.Live.pipe(
+						Layer.provideMerge(EventBusTest),
+						Layer.provideMerge(Adapters.TimerPersistence.Test),
+						Layer.provideMerge(Adapters.Clock.Test),
+						Layer.provideMerge(Adapters.Platform.UUID7.Sequence()),
+						Layer.provideMerge(SQL.Test),
+					)
+
+					const x = Effect.gen(function* () {
+						// Arrange:
+						const clock = yield* Ports.ClockPort
+						const persistence = yield* Ports.TimerPersistencePort
+						const captureRef = yield* TestEventCapture
+
+						const now = yield* clock.now()
+
+						const scheduledTimerA = yield* scheduledTimerEffect(now, '5 minutes')
+						const scheduledTimerB = yield* scheduledTimerEffect(now, '6 minutes')
+						const scheduledTimerC = yield* scheduledTimerEffect(now, '7 minutes')
+
+						// verify timer is not due yet
+						const notDueYet = yield* persistence.findDue(now)
+						expect(Chunk.isEmpty(notDueYet)).toBe(true)
+						expect(Chunk.isEmpty(yield* Ref.get(captureRef))).toBe(true)
+
+						// Act: start the main fiber
+						const fiber = yield* Effect.fork(_main)
+
+						// Assert: no events published yet
+						// Advance clock past dueAt some timers
+						// Assert: DueTimeReached events published for due timers and they have been marked as Reached
+						// advance clock past all dueAts
+						// Assert: DueTimeReached event published for final timer and marked as Reached
+					}).pipe(Effect.provide(TestLayer))
+
+					return x
+				},
 			)
 
 			it.todo(
