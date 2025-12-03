@@ -359,6 +359,9 @@ describe('Timer.main', () => {
 			return createBuilder([])
 		}
 
+		const noTimersDue = (context: string) =>
+			Timers.due.pipe(Effect.tap((due) => expect(Chunk.isEmpty(due), `${context}: no timers should be due`).toBe(true)))
+
 		return {
 			/**
 			 * Event assertions namespace - all EventBus-related checks
@@ -368,11 +371,7 @@ describe('Timer.main', () => {
 			/**
 			 * Assert no timers are currently due
 			 */
-			noTimersDue: (context: string) =>
-				pipe(
-					Timers.due,
-					Effect.tap((due) => expect(Chunk.isEmpty(due), `${context}: no timers should be due`).toBe(true)),
-				),
+			noTimersDue,
 
 			/**
 			 * Timer assertion builder - chainable API for Database assertions.
