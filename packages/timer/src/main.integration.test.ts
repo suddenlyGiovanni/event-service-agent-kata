@@ -203,88 +203,163 @@ describe('Timer.main', () => {
 	 * - `Expect.event.*` — EventBus assertions (published events)
 	 * - `Expect.timer(t)` — Database assertions (persisted state)
 	 */
-	const Expect = {
-		/**
-		 * Event assertions namespace - all EventBus-related checks
-		 */
-		event: {
+	const Expect = (() => {
+		// TODO: move stuff here and just return the object?
+
+		return {
 			/**
-			 * Start assertion chain at specific event index (no count check)
+			 * Event assertions namespace - all EventBus-related checks
 			 */
-			atIndex: (position: number) => Expect.event.toHaveCount(position + 1).atIndex(position),
+			event: {
+				/**
+				 * Start assertion chain at specific event index (no count check)
+				 */
+				atIndex: (position: number) => Expect.event.toHaveCount(position + 1).atIndex(position),
+				/**
+				 * Assert no events were published
+				 */
+				toBeEmpty: () => Expect.event.toHaveCount(0),
+				/**
+				 * Assert exact number of events were published.
+				 * Returns a builder that can chain to atIndex or verify directly.
+				 */
+				toHaveCount: (expected: number) => {
+					type AssertionFn = (ctx: string) => Effect.Effect<void, any, TestEventCapture>
+
+					const countAssertion: AssertionFn = (ctx) =>
+						pipe(
+							Events.count,
+							Effect.tap((actual) => expect(actual, `${ctx}: expected ${expected} event(s) published`).toBe(expected)),
+						)
+
+					const createIndexBuilder = (assertions: AssertionFn[], position: number) => ({
+						/**
+						 * Assert event is for the given timer (serviceCallId matches)
+						 */
+						toBeForTimer: (timer: TimerDomain.ScheduledTimer) =>
+							createIndexBuilder(
+								[
+									...assertions,
+									(ctx) =>
+										pipe(
+											Events.at(position),
+											Effect.tap((event) => {
+												expect(event.payload.serviceCallId, `${ctx}: event[${position}].serviceCallId`).toBe(
+													timer.serviceCallId,
+												)
+											}),
+										),
+								],
+								position,
+							),
+
+						/**
+						 * Assert event has the given tenantId
+						 */
+						toHaveTenant: (tenantId: TenantId.Type) =>
+							createIndexBuilder(
+								[
+									...assertions,
+									(ctx) =>
+										pipe(
+											Events.at(position),
+											Effect.tap((event) => {
+												expect(event.tenantId, `${ctx}: event[${position}].tenantId`).toBe(tenantId)
+											}),
+										),
+								],
+								position,
+							),
+
+						/**
+						 * Assert event has the given type
+						 */
+						toHaveType: (type: MessageEnvelope.Type['type']) =>
+							createIndexBuilder(
+								[
+									...assertions,
+									(ctx) =>
+										pipe(
+											Events.at(position),
+											Effect.tap((event) => {
+												expect(event.type, `${ctx}: event[${position}].type`).toBe(type)
+											}),
+										),
+								],
+								position,
+							),
+
+						/**
+						 * Execute all chained assertions with the given context
+						 */
+						verify: (context: string) =>
+							Effect.all(
+								assertions.map((fn) => fn(context)),
+								{ discard: true },
+							),
+					})
+
+					return {
+						/**
+						 * Continue to assert on event at specific index
+						 */
+						atIndex: (position: number) => createIndexBuilder([countAssertion], position),
+
+						/**
+						 * Execute count assertion only
+						 */
+						verify: (context: string) => countAssertion(context),
+					}
+				},
+			},
 			/**
-			 * Assert no events were published
-			 */
-			toBeEmpty: () => Expect.event.toHaveCount(0),
+			 * Assert no timers are currently due
+			 */ noTimersDue: (context: string) =>
+				pipe(
+					Timers.due,
+					Effect.tap((due) => expect(Chunk.isEmpty(due), `${context}: no timers should be due`).toBe(true)),
+				),
+
 			/**
-			 * Assert exact number of events were published.
-			 * Returns a builder that can chain to atIndex or verify directly.
+			 * Timer assertion builder - chainable API for Database assertions.
 			 */
-			toHaveCount: (expected: number) => {
-				type AssertionFn = (ctx: string) => Effect.Effect<void, any, TestEventCapture>
+			timer: (timer: TimerDomain.ScheduledTimer) => {
+				type AssertionFn = (ctx: string) => Effect.Effect<void, any, Ports.TimerPersistencePort>
 
-				const countAssertion: AssertionFn = (ctx) =>
-					pipe(
-						Events.count,
-						Effect.tap((actual) => expect(actual, `${ctx}: expected ${expected} event(s) published`).toBe(expected)),
-					)
-
-				const createIndexBuilder = (assertions: AssertionFn[], position: number) => ({
+				const createBuilder = (assertions: AssertionFn[]) => ({
 					/**
-					 * Assert event is for the given timer (serviceCallId matches)
+					 * Assert timer has transitioned to Reached state in persistence
 					 */
-					toBeForTimer: (timer: TimerDomain.ScheduledTimer) =>
-						createIndexBuilder(
-							[
-								...assertions,
-								(ctx) =>
-									pipe(
-										Events.at(position),
-										Effect.tap((event) => {
-											expect(event.payload.serviceCallId, `${ctx}: event[${position}].serviceCallId`).toBe(
-												timer.serviceCallId,
-											)
-										}),
-									),
-							],
-							position,
-						),
+					toBeReached: () =>
+						createBuilder([
+							...assertions,
+							(ctx) =>
+								pipe(
+									Timers.find(timer),
+									Effect.tap((found) => {
+										expect(Option.isSome(found), `${ctx}: timer should exist in DB`).toBe(true)
+										expect(found.pipe(Option.map((t) => t._tag)), `${ctx}: timer._tag`).toEqual(Option.some('Reached'))
+									}),
+								),
+						]),
 
 					/**
-					 * Assert event has the given tenantId
+					 * Assert timer is still in Scheduled state
 					 */
-					toHaveTenant: (tenantId: TenantId.Type) =>
-						createIndexBuilder(
-							[
-								...assertions,
-								(ctx) =>
-									pipe(
-										Events.at(position),
-										Effect.tap((event) => {
-											expect(event.tenantId, `${ctx}: event[${position}].tenantId`).toBe(tenantId)
-										}),
-									),
-							],
-							position,
-						),
-
-					/**
-					 * Assert event has the given type
-					 */
-					toHaveType: (type: MessageEnvelope.Type['type']) =>
-						createIndexBuilder(
-							[
-								...assertions,
-								(ctx) =>
-									pipe(
-										Events.at(position),
-										Effect.tap((event) => {
-											expect(event.type, `${ctx}: event[${position}].type`).toBe(type)
-										}),
-									),
-							],
-							position,
-						),
+					toBeScheduled: () =>
+						createBuilder([
+							...assertions,
+							(ctx) =>
+								pipe(
+									Timers.find(timer),
+									Effect.tap((found) => {
+										expect(Option.isSome(found), `${ctx}: timer should exist in DB`).toBe(true)
+										expect(found.pipe(Option.map((t) => t._tag)), `${ctx}: timer._tag`).toEqual(
+											Option.some('Scheduled'),
+										)
+									}),
+								),
+						]),
 
 					/**
 					 * Execute all chained assertions with the given context
@@ -296,79 +371,10 @@ describe('Timer.main', () => {
 						),
 				})
 
-				return {
-					/**
-					 * Continue to assert on event at specific index
-					 */
-					atIndex: (position: number) => createIndexBuilder([countAssertion], position),
-
-					/**
-					 * Execute count assertion only
-					 */
-					verify: (context: string) => countAssertion(context),
-				}
+				return createBuilder([])
 			},
-		},
-		/**
-		 * Assert no timers are currently due
-		 */ noTimersDue: (context: string) =>
-			pipe(
-				Timers.due,
-				Effect.tap((due) => expect(Chunk.isEmpty(due), `${context}: no timers should be due`).toBe(true)),
-			),
-
-		/**
-		 * Timer assertion builder - chainable API for Database assertions.
-		 */
-		timer: (timer: TimerDomain.ScheduledTimer) => {
-			type AssertionFn = (ctx: string) => Effect.Effect<void, any, Ports.TimerPersistencePort>
-
-			const createBuilder = (assertions: AssertionFn[]) => ({
-				/**
-				 * Assert timer has transitioned to Reached state in persistence
-				 */
-				toBeReached: () =>
-					createBuilder([
-						...assertions,
-						(ctx) =>
-							pipe(
-								Timers.find(timer),
-								Effect.tap((found) => {
-									expect(Option.isSome(found), `${ctx}: timer should exist in DB`).toBe(true)
-									expect(found.pipe(Option.map((t) => t._tag)), `${ctx}: timer._tag`).toEqual(Option.some('Reached'))
-								}),
-							),
-					]),
-
-				/**
-				 * Assert timer is still in Scheduled state
-				 */
-				toBeScheduled: () =>
-					createBuilder([
-						...assertions,
-						(ctx) =>
-							pipe(
-								Timers.find(timer),
-								Effect.tap((found) => {
-									expect(Option.isSome(found), `${ctx}: timer should exist in DB`).toBe(true)
-									expect(found.pipe(Option.map((t) => t._tag)), `${ctx}: timer._tag`).toEqual(Option.some('Scheduled'))
-								}),
-							),
-					]),
-
-				/**
-				 * Execute all chained assertions with the given context
-				 */
-				verify: (context: string) =>
-					Effect.all(
-						assertions.map((fn) => fn(context)),
-						{ discard: true },
-					),
-			})
-
-			return createBuilder([])
-		},
-	} as const
+		} as const
+	})()
 
 	describe('Happy Path', () => {
 		describe('Command Subscription', () => {
