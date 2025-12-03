@@ -212,10 +212,12 @@ describe('Timer.main', () => {
 			 * Start assertion chain at specific event index (no count check)
 			 */
 			atIndex: (position: number) => Expect.event.toHaveCount(position + 1).atIndex(position),
+
 			/**
 			 * Assert no events were published
 			 */
 			toBeEmpty: () => Expect.event.toHaveCount(0),
+
 			/**
 			 * Assert exact number of events were published.
 			 * Returns a builder that can chain to atIndex or verify directly.
