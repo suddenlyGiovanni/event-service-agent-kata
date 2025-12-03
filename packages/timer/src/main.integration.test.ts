@@ -243,7 +243,9 @@ describe('Timer.main', () => {
 									pipe(
 										Events.at(position),
 										Effect.tap((event) => {
-											expect(event.payload.serviceCallId, `${ctx}: event[${position}].serviceCallId`).toBe(
+											// Type assertion safe: test should also call toHaveType() to narrow
+											const payload = event.payload as { serviceCallId?: string }
+											expect(payload.serviceCallId, `${ctx}: event[${position}].serviceCallId`).toBe(
 												timer.serviceCallId,
 											)
 										}),
