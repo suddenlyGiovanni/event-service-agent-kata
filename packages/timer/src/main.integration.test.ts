@@ -93,6 +93,16 @@ const EventBusTest: Layer.Layer<Ports.Platform.EventBusPort | TestEventCapture> 
 )
 
 describe('Timer.main', () => {
+	const TestHarness = {
+		Layer: Adapters.TimerEventBus.Live.pipe(
+			Layer.provideMerge(EventBusTest),
+			Layer.provideMerge(Adapters.TimerPersistence.Test),
+			Layer.provideMerge(Adapters.Clock.Test),
+			Layer.provideMerge(Adapters.Platform.UUID7.Sequence()),
+			Layer.provideMerge(SQL.Test),
+		),
+	} as const
+
 	describe('Happy Path', () => {
 		describe('Command Subscription', () => {
 			it.todo(
@@ -433,16 +443,8 @@ describe('Timer.main', () => {
 				 * ```
 				 */
 
-				() => {
-					const TestLayer = Adapters.TimerEventBus.Live.pipe(
-						Layer.provideMerge(EventBusTest),
-						Layer.provideMerge(Adapters.TimerPersistence.Test),
-						Layer.provideMerge(Adapters.Clock.Test),
-						Layer.provideMerge(Adapters.Platform.UUID7.Sequence()),
-						Layer.provideMerge(SQL.Test),
-					)
-
-					return Effect.gen(function* () {
+				() =>
+					Effect.gen(function* () {
 						// ─── Arrange ────────────────────────────────────────────────────────
 						const timerA = yield* Timers.scheduleAt('5 minutes')
 						const timerB = yield* Timers.scheduleAt('6 minutes')
@@ -499,8 +501,7 @@ describe('Timer.main', () => {
 
 						// ─── Cleanup ────────────────────────────────────────────────────────
 						yield* Fiber.interrupt(fiber)
-					}).pipe(Effect.provide(TestLayer))
-				},
+					}).pipe(Effect.provide(TestHarness.Layer)),
 			)
 
 			it.todo(
