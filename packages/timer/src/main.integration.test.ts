@@ -101,49 +101,49 @@ describe('Timer.main', () => {
 
 						// ─── Baseline ───────────────────────────────────────────────────────
 						yield* Expect.noTimersDue('Baseline')
-						yield* Expect.event.toBeEmpty().verify('Baseline')
+						yield* Expect.eventBus.toBeEmpty().verify('Baseline')
 
 						// ─── Act: Start Timer.main ──────────────────────────────────────────
 						const fiber = yield* Effect.fork(_main)
 						yield* Effect.yieldNow()
 
-						yield* Expect.event.toBeEmpty().verify('After fork (no time passed)')
+						yield* Expect.eventBus.toBeEmpty().verify('After fork (no time passed)')
 
 						// ─── Timer A fires at t=5:01 ────────────────────────────────────────
 						yield* Time.advance(Duration.sum('5 minutes', '1 seconds'))
 
-						yield* Expect.event
-							.toHaveCount(1)
+						yield* Expect.eventBus
+							.toHavePublished(1)
 							.atIndex(0)
 							.toBeForTimer(timerA)
 							.toHaveType('DueTimeReached')
 							.toHaveTenant(timerA.tenantId)
 							.verify('At t=5:01')
-						yield* Expect.timer(timerA).toBeReached().verify('At t=5:01')
+						yield* Expect.persistence(timerA).toBeReached().verify('At t=5:01')
 
 						// ─── Timer B fires at t=6:01 ────────────────────────────────────────
 						yield* Time.advance('1 minute')
 
-						yield* Expect.event
-							.toHaveCount(2)
+						yield* Expect.eventBus
+							.toHavePublished(2)
 							.atIndex(1)
 							.toBeForTimer(timerB)
 							.toHaveType('DueTimeReached')
 							.toHaveTenant(timerB.tenantId)
 							.verify('At t=6:01')
-						yield* Expect.timer(timerB).toBeReached().verify('At t=6:01')
+						yield* Expect.persistence(timerB).toBeReached().verify('At t=6:01')
 
 						// ─── Timer C fires at t=7:01 ────────────────────────────────────────
 						yield* Time.advance('1 minute')
 
-						yield* Expect.event
-							.toHaveCount(3)
+						yield* Expect.eventBus
+							.toHavePublished(3)
 							.atIndex(2)
 							.toBeForTimer(timerC)
 							.toHaveType('DueTimeReached')
 							.toHaveTenant(timerC.tenantId)
 							.verify('At t=7:01')
-						yield* Expect.timer(timerC).toBeReached().verify('At t=7:01')
+						yield* Expect.persistence(timerC).toBeReached().verify('At t=7:01')
 
 						// ─── Final ──────────────────────────────────────────────────────────
 						yield* Expect.noTimersDue('Final')

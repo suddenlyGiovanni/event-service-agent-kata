@@ -173,24 +173,22 @@ export const Timers = {
  * - `Expect.timer(t)` — Database assertions (persisted state)
  */
 export const Expect = (() => {
-	// TODO: move stuff here and just return the object?
-
-	const event = {
+	const eventBus = {
 		/**
 		 * Start assertion chain at specific event index (no count check)
 		 */
-		atIndex: (position: number) => Expect.event.toHaveCount(position + 1).atIndex(position),
+		atIndex: (position: number) => Expect.eventBus.toHavePublished(position + 1).atIndex(position),
 
 		/**
 		 * Assert no events were published
 		 */
-		toBeEmpty: () => Expect.event.toHaveCount(0),
+		toBeEmpty: () => Expect.eventBus.toHavePublished(0),
 
 		/**
 		 * Assert exact number of events were published.
 		 * Returns a builder that can chain to atIndex or verify directly.
 		 */
-		toHaveCount: (expected: number) => {
+		toHavePublished: (expected: number) => {
 			type AssertionFn = (ctx: string) => Effect.Effect<void, any, TestEventCapture>
 
 			const countAssertion: AssertionFn = (ctx) =>
@@ -288,7 +286,7 @@ export const Expect = (() => {
 		},
 	}
 
-	const timer = (timer: TimerDomain.ScheduledTimer) => {
+	const persistence = (timer: TimerDomain.ScheduledTimer) => {
 		type AssertionFn = (ctx: string) => Effect.Effect<void, any, Ports.TimerPersistencePort>
 
 		const createBuilder = (assertions: AssertionFn[]) => ({
@@ -344,7 +342,7 @@ export const Expect = (() => {
 		/**
 		 * Event assertions namespace - all EventBus-related checks
 		 */
-		event,
+		eventBus,
 
 		/**
 		 * Assert no timers are currently due
@@ -354,6 +352,6 @@ export const Expect = (() => {
 		/**
 		 * Timer assertion builder - chainable API for Database assertions.
 		 */
-		timer,
+		persistence,
 	} as const
 })()
