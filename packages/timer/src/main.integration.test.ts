@@ -4,7 +4,7 @@ import * as Effect from 'effect/Effect'
 import * as Fiber from 'effect/Fiber'
 
 import { _main } from './main.ts'
-import { Expect, TestHarness, Time, Timers } from './test/integration.dsl.ts'
+import { Expect, Main, TestHarness, Time, Timers } from './test/integration.dsl.ts'
 
 /**
  * Integration tests for Timer.main entry point
@@ -104,7 +104,8 @@ describe('Timer.main', () => {
 						yield* Expect.eventBus.toBeEmpty().verify('Baseline')
 
 						// ─── Act: Start Timer.main ──────────────────────────────────────────
-						const fiber = yield* Effect.fork(_main)
+						const fiber = yield* Main.start()
+
 						yield* Effect.yieldNow()
 
 						yield* Expect.eventBus.toBeEmpty().verify('After fork (no time passed)')
@@ -149,7 +150,7 @@ describe('Timer.main', () => {
 						yield* Expect.persistence.noTimersDue('Final')
 
 						// ─── Cleanup ────────────────────────────────────────────────────────
-						yield* Fiber.interrupt(fiber)
+						yield* Main.stop(fiber)
 					}).pipe(Effect.provide(TestHarness.Layer)),
 			)
 

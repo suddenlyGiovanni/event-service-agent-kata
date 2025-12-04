@@ -5,6 +5,7 @@ import * as Context from 'effect/Context'
 import * as DateTime from 'effect/DateTime'
 import type { DurationInput } from 'effect/Duration'
 import * as Effect from 'effect/Effect'
+import * as Fiber from 'effect/Fiber'
 import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
@@ -17,6 +18,7 @@ import { ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import * as Adapters from '../adapters/index.ts'
 import { TimerDomain } from '../domain/index.ts'
+import { _main } from '../main.ts'
 import * as Ports from '../ports/index.ts'
 import { withServiceCall } from './service-call.fixture.ts'
 
@@ -357,3 +359,8 @@ export const Expect = (() => {
 		},
 	} as const
 })()
+
+export const Main = {
+	start: () => Effect.fork(_main),
+	stop: <A, E>(fiber: Fiber.RuntimeFiber<A, E>) => Fiber.interrupt(fiber),
+} as const
