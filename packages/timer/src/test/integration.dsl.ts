@@ -286,7 +286,7 @@ export const Expect = (() => {
 		},
 	}
 
-	const persistence = (timer: TimerDomain.ScheduledTimer) => {
+	const forTimer = (timer: TimerDomain.ScheduledTimer) => {
 		type AssertionFn = (ctx: string) => Effect.Effect<void, any, Ports.TimerPersistencePort>
 
 		const createBuilder = (assertions: AssertionFn[]) => ({
@@ -344,14 +344,16 @@ export const Expect = (() => {
 		 */
 		eventBus,
 
-		/**
-		 * Assert no timers are currently due
-		 */
-		noTimersDue,
+		persistence: {
+			/**
+			 * Timer assertion builder - chainable API for Database assertions.
+			 */
+			forTimer,
 
-		/**
-		 * Timer assertion builder - chainable API for Database assertions.
-		 */
-		persistence,
+			/**
+			 * Assert no timers are currently due
+			 */
+			noTimersDue,
+		},
 	} as const
 })()

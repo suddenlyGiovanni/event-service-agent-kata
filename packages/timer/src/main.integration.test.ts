@@ -100,7 +100,7 @@ describe('Timer.main', () => {
 						const timerC = yield* Timers.scheduleAt('7 minutes')
 
 						// ─── Baseline ───────────────────────────────────────────────────────
-						yield* Expect.noTimersDue('Baseline')
+						yield* Expect.persistence.noTimersDue('Baseline')
 						yield* Expect.eventBus.toBeEmpty().verify('Baseline')
 
 						// ─── Act: Start Timer.main ──────────────────────────────────────────
@@ -119,7 +119,7 @@ describe('Timer.main', () => {
 							.toHaveType('DueTimeReached')
 							.toHaveTenant(timerA.tenantId)
 							.verify('At t=5:01')
-						yield* Expect.persistence(timerA).toBeReached().verify('At t=5:01')
+						yield* Expect.persistence.forTimer(timerA).toBeReached().verify('At t=5:01')
 
 						// ─── Timer B fires at t=6:01 ────────────────────────────────────────
 						yield* Time.advance('1 minute')
@@ -131,7 +131,7 @@ describe('Timer.main', () => {
 							.toHaveType('DueTimeReached')
 							.toHaveTenant(timerB.tenantId)
 							.verify('At t=6:01')
-						yield* Expect.persistence(timerB).toBeReached().verify('At t=6:01')
+						yield* Expect.persistence.forTimer(timerB).toBeReached().verify('At t=6:01')
 
 						// ─── Timer C fires at t=7:01 ────────────────────────────────────────
 						yield* Time.advance('1 minute')
@@ -143,10 +143,10 @@ describe('Timer.main', () => {
 							.toHaveType('DueTimeReached')
 							.toHaveTenant(timerC.tenantId)
 							.verify('At t=7:01')
-						yield* Expect.persistence(timerC).toBeReached().verify('At t=7:01')
+						yield* Expect.persistence.forTimer(timerC).toBeReached().verify('At t=7:01')
 
 						// ─── Final ──────────────────────────────────────────────────────────
-						yield* Expect.noTimersDue('Final')
+						yield* Expect.persistence.noTimersDue('Final')
 
 						// ─── Cleanup ────────────────────────────────────────────────────────
 						yield* Fiber.interrupt(fiber)
