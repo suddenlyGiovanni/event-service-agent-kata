@@ -20,6 +20,7 @@ import * as Adapters from '../adapters/index.ts'
 import { TimerDomain } from '../domain/index.ts'
 import { _main } from '../main.ts'
 import * as Ports from '../ports/index.ts'
+import { TimerScheduleKey } from '../ports/index.ts'
 import { withServiceCall } from './service-call.fixture.ts'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -128,28 +129,30 @@ export const Timers = {
 		/**
 		 * Schedule a timer at given duration from now.
 		 * Creates service call fixture and persists timer.
+		 * Returns the timer key (tenantId, serviceCallId) for use in assertions.
 		 */
-		scheduled: (dueIn: DurationInput) =>
+		scheduled: (dueIn: DurationInput, tenantId?: TenantId.Type) =>
 			Effect.gen(function* () {
-				const now = yield* Time.now
+				const clock = yield* Ports.ClockPort
+				const now = yield* clock.now()
 				const persistence = yield* Ports.TimerPersistencePort
 
+				const timerKey = TimerScheduleKey.make({
+					serviceCallId: yield* ServiceCallId.makeUUID7(),
+					tenantId: tenantId ?? (yield* TenantId.makeUUID7()),
+				})
+
 				const scheduledTimer = TimerDomain.ScheduledTimer.make({
+					...timerKey,
 					correlationId: Option.none(),
 					dueAt: DateTime.addDuration(now, dueIn),
 					registeredAt: now,
-					serviceCallId: yield* ServiceCallId.makeUUID7(),
-					tenantId: yield* TenantId.makeUUID7(),
 				})
 
-				yield* withServiceCall({
-					serviceCallId: scheduledTimer.serviceCallId,
-					tenantId: scheduledTimer.tenantId,
-				})
-
+				yield* withServiceCall(timerKey)
 				yield* persistence.save(scheduledTimer)
 
-				return scheduledTimer
+				return timerKey
 			}),
 	},
 	/**
@@ -162,10 +165,8 @@ export const Timers = {
 	/**
 	 * Find timer by key (any state)
 	 */
-	find: ({ serviceCallId, tenantId }: TimerDomain.TimerEntry.Type) =>
-		Ports.TimerPersistencePort.pipe(
-			Effect.flatMap((timerPersistence) => timerPersistence.find({ serviceCallId, tenantId })),
-		),
+	find: (key: TimerScheduleKey.Type) =>
+		Ports.TimerPersistencePort.pipe(Effect.flatMap((timerPersistence) => timerPersistence.find(key))),
 } as const
 
 /**
@@ -176,120 +177,91 @@ export const Timers = {
  * - `Expect.timer(t)` — Database assertions (persisted state)
  */
 export const Expect = (() => {
+	/**
+	 * Find event by timer key's serviceCallId (order-independent)
+	 */
+	const findEventForTimer = (timerKey: TimerScheduleKey.Type) =>
+		Events.all.pipe(
+			Effect.map((events) =>
+				Chunk.findFirst(events, (e) => {
+					const { serviceCallId, tenantId } = e.payload as {
+						serviceCallId?: ServiceCallId.Type
+						tenantId: TenantId.Type
+					}
+					return serviceCallId === timerKey.serviceCallId && tenantId === timerKey.tenantId
+				}),
+			),
+		)
+
 	const events = {
 		/**
-		 * Start assertion chain at specific event index (no count check)
+		 * Start assertion chain for a specific timer's event (order-independent).
+		 * Finds event by serviceCallId, not by index.
 		 */
-		atIndex: (position: number) => Expect.events.toHavePublished(position + 1).atIndex(position),
+		forTimer: (timerKey: TimerScheduleKey.Type) => {
+			type AssertionFn = (event: MessageEnvelope.Type, ctx: string) => void
+			const checks: AssertionFn[] = []
 
+			const builder = {
+				/**
+				 * Assert event has the given tenantId
+				 */
+				toHaveTenant: (tenantId: TenantId.Type) => {
+					checks.push((event, ctx) => {
+						expect(event.tenantId, `${ctx}: event.tenantId`).toBe(tenantId)
+					})
+					return builder
+				},
+				/**
+				 * Assert event has the given type
+				 */
+				toHaveType: (type: MessageEnvelope.Type['type']) => {
+					checks.push((event, ctx) => {
+						expect(event.type, `${ctx}: event.type`).toBe(type)
+					})
+					return builder
+				},
+
+				/**
+				 * Execute all chained assertions with the given context
+				 */
+				verify: (ctx: string) =>
+					Effect.gen(function* () {
+						const maybeEvent = yield* findEventForTimer(timerKey)
+
+						// Assert event exists
+						expect(Option.isSome(maybeEvent), `${ctx}: expected event for timer ${timerKey.serviceCallId}`).toBe(true)
+
+						// Run property assertions on found event
+						const event = Option.getOrThrow(maybeEvent)
+						for (const check of checks) {
+							check(event, ctx)
+						}
+					}),
+			}
+
+			return builder
+		},
 		/**
 		 * Assert no events were published
 		 */
-		toBeEmpty: () => Expect.events.toHavePublished(0),
+		toBeEmpty: () => ({
+			verify: (ctx: string) =>
+				Events.count.pipe(Effect.tap((actual) => expect(actual, `${ctx}: expected no events published`).toBe(0))),
+		}),
 
 		/**
 		 * Assert exact number of events were published.
-		 * Returns a builder that can chain to atIndex or verify directly.
 		 */
-		toHavePublished: (expected: number) => {
-			type AssertionFn = (ctx: string) => Effect.Effect<void, any, TestEventCapture>
-
-			const countAssertion: AssertionFn = (ctx) =>
+		toHaveCount: (expected: number) => ({
+			verify: (ctx: string) =>
 				Events.count.pipe(
 					Effect.tap((actual) => expect(actual, `${ctx}: expected ${expected} event(s) published`).toBe(expected)),
-				)
-
-			const createIndexBuilder = (assertions: AssertionFn[], position: number) => {
-				const toBeForTimer = (timer: TimerDomain.ScheduledTimer) =>
-					createIndexBuilder(
-						[
-							...assertions,
-							(ctx) =>
-								Events.at(position).pipe(
-									Effect.tap((event) => {
-										const { serviceCallId } = event.payload as { serviceCallId?: string }
-
-										expect(serviceCallId, `${ctx}: event[${position}].serviceCallId`).toBe(timer.serviceCallId)
-									}),
-								),
-						],
-						position,
-					)
-
-				const toHaveTenant = (tenantId: TenantId.Type) =>
-					createIndexBuilder(
-						[
-							...assertions,
-							(ctx) =>
-								pipe(
-									Events.at(position),
-									Effect.tap((event) => {
-										expect(event.tenantId, `${ctx}: event[${position}].tenantId`).toBe(tenantId)
-									}),
-								),
-						],
-						position,
-					)
-
-				const toHaveType = (type: MessageEnvelope.Type['type']) =>
-					createIndexBuilder(
-						[
-							...assertions,
-							(ctx) =>
-								pipe(
-									Events.at(position),
-									Effect.tap((event) => {
-										expect(event.type, `${ctx}: event[${position}].type`).toBe(type)
-									}),
-								),
-						],
-						position,
-					)
-
-				const verify = (context: string) =>
-					Effect.all(
-						assertions.map((fn) => fn(context)),
-						{ discard: true },
-					)
-
-				return {
-					/**
-					 * Assert event is for the given timer (serviceCallId matches)
-					 */
-					toBeForTimer,
-
-					/**
-					 * Assert event has the given tenantId
-					 */
-					toHaveTenant,
-
-					/**
-					 * Assert event has the given type
-					 */
-					toHaveType,
-
-					/**
-					 * Execute all chained assertions with the given context
-					 */
-					verify,
-				}
-			}
-
-			return {
-				/**
-				 * Continue to assert on event at specific index
-				 */
-				atIndex: (position: number) => createIndexBuilder([countAssertion], position),
-
-				/**
-				 * Execute count assertion only
-				 */
-				verify: (context: string) => countAssertion(context),
-			}
-		},
+				),
+		}),
 	}
 
-	const forTimer = (timer: TimerDomain.ScheduledTimer) => {
+	const forTimer = (timerKey: TimerScheduleKey.Type) => {
 		type AssertionFn = (ctx: string) => Effect.Effect<void, any, Ports.TimerPersistencePort>
 
 		const createBuilder = (assertions: AssertionFn[]) => ({
@@ -301,7 +273,7 @@ export const Expect = (() => {
 					...assertions,
 					(ctx) =>
 						pipe(
-							Timers.find(timer),
+							Timers.find(timerKey),
 							Effect.tap((found) => {
 								expect(Option.isSome(found), `${ctx}: timer should exist in DB`).toBe(true)
 								expect(found.pipe(Option.map((t) => t._tag)), `${ctx}: timer._tag`).toEqual(Option.some('Reached'))
@@ -317,7 +289,7 @@ export const Expect = (() => {
 					...assertions,
 					(ctx) =>
 						pipe(
-							Timers.find(timer),
+							Timers.find(timerKey),
 							Effect.tap((found) => {
 								expect(Option.isSome(found), `${ctx}: timer should exist in DB`).toBe(true)
 								expect(found.pipe(Option.map((t) => t._tag)), `${ctx}: timer._tag`).toEqual(Option.some('Scheduled'))

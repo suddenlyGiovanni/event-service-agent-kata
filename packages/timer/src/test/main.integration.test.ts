@@ -111,10 +111,9 @@ describe('Timer.main', () => {
 						// ─── Timer A fires at t=5:01 ────────────────────────────────────────
 						yield* Time.advance(Duration.sum('5 minutes', '1 seconds'))
 
+						yield* Expect.events.toHaveCount(1).verify('At t=5:01')
 						yield* Expect.events
-							.toHavePublished(1)
-							.atIndex(0)
-							.toBeForTimer(timerA)
+							.forTimer(timerA)
 							.toHaveType('DueTimeReached')
 							.toHaveTenant(timerA.tenantId)
 							.verify('At t=5:01')
@@ -123,10 +122,9 @@ describe('Timer.main', () => {
 						// ─── Timer B fires at t=6:01 ────────────────────────────────────────
 						yield* Time.advance('1 minute')
 
+						yield* Expect.events.toHaveCount(2).verify('At t=6:01')
 						yield* Expect.events
-							.toHavePublished(2)
-							.atIndex(1)
-							.toBeForTimer(timerB)
+							.forTimer(timerB)
 							.toHaveType('DueTimeReached')
 							.toHaveTenant(timerB.tenantId)
 							.verify('At t=6:01')
@@ -135,10 +133,9 @@ describe('Timer.main', () => {
 						// ─── Timer C fires at t=7:01 ────────────────────────────────────────
 						yield* Time.advance('1 minute')
 
+						yield* Expect.events.toHaveCount(3).verify('At t=7:01')
 						yield* Expect.events
-							.toHavePublished(3)
-							.atIndex(2)
-							.toBeForTimer(timerC)
+							.forTimer(timerC)
 							.toHaveType('DueTimeReached')
 							.toHaveTenant(timerC.tenantId)
 							.verify('At t=7:01')
