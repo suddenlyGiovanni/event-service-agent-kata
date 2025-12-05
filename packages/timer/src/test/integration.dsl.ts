@@ -361,6 +361,16 @@ export const Expect = (() => {
 	} as const
 })()
 
+export const Commands = {
+	deliver: {
+		/**
+		 * Deliver a ScheduleTimer command via EventBus subscription.
+		 * TODO: Requires EventBusTest refactor to capture subscription handler.
+		 */
+		scheduleTimer: (_?: { dueIn: DurationInput }) => Effect.die('Not implemented: requires EventBusTest enhancement'),
+	},
+} as const
+
 export const Main = {
 	start: () => Effect.fork(_main),
 	stop: <A, E>(fiber: Fiber.RuntimeFiber<A, E>) => Fiber.interrupt(fiber),
