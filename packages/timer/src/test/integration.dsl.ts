@@ -176,16 +176,16 @@ export const Timers = {
  * - `Expect.timer(t)` — Database assertions (persisted state)
  */
 export const Expect = (() => {
-	const eventBus = {
+	const events = {
 		/**
 		 * Start assertion chain at specific event index (no count check)
 		 */
-		atIndex: (position: number) => Expect.eventBus.toHavePublished(position + 1).atIndex(position),
+		atIndex: (position: number) => Expect.events.toHavePublished(position + 1).atIndex(position),
 
 		/**
 		 * Assert no events were published
 		 */
-		toBeEmpty: () => Expect.eventBus.toHavePublished(0),
+		toBeEmpty: () => Expect.events.toHavePublished(0),
 
 		/**
 		 * Assert exact number of events were published.
@@ -338,16 +338,16 @@ export const Expect = (() => {
 		return createBuilder([])
 	}
 
-	const noTimersDue = (context: string) =>
+	const noneDue = (context: string) =>
 		Timers.due.pipe(Effect.tap((due) => expect(Chunk.isEmpty(due), `${context}: no timers should be due`).toBe(true)))
 
 	return {
 		/**
 		 * Event assertions namespace - all EventBus-related checks
 		 */
-		eventBus,
+		events: events,
 
-		persistence: {
+		timers: {
 			/**
 			 * Timer assertion builder - chainable API for Database assertions.
 			 */
@@ -356,7 +356,7 @@ export const Expect = (() => {
 			/**
 			 * Assert no timers are currently due
 			 */
-			noTimersDue,
+			noneDue,
 		},
 	} as const
 })()

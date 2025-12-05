@@ -100,54 +100,54 @@ describe('Timer.main', () => {
 						const timerC = yield* Timers.create.scheduled('7 minutes')
 
 						// ─── Baseline ───────────────────────────────────────────────────────
-						yield* Expect.persistence.noTimersDue('Baseline')
-						yield* Expect.eventBus.toBeEmpty().verify('Baseline')
+						yield* Expect.timers.noneDue('Baseline')
+						yield* Expect.events.toBeEmpty().verify('Baseline')
 
 						// ─── Act: Start Timer.main ──────────────────────────────────────────
 						const fiber = yield* Main.start()
 
 						yield* Effect.yieldNow()
 
-						yield* Expect.eventBus.toBeEmpty().verify('After fork (no time passed)')
+						yield* Expect.events.toBeEmpty().verify('After fork (no time passed)')
 
 						// ─── Timer A fires at t=5:01 ────────────────────────────────────────
 						yield* Time.advance(Duration.sum('5 minutes', '1 seconds'))
 
-						yield* Expect.eventBus
+						yield* Expect.events
 							.toHavePublished(1)
 							.atIndex(0)
 							.toBeForTimer(timerA)
 							.toHaveType('DueTimeReached')
 							.toHaveTenant(timerA.tenantId)
 							.verify('At t=5:01')
-						yield* Expect.persistence.forTimer(timerA).toBeReached().verify('At t=5:01')
+						yield* Expect.timers.forTimer(timerA).toBeReached().verify('At t=5:01')
 
 						// ─── Timer B fires at t=6:01 ────────────────────────────────────────
 						yield* Time.advance('1 minute')
 
-						yield* Expect.eventBus
+						yield* Expect.events
 							.toHavePublished(2)
 							.atIndex(1)
 							.toBeForTimer(timerB)
 							.toHaveType('DueTimeReached')
 							.toHaveTenant(timerB.tenantId)
 							.verify('At t=6:01')
-						yield* Expect.persistence.forTimer(timerB).toBeReached().verify('At t=6:01')
+						yield* Expect.timers.forTimer(timerB).toBeReached().verify('At t=6:01')
 
 						// ─── Timer C fires at t=7:01 ────────────────────────────────────────
 						yield* Time.advance('1 minute')
 
-						yield* Expect.eventBus
+						yield* Expect.events
 							.toHavePublished(3)
 							.atIndex(2)
 							.toBeForTimer(timerC)
 							.toHaveType('DueTimeReached')
 							.toHaveTenant(timerC.tenantId)
 							.verify('At t=7:01')
-						yield* Expect.persistence.forTimer(timerC).toBeReached().verify('At t=7:01')
+						yield* Expect.timers.forTimer(timerC).toBeReached().verify('At t=7:01')
 
 						// ─── Final ──────────────────────────────────────────────────────────
-						yield* Expect.persistence.noTimersDue('Final')
+						yield* Expect.timers.noneDue('Final')
 
 						// ─── Cleanup ────────────────────────────────────────────────────────
 						yield* Main.stop(fiber)
