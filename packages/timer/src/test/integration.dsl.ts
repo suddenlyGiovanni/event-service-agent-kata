@@ -124,6 +124,34 @@ export const Events = (() => {
  * Timer state DSL - query and create timers
  */
 export const Timers = {
+	create: {
+		/**
+		 * Schedule a timer at given duration from now.
+		 * Creates service call fixture and persists timer.
+		 */
+		scheduled: (dueIn: DurationInput) =>
+			Effect.gen(function* () {
+				const now = yield* Time.now
+				const persistence = yield* Ports.TimerPersistencePort
+
+				const scheduledTimer = TimerDomain.ScheduledTimer.make({
+					correlationId: Option.none(),
+					dueAt: DateTime.addDuration(now, dueIn),
+					registeredAt: now,
+					serviceCallId: yield* ServiceCallId.makeUUID7(),
+					tenantId: yield* TenantId.makeUUID7(),
+				})
+
+				yield* withServiceCall({
+					serviceCallId: scheduledTimer.serviceCallId,
+					tenantId: scheduledTimer.tenantId,
+				})
+
+				yield* persistence.save(scheduledTimer)
+
+				return scheduledTimer
+			}),
+	},
 	/**
 	 * Get all currently due timers
 	 */
@@ -138,33 +166,6 @@ export const Timers = {
 		Ports.TimerPersistencePort.pipe(
 			Effect.flatMap((timerPersistence) => timerPersistence.find({ serviceCallId, tenantId })),
 		),
-
-	/**
-	 * Schedule a timer at given duration from now.
-	 * Creates service call fixture and persists timer.
-	 */
-	scheduleAt: (dueIn: DurationInput) =>
-		Effect.gen(function* () {
-			const now = yield* Time.now
-			const persistence = yield* Ports.TimerPersistencePort
-
-			const scheduledTimer = TimerDomain.ScheduledTimer.make({
-				correlationId: Option.none(),
-				dueAt: DateTime.addDuration(now, dueIn),
-				registeredAt: now,
-				serviceCallId: yield* ServiceCallId.makeUUID7(),
-				tenantId: yield* TenantId.makeUUID7(),
-			})
-
-			yield* withServiceCall({
-				serviceCallId: scheduledTimer.serviceCallId,
-				tenantId: scheduledTimer.tenantId,
-			})
-
-			yield* persistence.save(scheduledTimer)
-
-			return scheduledTimer
-		}),
 } as const
 
 /**

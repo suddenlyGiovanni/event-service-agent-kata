@@ -95,9 +95,9 @@ describe('Timer.main', () => {
 				() =>
 					Effect.gen(function* () {
 						// ─── Arrange ────────────────────────────────────────────────────────
-						const timerA = yield* Timers.scheduleAt('5 minutes')
-						const timerB = yield* Timers.scheduleAt('6 minutes')
-						const timerC = yield* Timers.scheduleAt('7 minutes')
+						const timerA = yield* Timers.create.scheduled('5 minutes')
+						const timerB = yield* Timers.create.scheduled('6 minutes')
+						const timerC = yield* Timers.create.scheduled('7 minutes')
 
 						// ─── Baseline ───────────────────────────────────────────────────────
 						yield* Expect.persistence.noTimersDue('Baseline')
