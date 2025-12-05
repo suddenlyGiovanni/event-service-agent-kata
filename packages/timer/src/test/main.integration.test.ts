@@ -2,7 +2,7 @@ import { describe, it } from '@effect/vitest'
 import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
 
-import { Expect, Main, TestHarness, Time, Timers } from './test/integration.dsl.ts'
+import { Expect, Main, TestHarness, Time, Timers } from './integration.dsl.ts'
 
 /**
  * Integration tests for Timer.main entry point
