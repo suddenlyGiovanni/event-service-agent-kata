@@ -27,7 +27,7 @@
 		"typescript": {
 			"@tsconfig/bun": "latest",
 			"@tsconfig/strictest": "latest",
-			"typescript": "latest"
+			"typescript": "next"
 		}
 	},
 	"description": "Event-driven, multi-tenant service-call agent",
