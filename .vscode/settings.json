@@ -53,6 +53,7 @@
 	// === File Management ===
 	"files.exclude": {
 		"**/.DS_Store": true,
+		"**/.direnv": true,
 		"**/.git": true,
 		"**/.turbo": true,
 		"**/bun.lockb": true,
@@ -60,6 +61,7 @@
 		"**/node_modules": true
 	},
 	"files.watcherExclude": {
+		"**/.direnv/**": true,
 		"**/.git/objects/**": true,
 		"**/.git/subtree-cache/**": true,
 		"**/bun.lockb": true,
@@ -84,6 +86,7 @@
 
 	// === Search Configuration ===
 	"search.exclude": {
+		"**/.direnv": true,
 		"**/.git": true,
 		"**/.turbo": true,
 		"**/bun.lockb": true,
