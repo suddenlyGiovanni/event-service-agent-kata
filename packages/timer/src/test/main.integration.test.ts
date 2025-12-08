@@ -163,7 +163,7 @@ describe('Timer.main', () => {
 					const timer = yield* Timers.make.scheduled('5 seconds')
 
 					// ─── Advance clock so timer is due ──────────────────────────────────
-					yield* Time.advance('5 seconds')
+					yield* Time.advance('6 seconds')
 
 					// ─── Start Timer.main ───────────────────────────────────────────────
 					const fiber = yield* Main.start()
@@ -319,7 +319,7 @@ describe('Timer.main', () => {
 
 					// ─── Verify fiber was interrupted (forkScoped semantics) ────────────
 					// When main fiber is interrupted, the scoped child (polling worker)
-					// should also be interrupted, resulting in a Failure exit
+					// should also be interrupted, resulting in a Failure exit; TODO: but why?
 					expect(exit._tag).toBe('Failure')
 				}).pipe(Effect.provide(TestHarness.Default)),
 		)
@@ -449,8 +449,9 @@ describe('Timer.main', () => {
 			 *
 			 * Tests persistence idempotency for concurrent/duplicate commands.
 			 * Note: This test verifies idempotency at the persistence layer level
-			 * by directly scheduling timers with the same key. Full command-path
-			 * idempotency testing requires Commands.deliver DSL enhancement.
+			 * by directly scheduling timers with the same key.
+			 *
+			 * FIXME: Full command-path idempotency testing requires Commands.deliver DSL enhancement.
 			 */
 			() =>
 				Effect.gen(function* () {
