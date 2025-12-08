@@ -138,24 +138,42 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
 	})
 
 	/*
-	 * Publish event FIRST (before marking as fired) to ensure at-least-once delivery.
-	 * If publishing fails, timer stays Scheduled and will retry on next poll.
+	 * CRITICAL SECTION: publish + markFired must complete atomically.
+	 *
+	 * Wrapped in Effect.uninterruptible to prevent interruption (e.g., shutdown)
+	 * between publish and markFired. If interrupted after publish but before markFired:
+	 * - Event is delivered to downstream consumers
+	 * - Timer remains Scheduled (not marked as Reached)
+	 * - On restart: timer fires again → duplicate event
+	 *
+	 * By making this uninterruptible, we ensure:
+	 * - Either both operations complete (normal case)
+	 * - Or neither starts (interrupted before entering)
+	 * - Never: publish succeeds, markFired skipped due to interruption
+	 *
+	 * Note: This does NOT make the operations transactional. If markFired fails
+	 * after publish succeeds, the event is still delivered (at-least-once).
+	 * But that's a failure, not an interruption—handled by retry logic.
 	 *
 	 * MessageMetadata for timer firing:
 	 * - correlationId: From timer aggregate (traces to original scheduling request)
 	 * - causationId: None (firing is time-driven, not message-driven)
 	 */
-	yield* eventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
-		Effect.provideService(MessageMetadata, {
-			causationId: Option.none(),
-			correlationId: timer.correlationId,
+	yield* Effect.uninterruptible(
+		Effect.gen(function* () {
+			yield* eventBus.publishDueTimeReached(dueTimeReachedEvent).pipe(
+				Effect.provideService(MessageMetadata, {
+					causationId: Option.none(),
+					correlationId: timer.correlationId,
+				}),
+			)
+
+			yield* persistence.markFired({
+				key: { serviceCallId: timer.serviceCallId, tenantId: timer.tenantId },
+				reachedAt: now,
+			})
 		}),
 	)
-
-	yield* persistence.markFired({
-		key: { serviceCallId: timer.serviceCallId, tenantId: timer.tenantId },
-		reachedAt: now,
-	})
 
 	yield* Effect.logDebug('Timer fired successfully', {
 		dueAt: DateTime.formatIsoDateUtc(timer.dueAt),

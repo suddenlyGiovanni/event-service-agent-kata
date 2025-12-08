@@ -3,8 +3,10 @@ import { assertNone, assertSome } from '@effect/vitest/utils'
 import * as Cause from 'effect/Cause'
 import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
+import * as Deferred from 'effect/Deferred'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
+import * as Fiber from 'effect/Fiber'
 import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import * as Option from 'effect/Option'
@@ -12,14 +14,13 @@ import * as TestClock from 'effect/TestClock'
 
 import { UUID7 } from '@event-service-agent/platform/adapters'
 import { MessageMetadata } from '@event-service-agent/platform/context'
-import { SQL } from '@event-service-agent/platform/database'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import * as Adapters from '../adapters/index.ts'
 import * as Domain from '../domain/timer-entry.domain.ts'
 import * as Ports from '../ports/index.ts'
-import { withServiceCall } from '../test/service-call.fixture.ts'
+import { ServiceCallFixture } from '../test/service-call.fixture.ts'
 import * as Workflows from './poll-due-timers.workflow.ts'
 
 /**
@@ -44,7 +45,12 @@ import * as Workflows from './poll-due-timers.workflow.ts'
  *
  * Tests add dynamic resources (custom EventBus mocks) via Layer.mergeAll
  */
-const BaseTestLayers = Layer.mergeAll(Adapters.Clock.Test, UUID7.Default, Adapters.TimerPersistence.Test, SQL.Test)
+const BaseTestLayers = Layer.mergeAll(
+	Adapters.Clock.Test,
+	UUID7.Default,
+	Adapters.TimerPersistence.Test,
+	ServiceCallFixture.Default,
+)
 
 /**
  * Test suite for pollDueTimersWorkflow
@@ -100,7 +106,8 @@ describe('pollDueTimersWorkflow', () => {
 				}) // Get persistence and save timer
 
 				const persistence = yield* Ports.TimerPersistencePort
-				yield* withServiceCall({
+				const serviceCallFixture = yield* ServiceCallFixture
+				yield* serviceCallFixture.make({
 					serviceCallId,
 					tenantId,
 				})
@@ -170,6 +177,7 @@ describe('pollDueTimersWorkflow', () => {
 				// Arrange: Create three timers that will be due
 				const clock = yield* Ports.ClockPort
 				const persistence = yield* Ports.TimerPersistencePort
+				const serviceCallFixture = yield* ServiceCallFixture
 				const registeredAt = yield* clock.now()
 				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
 
@@ -189,7 +197,7 @@ describe('pollDueTimersWorkflow', () => {
 					(t) =>
 						Effect.andThen(
 							// Ensure each serviceCallId has a corresponding service_calls row before saving.
-							withServiceCall({
+							serviceCallFixture.make({
 								serviceCallId: t.serviceCallId,
 								tenantId: t.tenantId,
 							}),
@@ -257,6 +265,7 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				// Arrange: Create a timer that will be due
 				const clock = yield* Ports.ClockPort
@@ -271,10 +280,7 @@ describe('pollDueTimersWorkflow', () => {
 					serviceCallId,
 					tenantId,
 				})
-				yield* withServiceCall({
-					serviceCallId,
-					tenantId,
-				})
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
 
 				yield* basePersistence.save(scheduledTimer)
 
@@ -338,6 +344,7 @@ describe('pollDueTimersWorkflow', () => {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
 				const correlationId = yield* CorrelationId.makeUUID7()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				// Arrange: Create a timer with a specific correlationId
 				const clock = yield* Ports.ClockPort
@@ -353,7 +360,7 @@ describe('pollDueTimersWorkflow', () => {
 					tenantId,
 				})
 
-				yield* withServiceCall({
+				yield* serviceCallFixture.make({
 					serviceCallId,
 					tenantId,
 				})
@@ -401,6 +408,7 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				// Arrange: Create a timer that is NOT due yet (future)
 				const clock = yield* Ports.ClockPort
@@ -417,7 +425,7 @@ describe('pollDueTimersWorkflow', () => {
 					serviceCallId,
 					tenantId,
 				}) // Save the future timer
-				yield* withServiceCall({
+				yield* serviceCallFixture.make({
 					serviceCallId,
 					tenantId,
 				})
@@ -507,6 +515,7 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const serviceCallFixture = yield* ServiceCallFixture
 				// Arrange: Create a timer where dueAt === now (boundary condition)
 				const clock = yield* Ports.ClockPort
 				const persistence = yield* Ports.TimerPersistencePort
@@ -521,7 +530,7 @@ describe('pollDueTimersWorkflow', () => {
 					tenantId,
 				})
 
-				yield* withServiceCall({
+				yield* serviceCallFixture.make({
 					serviceCallId,
 					tenantId,
 				})
@@ -567,6 +576,7 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				// Arrange: Create a timer due in the future
 				const clock = yield* Ports.ClockPort
@@ -584,7 +594,7 @@ describe('pollDueTimersWorkflow', () => {
 					tenantId,
 				})
 
-				yield* withServiceCall({
+				yield* serviceCallFixture.make({
 					serviceCallId,
 					tenantId,
 				})
@@ -631,6 +641,7 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				// Arrange: Schedule a timer for 5 minutes from now
 				const clock = yield* Ports.ClockPort
@@ -648,7 +659,7 @@ describe('pollDueTimersWorkflow', () => {
 					tenantId,
 				})
 
-				yield* withServiceCall({
+				yield* serviceCallFixture.make({
 					serviceCallId,
 					tenantId,
 				})
@@ -692,6 +703,7 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				// Arrange: Create a timer that will be due
 				const clock = yield* Ports.ClockPort
@@ -706,7 +718,7 @@ describe('pollDueTimersWorkflow', () => {
 					serviceCallId,
 					tenantId,
 				})
-				yield* withServiceCall({
+				yield* serviceCallFixture.make({
 					serviceCallId,
 					tenantId,
 				})
@@ -774,6 +786,7 @@ describe('pollDueTimersWorkflow', () => {
 
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallFixture = yield* ServiceCallFixture
 				const serviceCallId1 = yield* ServiceCallId.makeUUID7()
 				const serviceCallId2 = yield* ServiceCallId.makeUUID7()
 				const serviceCallId3 = yield* ServiceCallId.makeUUID7()
@@ -799,7 +812,7 @@ describe('pollDueTimersWorkflow', () => {
 					timers,
 					(t) =>
 						Effect.andThen(
-							withServiceCall({
+							serviceCallFixture.make({
 								serviceCallId: t.serviceCallId,
 								tenantId,
 							}),
@@ -898,6 +911,7 @@ describe('pollDueTimersWorkflow', () => {
 			return Effect.gen(function* () {
 				const tenantId = yield* TenantId.makeUUID7()
 				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				// Arrange: Create a timer that will be due
 				const clock = yield* Ports.ClockPort
@@ -911,7 +925,7 @@ describe('pollDueTimersWorkflow', () => {
 					serviceCallId,
 					tenantId,
 				}) // Use base persistence for save, then provide a mock that fails markFired
-				yield* withServiceCall({
+				yield* serviceCallFixture.make({
 					serviceCallId,
 					tenantId,
 				})
@@ -1019,6 +1033,108 @@ describe('pollDueTimersWorkflow', () => {
 				// Assert: No events should have been published
 				expect(publishedEvents).toHaveLength(0)
 			}).pipe(Effect.provide(Layer.mergeAll(TestPersistence, Adapters.Clock.Test, TimerEventBusTest, UUID7.Default)))
+		})
+	})
+
+	describe('Interruption Safety', () => {
+		it.scoped('completes publish and markFired atomically when interrupted mid-execution', () => {
+			/**
+			 * ```txt
+			 * GIVEN a timer that is due
+			 *   AND an interruption signal arrives AFTER publish starts but BEFORE markFired
+			 * WHEN processTimerFiring is executing the critical section
+			 * THEN both publishDueTimeReached AND markFired should complete
+			 *   AND the timer should be marked as Reached (not left in Scheduled)
+			 *   AND the event should be published exactly once
+			 * ```
+			 *
+			 * This test verifies that Effect.uninterruptible protects the critical
+			 * section (publish + markFired) from being partially executed.
+			 *
+			 * Strategy: Use Deferred to synchronize test with workflow execution:
+			 * 1. Publish signals "I started" via Deferred
+			 * 2. Test waits for signal, then interrupts
+			 * 3. This guarantees interrupt arrives mid-critical-section
+			 */
+
+			return Effect.gen(function* () {
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+
+				// Synchronization: Deferred signals when publish has started
+				const publishStarted = yield* Deferred.make<void>()
+				const publishedEvents: Messages.Timer.Events.DueTimeReached.Type[] = []
+				let markFiredCalled = false
+
+				// EventBus mock that signals when publish starts
+				const TimerEventBusTest = Layer.mock(Ports.TimerEventBusPort, {
+					publishDueTimeReached: (event) =>
+						Effect.gen(function* () {
+							// Signal that we've entered the critical section
+							yield* Deferred.succeed(publishStarted, undefined)
+							// Small delay to give interrupt time to arrive
+							yield* Effect.yieldNow()
+							publishedEvents.push(event)
+						}),
+				})
+
+				// Arrange: Create a timer that will be due
+				const clock = yield* Ports.ClockPort
+				const basePersistence = yield* Ports.TimerPersistencePort
+				const serviceCallFixture = yield* ServiceCallFixture
+				const registeredAt = yield* clock.now()
+				const dueAt = DateTime.add(registeredAt, { minutes: 5 })
+
+				const scheduledTimer = Domain.ScheduledTimer.make({
+					correlationId: Option.none(),
+					dueAt,
+					registeredAt,
+					serviceCallId,
+					tenantId,
+				})
+
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
+				yield* basePersistence.save(scheduledTimer)
+
+				// Create wrapped persistence that tracks markFired
+				const TestPersistence = Layer.succeed(
+					Ports.TimerPersistencePort,
+					Ports.TimerPersistencePort.of({
+						...basePersistence,
+						markFired: (params) =>
+							Effect.gen(function* () {
+								markFiredCalled = true
+								yield* basePersistence.markFired(params)
+							}),
+					}),
+				)
+
+				// Act: Advance time to make timer due
+				yield* TestClock.adjust('6 minutes')
+
+				// Fork the workflow
+				const fiber = yield* Effect.fork(
+					Workflows.pollDueTimersWorkflow().pipe(Effect.provide(Layer.merge(TestPersistence, TimerEventBusTest))),
+				)
+
+				// Wait until publish has started (we're inside critical section)
+				yield* Deferred.await(publishStarted)
+
+				// NOW interrupt - we're guaranteed to be mid-critical-section
+				yield* Fiber.interrupt(fiber)
+
+				// Assert: Both operations should have completed (uninterruptible)
+				// Event should be published
+				expect(publishedEvents).toHaveLength(1)
+
+				// markFired should have been called (critical section completed)
+				expect(markFiredCalled).toBe(true)
+
+				// Timer should be marked as Reached (not stuck in Scheduled)
+				const found = yield* basePersistence.find({ serviceCallId, tenantId })
+				expect(Option.isSome(found)).toBe(true)
+				expect(Option.exists(found, Domain.TimerEntry.isReached)).toBe(true)
+			}).pipe(Effect.provide(BaseTestLayers))
 		})
 	})
 })
