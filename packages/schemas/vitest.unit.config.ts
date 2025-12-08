@@ -1,11 +1,10 @@
 // biome-ignore lint/correctness/noUndeclaredDependencies: vitest is hoisted from root workspace
-import { defineConfig } from 'vitest/config'
+import { defineProject } from 'vitest/config'
 
-export default defineConfig({
+export default defineProject({
 	test: {
 		environment: 'node',
 		include: ['src/**/*.test.ts'],
-		name: 'schemas',
-		passWithNoTests: true,
+		name: { color: 'white', label: 'schemas:unit' },
 	},
 })
