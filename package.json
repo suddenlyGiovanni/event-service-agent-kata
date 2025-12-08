@@ -79,6 +79,8 @@
 		"lint": "biome lint --write .",
 		"prepare": "lefthook install",
 		"test": "bun --bun vitest",
+		"test:integration": "bun --bun vitest --project '*:integration'",
+		"test:unit": "bun --bun vitest --project '*:unit'",
 		"type-check": "bun --bun --workspaces type-check"
 	},
 	"trustedDependencies": ["@beads/bd"],

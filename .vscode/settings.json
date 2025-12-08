@@ -23,6 +23,8 @@
 
 	// === Biome (Linter/Formatter) ===
 	"biome.lsp.bin": "./node_modules/@biomejs/biome/bin/biome",
+	"biome.lsp.trace.server": "verbose",
+	"biome.requireConfiguration": true,
 
 	// === Bun Runtime ===
 	"debug.javascript.defaultRuntimeExecutable": {
