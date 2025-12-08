@@ -467,13 +467,5 @@ export class TimerPersistence {
 	 * - **Migrations**: Runs same migrations as production
 	 * - **No cleanup needed**: Database disposed when scope closes
 	 */
-	static readonly Test: Layer.Layer<
-		Ports.TimerPersistencePort,
-		| Sql.SqlError.SqlError
-		| Sql.Migrator.MigrationError
-		| ConfigError
-		| Platform.Error.BadArgument
-		| Platform.Error.SystemError,
-		never
-	> = Layer.provide(Layer.effect(Ports.TimerPersistencePort, make), SQL.Test)
+	static readonly Test = Layer.provideMerge(Layer.effect(Ports.TimerPersistencePort, make), SQL.Test)
 }
