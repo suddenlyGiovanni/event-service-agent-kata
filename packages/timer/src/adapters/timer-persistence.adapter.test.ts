@@ -11,12 +11,11 @@ import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
 import * as PlatformAdapters from '@event-service-agent/platform/adapters'
-import { SQL } from '@event-service-agent/platform/database'
 import { CorrelationId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import * as Domain from '../domain/timer-entry.domain.ts'
 import * as Ports from '../ports/index.ts'
-import { withServiceCall } from '../test/service-call.fixture.ts'
+import { ServiceCallFixture } from '../test/service-call.fixture.ts'
 import * as Adapters from './index.ts'
 
 /**
@@ -67,7 +66,7 @@ const BaseTestLayers = Layer.mergeAll(
 	Adapters.TimerPersistence.Test,
 	Adapters.Clock.Test,
 	PlatformAdapters.UUID7.Default,
-	SQL.Test,
+	ServiceCallFixture.Default,
 )
 
 describe('TimerPersistenceAdapter', () => {
@@ -114,7 +113,8 @@ describe('TimerPersistenceAdapter', () => {
 		Effect.gen(function* () {
 			const clock = yield* Ports.ClockPort
 			const now = yield* clock.now()
-			yield* withServiceCall({
+			const serviceCallFixture = yield* ServiceCallFixture
+			yield* serviceCallFixture.make({
 				serviceCallId,
 				tenantId,
 			})
@@ -138,8 +138,10 @@ describe('TimerPersistenceAdapter', () => {
 			Effect.gen(function* () {
 				// Arrange
 				const clock = yield* Ports.ClockPort
+				const serviceCallFixture = yield* ServiceCallFixture
 				const now = yield* clock.now()
-				yield* withServiceCall({
+
+				yield* serviceCallFixture.make({
 					serviceCallId: mocks.tenantA.serviceCallId,
 					tenantId: mocks.tenantA.tenantId,
 				})
@@ -388,10 +390,11 @@ describe('TimerPersistenceAdapter', () => {
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Create timer with dueAt === now (0 minutes offset)
-				yield* withServiceCall({
+				yield* serviceCallFixture.make({
 					serviceCallId: mocks.tenantA.serviceCallId,
 					tenantId: mocks.tenantA.tenantId,
 				})
