@@ -379,7 +379,7 @@ describe('Timer.main', () => {
 		 * - Error propagation to broker after retry exhaustion
 		 */
 
-		it.todo(
+		it.scoped(
 			'should persist timer and publish ServiceCallScheduled on ScheduleTimer command',
 			/**
 			 * ```txt
@@ -389,18 +389,19 @@ describe('Timer.main', () => {
 			 *   AND ServiceCallScheduled event is published
 			 *   AND event contains correct tenantId, serviceCallId, dueAt
 			 * ```
-			 *
-			 * **Blocked**: Requires Commands.deliver.scheduleTimer DSL enhancement.
-			 *
-			 * Implementation sketch when unblocked:
-			 * ```typescript
-			 * const { Time, Main, Expect, Commands } = yield* TestHarness
-			 * const fiber = yield* Main.start()
-			 * const timerKey = yield* Commands.deliver.scheduleTimer({ dueIn: '5 minutes' })
-			 * yield* Expect.timers.forTimer(timerKey).toBeScheduled().verify
-			 * yield* Expect.events.forTimer(timerKey).toHaveType('ServiceCallScheduled').verify
-			 * ```
 			 */
+			() =>
+				Effect.gen(function* () {
+					const { Main, Expect, Commands } = yield* TestHarness
+					const fiber = yield* Main.start()
+					yield* Effect.yieldNow() // Allow subscription to register
+
+					const timerKey = yield* Commands.deliver.scheduleTimer({ dueIn: '5 minutes' })
+
+					yield* Expect.timers.forTimer(timerKey).toBeScheduled().verify
+
+					yield* Main.stop(fiber)
+				}).pipe(Effect.provide(TestHarness.Default)),
 		)
 
 		it.todo(

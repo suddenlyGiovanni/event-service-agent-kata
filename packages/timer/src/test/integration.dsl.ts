@@ -24,13 +24,16 @@ import { _main } from '../main.ts'
 import * as Ports from '../ports/index.ts'
 import { ServiceCallFixture } from './service-call.fixture.ts'
 
+type EventBusSubscribeHandler<
+	E = Ports.PersistenceError | Ports.Platform.SubscribeError,
+	R = Ports.TimerPersistencePort | Ports.ClockPort,
+> = (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>
+
 class TestEventBusState extends Context.Tag('@event-service-agent/timer/test/integration.dsl.ts/TestEventBusState')<
 	TestEventBusState,
 	{
 		readonly publishedEventsRef: Ref.Ref<Chunk.Chunk<MessageEnvelope.Type>>
-		readonly commandHandlerRef: Ref.Ref<
-			Option.Option<(envelope: MessageEnvelope.Type) => Effect.Effect<void, unknown, unknown>>
-		>
+		readonly commandHandlerRef: Ref.Ref<Option.Option<EventBusSubscribeHandler>>
 	}
 >() {}
 
@@ -47,22 +50,19 @@ const EventBusTestLayer: Layer.Layer<TestEventBusState | Ports.Platform.EventBus
 	Layer.unwrapEffect(
 		Effect.gen(function* () {
 			const publishedEventsRef = yield* Ref.make(Chunk.empty<MessageEnvelope.Type>())
-			const commandHandlerRef = yield* Ref.make<
-				Option.Option<(envelope: MessageEnvelope.Type) => Effect.Effect<void, unknown, unknown>>
-			>(Option.none())
+			const commandHandlerRef = yield* Ref.make<Option.Option<EventBusSubscribeHandler>>(Option.none())
 
 			const EventBusPortLayer: Layer.Layer<Ports.Platform.EventBusPort, never, never> = Layer.mock(
 				Ports.Platform.EventBusPort,
 				{
 					publish: (events) =>
 						Ref.update(publishedEventsRef, (existing) => Chunk.appendAll(existing, Chunk.fromIterable(events))),
-					subscribe: Effect.fn(function* <E, R>(
-						_topics: readonly string[],
-						handler: (envelope: MessageEnvelope.Type) => Effect.Effect<void, E, R>,
-					) {
-						yield* Ref.set(commandHandlerRef, Option.some(handler))
-						return yield* Effect.never
-					}),
+
+					subscribe: (_topics, handler) =>
+						Effect.gen(function* () {
+							yield* Ref.set(commandHandlerRef, Option.some(handler as EventBusSubscribeHandler))
+							return yield* Effect.never
+						}),
 				},
 			)
 
@@ -159,13 +159,12 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 				 * Advance virtual clock and yield to allow fibers to execute.
 				 * Automatically tracks elapsed time for assertion context.
 				 */
-				advance: (duration: DurationInput) =>
-					Effect.gen(function* () {
-						const dur = Duration.decode(duration)
-						yield* TestClock.adjust(dur)
-						yield* Ref.update(timeElapsedRef, Duration.sum(dur))
-						yield* Effect.yieldNow()
-					}),
+				advance: Effect.fn(function* (duration: DurationInput) {
+					const dur = Duration.decode(duration)
+					yield* TestClock.adjust(dur)
+					yield* Ref.update(timeElapsedRef, Duration.sum(dur))
+					yield* Effect.yieldNow()
+				}),
 
 				/**
 				 * Get current virtual time
@@ -186,19 +185,23 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 				 * Find timer by key (any state)
 				 */
 				find: persistence.find,
+
+				/**
+				 * Timer creation DSL
+				 */
 				make: {
 					/**
 					 * Schedule a timer at given duration from now.
 					 * Creates service call fixture and persists timer.
 					 * Returns the timer key (tenantId, serviceCallId) for use in assertions.
 					 */
-					scheduled: (dueIn: DurationInput, tenantId?: TenantId.Type) =>
-						Effect.gen(function* () {
+					scheduled: Effect.fn(
+						function* (dueIn: DurationInput, tenantId?: TenantId.Type) {
 							const now = yield* clock.now()
 
 							const timerKey = Ports.TimerScheduleKey.make({
-								serviceCallId: ServiceCallId.make(yield* uuid7.randomUUIDv7()),
-								tenantId: tenantId ?? TenantId.make(yield* uuid7.randomUUIDv7()),
+								serviceCallId: yield* ServiceCallId.makeUUID7(),
+								tenantId: tenantId ?? (yield* TenantId.makeUUID7()),
 							})
 
 							const scheduledTimer = TimerDomain.ScheduledTimer.make({
@@ -212,7 +215,9 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 							yield* persistence.save(scheduledTimer)
 
 							return timerKey
-						}),
+						},
+						(effect) => effect.pipe(Effect.provideService(Adapters.Platform.UUID7, uuid7), (_) => _),
+					),
 				},
 			}
 
@@ -407,20 +412,6 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 				},
 			}
 
-			const getCommandHandler = pipe(
-				commandHandlerRef,
-				Ref.get,
-				Effect.flatMap(
-					Option.match({
-						onNone: () =>
-							Effect.die(
-								'Command subscription handler missing. Ensure Main.start() has been called to register the subscriber.',
-							),
-						onSome: Effect.succeed,
-					}),
-				),
-			)
-
 			/**
 			 * Command delivery DSL
 			 */
@@ -429,47 +420,64 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 					/**
 					 * Deliver a ScheduleTimer command via captured EventBus subscription handler.
 					 */
-					scheduleTimer: Effect.fn(function* ({
-						dueIn = '5 minutes',
-						tenantId,
-					}: {
-						dueIn?: DurationInput
-						tenantId?: TenantId.Type
-					} = {}) {
-						const handler = yield* getCommandHandler
-						const now = yield* clock.now()
-						const dur = Duration.decode(dueIn)
-						const dueAt = DateTime.addDuration(now, dur)
+					scheduleTimer: Effect.fn(
+						function* ({ dueIn = '5 minutes', tenantId }: { dueIn?: DurationInput; tenantId?: TenantId.Type } = {}) {
+							const handler = yield* pipe(
+								commandHandlerRef,
+								Ref.get,
+								Effect.flatMap(
+									Option.match({
+										onNone: () =>
+											Effect.die(
+												'Command subscription handler missing. Ensure Main.start() has been called to register the subscriber.',
+											),
+										onSome: Effect.succeed,
+									}),
+								),
+							)
 
-						const timerKey = Ports.TimerScheduleKey.make({
-							serviceCallId: ServiceCallId.make(yield* uuid7.randomUUIDv7()),
-							tenantId: tenantId ?? TenantId.make(yield* uuid7.randomUUIDv7()),
-						})
+							const now = yield* clock.now()
+							const dur = Duration.decode(dueIn)
+							const dueAt = DateTime.addDuration(now, dur)
 
-						const envelopeId: EnvelopeId.Type = yield* EnvelopeId.makeUUID7().pipe(
-							Effect.provideService(Adapters.Platform.UUID7, uuid7),
-						)
+							const timerKey = Ports.TimerScheduleKey.make({
+								serviceCallId: yield* ServiceCallId.makeUUID7(),
+								tenantId: tenantId ?? (yield* TenantId.makeUUID7()),
+							})
 
-						const command = new Messages.Orchestration.Commands.ScheduleTimer({
-							...timerKey,
-							dueAt,
-						})
+							yield* serviceCallFixture.make(timerKey)
 
-						const envelope: MessageEnvelope.Type = new MessageEnvelope({
-							aggregateId: Option.some(timerKey.serviceCallId),
-							causationId: Option.none(),
-							correlationId: Option.none(),
-							id: envelopeId,
-							payload: command,
-							tenantId: timerKey.tenantId,
-							timestampMs: now,
-							type: command._tag,
-						})
+							const envelopeId = yield* EnvelopeId.makeUUID7()
 
-						yield* handler(envelope)
+							const command = new Messages.Orchestration.Commands.ScheduleTimer({
+								...timerKey,
+								dueAt,
+							})
 
-						return timerKey
-					}),
+							const envelope: MessageEnvelope.Type = new MessageEnvelope({
+								aggregateId: Option.some(timerKey.serviceCallId),
+								causationId: Option.none(),
+								correlationId: Option.none(),
+								id: envelopeId,
+								payload: command,
+								tenantId: timerKey.tenantId,
+								timestampMs: now,
+								type: command._tag,
+							})
+
+							yield* handler(envelope).pipe(
+								Effect.provide(
+									Context.empty().pipe(
+										Context.add(Ports.TimerPersistencePort, persistence),
+										Context.add(Ports.ClockPort, clock),
+									),
+								),
+							)
+
+							return timerKey
+						},
+						(effect) => effect.pipe(Effect.provideService(Adapters.Platform.UUID7, uuid7)),
+					),
 				},
 			}
 
