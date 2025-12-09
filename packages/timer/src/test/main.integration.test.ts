@@ -2,8 +2,6 @@ import { describe, expect, it } from '@effect/vitest'
 import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
 
-import { TenantId } from '@event-service-agent/schemas/shared'
-
 import { TestHarness } from './integration.dsl.ts'
 
 /**
@@ -333,15 +331,15 @@ describe('Timer.main', () => {
 				 */
 				() =>
 					Effect.gen(function* () {
-						const { Time, Main, Expect, Commands } = yield* TestHarness
+						const { Time, Main, Expect, Commands, Generators } = yield* TestHarness
 
 						// ─── Start Timer.main with command subscription ─────────────────────
 						const fiber = yield* Main.start()
 						yield* Effect.yieldNow() // Allow subscription to register
 
 						// ─── Deliver commands for two different tenants ─────────────────────
-						const tenantA = TenantId.make('00000000-0000-7000-8000-00000000000a')
-						const tenantB = TenantId.make('00000000-0000-7000-8000-00000000000b')
+						const tenantA = yield* Generators.tenantId()
+						const tenantB = yield* Generators.tenantId()
 
 						const timerA = yield* Commands.deliver.scheduleTimer({ dueIn: '5 minutes', tenantId: tenantA })
 						const timerB = yield* Commands.deliver.scheduleTimer({ dueIn: '5 minutes', tenantId: tenantB })
@@ -398,7 +396,7 @@ describe('Timer.main', () => {
 						yield* Effect.yieldNow() // Allow subscription to register
 
 						// ─── Deliver initial ScheduleTimer command ──────────────────────────
-						const tenantId = TenantId.make('00000000-0000-7000-8000-000000000001')
+						const tenantId = yield* Generators.tenantId()
 						const serviceCallId = yield* Generators.serviceCallId()
 
 						const timerKey = yield* Commands.deliver.scheduleTimer({
