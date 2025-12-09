@@ -10,21 +10,24 @@ import { TestHarness } from './integration.dsl.ts'
  * Integration tests for Timer.main entry point
  *
  * **Purpose**: Exercise the full Timer module lifecycle with focus on:
+ * - Command subscription (ScheduleTimer → ServiceCallScheduled)
  * - Polling worker behavior (due timer detection → DueTimeReached events)
  * - Multi-tenancy isolation (no cross-tenant data leakage)
  * - Fiber lifecycle (startup, shutdown, scope semantics)
  * - Error recovery (polling continues after failures)
  *
- * **Note on Command Subscription**: Tests requiring `Commands.deliver.scheduleTimer`
- * are blocked until `TestHarness` is enhanced to capture the subscription handler.
- * See `integration.dsl.ts` TODO for details. Currently, timer scheduling is done
- * directly via `Timers.make.scheduled()` to test polling behavior.
- *
  * **Test Strategy**:
  * - Uses `TestHarness` DSL with auto time context tracking
  * - TestClock for deterministic time control
- * - Mock EventBusPort captures published events
+ * - Mock EventBusPort captures published events and command handlers
  * - In-memory SQLite for isolated persistence per test
+ *
+ * **Test Organization**:
+ * - **Command Subscription**: Tests command handling (Commands.deliver.scheduleTimer)
+ * - **Polling Worker**: Tests timer detection and firing (Timers.make.scheduled)
+ * - **End-to-End Lifecycle**: Full flow from command to event (command-driven)
+ * - **Fiber Lifecycle**: Tests Effect.forkScoped semantics
+ * - **Error Recovery**: Tests resilience to transient failures
  *
  * **DSL Usage**:
  * - `yield* TestHarness` provides scoped DSL with automatic cleanup
@@ -383,10 +386,12 @@ describe('Timer.main', () => {
 				 * Tests end-to-end idempotency through the command path.
 				 * Verifies that duplicate commands (e.g., from message broker retries)
 				 * don't create duplicate timers or duplicate events.
+				 *
+				 * @see ADR-0006 for idempotency strategy (keyed by tenantId, serviceCallId)
 				 */
 				() =>
 					Effect.gen(function* () {
-						const { Time, Main, Expect, Commands } = yield* TestHarness
+						const { Time, Main, Expect, Commands, Generators } = yield* TestHarness
 
 						// ─── Start Timer.main with command subscription ─────────────────────
 						const fiber = yield* Main.start()
@@ -394,8 +399,11 @@ describe('Timer.main', () => {
 
 						// ─── Deliver initial ScheduleTimer command ──────────────────────────
 						const tenantId = TenantId.make('00000000-0000-7000-8000-000000000001')
+						const serviceCallId = yield* Generators.serviceCallId()
+
 						const timerKey = yield* Commands.deliver.scheduleTimer({
 							dueIn: '5 minutes',
+							serviceCallId,
 							tenantId,
 						})
 
@@ -403,10 +411,16 @@ describe('Timer.main', () => {
 						yield* Expect.timers.forTimer(timerKey).toBeScheduled().verify
 						yield* Expect.events.toBeEmpty().verify
 
-						// ─── Deliver duplicate command with same key ────────────────────────
-						// Note: Commands.deliver generates new serviceCallId each time,
-						// so true duplicate testing will require enhancement to reuse key.
-						// For now, this verifies single timer fires once.
+						// ─── Deliver duplicate command with SAME key ────────────────────────
+						// This simulates message broker retry with identical command
+						yield* Commands.deliver.scheduleTimer({
+							dueIn: '5 minutes', // Same dueAt (relative to same clock position)
+							serviceCallId, // Same service call (idempotency key)
+							tenantId, // Same tenant
+						})
+
+						// ─── Still only one timer entry (upsert, no duplicate) ──────────────
+						yield* Expect.timers.forTimer(timerKey).toBeScheduled().verify
 
 						// ─── Advance to fire the timer ──────────────────────────────────────
 						yield* Time.advance(Duration.sum('5 minutes', '1 seconds'))
