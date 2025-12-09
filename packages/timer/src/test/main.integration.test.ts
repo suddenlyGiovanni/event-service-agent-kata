@@ -1,6 +1,8 @@
 import { describe, expect, it } from '@effect/vitest'
+import * as ReadonlyArray from 'effect/Array'
 import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
+import { pipe } from 'effect/Function'
 
 import { TestHarness } from './integration.dsl.ts'
 
@@ -133,6 +135,8 @@ describe('Timer.main', () => {
 			 * - No events at t=0 (before any timer is due)
 			 * - Each timer fires only when its dueAt is reached
 			 * - Timer state persists correctly after firing
+			 *
+			 * @see ADR-0003 for timer state machine (Scheduled → Reached)
 			 */
 			() =>
 				Effect.gen(function* () {
@@ -261,6 +265,95 @@ describe('Timer.main', () => {
 					yield* Main.stop(fiber)
 				}).pipe(Effect.provide(TestHarness.Default)),
 		)
+
+		it.scoped(
+			'should handle timer at exact clock boundary (dueAt === now)',
+			/**
+			 * ```txt
+			 * GIVEN Timer.main is running
+			 *   AND a timer scheduled with dueAt exactly at current clock time
+			 * WHEN polling executes
+			 * THEN timer fires (inclusive boundary: dueAt <= now)
+			 *   AND DueTimeReached event is published
+			 * ```
+			 *
+			 * Tests microsecond precision boundary: timer due at exact clock value.
+			 * Verifies inclusive comparison (<=) in findDue query.
+			 */
+			() =>
+				Effect.gen(function* () {
+					const { Time, Timers, Main, Expect } = yield* TestHarness
+
+					// ─── Arrange: Timer due in 10 seconds ───────────────────────────────
+					const timer = yield* Timers.make.scheduled('10 seconds')
+
+					// ─── Start Timer.main ───────────────────────────────────────────────
+					const fiber = yield* Main.start()
+					yield* Effect.yieldNow()
+
+					// ─── Advance to EXACT due time (not past) ───────────────────────────
+					yield* Time.advance('10 seconds') // now === dueAt
+
+					// ─── Timer fires at exact boundary (inclusive comparison) ───────────
+					yield* Expect.events.toHaveCount(1).verify
+					yield* Expect.events.forTimer(timer).toHaveType('DueTimeReached').verify
+					yield* Expect.timers.forTimer(timer).toBeReached().verify
+
+					yield* Main.stop(fiber)
+				}).pipe(Effect.provide(TestHarness.Default)),
+		)
+
+		it.scoped(
+			'should handle large batch of due timers efficiently',
+			/**
+			 * ```txt
+			 * GIVEN Timer.main is running
+			 *   AND 50 timers all due at same time
+			 * WHEN polling executes
+			 * THEN all 50 timers fire in single poll cycle
+			 *   AND all 50 DueTimeReached events published
+			 *   AND all timers transition to Reached state
+			 * ```
+			 *
+			 * Tests batch processing efficiency and correctness.
+			 * Verifies no timers are dropped or duplicated.
+			 *
+			 * Note: 50 timers chosen as reasonable batch size for test performance.
+			 * Production systems may handle 1000+ timers per poll.
+			 */
+			() =>
+				Effect.gen(function* () {
+					const { Time, Timers, Main, Expect } = yield* TestHarness
+
+					// ─── Arrange: 50 timers all due at 5 minutes ────────────────────────
+					const batchSize = 50
+					const timers = yield* pipe(
+						Timers.make.scheduled('5 minutes'),
+						ReadonlyArray.replicate(batchSize),
+						Effect.allWith({ concurrency: 'unbounded' }),
+					)
+
+					// ─── Start Timer.main ───────────────────────────────────────────────
+					const fiber = yield* Main.start()
+					yield* Effect.yieldNow()
+
+					// ─── Advance past due time ──────────────────────────────────────────
+					yield* Time.advance(Duration.sum('5 minutes', '1 seconds'))
+
+					// ─── All timers fire in single poll ─────────────────────────────────
+					yield* Expect.events.toHaveCount(batchSize).verify
+
+					// ─── Verify each timer transitioned to Reached ──────────────────────
+					for (const timer of timers) {
+						yield* Expect.timers.forTimer(timer).toBeReached().verify
+					}
+
+					// ─── No timers remain due ───────────────────────────────────────────
+					yield* Expect.timers.noneDue
+
+					yield* Main.stop(fiber)
+				}).pipe(Effect.provide(TestHarness.Default)),
+		)
 	})
 
 	describe('End-to-End Lifecycle', () => {
@@ -328,6 +421,9 @@ describe('Timer.main', () => {
 				 * - Multiple tenants processed together (efficiency)
 				 * - No cross-tenant data leakage (security)
 				 * - End-to-end multi-tenancy through command path
+				 *
+				 * @see ADR-0004 for multi-tenancy database design
+				 * @see ADR-0005 for schema tenant_id filtering requirements
 				 */
 				() =>
 					Effect.gen(function* () {
@@ -453,6 +549,8 @@ describe('Timer.main', () => {
 			 * ```
 			 *
 			 * Tests both startup (immediate first poll) and shutdown (clean interruption).
+			 *
+			 * @see ADR-0003 for polling worker design and lifecycle
 			 */
 			() =>
 				Effect.gen(function* () {

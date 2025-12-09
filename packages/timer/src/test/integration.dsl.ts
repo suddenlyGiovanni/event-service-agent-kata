@@ -216,7 +216,7 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 
 							return timerKey
 						},
-						(effect) => effect.pipe(Effect.provideService(Adapters.Platform.UUID7, uuid7), (_) => _),
+						(effect) => effect.pipe(Effect.provideService(Adapters.Platform.UUID7, uuid7)),
 					),
 				},
 			}
