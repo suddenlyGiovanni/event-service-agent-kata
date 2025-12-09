@@ -413,15 +413,42 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 			}
 
 			/**
+			 * Generator DSL - ID generation utilities
+			 */
+			const Generators = {
+				/**
+				 * Generate a new ServiceCallId (UUID v7)
+				 */
+				serviceCallId: () => ServiceCallId.makeUUID7().pipe(Effect.provideService(Adapters.Platform.UUID7, uuid7)),
+
+				/**
+				 * Generate a new TenantId (UUID v7)
+				 */
+				tenantId: () => TenantId.makeUUID7().pipe(Effect.provideService(Adapters.Platform.UUID7, uuid7)),
+			}
+
+			/**
 			 * Command delivery DSL
 			 */
 			const Commands = {
 				deliver: {
 					/**
 					 * Deliver a ScheduleTimer command via captured EventBus subscription handler.
+					 *
+					 * @param dueIn - Duration from now when timer should fire (default: '5 minutes')
+					 * @param tenantId - Optional tenant ID (generates UUID v7 if omitted)
+					 * @param serviceCallId - Optional service call ID for idempotency testing (generates UUID v7 if omitted)
 					 */
 					scheduleTimer: Effect.fn(
-						function* ({ dueIn = '5 minutes', tenantId }: { dueIn?: DurationInput; tenantId?: TenantId.Type } = {}) {
+						function* ({
+							dueIn = '5 minutes',
+							tenantId,
+							serviceCallId,
+						}: {
+							dueIn?: DurationInput
+							tenantId?: TenantId.Type
+							serviceCallId?: ServiceCallId.Type
+						} = {}) {
 							const handler = yield* pipe(
 								commandHandlerRef,
 								Ref.get,
@@ -441,7 +468,7 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 							const dueAt = DateTime.addDuration(now, dur)
 
 							const timerKey = Ports.TimerScheduleKey.make({
-								serviceCallId: yield* ServiceCallId.makeUUID7(),
+								serviceCallId: serviceCallId ?? (yield* ServiceCallId.makeUUID7()),
 								tenantId: tenantId ?? (yield* TenantId.makeUUID7()),
 							})
 
@@ -481,7 +508,7 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 				},
 			}
 
-			return { Commands, Expect, Main, Time, Timers } as const
+			return { Commands, Expect, Generators, Main, Time, Timers } as const
 		}),
 	},
 ) {}
