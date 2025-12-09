@@ -86,35 +86,41 @@ describe('Timer.main', () => {
 				}).pipe(Effect.provide(TestHarness.Default)),
 		)
 
-		it.todo(
-			'should retry with exponential backoff on transient persistence failure',
-			/**
-			 * ```txt
-			 * GIVEN Timer.main is running
-			 *   AND persistence fails on first 2 attempts, succeeds on 3rd
-			 * WHEN ScheduleTimer command is processed
-			 * THEN retries at 100ms, 200ms intervals
-			 *   AND third attempt succeeds
-			 *   AND timer is persisted
-			 * ```
-			 *
-			 * **Blocked**: Requires Commands.deliver + injectable persistence failures.
-			 *
-			 * Implementation sketch when unblocked:
-			 * ```typescript
-			 * const { Time, Main, Expect, Commands, Errors } = yield* TestHarness
-			 * yield* Errors.injectSequence('save', [
-			 *   new PersistenceError({ operation: 'save', message: 'transient 1' }),
-			 *   new PersistenceError({ operation: 'save', message: 'transient 2' }),
-			 *   'succeed'
-			 * ])
-			 * const fiber = yield* Main.start()
-			 * const timerKey = yield* Commands.deliver.scheduleTimer({ dueIn: '5 minutes' })
-			 * yield* Time.advance('400 milliseconds') // Allow retries
-			 * yield* Expect.timers.forTimer(timerKey).toBeScheduled().verify
-			 * ```
-			 */
-		)
+		/**
+		 * Error Injection Tests
+		 *
+		 * These tests use imperative layer overrides to inject failures into port operations.
+		 *
+		 * Pattern:
+		 * 1. Get real port implementation via `yield* Ports.PortName`
+		 * 2. Create Ref to track call count: `yield* Ref.make(0)`
+		 * 3. Build mock layer with `Layer.succeed` that wraps operations
+		 * 4. Inject failures based on call count
+		 * 5. Delegate to real port after failure threshold
+		 * 6. Provide mock layer to Main.start() via Effect.provide()
+		 */
+
+		it.skip('should retry with exponential backoff on transient persistence failure' /**
+		 * ```txt
+		 * GIVEN Timer.main is running
+		 *   AND persistence fails on first 2 attempts, succeeds on 3rd
+		 * WHEN ScheduleTimer command is processed
+		 * THEN retries automatically
+		 *   AND third attempt succeeds
+		 *   AND timer is eventually persisted
+		 * ```
+		 *
+		 * Uses imperative layer override pattern (see Error Injection Tests comment above).
+		 *
+		 * **Blocked**: Requires workflow-level retry policy implementation.
+		 * Currently scheduleTimerWorkflow doesn't retry on PersistenceError.
+		 * Once retry policy is added, this test can verify:
+		 * - Retry count (3 attempts)
+		 * - Timer eventually persists after retries
+		 * - Timer can fire normally after persistence
+		 *
+		 * Note: Exponential backoff timing should be tested in workflow unit tests.
+		 */, () => Effect.void)
 	})
 
 	describe('Polling Worker', () => {
@@ -621,35 +627,25 @@ describe('Timer.main', () => {
 	})
 
 	describe('Error Recovery', () => {
-		it.todo(
-			'should recover from polling errors and continue on next interval',
-			/**
-			 * ```txt
-			 * GIVEN Timer.main is running
-			 *   AND first poll fails (e.g., persistence query error)
-			 * WHEN TestClock advances by one poll interval (5s)
-			 * THEN second poll executes successfully
-			 *   AND polling continues on schedule
-			 *   AND subsequent due timers are processed
-			 * ```
-			 *
-			 * Tests PollingWorker error recovery - single failure doesn't stop polling.
-			 *
-			 * **Blocked**: Requires TestHarness enhancement for injectable failures.
-			 * Need to add `Errors.injectOnce({ findDue: new PersistenceError(...) })` DSL
-			 * that wraps TimerPersistencePort with a Ref-based failure injection.
-			 *
-			 * Implementation sketch when unblocked:
-			 * ```typescript
-			 * const { Time, Timers, Main, Expect, Errors } = yield* TestHarness
-			 * yield* Errors.injectOnce({ findDue: new PersistenceError({ ... }) })
-			 * const fiber = yield* Main.start()
-			 * yield* Effect.yieldNow() // First poll fails
-			 * const timer = yield* Timers.make.scheduled('3 seconds')
-			 * yield* Time.advance('5 seconds') // Second poll succeeds
-			 * yield* Expect.timers.forTimer(timer).toBeReached().verify
-			 * ```
-			 */
-		)
+		it.skip('should recover from polling errors and continue on next interval' /**
+		 * ```txt
+		 * GIVEN Timer.main is running
+		 *   AND first poll fails (e.g., persistence query error)
+		 * WHEN TestClock advances by one poll interval (5s)
+		 * THEN second poll executes successfully
+		 *   AND polling continues on schedule
+		 *   AND subsequent due timers are processed
+		 * ```
+		 *
+		 * Tests PollingWorker error recovery - single failure doesn't stop polling.
+		 *
+		 * **Blocked**: Requires complex layer composition that's beyond current DSL.
+		 * The challenge: We need to wrap TimerPersistencePort BEFORE TestHarness
+		 * provides it, but Layer.unwrapScoped adds complexity that may not be worth it
+		 * for 1-2 tests (YAGNI principle).
+		 *
+		 * Alternative approaches when unblocked:
+		 * - Or test error recovery at PollingWorker unit test level instead
+		 */, () => Effect.void)
 	})
 })
