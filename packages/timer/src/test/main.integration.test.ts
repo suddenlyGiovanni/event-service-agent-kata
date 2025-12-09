@@ -37,6 +37,83 @@ import { TestHarness } from './integration.dsl.ts'
  */
 
 describe('Timer.main', () => {
+	describe('Command Subscription', () => {
+		/**
+		 * Command subscription tests are blocked pending TestHarness enhancement.
+		 *
+		 * The `Commands.deliver.scheduleTimer` DSL method requires the EventBus
+		 * test double to capture the subscription handler callback, which is not
+		 * yet implemented (see integration.dsl.ts TODO).
+		 *
+		 * **Required DSL enhancement**:
+		 * 1. EventBusTestLayer.subscribe must capture the handler callback
+		 * 2. Commands.deliver.scheduleTimer must invoke the captured handler
+		 * 3. Handler invocation must include MessageMetadata context
+		 *
+		 * When implemented, these tests will verify:
+		 * - ScheduleTimer command → timer persisted as Scheduled
+		 * - CorrelationId propagation through MessageMetadata
+		 * - ServiceCallScheduled event published after persistence
+		 * - Retry with exponential backoff on transient failures
+		 * - Error propagation to broker after retry exhaustion
+		 */
+
+		it.scoped(
+			'should persist timer and publish ServiceCallScheduled on ScheduleTimer command',
+			/**
+			 * ```txt
+			 * GIVEN Timer.main is running
+			 * WHEN ScheduleTimer command is delivered via EventBus
+			 * THEN timer is persisted in Scheduled state
+			 *   AND ServiceCallScheduled event is published
+			 *   AND event contains correct tenantId, serviceCallId, dueAt
+			 * ```
+			 */
+			() =>
+				Effect.gen(function* () {
+					const { Main, Expect, Commands } = yield* TestHarness
+					const fiber = yield* Main.start()
+					yield* Effect.yieldNow() // Allow subscription to register
+
+					const timerKey = yield* Commands.deliver.scheduleTimer({ dueIn: '5 minutes' })
+
+					yield* Expect.timers.forTimer(timerKey).toBeScheduled().verify
+
+					yield* Main.stop(fiber)
+				}).pipe(Effect.provide(TestHarness.Default)),
+		)
+
+		it.todo(
+			'should retry with exponential backoff on transient persistence failure',
+			/**
+			 * ```txt
+			 * GIVEN Timer.main is running
+			 *   AND persistence fails on first 2 attempts, succeeds on 3rd
+			 * WHEN ScheduleTimer command is processed
+			 * THEN retries at 100ms, 200ms intervals
+			 *   AND third attempt succeeds
+			 *   AND timer is persisted
+			 * ```
+			 *
+			 * **Blocked**: Requires Commands.deliver + injectable persistence failures.
+			 *
+			 * Implementation sketch when unblocked:
+			 * ```typescript
+			 * const { Time, Main, Expect, Commands, Errors } = yield* TestHarness
+			 * yield* Errors.injectSequence('save', [
+			 *   new PersistenceError({ operation: 'save', message: 'transient 1' }),
+			 *   new PersistenceError({ operation: 'save', message: 'transient 2' }),
+			 *   'succeed'
+			 * ])
+			 * const fiber = yield* Main.start()
+			 * const timerKey = yield* Commands.deliver.scheduleTimer({ dueIn: '5 minutes' })
+			 * yield* Time.advance('400 milliseconds') // Allow retries
+			 * yield* Expect.timers.forTimer(timerKey).toBeScheduled().verify
+			 * ```
+			 */
+		)
+	})
+
 	describe('Polling Worker', () => {
 		it.scoped(
 			'should detect due timers at staggered intervals and publish DueTimeReached events',
@@ -179,6 +256,53 @@ describe('Timer.main', () => {
 					yield* Expect.events.toHaveCount(1).verify
 					yield* Expect.events.forTimer(timer).toHaveType('DueTimeReached').verify
 					yield* Expect.timers.forTimer(timer).toBeReached().verify
+
+					yield* Main.stop(fiber)
+				}).pipe(Effect.provide(TestHarness.Default)),
+		)
+	})
+
+	describe('End-to-End Lifecycle', () => {
+		it.scoped(
+			'should complete full lifecycle from command to fired timer (end-to-end)',
+			/**
+			 * ```txt
+			 * GIVEN Timer.main is running with command subscription active
+			 * WHEN ScheduleTimer command is delivered
+			 *   AND TestClock advances past dueAt
+			 * THEN timer is persisted as Scheduled initially
+			 *   AND polling worker detects due timer
+			 *   AND DueTimeReached event is published
+			 *   AND timer transitions to Reached state
+			 * ```
+			 *
+			 * End-to-end lifecycle test verifying:
+			 * - Command subscription → persistence (inbound path)
+			 * - Polling worker → event publishing (outbound path)
+			 * - Full state machine: Command → Scheduled → Reached
+			 */
+			() =>
+				Effect.gen(function* () {
+					const { Time, Main, Expect, Commands } = yield* TestHarness
+
+					// ─── Start Timer.main with command subscription ─────────────────────
+					const fiber = yield* Main.start()
+					yield* Effect.yieldNow() // Allow subscription to register
+
+					// ─── Deliver ScheduleTimer command ──────────────────────────────────
+					const timerKey = yield* Commands.deliver.scheduleTimer({ dueIn: '5 minutes' })
+
+					// ─── Verify timer persisted as Scheduled ────────────────────────────
+					yield* Expect.timers.forTimer(timerKey).toBeScheduled().verify
+					yield* Expect.events.toBeEmpty().verify
+
+					// ─── Advance past due time ──────────────────────────────────────────
+					yield* Time.advance(Duration.sum('5 minutes', '1 seconds'))
+
+					// ─── Verify polling worker fired timer ──────────────────────────────
+					yield* Expect.events.toHaveCount(1).verify
+					yield* Expect.events.forTimer(timerKey).toHaveType('DueTimeReached').verify
+					yield* Expect.timers.forTimer(timerKey).toBeReached().verify
 
 					yield* Main.stop(fiber)
 				}).pipe(Effect.provide(TestHarness.Default)),
@@ -353,83 +477,6 @@ describe('Timer.main', () => {
 			 * const timer = yield* Timers.make.scheduled('3 seconds')
 			 * yield* Time.advance('5 seconds') // Second poll succeeds
 			 * yield* Expect.timers.forTimer(timer).toBeReached().verify
-			 * ```
-			 */
-		)
-	})
-
-	describe('Command Subscription', () => {
-		/**
-		 * Command subscription tests are blocked pending TestHarness enhancement.
-		 *
-		 * The `Commands.deliver.scheduleTimer` DSL method requires the EventBus
-		 * test double to capture the subscription handler callback, which is not
-		 * yet implemented (see integration.dsl.ts TODO).
-		 *
-		 * **Required DSL enhancement**:
-		 * 1. EventBusTestLayer.subscribe must capture the handler callback
-		 * 2. Commands.deliver.scheduleTimer must invoke the captured handler
-		 * 3. Handler invocation must include MessageMetadata context
-		 *
-		 * When implemented, these tests will verify:
-		 * - ScheduleTimer command → timer persisted as Scheduled
-		 * - CorrelationId propagation through MessageMetadata
-		 * - ServiceCallScheduled event published after persistence
-		 * - Retry with exponential backoff on transient failures
-		 * - Error propagation to broker after retry exhaustion
-		 */
-
-		it.scoped(
-			'should persist timer and publish ServiceCallScheduled on ScheduleTimer command',
-			/**
-			 * ```txt
-			 * GIVEN Timer.main is running
-			 * WHEN ScheduleTimer command is delivered via EventBus
-			 * THEN timer is persisted in Scheduled state
-			 *   AND ServiceCallScheduled event is published
-			 *   AND event contains correct tenantId, serviceCallId, dueAt
-			 * ```
-			 */
-			() =>
-				Effect.gen(function* () {
-					const { Main, Expect, Commands } = yield* TestHarness
-					const fiber = yield* Main.start()
-					yield* Effect.yieldNow() // Allow subscription to register
-
-					const timerKey = yield* Commands.deliver.scheduleTimer({ dueIn: '5 minutes' })
-
-					yield* Expect.timers.forTimer(timerKey).toBeScheduled().verify
-
-					yield* Main.stop(fiber)
-				}).pipe(Effect.provide(TestHarness.Default)),
-		)
-
-		it.todo(
-			'should retry with exponential backoff on transient persistence failure',
-			/**
-			 * ```txt
-			 * GIVEN Timer.main is running
-			 *   AND persistence fails on first 2 attempts, succeeds on 3rd
-			 * WHEN ScheduleTimer command is processed
-			 * THEN retries at 100ms, 200ms intervals
-			 *   AND third attempt succeeds
-			 *   AND timer is persisted
-			 * ```
-			 *
-			 * **Blocked**: Requires Commands.deliver + injectable persistence failures.
-			 *
-			 * Implementation sketch when unblocked:
-			 * ```typescript
-			 * const { Time, Main, Expect, Commands, Errors } = yield* TestHarness
-			 * yield* Errors.injectSequence('save', [
-			 *   new PersistenceError({ operation: 'save', message: 'transient 1' }),
-			 *   new PersistenceError({ operation: 'save', message: 'transient 2' }),
-			 *   'succeed'
-			 * ])
-			 * const fiber = yield* Main.start()
-			 * const timerKey = yield* Commands.deliver.scheduleTimer({ dueIn: '5 minutes' })
-			 * yield* Time.advance('400 milliseconds') // Allow retries
-			 * yield* Expect.timers.forTimer(timerKey).toBeScheduled().verify
 			 * ```
 			 */
 		)
