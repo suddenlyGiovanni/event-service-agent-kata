@@ -42,7 +42,7 @@ export class TimerEventBus {
 
 			const publishDueTimeReached = Effect.fn('Timer.publishDueTimeReached')(function* (
 				dueTimeReached: Messages.Timer.Events.DueTimeReached.Type,
-			) {
+			): Effect.fn.Return<void, Ports.Platform.PublishError, MessageMetadata> {
 				/**
 				 * Extract observability metadata from Effect Context
 				 *
@@ -144,78 +144,75 @@ export class TimerEventBus {
 				})
 			})
 
-			const subscribeToScheduleTimerCommands = Effect.fn('Timer.subscribeToScheduleTimerCommands')(
-				<E, R>(
-					handler: (
-						command: Messages.Orchestration.Commands.ScheduleTimer.Type,
-						metadata: MessageMetadata.Type,
-					) => Effect.Effect<void, E, R>,
-				): Effect.Effect<void, Ports.Platform.SubscribeError | E, R> =>
-					Effect.gen(function* () {
-						/**
-						 * Log subscription establishment
-						 *
-						 * One-time log when subscription is set up, showing which topics the Timer module is listening to for
-						 * commands.
-						 */
-						yield* Effect.logInfo('Subscribed to ScheduleTimer commands', {
-							topics: Topics.Timer.Commands,
-						})
+			const subscribeToScheduleTimerCommands = Effect.fn('Timer.subscribeToScheduleTimerCommands')(function* <E, R>(
+				handler: (
+					command: Messages.Orchestration.Commands.ScheduleTimer.Type,
+					metadata: MessageMetadata.Type,
+				) => Effect.Effect<void, E, R>,
+			): Effect.fn.Return<void, Ports.Platform.SubscribeError | E, R> {
+				/**
+				 * Log subscription establishment
+				 *
+				 * One-time log when subscription is set up, showing which topics the Timer module is listening to for
+				 * commands.
+				 */
+				yield* Effect.logInfo('Subscribed to ScheduleTimer commands', {
+					topics: Topics.Timer.Commands,
+				})
 
-						yield* eventBus.subscribe([Topics.Timer.Commands], (envelope) =>
-							MessageEnvelope.matchPayload(envelope).pipe(
-								Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, (command) =>
-									Effect.gen(function* () {
-										/**
-										 * Annotate span with inbound message metadata
-										 *
-										 * Infrastructure-level annotations for command reception (inbound):
-										 *
-										 * - Adapter annotates: message.envelope.id, message.correlationId (from upstream)
-										 * - Handler annotates: domain-level command details
-										 *
-										 * Enables span linking: upstream service span → adapter span → handler span
-										 */
-										yield* Effect.annotateCurrentSpan({
-											'message.causationId': Option.getOrUndefined(envelope.causationId),
-											'message.correlationId': Option.getOrUndefined(envelope.correlationId),
-											'message.envelope.id': envelope.id,
-											'message.type': envelope.type,
-										})
+				yield* eventBus.subscribe([Topics.Timer.Commands], (envelope) =>
+					MessageEnvelope.matchPayload(envelope).pipe(
+						Match.tag(Messages.Orchestration.Commands.ScheduleTimer.Tag, (command) =>
+							Effect.gen(function* () {
+								/**
+								 * Annotate span with inbound message metadata
+								 *
+								 * Infrastructure-level annotations for command reception (inbound):
+								 *
+								 * - Adapter annotates: message.envelope.id, message.correlationId (from upstream)
+								 * - Handler annotates: domain-level command details
+								 *
+								 * Enables span linking: upstream service span → adapter span → handler span
+								 */
+								yield* Effect.annotateCurrentSpan({
+									'message.causationId': Option.getOrUndefined(envelope.causationId),
+									'message.correlationId': Option.getOrUndefined(envelope.correlationId),
+									'message.envelope.id': envelope.id,
+									'message.type': envelope.type,
+								})
 
-										/**
-										 * Log command reception at adapter boundary
-										 *
-										 * Infrastructure-level logging for inbound commands:
-										 *
-										 * - Adapter logs: "Received ScheduleTimer command" (message arrived)
-										 * - Handler logs: domain-level processing events
-										 *
-										 * Enables debugging: verify command arrived with correct correlationId
-										 */
-										yield* Effect.logDebug('Received ScheduleTimer command', {
-											causationId: Option.getOrUndefined(envelope.causationId),
-											correlationId: Option.getOrUndefined(envelope.correlationId),
-											envelopeId: envelope.id,
-											serviceCallId: command.serviceCallId,
-											tenantId: command.tenantId,
-										})
+								/**
+								 * Log command reception at adapter boundary
+								 *
+								 * Infrastructure-level logging for inbound commands:
+								 *
+								 * - Adapter logs: "Received ScheduleTimer command" (message arrived)
+								 * - Handler logs: domain-level processing events
+								 *
+								 * Enables debugging: verify command arrived with correct correlationId
+								 */
+								yield* Effect.logDebug('Received ScheduleTimer command', {
+									causationId: Option.getOrUndefined(envelope.causationId),
+									correlationId: Option.getOrUndefined(envelope.correlationId),
+									envelopeId: envelope.id,
+									serviceCallId: command.serviceCallId,
+									tenantId: command.tenantId,
+								})
 
-										yield* handler(command, {
-											causationId: Option.some(envelope.id),
-											correlationId: envelope.correlationId,
-										})
-									}),
-								),
-								Match.orElse(() =>
-									Effect.logDebug('Ignoring non-ScheduleTimer message', {
-										receivedType: envelope.type,
-									}),
-								),
-							),
-						)
-					}),
-			)
+								yield* handler(command, {
+									causationId: Option.some(envelope.id),
+									correlationId: envelope.correlationId,
+								})
+							}),
+						),
+						Match.orElse(() =>
+							Effect.logDebug('Ignoring non-ScheduleTimer message', {
+								receivedType: envelope.type,
+							}),
+						),
+					),
+				)
+			})
 
 			return Ports.TimerEventBusPort.of({
 				publishDueTimeReached,

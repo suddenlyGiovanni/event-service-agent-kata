@@ -193,11 +193,11 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
  * - Early return optimization
  * - Design trade-offs (polling vs push, fail-fast vs error accumulation)
  */
-export const pollDueTimersWorkflow: () => Effect.Effect<
+export const pollDueTimersWorkflow = Effect.fn('Timer.PollDueTimersWorkflow')(function* (): Effect.fn.Return<
 	void,
 	Ports.PersistenceError | BatchProcessingError,
 	Ports.TimerPersistencePort | Ports.ClockPort | Ports.TimerEventBusPort
-> = Effect.fn('Timer.PollDueTimersWorkflow')(function* () {
+> {
 	const persistence = yield* Ports.TimerPersistencePort
 	const clock = yield* Ports.ClockPort
 
