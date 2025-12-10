@@ -20,7 +20,7 @@ import { EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schema
 
 import * as Adapters from '../adapters/index.ts'
 import { TimerDomain } from '../domain/index.ts'
-import { _main } from '../main.ts'
+import { _main, Timer } from '../main.ts'
 import * as Ports from '../ports/index.ts'
 import { ServiceCallFixture } from './service-call.fixture.ts'
 
@@ -231,16 +231,19 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 				 * Uses forkScoped so the fiber is automatically interrupted when the
 				 * test scope closes - even if an assertion fails before Main.stop().
 				 */
-				start: () =>
-					pipe(
-						Context.empty(),
-						Context.add(Ports.TimerPersistencePort, persistence),
-						Context.add(Ports.ClockPort, clock),
-						Context.add(Adapters.Platform.UUID7, uuid7),
-						Context.add(Ports.TimerEventBusPort, eventBus),
-						(context) => Effect.provide(_main, context),
-						Effect.forkScoped,
-					),
+				start: Effect.fn(function* () {
+					const context = pipe(
+						pipe(
+							Context.empty(),
+							Context.add(Ports.TimerPersistencePort, persistence),
+							Context.add(Ports.ClockPort, clock),
+							Context.add(Adapters.Platform.UUID7, uuid7),
+							Context.add(Ports.TimerEventBusPort, eventBus),
+						),
+					)
+
+					return yield* pipe(_main, Effect.provide(context), Effect.forkScoped)
+				}),
 
 				/**
 				 * Interrupt the Timer.main fiber and await its exit status.
