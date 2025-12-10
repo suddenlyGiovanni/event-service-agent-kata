@@ -226,7 +226,6 @@ export class Timer extends Effect.Service<Timer>()('@event-service-agent/timer/T
 	 * **Still requires**:
 	 * - `EventBusPort`: Provide a test event bus adapter
 	 *
-	 *
 	 * **Deterministic behavior**:
 	 * - Time only advances when `TestClock.adjust()` is called
 	 * - UUIDs are sequential: `00000000-0000-7000-8000-000000000000`, `00000000-0000-7000-8000-000000000001`, etc.
