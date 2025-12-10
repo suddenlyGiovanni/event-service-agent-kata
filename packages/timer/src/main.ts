@@ -215,6 +215,26 @@ export class Timer extends Effect.Service<Timer>()('@event-service-agent/timer/T
 		} as const
 	}),
 }) {
+	/**
+	 * Test layer with in-memory persistence, TestClock, and sequential UUIDs.
+	 *
+	 * Provides a fully deterministic Timer service for integration testing:
+	 * - **TimerPersistence.Test**: In-memory SQLite (`:memory:`) with auto-migrations
+	 * - **Clock.Test**: TestClock for manual time control
+	 * - **UUID7.Sequence**: Predictable, sequential UUIDs starting from 0
+	 *
+	 * **Still requires**:
+	 * - `EventBusPort`: Provide a test event bus adapter
+	 *
+	 *
+	 * **Deterministic behavior**:
+	 * - Time only advances when `TestClock.adjust()` is called
+	 * - UUIDs are sequential: `00000000-0000-7000-8000-000000000000`, `00000000-0000-7000-8000-000000000001`, etc.
+	 * - No file I/O (all persistence in-memory)
+	 *
+	 * @see {@link Timer.Default} — Production layer with real dependencies
+	 * @see packages/timer/src/test/integration/integration.test.ts — Usage examples
+	 */
 	static readonly Test: Layer.Layer<
 		Timer,
 		| Sql.SqlError.SqlError
