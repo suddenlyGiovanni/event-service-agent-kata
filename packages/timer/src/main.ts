@@ -1,3 +1,6 @@
+import type * as Platform from '@effect/platform'
+import type * as Sql from '@effect/sql'
+import type { ConfigError } from 'effect/ConfigError'
 import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
 import { pipe } from 'effect/Function'
@@ -211,28 +214,19 @@ export class Timer extends Effect.Service<Timer>()('@event-service-agent/timer/T
 			main,
 		} as const
 	}),
-}) {}
-
-/**
- * Convenience export: Auto-start Timer service.
- *
- * Requires `EventBusPort` to be provided by caller.
- *
- * @example Production Usage
- * ```typescript ignore
- * import timer from "@event-service-agent/timer"
- * import { EventBusPortLive } from "@event-service-agent/platform/ports"
- * import { BunRuntime } from "@effect/platform-bun"
- *
- * timer.pipe(
- *   Effect.provide(EventBusPortLive),
- *   BunRuntime.runMain
- * )
- * ```
- */
-export default pipe(
-	Timer.main,
-	(_) => _,
-	Effect.provide(Timer.Default),
-	(_) => _,
-)
+}) {
+	static readonly Test: Layer.Layer<
+		Timer,
+		| Sql.SqlError.SqlError
+		| Sql.Migrator.MigrationError
+		| ConfigError
+		| Platform.Error.BadArgument
+		| Platform.Error.SystemError,
+		Ports.Platform.EventBusPort
+	> = Timer.DefaultWithoutDependencies.pipe(
+		Layer.provide(Adapters.TimerEventBus.Live),
+		Layer.provide(Adapters.Clock.Test),
+		Layer.provide(Adapters.Platform.UUID7.Sequence()),
+		Layer.provide(Adapters.TimerPersistence.Test),
+	)
+}
