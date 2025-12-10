@@ -3,6 +3,7 @@ import * as Effect from 'effect/Effect'
 import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import * as Schedule from 'effect/Schedule'
+import type * as Scope from 'effect/Scope'
 
 import { MessageMetadata } from '@event-service-agent/platform/context'
 
@@ -93,4 +94,56 @@ export const _main = Effect.gen(function* () {
 export const main = Effect.fn('Timer.main')(
 	() => _main,
 	(effect) => effect.pipe(Effect.provide(TimerLive)),
+)
+
+export class Timer extends Effect.Service<Timer>()('@event-service-agent/timer/main.ts', {
+	accessors: true,
+	dependencies: [
+		Layer.merge(Adapters.TimerPersistence.Live, Adapters.TimerEventBus.Live).pipe(
+			Layer.provideMerge(Adapters.Clock.Live),
+			Layer.provide(Adapters.Platform.UUID7.Default),
+		),
+	],
+	scoped: Effect.gen(function* () {
+		const eventBus = yield* Ports.TimerEventBusPort
+
+		const main: Effect.Effect<
+			void,
+			Ports.Platform.SubscribeError | Ports.PersistenceError,
+			Ports.TimerPersistencePort | Ports.TimerEventBusPort | Ports.ClockPort | Scope.Scope
+		> = Effect.gen(function* () {
+			/**
+			 * Fork polling worker in local scope — interrupted when scope closes
+			 */
+			yield* Effect.forkScoped(PollingWorker.run)
+
+			/**
+			 * Run command subscription in main fiber (blocks until broker closes)
+			 */
+			yield* eventBus
+				.subscribeToScheduleTimerCommands((command, metadata) =>
+					Workflows.scheduleTimerWorkflow(command).pipe(
+						Effect.provideService(MessageMetadata, metadata),
+						Effect.retry(Schedule.compose(Schedule.exponential(Duration.millis(100)), Schedule.recurs(3))),
+					),
+				)
+				.pipe(Effect.withSpan('Timer.CommandSubscription.run'))
+		}).pipe(Effect.withSpan('Timer.main'))
+
+		return { main } as const
+	}),
+}) {}
+
+export default Effect.gen(function* () {
+	const timer = yield* Timer
+
+	yield* timer.main
+}).pipe(
+	(
+		_: Effect.Effect<
+			void,
+			Ports.Platform.SubscribeError | Ports.PersistenceError,
+			Ports.TimerPersistencePort | Ports.TimerEventBusPort | Ports.ClockPort | Scope.Scope | Timer
+		>,
+	) => _,
 )

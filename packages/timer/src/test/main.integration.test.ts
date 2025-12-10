@@ -602,7 +602,7 @@ describe('Timer.main', () => {
 					const { Time, Timers, Main, Expect } = yield* TestHarness
 
 					// ─── Arrange: Timer that will be due at t=30s ───────────────────────
-					const _timer = yield* Timers.make.scheduled('30 seconds')
+					yield* Timers.make.scheduled('30 seconds')
 
 					// ─── Start Timer.main ───────────────────────────────────────────────
 					const fiber = yield* Main.start()
