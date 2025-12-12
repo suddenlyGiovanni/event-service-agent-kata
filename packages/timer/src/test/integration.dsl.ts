@@ -241,7 +241,6 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 					)
 
 					return yield* Timer.pipe(
-						Effect.flatMap((timer) => timer.main),
 						Effect.provide(Timer.DefaultWithoutDependencies),
 						Effect.provide(context),
 						Effect.forkScoped,

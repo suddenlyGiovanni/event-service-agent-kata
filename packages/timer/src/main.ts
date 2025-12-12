@@ -1,11 +1,8 @@
-import type * as Platform from '@effect/platform'
-import type * as Sql from '@effect/sql'
-import type { ConfigError } from 'effect/ConfigError'
+import * as Context from 'effect/Context'
 import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as Schedule from 'effect/Schedule'
-import type * as Scope from 'effect/Scope'
 
 import { MessageMetadata } from '@event-service-agent/platform/context'
 
@@ -37,55 +34,32 @@ import * as Workflows from './workflows/index.ts'
  * **Required from caller**:
  * - `EventBusPort` — Message broker adapter (pending PL-3)
  *
- * @see {@link main} — Legacy function-based API (deprecated)
  * @see docs/design/modules/timer.md — Module responsibilities
  * @see ADR-0003 — Polling interval rationale
  * @see ADR-0002 — Broker adapter decision
  */
-export class Timer extends Effect.Service<Timer>()('@event-service-agent/timer/Timer', {
-	accessors: true,
-
-	/**
-	 * Timer module production layer composition
-	 *
-	 * Composes Timer adapters with their platform dependencies:
-	 *
-	 * - {@link Adapters.TimerPersistence.Live} — SQLite file-backed storage
-	 * - {@link Adapters.TimerEventBus.Live} — Event publishing via EventBusPort
-	 * - {@link Adapters.Clock.Live} — Real system time
-	 *
-	 * **Unsatisfied dependency**: `EventBusPort` remains in `R` channel.
-	 * Caller must provide a broker adapter (PL-3) or mock for testing.
-	 *
-	 * @internal Not part of public API
-	 *
-	 * @see docs/design/modules/timer.md — Module responsibilities
-	 * @see ADR-0002 — Broker adapter decision (pending)
-	 */
-	dependencies: [
-		Layer.merge(Adapters.TimerPersistence.Live, Adapters.TimerEventBus.Live).pipe(
-			Layer.provideMerge(Adapters.Clock.Live),
-			Layer.provide(Adapters.Platform.UUID7.Default),
-		),
-	],
-	scoped: Effect.gen(function* () {
+export class Timer extends Context.Tag('@event-service-agent/timer/Timer')<Timer, void>() {
+	static readonly DefaultWithoutDependencies = Layer.scoped(
+		Timer,
 		/**
-		 * Capture the service context provided by dependencies.
+		 * Main timer service effect.
 		 *
-		 * This context is pre-provided to the `main` effect, ensuring that
-		 * port requirements don't leak to consumers after providing Timer.Default.
+		 * Runs two concurrent operations:
+		 * 1. **Polling worker** (scoped fiber): Checks for due timers every 5 seconds
+		 * 2. **Command subscription** (main fiber): Listens for ScheduleTimer commands
 		 *
-		 * Context includes:
-		 * - TimerPersistencePort (SQLite or in-memory)
-		 * - TimerEventBusPort (wraps platform EventBusPort)
-		 * - ClockPort (real time or TestClock)
-		 * - Scope (for fiber lifecycle management)
+		 * **Lifecycle**:
+		 * - Polling fiber is forked in local scope (auto-interrupted on scope close)
+		 * - Command subscription runs in main fiber (blocks until broker closes)
+		 * - All port dependencies are pre-satisfied from captured context
+		 *
+		 * **Requirements after context provision**:
+		 * - Only `Scope.Scope` remains (for forkScoped)
+		 * - All port requirements (Persistence, EventBus, Clock) are satisfied
+		 *
+		 * @returns Effect that runs indefinitely until scope closes or broker disconnects
 		 */
-		const context = yield* Effect.context<
-			Ports.TimerPersistencePort | Ports.ClockPort | Ports.TimerEventBusPort | Scope.Scope
-		>()
-
-		const main = Effect.gen(function* () {
+		Effect.gen(function* () {
 			const eventBus = yield* Ports.TimerEventBusPort
 
 			/**
@@ -104,31 +78,33 @@ export class Timer extends Effect.Service<Timer>()('@event-service-agent/timer/T
 					),
 				)
 				.pipe(Effect.withSpan('Timer.CommandSubscription.run'))
-		}).pipe(Effect.withSpan('Timer.main'), Effect.provide(context))
+		}),
+	)
 
-		return {
-			/**
-			 * Main timer service effect.
-			 *
-			 * Runs two concurrent operations:
-			 * 1. **Polling worker** (scoped fiber): Checks for due timers every 5 seconds
-			 * 2. **Command subscription** (main fiber): Listens for ScheduleTimer commands
-			 *
-			 * **Lifecycle**:
-			 * - Polling fiber is forked in local scope (auto-interrupted on scope close)
-			 * - Command subscription runs in main fiber (blocks until broker closes)
-			 * - All port dependencies are pre-satisfied from captured context
-			 *
-			 * **Requirements after context provision**:
-			 * - Only `Scope.Scope` remains (for forkScoped)
-			 * - All port requirements (Persistence, EventBus, Clock) are satisfied
-			 *
-			 * @returns Effect that runs indefinitely until scope closes or broker disconnects
-			 */
-			main,
-		} as const
-	}),
-}) {
+	/**
+	 * Timer module production layer composition
+	 *
+	 * Composes Timer adapters with their platform dependencies:
+	 *
+	 * - {@link Adapters.TimerPersistence.Live} — SQLite file-backed storage
+	 * - {@link Adapters.TimerEventBus.Live} — Event publishing via EventBusPort
+	 * - {@link Adapters.Clock.Live} — Real system time
+	 *
+	 * **Unsatisfied dependency**: `EventBusPort` remains in `R` channel.
+	 * Caller must provide a broker adapter (PL-3) or mock for testing.
+	 *
+	 * @internal Not part of public API
+	 *
+	 * @see docs/design/modules/timer.md — Module responsibilities
+	 * @see ADR-0002 — Broker adapter decision (pending)
+	 */
+	static readonly Live = this.DefaultWithoutDependencies.pipe(
+		Layer.provide(Adapters.TimerEventBus.Live),
+		Layer.provide(Adapters.Clock.Live),
+		Layer.provide(Adapters.TimerPersistence.Live),
+		Layer.provide(Adapters.Platform.UUID7.Default),
+	)
+
 	/**
 	 * Test layer with in-memory persistence, TestClock, and sequential UUIDs.
 	 *
@@ -148,15 +124,7 @@ export class Timer extends Effect.Service<Timer>()('@event-service-agent/timer/T
 	 * @see {@link Timer.Default} — Production layer with real dependencies
 	 * @see packages/timer/src/test/integration/integration.test.ts — Usage examples
 	 */
-	static readonly Test: Layer.Layer<
-		Timer,
-		| Sql.SqlError.SqlError
-		| Sql.Migrator.MigrationError
-		| ConfigError
-		| Platform.Error.BadArgument
-		| Platform.Error.SystemError,
-		Ports.Platform.EventBusPort
-	> = Timer.DefaultWithoutDependencies.pipe(
+	static readonly Test = this.DefaultWithoutDependencies.pipe(
 		Layer.provide(Adapters.TimerEventBus.Live),
 		Layer.provide(Adapters.Clock.Test),
 		Layer.provide(Adapters.Platform.UUID7.Sequence()),
