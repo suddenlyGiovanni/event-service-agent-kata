@@ -20,7 +20,7 @@ import { EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schema
 
 import * as Adapters from '../adapters/index.ts'
 import { TimerDomain } from '../domain/index.ts'
-import { _main, Timer } from '../main.ts'
+import { Timer } from '../main.ts'
 import * as Ports from '../ports/index.ts'
 import { ServiceCallFixture } from './service-call.fixture.ts'
 
@@ -233,16 +233,19 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 				 */
 				start: Effect.fn(function* () {
 					const context = pipe(
-						pipe(
-							Context.empty(),
-							Context.add(Ports.TimerPersistencePort, persistence),
-							Context.add(Ports.ClockPort, clock),
-							Context.add(Adapters.Platform.UUID7, uuid7),
-							Context.add(Ports.TimerEventBusPort, eventBus),
-						),
+						Context.empty(),
+						Context.add(Ports.TimerPersistencePort, persistence),
+						Context.add(Ports.ClockPort, clock),
+						Context.add(Adapters.Platform.UUID7, uuid7),
+						Context.add(Ports.TimerEventBusPort, eventBus),
 					)
 
-					return yield* pipe(_main, Effect.provide(context), Effect.forkScoped)
+					return yield* Timer.pipe(
+						Effect.flatMap((timer) => timer.main),
+						Effect.provide(Timer.DefaultWithoutDependencies),
+						Effect.provide(context),
+						Effect.forkScoped,
+					)
 				}),
 
 				/**
