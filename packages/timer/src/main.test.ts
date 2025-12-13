@@ -48,10 +48,7 @@ class TestEventBusState extends Context.Tag('@timer/test/main/TestEventBusState'
 	{
 		readonly publishedEvents: Ref.Ref<Chunk.Chunk<MessageEnvelope.Type>>
 		readonly subscribeCallCount: Ref.Ref<number>
-		readonly subscriptionHandler: Deferred.Deferred<
-			(envelope: MessageEnvelope.Type) => Effect.Effect<void>,
-			never
-		>
+		readonly subscriptionHandler: Deferred.Deferred<(envelope: MessageEnvelope.Type) => Effect.Effect<void>, never>
 	}
 >() {}
 
@@ -62,10 +59,7 @@ const MockEventBusLayer = Layer.unwrapEffect(
 	Effect.gen(function* () {
 		const publishedEvents = yield* Ref.make(Chunk.empty<MessageEnvelope.Type>())
 		const subscribeCallCount = yield* Ref.make(0)
-		const subscriptionHandler = yield* Deferred.make<
-			(envelope: MessageEnvelope.Type) => Effect.Effect<void>,
-			never
-		>()
+		const subscriptionHandler = yield* Deferred.make<(envelope: MessageEnvelope.Type) => Effect.Effect<void>, never>()
 
 		const mockPort = Ports.Platform.EventBusPort.of({
 			publish: (events) =>
@@ -74,7 +68,10 @@ const MockEventBusLayer = Layer.unwrapEffect(
 			subscribe: (_topics, handler) =>
 				Effect.gen(function* () {
 					yield* Ref.update(subscribeCallCount, (n) => n + 1)
-					yield* Deferred.succeed(subscriptionHandler, handler as (envelope: MessageEnvelope.Type) => Effect.Effect<void>)
+					yield* Deferred.succeed(
+						subscriptionHandler,
+						handler as (envelope: MessageEnvelope.Type) => Effect.Effect<void>,
+					)
 					// Never complete to simulate long-running subscription
 					return yield* Effect.never
 				}),
@@ -152,11 +149,7 @@ describe('Timer Service', () => {
 				// Service should have established subscription
 				const subCount = yield* Ref.get(testState.subscribeCallCount)
 				expect(subCount).toBeGreaterThanOrEqual(1)
-			}).pipe(
-				Effect.provide(Timer.Test),
-				Effect.provide(MockEventBusLayer),
-				Effect.scoped,
-			),
+			}).pipe(Effect.provide(Timer.Test), Effect.provide(MockEventBusLayer), Effect.scoped),
 		)
 
 		it.scoped('should interrupt polling worker when scope closes', () =>
@@ -182,11 +175,7 @@ describe('Timer Service', () => {
 					const finalStatus = yield* Fiber.status(fiberRef)
 					expect(finalStatus._tag).not.toBe('Running')
 				}
-			}).pipe(
-				Effect.provide(Timer.Test),
-				Effect.provide(MockEventBusLayer),
-				Effect.scoped,
-			),
+			}).pipe(Effect.provide(Timer.Test), Effect.provide(MockEventBusLayer), Effect.scoped),
 		)
 
 		it.scoped('should handle command subscription errors gracefully', () =>
@@ -250,11 +239,7 @@ describe('Timer Service', () => {
 				// Verify timer was persisted
 				const savedTimer = yield* persistence.find({ serviceCallId, tenantId })
 				expect(Option.isSome(savedTimer)).toBe(true)
-			}).pipe(
-				Effect.provide(Timer.Test),
-				Effect.provide(MockEventBusLayer),
-				Effect.scoped,
-			),
+			}).pipe(Effect.provide(Timer.Test), Effect.provide(MockEventBusLayer), Effect.scoped),
 		)
 
 		it.scoped('should retry failed command processing', () =>
@@ -357,17 +342,10 @@ describe('Timer Service', () => {
 
 				// Check if DueTimeReached event was published
 				const events = yield* Ref.get(testState.publishedEvents)
-				const dueEvents = Chunk.filter(
-					events,
-					(env) => env.type === Messages.Timer.Events.DueTimeReached.Tag,
-				)
+				const dueEvents = Chunk.filter(events, (env) => env.type === Messages.Timer.Events.DueTimeReached.Tag)
 
 				expect(Chunk.size(dueEvents)).toBeGreaterThanOrEqual(1)
-			}).pipe(
-				Effect.provide(Timer.Test),
-				Effect.provide(MockEventBusLayer),
-				Effect.scoped,
-			),
+			}).pipe(Effect.provide(Timer.Test), Effect.provide(MockEventBusLayer), Effect.scoped),
 		)
 	})
 
@@ -382,9 +360,7 @@ describe('Timer Service', () => {
 						Effect.gen(function* () {
 							const count = yield* Ref.getAndUpdate(errorCount, (n) => n + 1)
 							if (count === 0) {
-								return yield* Effect.fail(
-									Ports.PersistenceError.make({ message: 'DB locked', type: 'QueryError' }),
-								)
+								return yield* Effect.fail(Ports.PersistenceError.make({ message: 'DB locked', type: 'QueryError' }))
 							}
 							return Chunk.empty()
 						}),
@@ -465,16 +441,18 @@ describe('Timer Service', () => {
 
 				// Both tenants should have events published
 				const events = yield* Ref.get(testState.publishedEvents)
-				const tenant1Events = Chunk.filter(events, (env) => 'tenantId' in env.payload && env.payload.tenantId === tenant1)
-				const tenant2Events = Chunk.filter(events, (env) => 'tenantId' in env.payload && env.payload.tenantId === tenant2)
+				const tenant1Events = Chunk.filter(
+					events,
+					(env) => 'tenantId' in env.payload && env.payload.tenantId === tenant1,
+				)
+				const tenant2Events = Chunk.filter(
+					events,
+					(env) => 'tenantId' in env.payload && env.payload.tenantId === tenant2,
+				)
 
 				expect(Chunk.size(tenant1Events)).toBeGreaterThanOrEqual(1)
 				expect(Chunk.size(tenant2Events)).toBeGreaterThanOrEqual(1)
-			}).pipe(
-				Effect.provide(Timer.Test),
-				Effect.provide(MockEventBusLayer),
-				Effect.scoped,
-			),
+			}).pipe(Effect.provide(Timer.Test), Effect.provide(MockEventBusLayer), Effect.scoped),
 		)
 	})
 })

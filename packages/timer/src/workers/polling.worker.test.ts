@@ -247,285 +247,285 @@ describe('PollingWorker', () => {
 		)
 	})
 
-		describe('Edge Cases', () => {
-			it.scoped('should handle zero timers gracefully', () =>
-				Effect.gen(function* () {
-					/**
-					 * ```txt
-					 * GIVEN PollingWorker.run() is started
-					 *   AND persistence is empty (no timers)
-					 * WHEN TestClock advances by 10 seconds
-					 * THEN findDue should be called 3 times (0s, 5s, 10s)
-					 *   AND no errors should occur
-					 * ```
-					 */
+	describe('Edge Cases', () => {
+		it.scoped('should handle zero timers gracefully', () =>
+			Effect.gen(function* () {
+				/**
+				 * ```txt
+				 * GIVEN PollingWorker.run() is started
+				 *   AND persistence is empty (no timers)
+				 * WHEN TestClock advances by 10 seconds
+				 * THEN findDue should be called 3 times (0s, 5s, 10s)
+				 *   AND no errors should occur
+				 * ```
+				 */
 
-					const pollCount = yield* Ref.make(0)
+				const pollCount = yield* Ref.make(0)
 
-					// Get base persistence and wrap with counting
-					const basePersistence = yield* Ports.TimerPersistencePort
-					const CountingPersistence = Layer.succeed(
-						Ports.TimerPersistencePort,
-						Ports.TimerPersistencePort.of({
-							...basePersistence,
-							findDue: (now) =>
-								Effect.gen(function* () {
-									yield* Ref.update(pollCount, (n) => n + 1)
-									return yield* basePersistence.findDue(now)
-								}),
-						}),
-					)
+				// Get base persistence and wrap with counting
+				const basePersistence = yield* Ports.TimerPersistencePort
+				const CountingPersistence = Layer.succeed(
+					Ports.TimerPersistencePort,
+					Ports.TimerPersistencePort.of({
+						...basePersistence,
+						findDue: (now) =>
+							Effect.gen(function* () {
+								yield* Ref.update(pollCount, (n) => n + 1)
+								return yield* basePersistence.findDue(now)
+							}),
+					}),
+				)
 
-					// Fork the worker
-					const fiber = yield* Effect.fork(
-						PollingWorker.run.pipe(Effect.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest()))),
-					)
+				// Fork the worker
+				const fiber = yield* Effect.fork(
+					PollingWorker.run.pipe(Effect.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest()))),
+				)
 
-					// Advance clock by 10 seconds
-					yield* TestClock.adjust('10 seconds')
+				// Advance clock by 10 seconds
+				yield* TestClock.adjust('10 seconds')
 
-					// Interrupt the worker
-					yield* Fiber.interrupt(fiber)
+				// Interrupt the worker
+				yield* Fiber.interrupt(fiber)
 
-					// Assert: Should have polled 3 times without errors
-					const count = yield* Ref.get(pollCount)
-					expect(count).toBe(3)
-				}).pipe(Effect.provide(BaseTestLayers)),
-			)
+				// Assert: Should have polled 3 times without errors
+				const count = yield* Ref.get(pollCount)
+				expect(count).toBe(3)
+			}).pipe(Effect.provide(BaseTestLayers)),
+		)
 
-			it.scoped('should handle rapid successive errors and recoveries', () =>
-				Effect.gen(function* () {
-					/**
-					 * ```txt
-					 * GIVEN PollingWorker.run() is started
-					 *   AND findDue alternates between failure and success
-					 * WHEN TestClock advances by 20 seconds
-					 * THEN all polls should complete (error recovery on every other poll)
-					 *   AND polling should continue without crashing
-					 * ```
-					 */
+		it.scoped('should handle rapid successive errors and recoveries', () =>
+			Effect.gen(function* () {
+				/**
+				 * ```txt
+				 * GIVEN PollingWorker.run() is started
+				 *   AND findDue alternates between failure and success
+				 * WHEN TestClock advances by 20 seconds
+				 * THEN all polls should complete (error recovery on every other poll)
+				 *   AND polling should continue without crashing
+				 * ```
+				 */
 
-					const pollCount = yield* Ref.make(0)
+				const pollCount = yield* Ref.make(0)
 
-					// Get base persistence and wrap with alternating failures
-					const basePersistence = yield* Ports.TimerPersistencePort
-					const AlternatingPersistence = Layer.succeed(
-						Ports.TimerPersistencePort,
-						Ports.TimerPersistencePort.of({
-							...basePersistence,
-							findDue: (now) =>
-								Effect.gen(function* () {
-									const currentCount = yield* Ref.getAndUpdate(pollCount, (n) => n + 1)
-									// Fail on even counts (0, 2, 4, ...), succeed on odd
-									if (currentCount % 2 === 0) {
-										return yield* Effect.fail(
-											new Ports.PersistenceError({
-												cause: 'Intermittent DB failure',
-												operation: 'findDue',
-											}),
-										)
-									}
-									return yield* basePersistence.findDue(now)
-								}),
-						}),
-					)
-
-					// Fork the worker
-					const fiber = yield* Effect.fork(
-						PollingWorker.run.pipe(Effect.provide(Layer.merge(AlternatingPersistence, makeTimerEventBusTest()))),
-					)
-
-					// Advance clock by 20 seconds (should attempt 5 polls: 0s, 5s, 10s, 15s, 20s)
-					yield* TestClock.adjust('20 seconds')
-
-					// Interrupt the worker
-					yield* Fiber.interrupt(fiber)
-
-					// Assert: Should have attempted 5 polls despite alternating failures
-					const count = yield* Ref.get(pollCount)
-					expect(count).toBe(5)
-				}).pipe(Effect.provide(BaseTestLayers)),
-			)
-
-			it.scoped('should maintain schedule timing after errors', () =>
-				Effect.gen(function* () {
-					/**
-					 * ```txt
-					 * GIVEN PollingWorker.run() is started
-					 *   AND the first poll fails
-					 * WHEN TestClock advances
-					 * THEN subsequent polls should occur at correct 5-second intervals
-					 *   AND error should not disrupt timing
-					 * ```
-					 */
-
-					const pollTimes: number[] = []
-
-					// Get base persistence and track poll times
-					const basePersistence = yield* Ports.TimerPersistencePort
-					const TimedPersistence = Layer.succeed(
-						Ports.TimerPersistencePort,
-						Ports.TimerPersistencePort.of({
-							...basePersistence,
-							findDue: (now) =>
-								Effect.gen(function* () {
-									const clock = yield* Ports.ClockPort
-									const currentTime = yield* clock.now()
-									pollTimes.push(currentTime.epochMillis)
-
-									// Fail first poll
-									if (pollTimes.length === 1) {
-										return yield* Effect.fail(
-											new Ports.PersistenceError({
-												cause: 'First poll fails',
-												operation: 'findDue',
-											}),
-										)
-									}
-									return yield* basePersistence.findDue(now)
-								}),
-						}),
-					)
-
-					// Fork the worker
-					const fiber = yield* Effect.fork(
-						PollingWorker.run.pipe(Effect.provide(Layer.merge(TimedPersistence, makeTimerEventBusTest()))),
-					)
-
-					// Advance clock by 15 seconds
-					yield* TestClock.adjust('15 seconds')
-
-					// Interrupt the worker
-					yield* Fiber.interrupt(fiber)
-
-					// Assert: Should have 4 polls at correct intervals
-					expect(pollTimes.length).toBe(4)
-
-					// Verify 5-second intervals (allowing for test clock precision)
-					for (let i = 1; i < pollTimes.length; i++) {
-						const interval = pollTimes[i]! - pollTimes[i - 1]!
-						expect(interval).toBe(5000) // 5 seconds in milliseconds
-					}
-				}).pipe(Effect.provide(BaseTestLayers)),
-			)
-		})
-
-		describe('Concurrency and Race Conditions', () => {
-			it.scoped('should handle concurrent findDue calls gracefully', () =>
-				Effect.gen(function* () {
-					/**
-					 * ```txt
-					 * GIVEN PollingWorker.run() is started
-					 *   AND findDue takes significant time to complete
-					 * WHEN a new poll cycle starts before previous completes
-					 * THEN both polls should complete independently
-					 *   AND no data corruption should occur
-					 * ```
-					 *
-					 * Note: Schedule.fixed prevents overlapping executions, so this test
-					 * verifies that behavior is maintained.
-					 */
-
-					const activeCalls = yield* Ref.make(0)
-					const maxConcurrent = yield* Ref.make(0)
-
-					// Get base persistence and wrap with concurrency tracking
-					const basePersistence = yield* Ports.TimerPersistencePort
-					const SlowPersistence = Layer.succeed(
-						Ports.TimerPersistencePort,
-						Ports.TimerPersistencePort.of({
-							...basePersistence,
-							findDue: (now) =>
-								Effect.gen(function* () {
-									// Track concurrent calls
-									const current = yield* Ref.updateAndGet(activeCalls, (n) => n + 1)
-									yield* Ref.update(maxConcurrent, (max) => Math.max(max, current))
-
-									// Simulate slow query
-									yield* Effect.sleep('100 millis')
-
-									const result = yield* basePersistence.findDue(now)
-
-									yield* Ref.update(activeCalls, (n) => n - 1)
-									return result
-								}),
-						}),
-					)
-
-					// Fork the worker
-					const fiber = yield* Effect.fork(
-						PollingWorker.run.pipe(Effect.provide(Layer.merge(SlowPersistence, makeTimerEventBusTest()))),
-					)
-
-					// Advance clock by 10 seconds (should trigger 3 polls)
-					yield* TestClock.adjust('10 seconds')
-
-					// Interrupt the worker
-					yield* Fiber.interrupt(fiber)
-
-					// Assert: Schedule.fixed should prevent concurrent execution
-					const max = yield* Ref.get(maxConcurrent)
-					expect(max).toBe(1)
-				}).pipe(Effect.provide(BaseTestLayers)),
-			)
-		})
-
-		describe('Performance and Resource Management', () => {
-			it.scoped('should not accumulate memory on repeated error recovery', () =>
-				Effect.gen(function* () {
-					/**
-					 * ```txt
-					 * GIVEN PollingWorker.run() is started
-					 *   AND errors occur on every poll
-					 * WHEN TestClock advances through many cycles
-					 * THEN all polls should be attempted
-					 *   AND error handling should not leak resources
-					 * ```
-					 *
-					 * Note: This is a behavioral test. Actual memory profiling would
-					 * require runtime instrumentation beyond vitest's capabilities.
-					 */
-
-					const pollCount = yield* Ref.make(0)
-
-					// Persistence that always fails
-					const basePersistence = yield* Ports.TimerPersistencePort
-					const AlwaysFailingPersistence = Layer.succeed(
-						Ports.TimerPersistencePort,
-						Ports.TimerPersistencePort.of({
-							...basePersistence,
-							findDue: () =>
-								Effect.gen(function* () {
-									yield* Ref.update(pollCount, (n) => n + 1)
+				// Get base persistence and wrap with alternating failures
+				const basePersistence = yield* Ports.TimerPersistencePort
+				const AlternatingPersistence = Layer.succeed(
+					Ports.TimerPersistencePort,
+					Ports.TimerPersistencePort.of({
+						...basePersistence,
+						findDue: (now) =>
+							Effect.gen(function* () {
+								const currentCount = yield* Ref.getAndUpdate(pollCount, (n) => n + 1)
+								// Fail on even counts (0, 2, 4, ...), succeed on odd
+								if (currentCount % 2 === 0) {
 									return yield* Effect.fail(
 										new Ports.PersistenceError({
-											cause: 'Persistent failure',
+											cause: 'Intermittent DB failure',
 											operation: 'findDue',
 										}),
 									)
-								}),
-						}),
-					)
+								}
+								return yield* basePersistence.findDue(now)
+							}),
+					}),
+				)
 
-					// Fork the worker
-					const fiber = yield* Effect.fork(
-						PollingWorker.run.pipe(Effect.provide(Layer.merge(AlwaysFailingPersistence, makeTimerEventBusTest()))),
-					)
+				// Fork the worker
+				const fiber = yield* Effect.fork(
+					PollingWorker.run.pipe(Effect.provide(Layer.merge(AlternatingPersistence, makeTimerEventBusTest()))),
+				)
 
-					// Advance through many cycles (50 seconds = 11 polls)
-					yield* TestClock.adjust('50 seconds')
+				// Advance clock by 20 seconds (should attempt 5 polls: 0s, 5s, 10s, 15s, 20s)
+				yield* TestClock.adjust('20 seconds')
 
-					// Interrupt the worker
-					yield* Fiber.interrupt(fiber)
+				// Interrupt the worker
+				yield* Fiber.interrupt(fiber)
 
-					// Assert: All polls should have been attempted
-					const count = yield* Ref.get(pollCount)
-					expect(count).toBe(11)
+				// Assert: Should have attempted 5 polls despite alternating failures
+				const count = yield* Ref.get(pollCount)
+				expect(count).toBe(5)
+			}).pipe(Effect.provide(BaseTestLayers)),
+		)
 
-					// Fiber should be interruptible (not stuck)
-					const status = yield* Fiber.status(fiber)
-					expect(status._tag).not.toBe('Running')
-				}).pipe(Effect.provide(BaseTestLayers)),
-			)
-		})
+		it.scoped('should maintain schedule timing after errors', () =>
+			Effect.gen(function* () {
+				/**
+				 * ```txt
+				 * GIVEN PollingWorker.run() is started
+				 *   AND the first poll fails
+				 * WHEN TestClock advances
+				 * THEN subsequent polls should occur at correct 5-second intervals
+				 *   AND error should not disrupt timing
+				 * ```
+				 */
+
+				const pollTimes: number[] = []
+
+				// Get base persistence and track poll times
+				const basePersistence = yield* Ports.TimerPersistencePort
+				const TimedPersistence = Layer.succeed(
+					Ports.TimerPersistencePort,
+					Ports.TimerPersistencePort.of({
+						...basePersistence,
+						findDue: (now) =>
+							Effect.gen(function* () {
+								const clock = yield* Ports.ClockPort
+								const currentTime = yield* clock.now()
+								pollTimes.push(currentTime.epochMillis)
+
+								// Fail first poll
+								if (pollTimes.length === 1) {
+									return yield* Effect.fail(
+										new Ports.PersistenceError({
+											cause: 'First poll fails',
+											operation: 'findDue',
+										}),
+									)
+								}
+								return yield* basePersistence.findDue(now)
+							}),
+					}),
+				)
+
+				// Fork the worker
+				const fiber = yield* Effect.fork(
+					PollingWorker.run.pipe(Effect.provide(Layer.merge(TimedPersistence, makeTimerEventBusTest()))),
+				)
+
+				// Advance clock by 15 seconds
+				yield* TestClock.adjust('15 seconds')
+
+				// Interrupt the worker
+				yield* Fiber.interrupt(fiber)
+
+				// Assert: Should have 4 polls at correct intervals
+				expect(pollTimes.length).toBe(4)
+
+				// Verify 5-second intervals (allowing for test clock precision)
+				for (let i = 1; i < pollTimes.length; i++) {
+					const interval = pollTimes[i]! - pollTimes[i - 1]!
+					expect(interval).toBe(5000) // 5 seconds in milliseconds
+				}
+			}).pipe(Effect.provide(BaseTestLayers)),
+		)
+	})
+
+	describe('Concurrency and Race Conditions', () => {
+		it.scoped('should handle concurrent findDue calls gracefully', () =>
+			Effect.gen(function* () {
+				/**
+				 * ```txt
+				 * GIVEN PollingWorker.run() is started
+				 *   AND findDue takes significant time to complete
+				 * WHEN a new poll cycle starts before previous completes
+				 * THEN both polls should complete independently
+				 *   AND no data corruption should occur
+				 * ```
+				 *
+				 * Note: Schedule.fixed prevents overlapping executions, so this test
+				 * verifies that behavior is maintained.
+				 */
+
+				const activeCalls = yield* Ref.make(0)
+				const maxConcurrent = yield* Ref.make(0)
+
+				// Get base persistence and wrap with concurrency tracking
+				const basePersistence = yield* Ports.TimerPersistencePort
+				const SlowPersistence = Layer.succeed(
+					Ports.TimerPersistencePort,
+					Ports.TimerPersistencePort.of({
+						...basePersistence,
+						findDue: (now) =>
+							Effect.gen(function* () {
+								// Track concurrent calls
+								const current = yield* Ref.updateAndGet(activeCalls, (n) => n + 1)
+								yield* Ref.update(maxConcurrent, (max) => Math.max(max, current))
+
+								// Simulate slow query
+								yield* Effect.sleep('100 millis')
+
+								const result = yield* basePersistence.findDue(now)
+
+								yield* Ref.update(activeCalls, (n) => n - 1)
+								return result
+							}),
+					}),
+				)
+
+				// Fork the worker
+				const fiber = yield* Effect.fork(
+					PollingWorker.run.pipe(Effect.provide(Layer.merge(SlowPersistence, makeTimerEventBusTest()))),
+				)
+
+				// Advance clock by 10 seconds (should trigger 3 polls)
+				yield* TestClock.adjust('10 seconds')
+
+				// Interrupt the worker
+				yield* Fiber.interrupt(fiber)
+
+				// Assert: Schedule.fixed should prevent concurrent execution
+				const max = yield* Ref.get(maxConcurrent)
+				expect(max).toBe(1)
+			}).pipe(Effect.provide(BaseTestLayers)),
+		)
+	})
+
+	describe('Performance and Resource Management', () => {
+		it.scoped('should not accumulate memory on repeated error recovery', () =>
+			Effect.gen(function* () {
+				/**
+				 * ```txt
+				 * GIVEN PollingWorker.run() is started
+				 *   AND errors occur on every poll
+				 * WHEN TestClock advances through many cycles
+				 * THEN all polls should be attempted
+				 *   AND error handling should not leak resources
+				 * ```
+				 *
+				 * Note: This is a behavioral test. Actual memory profiling would
+				 * require runtime instrumentation beyond vitest's capabilities.
+				 */
+
+				const pollCount = yield* Ref.make(0)
+
+				// Persistence that always fails
+				const basePersistence = yield* Ports.TimerPersistencePort
+				const AlwaysFailingPersistence = Layer.succeed(
+					Ports.TimerPersistencePort,
+					Ports.TimerPersistencePort.of({
+						...basePersistence,
+						findDue: () =>
+							Effect.gen(function* () {
+								yield* Ref.update(pollCount, (n) => n + 1)
+								return yield* Effect.fail(
+									new Ports.PersistenceError({
+										cause: 'Persistent failure',
+										operation: 'findDue',
+									}),
+								)
+							}),
+					}),
+				)
+
+				// Fork the worker
+				const fiber = yield* Effect.fork(
+					PollingWorker.run.pipe(Effect.provide(Layer.merge(AlwaysFailingPersistence, makeTimerEventBusTest()))),
+				)
+
+				// Advance through many cycles (50 seconds = 11 polls)
+				yield* TestClock.adjust('50 seconds')
+
+				// Interrupt the worker
+				yield* Fiber.interrupt(fiber)
+
+				// Assert: All polls should have been attempted
+				const count = yield* Ref.get(pollCount)
+				expect(count).toBe(11)
+
+				// Fiber should be interruptible (not stuck)
+				const status = yield* Fiber.status(fiber)
+				expect(status._tag).not.toBe('Running')
+			}).pipe(Effect.provide(BaseTestLayers)),
+		)
+	})
 })
