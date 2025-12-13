@@ -17,7 +17,6 @@
  *
  * Total: 10 comprehensive tests
  */
- */
 
 // biome-ignore lint/correctness/noUndeclaredDependencies: vitest is hoisted from root workspace
 import { describe, expect, it } from '@effect/vitest'
@@ -336,7 +335,7 @@ describe('Timer Service', () => {
 				// Import required types for timer creation
 				const { TimerEntry } = yield* Effect.succeed(
 					// biome-ignore lint/correctness/noUndeclaredVariables: imported dynamically
-					await import('./domain/timer-entry.domain.ts'),
+					import('./domain/timer-entry.domain.ts'),
 				)
 
 				const timer = TimerEntry.ScheduledTimer.make({
@@ -433,7 +432,7 @@ describe('Timer Service', () => {
 				// Import domain types
 				const { TimerEntry } = yield* Effect.succeed(
 					// biome-ignore lint/correctness/noUndeclaredVariables: imported dynamically
-					await import('./domain/timer-entry.domain.ts'),
+					import('./domain/timer-entry.domain.ts'),
 				)
 
 				// Create timers for two different tenants
