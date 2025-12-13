@@ -2,6 +2,7 @@ import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
 import * as Schedule from 'effect/Schedule'
 
+import type * as Ports from '../ports/index.ts'
 import * as Workflows from '../workflows/index.ts'
 
 /**
@@ -31,19 +32,20 @@ import * as Workflows from '../workflows/index.ts'
  * @see {@link Workflows.pollDueTimersWorkflow} — Core polling logic
  * @see ADR-0003 — Polling interval rationale
  */
-export const run = Workflows.pollDueTimersWorkflow().pipe(
-	Effect.catchTags({
-		BatchProcessingError: (err) =>
-			Effect.logDebug('Recovered from BatchProcessingError, continuing polling', {
-				failedCount: err.failedCount,
-				totalCount: err.totalCount,
-			}),
-		PersistenceError: (err) =>
-			Effect.logDebug('Recovered from PersistenceError, continuing polling', {
-				message: err.message,
-				operation: err.operation,
-			}),
-	}),
-	Effect.repeat(Schedule.fixed(Duration.seconds(5))),
-	Effect.withSpan('Timer.PollingWorker.run'),
-)
+export const run: Effect.Effect<number, never, Ports.TimerPersistencePort | Ports.ClockPort | Ports.TimerEventBusPort> =
+	Workflows.pollDueTimersWorkflow().pipe(
+		Effect.catchTags({
+			BatchProcessingError: (err) =>
+				Effect.logDebug('Recovered from BatchProcessingError, continuing polling', {
+					failedCount: err.failedCount,
+					totalCount: err.totalCount,
+				}),
+			PersistenceError: (err) =>
+				Effect.logDebug('Recovered from PersistenceError, continuing polling', {
+					message: err.message,
+					operation: err.operation,
+				}),
+		}),
+		Effect.repeat(Schedule.fixed(Duration.seconds(5))),
+		Effect.withSpan('Timer.PollingWorker.run'),
+	)

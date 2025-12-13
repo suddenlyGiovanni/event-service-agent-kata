@@ -76,7 +76,6 @@ describe('Timer.main', () => {
 				Effect.gen(function* () {
 					const { Main, Expect, Commands } = yield* TestHarness
 					const fiber = yield* Main.start()
-					yield* Effect.yieldNow() // Allow subscription to register
 
 					const timerKey = yield* Commands.deliver.scheduleTimer({ dueIn: '5 minutes' })
 
@@ -387,7 +386,6 @@ describe('Timer.main', () => {
 
 					// ─── Start Timer.main with command subscription ─────────────────────
 					const fiber = yield* Main.start()
-					yield* Effect.yieldNow() // Allow subscription to register
 
 					// ─── Deliver ScheduleTimer command ──────────────────────────────────
 					const timerKey = yield* Commands.deliver.scheduleTimer({ dueIn: '5 minutes' })
@@ -602,7 +600,7 @@ describe('Timer.main', () => {
 					const { Time, Timers, Main, Expect } = yield* TestHarness
 
 					// ─── Arrange: Timer that will be due at t=30s ───────────────────────
-					const _timer = yield* Timers.make.scheduled('30 seconds')
+					yield* Timers.make.scheduled('30 seconds')
 
 					// ─── Start Timer.main ───────────────────────────────────────────────
 					const fiber = yield* Main.start()

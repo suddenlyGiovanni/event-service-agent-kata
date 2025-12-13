@@ -1,1 +1,1 @@
-export { main } from './main.ts'
+export { Timer } from './main.ts'
