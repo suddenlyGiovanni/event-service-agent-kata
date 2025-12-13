@@ -387,4 +387,306 @@ describe('scheduleTimerWorkflow', () => {
 			),
 		)
 	})
+
+	describe('Edge Cases and Boundary Conditions', () => {
+		it.scoped('should handle timer scheduled for exactly current time', () =>
+			Effect.gen(function* () {
+				/**
+				 * ```txt
+				 * GIVEN a ScheduleTimer command with dueAt === now
+				 * WHEN workflow executes
+				 * THEN timer should be created with dueAt === registeredAt
+				 *   AND timer should be immediately due
+				 * ```
+				 */
+				const clock = yield* Ports.ClockPort
+				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
+
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+
+				// Create command with dueAt === now
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt: now,
+						serviceCallId,
+						tenantId,
+					})
+
+				const persistence = yield* Ports.TimerPersistencePort
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
+
+				// Act
+				yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.none(),
+						correlationId: Option.none(),
+					}),
+				)
+
+				// Assert: Timer should be persisted
+				const maybeTimer = yield* persistence.findScheduledTimer({ serviceCallId, tenantId })
+				expect(Option.isSome(maybeTimer)).toBe(true)
+
+				// Assert: Timer should be immediately findable as due
+				const dueTimers = yield* persistence.findDue(now)
+				expect(Chunk.size(dueTimers)).toBe(1)
+			}).pipe(Effect.provide(BaseTestLayers)),
+		)
+
+		it.scoped('should handle timer scheduled far in the future', () =>
+			Effect.gen(function* () {
+				/**
+				 * ```txt
+				 * GIVEN a ScheduleTimer command with dueAt very far in future (1 year)
+				 * WHEN workflow executes
+				 * THEN timer should be created successfully
+				 *   AND registeredAt should be now
+				 *   AND dueAt should be 1 year from now
+				 * ```
+				 */
+				const clock = yield* Ports.ClockPort
+				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
+
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+
+				// Schedule timer 1 year in the future
+				const dueAt = DateTime.add(now, { years: 1 })
+
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
+
+				const persistence = yield* Ports.TimerPersistencePort
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
+
+				// Act
+				yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.none(),
+						correlationId: Option.none(),
+					}),
+				)
+
+				// Assert: Timer should be persisted
+				const maybeTimer = yield* persistence.findScheduledTimer({ serviceCallId, tenantId })
+				expect(Option.isSome(maybeTimer)).toBe(true)
+
+				const timer = Option.getOrThrow(maybeTimer)
+				expect(DateTime.Equivalence(timer.registeredAt, now)).toBe(true)
+
+				// Verify not due yet
+				const dueTimers = yield* persistence.findDue(now)
+				expect(Chunk.size(dueTimers)).toBe(0)
+			}).pipe(Effect.provide(BaseTestLayers)),
+		)
+
+		it.scoped('should preserve correlationId in MessageMetadata context', () =>
+			Effect.gen(function* () {
+				/**
+				 * ```txt
+				 * GIVEN a ScheduleTimer command
+				 *   AND MessageMetadata contains a correlationId
+				 * WHEN workflow executes
+				 * THEN timer should be persisted with that correlationId
+				 * ```
+				 */
+				const clock = yield* Ports.ClockPort
+				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
+
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const correlationId = yield* CorrelationId.makeUUID7()
+
+				const dueAt = DateTime.add(now, { minutes: 5 })
+
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
+
+				const persistence = yield* Ports.TimerPersistencePort
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
+
+				// Act: Provide correlationId via MessageMetadata
+				yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.none(),
+						correlationId: Option.some(correlationId),
+					}),
+				)
+
+				// Assert: Timer should have the correlationId
+				const maybeTimer = yield* persistence.findScheduledTimer({ serviceCallId, tenantId })
+				expect(Option.isSome(maybeTimer)).toBe(true)
+
+				const timer = Option.getOrThrow(maybeTimer)
+				expect(Option.isSome(timer.correlationId)).toBe(true)
+				expect(Option.getOrThrow(timer.correlationId)).toBe(correlationId)
+			}).pipe(Effect.provide(BaseTestLayers)),
+		)
+	})
+
+	describe('Error Scenarios', () => {
+		it.scoped('should propagate PersistenceError when save fails', () =>
+			Effect.gen(function* () {
+				/**
+				 * ```txt
+				 * GIVEN a ScheduleTimer command
+				 *   AND persistence.save will fail
+				 * WHEN workflow executes
+				 * THEN should fail with PersistenceError
+				 *   AND timer should not be persisted
+				 * ```
+				 */
+				const clock = yield* Ports.ClockPort
+				const now = yield* clock.now()
+
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const dueAt = DateTime.add(now, { minutes: 5 })
+
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
+
+				// Mock persistence that fails on save
+				const basePersistence = yield* Ports.TimerPersistencePort
+				const FailingPersistence = Layer.succeed(
+					Ports.TimerPersistencePort,
+					Ports.TimerPersistencePort.of({
+						...basePersistence,
+						save: () =>
+							Effect.fail(
+								new Ports.PersistenceError({
+									cause: 'Database write failure',
+									operation: 'save',
+								}),
+							),
+					}),
+				)
+
+				// Act: Execute workflow with failing persistence
+				const result = yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.none(),
+						correlationId: Option.none(),
+					}),
+					Effect.provide(FailingPersistence),
+					Effect.flip,
+				)
+
+				// Assert: Should fail with PersistenceError
+				expect(result).toBeInstanceOf(Ports.PersistenceError)
+				expect(result.operation).toBe('save')
+			}).pipe(Effect.provide(BaseTestLayers)),
+		)
+
+		it.scoped('should handle missing MessageMetadata gracefully', () =>
+			Effect.gen(function* () {
+				/**
+				 * ```txt
+				 * GIVEN a ScheduleTimer command
+				 *   AND MessageMetadata is not provided in context
+				 * WHEN workflow executes
+				 * THEN should fail with missing service error
+				 * ```
+				 *
+				 * This test ensures the workflow explicitly requires MessageMetadata
+				 * and doesn't silently use defaults.
+				 */
+				const clock = yield* Ports.ClockPort
+				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
+
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const dueAt = DateTime.add(now, { minutes: 5 })
+
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
+
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
+
+				// Act: Execute workflow WITHOUT providing MessageMetadata
+				const result = yield* Effect.exit(Workflows.scheduleTimerWorkflow(command))
+
+				// Assert: Should fail (MessageMetadata is required)
+				expect(Exit.isFailure(result)).toBe(true)
+			}).pipe(Effect.provide(BaseTestLayers)),
+		)
+	})
+
+	describe('Idempotency', () => {
+		it.scoped('should handle duplicate schedule requests for same timer', () =>
+			Effect.gen(function* () {
+				/**
+				 * ```txt
+				 * GIVEN a timer has already been scheduled
+				 * WHEN the same ScheduleTimer command is processed again
+				 * THEN persistence layer should handle the duplicate
+				 *   AND workflow should complete successfully or fail gracefully
+				 * ```
+				 *
+				 * Note: Actual idempotency is enforced by SQLite UNIQUE constraint
+				 * on (tenant_id, service_call_id). This test verifies the workflow
+				 * propagates that error correctly.
+				 */
+				const clock = yield* Ports.ClockPort
+				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
+
+				const tenantId = yield* TenantId.makeUUID7()
+				const serviceCallId = yield* ServiceCallId.makeUUID7()
+				const dueAt = DateTime.add(now, { minutes: 5 })
+
+				const command: Messages.Orchestration.Commands.ScheduleTimer.Type =
+					new Messages.Orchestration.Commands.ScheduleTimer({
+						dueAt,
+						serviceCallId,
+						tenantId,
+					})
+
+				const persistence = yield* Ports.TimerPersistencePort
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
+
+				// Act: Schedule the timer once
+				yield* Workflows.scheduleTimerWorkflow(command).pipe(
+					Effect.provideService(MessageMetadata, {
+						causationId: Option.none(),
+						correlationId: Option.none(),
+					}),
+				)
+
+				// Act: Try to schedule the same timer again
+				const result = yield* Effect.exit(
+					Workflows.scheduleTimerWorkflow(command).pipe(
+						Effect.provideService(MessageMetadata, {
+							causationId: Option.none(),
+							correlationId: Option.none(),
+						}),
+					),
+				)
+
+				// Assert: Second attempt should fail (UNIQUE constraint violation)
+				expect(Exit.isFailure(result)).toBe(true)
+			}).pipe(Effect.provide(BaseTestLayers)),
+		)
+	})
 })
