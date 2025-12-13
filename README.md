@@ -53,3 +53,14 @@
 ## Contributing
 
 See [CONTRIBUTING.md](./docs/CONTRIBUTING.md) for development setup, available scripts, and workflow guidelines.
+
+---
+
+## AI Agent Instructions
+
+For AI agents and assistants working on this project:
+
+- **[AGENTS.md](./AGENTS.md)** — Project-wide guidelines, architecture constraints, and development workflows
+- **Package-specific guides** — Each package has its own `AGENTS.md` with module-specific patterns
+
+These files follow the [AGENTS.md standard](https://agents.md/) for AI agent compatibility.
