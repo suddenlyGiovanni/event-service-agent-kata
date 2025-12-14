@@ -34,6 +34,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "catalog:lint",
 		"@effect/vitest": "catalog:test",
+		"lefthook": "^1.10.1",
 		"vitest": "catalog:test"
 	},
 	"devEngines": {
@@ -58,6 +59,8 @@
 	"scripts": {
 		"check": "biome check --write .",
 		"clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
+		"hooks:run": "lefthook run",
+		"hooks:skip": "LEFTHOOK=0 git commit",
 		"db:migrate": "bun --env-file=.env run packages/platform/src/database/scripts/migrate.ts",
 		"db:reset": "bun --env-file=.env run packages/platform/src/database/scripts/reset.ts",
 		"docs:build": "echo \"no-op docs build (MVP)\"",
@@ -74,6 +77,7 @@
 		"format:markdown:code": "deno fmt docs",
 		"format:markdown:structure": "bunx --bun markdownlint-cli2 --fix docs/**/*.md packages/*/**/*.md",
 		"lint": "biome lint --write .",
+		"prepare": "lefthook install",
 		"test": "bun --bun vitest",
 		"type-check": "bun --bun --workspaces type-check"
 	},
