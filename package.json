@@ -34,6 +34,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "catalog:lint",
 		"@effect/vitest": "catalog:test",
+		"lefthook": "^2.0.11",
 		"vitest": "catalog:test"
 	},
 	"devEngines": {
@@ -52,7 +53,6 @@
 		"bun": ">=1.3.0"
 	},
 	"license": "MIT",
-	"module": "index.ts",
 	"name": "event-service-agent",
 	"private": true,
 	"scripts": {
@@ -73,7 +73,10 @@
 		"format:docs:markdown": "bun run format:markdown:structure && bun run format:markdown:code",
 		"format:markdown:code": "deno fmt docs",
 		"format:markdown:structure": "bunx --bun markdownlint-cli2 --fix docs/**/*.md packages/*/**/*.md",
+		"hooks:run": "lefthook run",
+		"hooks:skip": "LEFTHOOK=0 git commit",
 		"lint": "biome lint --write .",
+		"prepare": "lefthook install",
 		"test": "bun --bun vitest",
 		"type-check": "bun --bun --workspaces type-check"
 	},

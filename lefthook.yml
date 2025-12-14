@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://json.schemastore.org/lefthook.json
+
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: "*.{ts,tsx,json,md}"
+      run: |
+        export PATH="$HOME/.bun/bin:$PATH"
+        bun run format
+      stage_fixed: true
+    
+    check:
+      glob: "*.{ts,tsx}"
+      run: |
+        export PATH="$HOME/.bun/bin:$PATH"
+        bun run check
+      stage_fixed: true
+    
+    docs-check:
+      files: git diff --cached --name-only --diff-filter=ACM "*.md"
+      run: |
+        export PATH="$HOME/.bun/bin:$PATH"
+        bun run docs:check
+    
+    docs-type-check:
+      files: git diff --cached --name-only --diff-filter=ACM "*.ts"
+      run: |
+        export PATH="$HOME/.bun/bin:$PATH"
+        bun run docs:type-check
+  
+  skip:
+    - merge
+    - rebase
+
+pre-push:
+  commands:
+    test:
+      run: |
+        export PATH="$HOME/.bun/bin:$PATH"
+        bun run test --run
+
+commit-msg:
+  commands:
+    conventional:
+      run: |
+        grep -qE '^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?!?: .{1,88}' "$1" || \
+        (echo "❌ Commit message must follow Conventional Commits" && exit 1)

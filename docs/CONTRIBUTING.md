@@ -149,6 +149,97 @@ Documentation validation runs automatically in pull request workflows:
 
 As the ecosystem matures, we may migrate to native Bun/Node.js solutions or extract `@example` blocks as executable unit tests.
 
+## Git Hooks
+
+This project uses [Lefthook](https://github.com/evilmartians/lefthook) for managing git hooks.
+
+### Automatic Setup
+
+Hooks are automatically installed when you run:
+
+```bash
+bun install
+```
+
+### Manual Installation
+
+If hooks aren't working, reinstall them:
+
+```bash
+bun run prepare
+```
+
+### Pre-commit Hooks
+
+Runs automatically before each commit:
+
+- **Format**: Runs Biome formatter on staged files
+- **Check**: Runs Biome linter on staged TypeScript files
+- **Docs Check**: Validates documentation when `.md` files change
+- **Type Check**: Validates types when `.ts` files change
+
+### Pre-push Hooks
+
+Runs automatically before pushing:
+
+- **Tests**: Runs the full test suite
+
+### Commit Message Validation
+
+Enforces [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat: add new feature`
+- `fix: resolve bug`
+- `docs: update documentation`
+- `style: format code`
+- `refactor: restructure code`
+- `test: add tests`
+- `chore: update dependencies`
+
+### Skipping Hooks
+
+To skip hooks temporarily (use sparingly):
+
+```bash
+bun run hooks:skip  # Skip for single commit
+# or
+LEFTHOOK=0 git commit  # Environment variable approach
+# or
+git commit --no-verify  # Git native approach
+```
+
+### Running Hooks Manually
+
+```bash
+bun run hooks:run pre-commit  # Run pre-commit checks
+bun run hooks:run pre-push    # Run pre-push checks
+```
+
+### IDE Integration
+
+All hooks work seamlessly across:
+
+- ✅ WebStorm/IntelliJ IDEA
+- ✅ VSCode
+- ✅ Cursor
+- ✅ Zed
+
+#### VSCode/Cursor Users
+
+For YAML schema autocomplete, the `lefthook.yml` includes:
+
+```yaml
+# yaml-language-server: $schema=https://json.schemastore.org/lefthook.json
+```
+
+#### WebStorm Users
+
+Enable YAML schema validation:
+
+1. Settings → Languages & Frameworks → YAML → Schemas
+2. Add: `https://json.schemastore.org/lefthook.json`
+3. Map to: `lefthook.yml`
+
 ## Development Workflow
 
 ### TDD Cycle
