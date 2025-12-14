@@ -47,94 +47,13 @@ packages/api/
 └── README.md
 ```
 
-## HTTP Endpoints (Planned)
+## HTTP Endpoints
 
-### POST /api/v1/service-calls
+API endpoint specifications are maintained in design documentation:
 
-Submit a new service call for immediate or scheduled execution.
-
-**Request:**
-
-```json
-{
-  "name": "Check API Status",
-  "request": {
-    "method": "GET",
-    "url": "https://api.example.com/status",
-    "headers": { "Authorization": "Bearer token" }
-  },
-  "executeAt": "2025-12-25T00:00:00Z", // Optional: immediate if omitted
-  "tags": ["monitoring", "production"]
-}
-```
-
-**Response:**
-
-```json
-{
-  "serviceCallId": "01JFQR...",
-  "status": "submitted",
-  "submittedAt": "2025-12-13T23:46:38Z"
-}
-```
-
-**Implementation:**
-
-```typescript
-Effect.gen(function* () {
-  // Extract tenantId from auth context
-  const tenantId = yield* extractTenantId(request);
-
-  // Validate request schema
-  const validated = yield* Schema.decode(SubmitServiceCallSchema)(request.body);
-
-  // Generate correlation ID
-  const correlationId = yield* CorrelationId.make();
-
-  // Send command to Orchestration
-  yield* eventBus.publish({
-    type: "SubmitServiceCall",
-    tenantId,
-    correlationId,
-    ...validated,
-  });
-
-  // Return response
-  return {
-    serviceCallId: validated.serviceCallId,
-    status: "submitted",
-    submittedAt: yield* clock.now(),
-  };
-});
-```
-
-### GET /api/v1/service-calls/:id
-
-Get status and details of a specific service call.
-
-**Response:**
-
-```json
-{
-  "serviceCallId": "01JFQR...",
-  "status": "running",
-  "name": "Check API Status",
-  "submittedAt": "2025-12-13T23:46:38Z",
-  "startedAt": "2025-12-13T23:47:00Z",
-  "request": { "method": "GET", "url": "..." }
-}
-```
-
-### GET /api/v1/service-calls
-
-List service calls with filtering and pagination.
-
-**Query Params:**
-
-- `status` — Filter by status (submitted, running, succeeded, failed)
-- `tags` — Filter by tags (comma-separated)
-- `limit` — Page size (default: 50, max: 100)
-- `offset` — Pagination offset
+- **Endpoint definitions:** See `../../docs/design/modules/api.md` for complete API spec
+- **Key patterns:** POST for commands, GET for queries, tenant-scoped access
+- **Validation:** Effect Schema validation before command dispatch
 
 ## Testing Guidelines
 
@@ -195,7 +114,7 @@ it.effect("should not allow cross-tenant queries", () =>
 
 Map domain errors to HTTP status codes:
 
-```typescript
+```typescript ignore
 const mapErrorToHttpStatus = (error: unknown): number => {
   if (error instanceof ValidationError) return 400;
   if (error instanceof NotFoundError) return 404;
@@ -208,7 +127,7 @@ const mapErrorToHttpStatus = (error: unknown): number => {
 
 **Never expose internal error details:**
 
-```typescript
+```typescript ignore
 // ❌ Bad: Exposes stack traces
 return Response.json({ error: error.stack }, { status: 500 });
 
@@ -237,7 +156,7 @@ return Response.json({ error: "Internal server error" }, { status: 500 });
 
 **Effect pattern:**
 
-```typescript
+```typescript ignore
 class TenantContext extends Context.Tag("TenantContext")<
   TenantContext,
   { readonly tenantId: TenantId }

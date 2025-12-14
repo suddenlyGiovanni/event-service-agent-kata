@@ -56,7 +56,7 @@ packages/execution/
 
 ### executeWorkflow
 
-```typescript
+```typescript ignore
 // Input: StartExecution command
 // Actions:
 //   1. Validate RequestSpec (URL, method, headers)
@@ -68,7 +68,7 @@ packages/execution/
 
 **Implementation pattern:**
 
-```typescript
+```typescript ignore
 const executeWorkflow = Effect.fn("Execution.Execute")(
   function* (command: StartExecution) {
     const httpClient = yield* HttpClientPort;
@@ -110,7 +110,7 @@ const executeWorkflow = Effect.fn("Execution.Execute")(
 
 **RequestSpec Schema:**
 
-```typescript
+```typescript ignore
 const RequestSpec = Schema.Struct({
   method: Schema.Literal("GET", "POST", "PUT", "PATCH", "DELETE"),
   url: Schema.String.pipe(Schema.pattern(/^https?:\/\/.+/)),
@@ -132,7 +132,7 @@ const RequestSpec = Schema.Struct({
 
 **Capture metadata:**
 
-```typescript
+```typescript ignore
 type ResponseMeta = {
   status: number; // HTTP status code
   statusText: string; // e.g., "OK", "Not Found"
@@ -144,7 +144,7 @@ type ResponseMeta = {
 
 **Body truncation:**
 
-```typescript
+```typescript ignore
 // Limit response body to 10KB to avoid memory issues
 const truncateBody = (body: string): string =>
   body.length > 10_000 ? body.slice(0, 10_000) + "... (truncated)" : body;
@@ -154,7 +154,7 @@ const truncateBody = (body: string): string =>
 
 **Domain Errors:**
 
-```typescript
+```typescript ignore
 class HttpRequestError extends Schema.TaggedError<HttpRequestError>()(
   "HttpRequestError",
   { message: Schema.String, cause: Schema.Unknown }
@@ -173,7 +173,7 @@ class NetworkError extends Schema.TaggedError<NetworkError>()(
 
 **Error mapping:**
 
-```typescript
+```typescript ignore
 const mapErrorToMeta = (error: unknown): ErrorMeta => {
   if (error instanceof TimeoutError) {
     return {
@@ -199,7 +199,7 @@ const mapErrorToMeta = (error: unknown): ErrorMeta => {
 
 ### Mock HTTP Client
 
-```typescript
+```typescript ignore
 // Use mock adapter for offline testing
 const MockHttpClientTest = Layer.effect(
   HttpClientPort,
@@ -226,7 +226,7 @@ const MockHttpClientTest = Layer.effect(
 
 ### Workflow Tests
 
-```typescript
+```typescript ignore
 it.effect("should execute HTTP request and publish success event", () =>
   Effect.gen(function* () {
     const httpClient = yield* HttpClientPort;
@@ -261,7 +261,7 @@ it.effect("should execute HTTP request and publish success event", () =>
 
 ### Timeout Tests
 
-```typescript
+```typescript ignore
 it.effect("should timeout long-running requests", () =>
   Effect.gen(function* () {
     const httpClient = yield* HttpClientPort;
@@ -296,7 +296,7 @@ it.effect("should timeout long-running requests", () =>
 
 **Sensitive Data Handling:**
 
-```typescript
+```typescript ignore
 // Strip sensitive headers from logs
 const sanitizeHeaders = (headers: Record<string, string>) => {
   const sensitive = ["authorization", "api-key", "x-api-token"];
@@ -317,7 +317,7 @@ yield* Effect.logInfo("Executing HTTP request", {
 
 **URL Validation:**
 
-```typescript
+```typescript ignore
 // Prevent SSRF attacks: disallow private IPs
 const isPrivateIP = (url: string): boolean => {
   const hostname = new URL(url).hostname;

@@ -98,7 +98,7 @@ packages/orchestration/
 
 ### submitWorkflow
 
-```typescript
+```typescript ignore
 // Input: SubmitServiceCall command
 // Actions:
 //   1. Generate ServiceCallId (UUID v7)
@@ -110,7 +110,7 @@ packages/orchestration/
 
 ### dueWorkflow
 
-```typescript
+```typescript ignore
 // Input: DueTimeReached event
 // Actions:
 //   1. Load ServiceCall from persistence
@@ -122,7 +122,7 @@ packages/orchestration/
 
 ### resultWorkflow
 
-```typescript
+```typescript ignore
 // Input: ExecutionSucceeded OR ExecutionFailed event
 // Actions:
 //   1. Load ServiceCall from persistence
@@ -136,7 +136,7 @@ packages/orchestration/
 
 ### State Machine Tests (Pure Functions)
 
-```typescript
+```typescript ignore
 // Domain transitions are pure functions
 it("should transition from Scheduled to Running", () => {
   const scheduled = ServiceCall.schedule(submitted, dueAt);
@@ -149,7 +149,7 @@ it("should transition from Scheduled to Running", () => {
 
 ### Workflow Tests (Effect)
 
-```typescript
+```typescript ignore
 it.effect("should handle SubmitServiceCall command", () =>
   Effect.gen(function* () {
     const persistence = yield* ServiceCallPersistencePort;
@@ -171,7 +171,7 @@ it.effect("should handle SubmitServiceCall command", () =>
 
 ### Idempotency Tests
 
-```typescript
+```typescript ignore
 it.effect("should handle duplicate DueTimeReached events", () =>
   Effect.gen(function* () {
     // First event transitions to Running
@@ -187,32 +187,13 @@ it.effect("should handle duplicate DueTimeReached events", () =>
 );
 ```
 
-## Database Schema (Planned)
+## Database Schema
 
-```sql
-CREATE TABLE service_calls (
-  tenant_id TEXT NOT NULL,
-  service_call_id TEXT NOT NULL,
-  status TEXT NOT NULL,              -- Submitted, Scheduled, Running, Succeeded, Failed
-  name TEXT NOT NULL,
-  request_spec_json TEXT NOT NULL,   -- { method, url, headers, body }
-  submitted_at TEXT NOT NULL,
-  due_at TEXT,
-  started_at TEXT,
-  finished_at TEXT,
-  response_meta_json TEXT,
-  error_meta_json TEXT,
-  correlation_id TEXT,
-  tags_json TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (tenant_id, service_call_id)
-);
+Schema design details are maintained in the design documentation:
 
--- Index for status queries
-CREATE INDEX idx_service_calls_status
-  ON service_calls(tenant_id, status, due_at);
-```
+- **Schema definition:** See `../../docs/decisions/ADR-0005-schema.md` for table structure
+- **Key constraints:** Composite primary key `(tenant_id, service_call_id)`, status indexing
+- **Invariants:** All timestamps in ISO8601 UTC, status as string enum
 
 ## Multi-Tenancy Checklist
 

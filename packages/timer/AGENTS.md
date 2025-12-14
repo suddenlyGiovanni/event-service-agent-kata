@@ -62,7 +62,7 @@ packages/timer/
 
 ### scheduleTimerWorkflow
 
-```typescript
+```typescript ignore
 // Input: ScheduleTimer command
 // Output: TimerEntry persisted in Scheduled state
 // No events published (timer just registered)
@@ -70,7 +70,7 @@ packages/timer/
 
 ### pollDueTimersWorkflow
 
-```typescript
+```typescript ignore
 // Polls: WHERE dueAt <= now AND state = 'Scheduled'
 // Batch: Process up to 100 timers
 // Publishes: DueTimeReached event per timer
@@ -88,7 +88,7 @@ packages/timer/
 
 **Test Pattern:**
 
-```typescript
+```typescript ignore
 it.effect("should handle batch processing", () =>
   Effect.gen(function* () {
     // Use in-memory adapters for TDD
@@ -110,7 +110,7 @@ it.effect("should handle batch processing", () =>
 
 ### Port Usage
 
-```typescript
+```typescript ignore
 // Always inject ports, never import adapters
 Effect.gen(function* () {
   const clock = yield* ClockPort;
@@ -126,7 +126,7 @@ Effect.gen(function* () {
 
 ### Error Handling
 
-```typescript
+```typescript ignore
 // Use typed errors, never throw
 class TimerValidationError extends Schema.TaggedError<TimerValidationError>()(
   "TimerValidationError",

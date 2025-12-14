@@ -25,7 +25,7 @@ http/                # RequestSpec for HTTP requests
 
 ### Branded IDs
 
-```typescript
+```typescript ignore
 import { TenantId, ServiceCallId } from "@event-service-agent/schemas/shared";
 
 // Generate UUID v7
@@ -38,7 +38,7 @@ const parsed = yield* Schema.decode(TenantId)("01JFQR...");
 
 ### Domain Events
 
-```typescript
+```typescript ignore
 import { DueTimeReached } from "@event-service-agent/schemas/messages/timer";
 
 // Construct with validation
@@ -54,7 +54,7 @@ const decoded = yield* Schema.decode(DueTimeReached)(jsonData);
 
 ### Message Envelopes
 
-```typescript
+```typescript ignore
 import { MessageEnvelope } from "@event-service-agent/schemas/envelope";
 
 // Wrap event in envelope
@@ -72,7 +72,7 @@ const envelope = new MessageEnvelope({
 
 Use `Schema.brand` for type-safe IDs:
 
-```typescript
+```typescript ignore
 export const TenantId = UUID7.pipe(Schema.brand("TenantId"));
 export type TenantId = Schema.Schema.Type<typeof TenantId>;
 
@@ -89,7 +89,7 @@ export namespace TenantId {
 
 Use `Schema.TaggedClass` for discriminated unions:
 
-```typescript
+```typescript ignore
 export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
   "DueTimeReached",
   {
@@ -104,7 +104,7 @@ export class DueTimeReached extends Schema.TaggedClass<DueTimeReached>()(
 
 Always use `Iso8601DateTime` (not native `Date`):
 
-```typescript
+```typescript ignore
 export const Iso8601DateTime = Schema.String.pipe(
   Schema.pattern(
     /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/,
@@ -126,7 +126,7 @@ export const Iso8601DateTime = Schema.String.pipe(
 
 **Example:**
 
-```typescript
+```typescript ignore
 // messages/orchestration/service-call-scheduled.ts
 export class ServiceCallScheduled extends Schema.TaggedClass<ServiceCallScheduled>()(
   "ServiceCallScheduled",
@@ -149,7 +149,7 @@ export class ServiceCallScheduled extends Schema.TaggedClass<ServiceCallSchedule
 
 **Example:**
 
-```typescript
+```typescript ignore
 // ✅ Decode at boundary
 const command = yield* Schema.decode(ScheduleTimer)(jsonData);
 
@@ -164,7 +164,7 @@ const encoded = yield* Schema.encode(DueTimeReached)(event);
 
 ### Schema Validation Tests
 
-```typescript
+```typescript ignore
 import { describe, it, expect } from "@effect/vitest";
 import { Schema } from "effect";
 
@@ -211,7 +211,7 @@ describe("TenantId", () => {
 
 **Every domain message must include `tenantId`:**
 
-```typescript
+```typescript ignore
 // ✅ Good: tenantId required
 export class MyEvent extends Schema.TaggedClass<MyEvent>()("MyEvent", {
   tenantId: TenantId,

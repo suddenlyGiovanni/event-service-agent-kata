@@ -159,7 +159,7 @@ This project uses Effect-TS as its standard library. Key patterns:
 
 ### Effect.gen Pattern (Preferred)
 
-```typescript
+```typescript ignore
 // ✅ Use gen syntax for readable imperative-style
 Effect.gen(function* () {
   const a = yield* getA;
@@ -170,7 +170,7 @@ Effect.gen(function* () {
 
 ### Layer Pattern (Dependency Injection)
 
-```typescript
+```typescript ignore
 // Define service
 class MyService extends Context.Tag("MyService")<
   MyService,
@@ -191,7 +191,7 @@ const MyServiceLive = Layer.effect(
 
 ### Typed Errors
 
-```typescript
+```typescript ignore
 // Define domain errors
 class ValidationError extends Schema.TaggedError<ValidationError>()(
   "ValidationError",

@@ -32,7 +32,7 @@ Domain-facing interfaces for external dependencies:
 
 ### Message Types
 
-```typescript
+```typescript ignore
 import type * as Messages from "@event-service-agent/platform/messages";
 
 // Type-safe message handling
@@ -43,7 +43,7 @@ const handleCommand = (cmd: Messages.Orchestration.Commands.ScheduleTimer) => {
 
 ### Port Injection
 
-```typescript
+```typescript ignore
 import { EventBusPort } from "@event-service-agent/platform/ports";
 
 // Depend on port, not implementation
@@ -80,7 +80,7 @@ const workflow = Effect.gen(function* () {
 
 **Example:**
 
-```typescript
+```typescript ignore
 // messages/timer.ts
 export namespace Timer {
   export namespace Commands {
@@ -106,7 +106,7 @@ export namespace Timer {
 
 **Example:**
 
-```typescript
+```typescript ignore
 // ports/my-service.port.ts
 import { Context, Effect } from "effect";
 
