@@ -3,6 +3,14 @@
 pre-commit:
   parallel: true
   commands:
+    # Beads: Flush pending changes before commit (bypasses debounce)
+    beads-sync:
+      run: |
+        if command -v bd &> /dev/null && [ -d ".beads" ]; then
+          bd --no-daemon export 2>/dev/null || true
+        fi
+      stage_fixed: true
+    
     format:
       glob: "*.{ts,tsx,json,md}"
       run: |
@@ -33,8 +41,33 @@ pre-commit:
     - merge
     - rebase
 
+post-merge:
+  commands:
+    # Beads: Import updated JSONL after pull/merge
+    beads-import:
+      run: |
+        if command -v bd &> /dev/null && [ -d ".beads" ]; then
+          bd --no-daemon import -i .beads/issues.jsonl 2>/dev/null || true
+        fi
+
+post-checkout:
+  commands:
+    # Beads: Import updated JSONL after branch switch
+    beads-import:
+      run: |
+        if command -v bd &> /dev/null && [ -d ".beads" ]; then
+          bd --no-daemon import -i .beads/issues.jsonl 2>/dev/null || true
+        fi
+
 pre-push:
   commands:
+    # Beads: Export database to JSONL before push (critical for multi-workspace sync)
+    beads-export:
+      run: |
+        if command -v bd &> /dev/null && [ -d ".beads" ]; then
+          bd --no-daemon export 2>/dev/null || true
+        fi
+    
     test:
       run: |
         export PATH="$HOME/.bun/bin:$PATH"

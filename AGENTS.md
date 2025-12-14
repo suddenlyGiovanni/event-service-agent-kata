@@ -94,9 +94,20 @@ bd dep add <new-id> <parent-id> --type discovered-from
 # View dependency tree
 bd dep tree <issue-id>
 
-# Sync database (usually automatic)
+# Sync database (usually automatic via Lefthook)
 bd sync
 ```
+
+### Git Hooks (Lefthook Integration)
+
+Beads is integrated with Lefthook for automatic database sync:
+
+- **pre-commit**: Exports database to JSONL and stages changes
+- **post-merge**: Imports JSONL after `git pull` or merge
+- **post-checkout**: Imports JSONL after branch switches
+- **pre-push**: Exports database before pushing
+
+This ensures the beads database stays synchronized across git operations automatically.
 
 ### Issue Labels
 
