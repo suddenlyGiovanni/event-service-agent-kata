@@ -8,18 +8,27 @@ This section tracks current work, implementation roadmap, and detailed task plan
 
 ## 📊 Current Work
 
-### [Kanban Board](kanban.md)
+### Issue Tracking with Beads
 
-Active task tracking with work-in-progress limits.
+This project uses [Beads (`bd`)](https://github.com/steveyegge/beads) for issue tracking.
+Beads is a git-versioned, agent-friendly issue tracker.
 
-**Current Status:**
+**Quick Commands:**
 
-- **Doing**: Active implementation (WIP ≤ 2)
-- **Ready**: Prioritized queue (next tasks)
-- **Blocked**: Waiting on decisions or dependencies
-- **Done**: Recently completed work
+```bash
+bd ready              # See prioritized, unblocked work
+bd list --status open # See all open issues
+bd show <issue-id>    # View issue details
+bd blocked            # See blocked issues
+bd stats              # Issue statistics
+```
 
-[→ View Kanban](kanban.md)
+**Finding work:** Run `bd ready` to see prioritized issues with no blockers.
+
+### Legacy Kanban (Archive)
+
+Historical context is preserved in [kanban.md](kanban.md). The beads database
+(`.beads/issues.jsonl`) is now the primary source of truth for issue tracking.
 
 ---
 
@@ -56,16 +65,17 @@ Detailed task breakdowns for complex features:
 
 ### Before Starting Work
 
-1. Check [Kanban](kanban.md) for current task priority
+1. Run `bd ready` to see prioritized issues
 2. Read relevant [module design](../design/modules/) documentation
 3. Review related [ADRs](../decisions/) for architectural decisions
 4. Follow [TDD workflow](../CONTRIBUTING.md#available-scripts) in Contributing Guide
 
 ### During Development
 
-- Update Kanban status as you progress (Ready → Doing → Done)
-- Link commits to plan items (e.g., `Refs: PL-##`)
+- Update issue status: `bd update <id> --status in_progress`
+- Link commits to issues (e.g., `Refs: event-service-agent-kata-f86`)
 - Reference ADRs in code comments (e.g., `[adr: ADR-0006]`)
+- Create issues for discovered work: `bd create "Found X" -t bug`
 
 ### Quality Gates
 
@@ -78,25 +88,26 @@ Detailed task breakdowns for complex features:
 
 ## 📌 Conventions
 
-### Task IDs
+### Issue IDs
 
-Plan items use `PL-#` format (e.g., `PL-24`, `PL-4.6`)
+Beads issues use hash-based IDs (e.g., `event-service-agent-kata-f86`).
+Legacy `PL-#` IDs are preserved as labels for reference.
 
-### Status Tags
+### Labels
 
-- `[Timer]`, `[Orchestration]`, `[Api]`, etc. - Module scope
-- `[infra]` - Infrastructure/cross-cutting
-- `[adr: ADR-####]` - Links to decision records
-- `[docs]` - Documentation updates
+- **Module scope**: `Timer`, `Orchestration`, `Api`, `Execution`, `platform`, `schemas`
+- **Infrastructure**: `infra`, `architecture`
+- **ADR links**: `ADR-0002`, `ADR-0013`, etc.
+- **Legacy IDs**: `PL-2`, `PL-4.4`, etc.
 
 ### Priority Levels
 
-- **P0** - Critical blockers
-- **P1** - High priority
-- (no prefix) - Normal priority
+- **P0** - Critical blockers (priority 0)
+- **P1** - High priority (priority 1)
+- **P2** - Normal priority (priority 2, default)
 
 ---
 
 ## 🎯 Next Steps
 
-Check the [Kanban Ready queue](kanban.md#ready) for the next prioritized task to work on.
+Run `bd ready` to see the next prioritized task to work on.
