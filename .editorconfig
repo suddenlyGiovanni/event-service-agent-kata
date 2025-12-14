@@ -6,9 +6,24 @@ end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-[*.{ts,tsx,json,yml,yaml}]
+[*.{ts,tsx,js,jsx,css}]
+indent_style = tab
+indent_size = 2
+max_line_length = 120
+
+[*.{json,jsonc}]
+indent_style = tab
+indent_size = 2
+max_line_length = 120
+
+[*.css]
+max_line_length = 80
+
+[*.{yml,yaml}]
 indent_style = space
 indent_size = 2
 
 [*.md]
+indent_style = space
+indent_size = 2
 trim_trailing_whitespace = false
