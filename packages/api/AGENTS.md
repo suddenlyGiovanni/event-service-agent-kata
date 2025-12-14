@@ -59,7 +59,7 @@ API endpoint specifications are maintained in design documentation:
 
 ### Route Tests
 
-```typescript
+```typescript ignore
 it.effect("should submit service call", () =>
   Effect.gen(function* () {
     const app = yield* ApiApp;
@@ -90,7 +90,7 @@ it.effect("should submit service call", () =>
 
 ### Tenant Isolation Tests
 
-```typescript
+```typescript ignore
 it.effect("should not allow cross-tenant queries", () =>
   Effect.gen(function* () {
     const app = yield* ApiApp;
