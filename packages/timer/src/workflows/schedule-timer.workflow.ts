@@ -32,6 +32,7 @@
  */
 
 import * as Effect from 'effect/Effect'
+import * as Option from 'effect/Option'
 
 import { MessageMetadata } from '@event-service-agent/platform/context'
 import type * as Messages from '@event-service-agent/schemas/messages'
@@ -57,8 +58,8 @@ export const scheduleTimerWorkflow = Effect.fn('Timer.ScheduleTimer')(function* 
 	const persistence = yield* Ports.TimerPersistencePort
 
 	yield* Effect.annotateCurrentSpan({
-		causationId,
-		correlationId,
+		causationId: Option.getOrUndefined(causationId),
+		correlationId: Option.getOrUndefined(correlationId),
 		dueAt: command.dueAt,
 		serviceCallId: command.serviceCallId,
 		tenantId: command.tenantId,
