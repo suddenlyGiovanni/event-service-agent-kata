@@ -100,14 +100,14 @@ bd sync
 
 ### Git Hooks (Lefthook Integration)
 
-Beads is integrated with Lefthook for automatic database sync:
+Beads is integrated with Lefthook for automatic database sync. These hooks match the official bd git hooks specification:
 
-- **pre-commit**: Exports database to JSONL and stages changes
-- **post-merge**: Imports JSONL after `git pull` or merge
-- **post-checkout**: Imports JSONL after branch switches
-- **pre-push**: Exports database before pushing
+- **pre-commit**: Flushes pending changes via `bd sync --flush-only` and stages all JSONL files
+- **post-merge**: Imports updates via `bd sync --import-only`, skips during rebase, runs health check
+- **post-checkout**: Imports updates via `bd sync --import-only` after branch switches
+- **pre-push**: ⚠️ **Critical safety check** - flushes pending changes then **blocks push** if JSONL files have uncommitted changes
 
-This ensures the beads database stays synchronized across git operations automatically.
+The pre-push hook prevents pushing stale beads data to remote, ensuring database consistency across team members and multiple workspaces. If blocked, commit the JSONL changes before pushing.
 
 ### Issue Labels
 
@@ -391,4 +391,4 @@ Create an ADR if the choice:
 
 ---
 
-**Last Updated:** 2025-12-14
+**Last Updated:** 2025-12-15
