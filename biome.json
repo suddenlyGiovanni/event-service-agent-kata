@@ -135,7 +135,8 @@
 			},
 			"nursery": {
 				"noUnresolvedImports": "off",
-				"recommended": true
+				"recommended": true,
+				"useExplicitType": "off"
 			},
 			"performance": {
 				"recommended": true

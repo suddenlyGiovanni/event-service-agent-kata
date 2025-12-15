@@ -5,6 +5,7 @@
 
 import type * as Platform from '@effect/platform'
 import * as Sql from '@effect/sql'
+import type * as SqlSqliteBun from '@effect/sql-sqlite-bun'
 import * as Chunk from 'effect/Chunk'
 import type { ConfigError } from 'effect/ConfigError'
 import type * as DateTime from 'effect/DateTime'
@@ -466,14 +467,16 @@ export class TimerPersistence {
 	 * - **Realistic**: Uses actual SQL queries (validates production SQL path)
 	 * - **Migrations**: Runs same migrations as production
 	 * - **No cleanup needed**: Database disposed when scope closes
+	 *
+	 * @internal
 	 */
 	static readonly Test: Layer.Layer<
-		Ports.TimerPersistencePort,
+		Ports.TimerPersistencePort | Sql.SqlClient.SqlClient | SqlSqliteBun.SqliteClient.SqliteClient,
 		| Sql.SqlError.SqlError
 		| Sql.Migrator.MigrationError
 		| ConfigError
 		| Platform.Error.BadArgument
 		| Platform.Error.SystemError,
 		never
-	> = Layer.provide(Layer.effect(Ports.TimerPersistencePort, make), SQL.Test)
+	> = Layer.provideMerge(Layer.effect(Ports.TimerPersistencePort, make), SQL.Test)
 }

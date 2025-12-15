@@ -9,14 +9,13 @@ import * as Option from 'effect/Option'
 import * as TestClock from 'effect/TestClock'
 
 import { MessageMetadata } from '@event-service-agent/platform/context'
-import { SQL } from '@event-service-agent/platform/database'
 import * as Messages from '@event-service-agent/schemas/messages'
 import { CorrelationId, EnvelopeId, ServiceCallId, TenantId } from '@event-service-agent/schemas/shared'
 
 import * as Adapters from '../adapters/index.ts'
 import * as Domain from '../domain/timer-entry.domain.ts'
 import * as Ports from '../ports/index.ts'
-import { withServiceCall } from '../test/service-call.fixture.ts'
+import { ServiceCallFixture } from '../test/service-call.fixture.ts'
 import * as Workflows from './schedule-timer.workflow.ts'
 
 describe('scheduleTimerWorkflow', () => {
@@ -28,7 +27,7 @@ describe('scheduleTimerWorkflow', () => {
 	 * Base test layers with SQL.Test for fresh database per test. Using it.scoped() ensures each test gets isolated
 	 * database instance.
 	 */
-	const BaseTestLayers = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.Clock.Test, SQL.Test)
+	const BaseTestLayers = Layer.mergeAll(Adapters.TimerPersistence.Test, Adapters.Clock.Test, ServiceCallFixture.Default)
 
 	describe('Happy Path', () => {
 		// Given: Valid ScheduleTimer command
@@ -39,6 +38,7 @@ describe('scheduleTimerWorkflow', () => {
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				// DateTime.Utc is now the domain type (no string conversion needed)
 				const dueAt = DateTime.add(now, { minutes: 5 })
@@ -53,7 +53,7 @@ describe('scheduleTimerWorkflow', () => {
 
 				// Arrange: Mock dependencies (ClockPort, TimerPersistencePort)
 				const persistence = yield* Ports.TimerPersistencePort
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
 
 				// Act: Execute workflow
 				yield* Workflows.scheduleTimerWorkflow(command).pipe(
@@ -84,6 +84,7 @@ describe('scheduleTimerWorkflow', () => {
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				// dueAt is 5 minutes from now (DateTime.Utc is the domain type)
 				const dueAt = DateTime.add(now, { minutes: 5 })
@@ -96,7 +97,7 @@ describe('scheduleTimerWorkflow', () => {
 					})
 
 				const persistence = yield* Ports.TimerPersistencePort
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
 
 				// Act
 				yield* Workflows.scheduleTimerWorkflow(command).pipe(
@@ -119,6 +120,7 @@ describe('scheduleTimerWorkflow', () => {
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
@@ -129,7 +131,7 @@ describe('scheduleTimerWorkflow', () => {
 						tenantId,
 					})
 
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act
@@ -160,6 +162,7 @@ describe('scheduleTimerWorkflow', () => {
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
@@ -170,7 +173,7 @@ describe('scheduleTimerWorkflow', () => {
 						tenantId,
 					})
 
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act: Provide MessageMetadata with correlationId
@@ -195,6 +198,7 @@ describe('scheduleTimerWorkflow', () => {
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
@@ -205,7 +209,7 @@ describe('scheduleTimerWorkflow', () => {
 						tenantId,
 					})
 
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act: Provide MessageMetadata without correlationId (Option.none())
@@ -236,6 +240,7 @@ describe('scheduleTimerWorkflow', () => {
 				const clock = yield* Ports.ClockPort
 				const persistence = yield* Ports.TimerPersistencePort
 				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				// Set dueAt to 5 minutes in the PAST
 				const dueAt = DateTime.subtract(now, { minutes: 5 })
@@ -248,7 +253,7 @@ describe('scheduleTimerWorkflow', () => {
 						tenantId,
 					})
 
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
 				yield* Workflows.scheduleTimerWorkflow(command).pipe(
 					Effect.provideService(MessageMetadata, {
 						causationId: Option.some(EnvelopeId.make('018f6b8a-5c5d-7b32-8c6d-b7c6d8e6f9a3')),
@@ -275,6 +280,7 @@ describe('scheduleTimerWorkflow', () => {
 			Effect.gen(function* () {
 				const clock = yield* Ports.ClockPort
 				const now = yield* clock.now()
+				const serviceCallFixture = yield* ServiceCallFixture
 
 				const dueAt = DateTime.add(now, { minutes: 5 })
 
@@ -285,7 +291,7 @@ describe('scheduleTimerWorkflow', () => {
 						tenantId,
 					})
 
-				yield* withServiceCall({ serviceCallId, tenantId })
+				yield* serviceCallFixture.make({ serviceCallId, tenantId })
 				const persistence = yield* Ports.TimerPersistencePort
 
 				// Act: Execute workflow TWICE with same command
