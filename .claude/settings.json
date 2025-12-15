@@ -8,7 +8,7 @@
 			"Bash(bd doctor)",
 			"Bash(git rev-parse:*)"
 		],
-		"deny": [],
-		"ask": []
+		"ask": [],
+		"deny": []
 	}
 }
