@@ -193,11 +193,7 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
  * - Early return optimization
  * - Design trade-offs (polling vs push, fail-fast vs error accumulation)
  */
-export const pollDueTimersWorkflow = Effect.fn('Timer.PollDueTimersWorkflow')(function* (): Effect.fn.Return<
-	void,
-	Ports.PersistenceError | BatchProcessingError,
-	Ports.TimerPersistencePort | Ports.ClockPort | Ports.TimerEventBusPort
-> {
+export const pollDueTimersWorkflow = Effect.fn('Timer.PollDueTimersWorkflow')(function* () {
 	const persistence = yield* Ports.TimerPersistencePort
 	const clock = yield* Ports.ClockPort
 
@@ -254,13 +250,11 @@ export const pollDueTimersWorkflow = Effect.fn('Timer.PollDueTimersWorkflow')(fu
 			totalCount: Chunk.size(dueTimers),
 		})
 
-		return yield* Effect.fail(
-			new BatchProcessingError({
-				failedCount: failures.length,
-				failures,
-				totalCount: Chunk.size(dueTimers),
-			}),
-		)
+		return yield* new BatchProcessingError({
+			failedCount: failures.length,
+			failures,
+			totalCount: Chunk.size(dueTimers),
+		})
 	}
 
 	yield* Effect.logInfo('All timers processed successfully', {
