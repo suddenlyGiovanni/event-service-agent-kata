@@ -1,0 +1,14 @@
+{
+	"permissions": {
+		"allow": [
+			"Bash(bd status:*)",
+			"Bash(bd list:*)",
+			"WebFetch(domain:github.com)",
+			"Bash(bd info:*)",
+			"Bash(bd doctor)",
+			"Bash(git rev-parse:*)"
+		],
+		"deny": [],
+		"ask": []
+	}
+}

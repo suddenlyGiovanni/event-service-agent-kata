@@ -50,3 +50,6 @@ bun.lockb
 .beads/bd.pipe
 .beads/daemon.*
 .beads/.exclusive-lock
+
+# Claude Code local settings
+.claude/*.local.*
