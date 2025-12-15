@@ -194,6 +194,9 @@ describe('PollingWorker', () => {
 				// Advance clock by 10 seconds
 				yield* TestClock.adjust('10 seconds')
 
+				// Give the worker a chance to run scheduled work after the clock jump
+				yield* Effect.yieldNow()
+
 				// Interrupt the worker
 				yield* Fiber.interrupt(fiber)
 
