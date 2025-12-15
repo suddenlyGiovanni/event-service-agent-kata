@@ -148,7 +148,7 @@ const processTimerFiring = Effect.fn('Timer.ProcessTimerFiring')(function* (time
 	 *
 	 * By making this uninterruptible, we ensure:
 	 * - Either both operations complete (normal case)
-	 * - Or neither starts (interrupted before entering)
+	 * - The effect can be interrupted before it starts, but not during execution
 	 * - Never: publish succeeds, markFired skipped due to interruption
 	 *
 	 * Note: This does NOT make the operations transactional. If markFired fails
