@@ -1,3 +1,6 @@
+import type * as Platform from '@effect/platform'
+import type * as Sql from '@effect/sql'
+import type { ConfigError } from 'effect/ConfigError'
 import * as Context from 'effect/Context'
 import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
@@ -39,6 +42,9 @@ import * as Workflows from './workflows/index.ts'
  * @see ADR-0002 — Broker adapter decision
  */
 export class Timer extends Context.Tag('@event-service-agent/timer/Timer')<Timer, void>() {
+	/**
+	 * @internal
+	 */
 	static readonly DefaultWithoutDependencies = Layer.scoped(
 		Timer,
 		/**
@@ -98,7 +104,17 @@ export class Timer extends Context.Tag('@event-service-agent/timer/Timer')<Timer
 	 * @see docs/design/modules/timer.md — Module responsibilities
 	 * @see ADR-0002 — Broker adapter decision (pending)
 	 */
-	static readonly Live = this.DefaultWithoutDependencies.pipe(
+	static readonly Live: Layer.Layer<
+		Timer,
+		| Ports.Platform.SubscribeError
+		| Ports.PersistenceError
+		| Sql.SqlError.SqlError
+		| Sql.Migrator.MigrationError
+		| ConfigError
+		| Platform.Error.BadArgument
+		| Platform.Error.SystemError,
+		Ports.Platform.EventBusPort
+	> = this.DefaultWithoutDependencies.pipe(
 		Layer.provide(Adapters.TimerEventBus.Live),
 		Layer.provide(Adapters.Clock.Live),
 		Layer.provide(Adapters.TimerPersistence.Live),
@@ -122,9 +138,19 @@ export class Timer extends Context.Tag('@event-service-agent/timer/Timer')<Timer
 	 * - No file I/O (all persistence in-memory)
 	 *
 	 * @see {@link Timer.Default} — Production layer with real dependencies
-	 * @see packages/timer/src/test/integration/integration.test.ts — Usage examples
+	 * @see packages/timer/src/test/main.integration.test.ts — Usage examples
 	 */
-	static readonly Test = this.DefaultWithoutDependencies.pipe(
+	static readonly Test: Layer.Layer<
+		Timer,
+		| Platform.Error.SystemError
+		| Sql.Migrator.MigrationError
+		| Sql.SqlError.SqlError
+		| Platform.Error.BadArgument
+		| ConfigError
+		| Ports.PersistenceError
+		| Ports.Platform.SubscribeError,
+		Ports.Platform.EventBusPort
+	> = this.DefaultWithoutDependencies.pipe(
 		Layer.provide(Adapters.TimerEventBus.Live),
 		Layer.provide(Adapters.Clock.Test),
 		Layer.provide(Adapters.Platform.UUID7.Sequence()),
