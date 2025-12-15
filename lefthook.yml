@@ -20,7 +20,7 @@ pre-commit:
         bd sync --flush-only || exit 0
 
         # Stage JSONL files if they exist and are tracked
-        for file in .beads/beads.jsonl .beads/issues.jsonl .beads/deletions.jsonl; do
+        for file in .beads/issues.jsonl .beads/deletions.jsonl; do
           if [ -f "$file" ] && git ls-files --error-unmatch "$file" &>/dev/null; then
             git add "$file" 2>/dev/null || true
           fi
@@ -116,7 +116,7 @@ pre-push:
 
         # Find tracked JSONL files
         JSONL_FILES=""
-        for file in .beads/beads.jsonl .beads/issues.jsonl .beads/deletions.jsonl; do
+        for file in .beads/issues.jsonl .beads/deletions.jsonl; do
           if [ -f "$file" ] || git ls-files --error-unmatch "$file" &>/dev/null 2>&1; then
             JSONL_FILES="$JSONL_FILES $file"
           fi
@@ -127,9 +127,9 @@ pre-push:
         fi
 
         # Check for uncommitted changes (staged, unstaged, untracked, deleted, renamed, or conflicts)
-        if git status --porcelain -- $JSONL_FILES 2>/dev/null | grep -q '^[MADRCU?]'; then
+        if git status --porcelain -- "$JSONL_FILES" 2>/dev/null | grep -q '^[MADRCU?]'; then
           echo "Error: .beads JSONL files have uncommitted changes. Commit them before pushing:" >&2
-          git status --short -- $JSONL_FILES >&2
+          git status --short -- "$JSONL_FILES" >&2
           echo "" >&2
           echo "Run: git add .beads/*.jsonl && git commit -m 'chore: sync beads database'" >&2
           exit 1

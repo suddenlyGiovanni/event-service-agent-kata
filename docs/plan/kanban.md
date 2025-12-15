@@ -7,6 +7,12 @@
 > **⚠️ ARCHIVED**: This file is preserved for historical context. Issue tracking
 > has moved to [Beads (`bd`)](https://github.com/steveyegge/beads).
 >
+> **Install Beads** (if not already installed):
+>
+> ```bash
+> npm install -g @beads/bd  # or: brew tap steveyegge/beads && brew install bd
+> ```
+>
 > **Use these commands instead:**
 >
 > - `bd ready` — See prioritized, unblocked work

@@ -60,8 +60,11 @@ Issues in Beads are:
 Try Beads in your own projects:
 
 ```bash
-# Install Beads
-curl -sSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash
+# Install Beads via npm (recommended for Node.js projects)
+npm install -g @beads/bd
+
+# Or via Homebrew (macOS/Linux)
+brew tap steveyegge/beads && brew install bd
 
 # Initialize in your repo
 bd init
@@ -69,6 +72,9 @@ bd init
 # Create your first issue
 bd create "Try out Beads"
 ```
+
+> **Note:** For additional installation methods, see the
+> [official installation docs](https://github.com/steveyegge/beads/blob/main/docs/INSTALLING.md).
 
 ## Learn More
 

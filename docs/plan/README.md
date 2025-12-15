@@ -13,6 +13,16 @@ This section tracks current work, implementation roadmap, and detailed task plan
 This project uses [Beads (`bd`)](https://github.com/steveyegge/beads) for issue tracking.
 Beads is a git-versioned, agent-friendly issue tracker.
 
+**Installation** (if not already installed):
+
+```bash
+# Via npm (recommended for Node.js projects)
+npm install -g @beads/bd
+
+# Or via Homebrew (macOS/Linux)
+brew tap steveyegge/beads && brew install bd
+```
+
 **Quick Commands:**
 
 ```bash
@@ -76,6 +86,7 @@ Detailed task breakdowns for complex features:
 - Link commits to issues (e.g., `Refs: event-service-agent-kata-f86`)
 - Reference ADRs in code comments (e.g., `[adr: ADR-0006]`)
 - Create issues for discovered work: `bd create "Found X" -t bug`
+  - **Available issue types for `-t`:** `bug`, `task`, `epic`, `feature`, `chore`
 
 ### Quality Gates
 

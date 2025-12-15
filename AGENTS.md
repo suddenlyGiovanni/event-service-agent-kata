@@ -138,7 +138,8 @@ Use labels to preserve context and enable filtering:
 1. Close completed issues: `bd close <issue-id> --reason "..."`
 2. Update in-progress issues with notes if needed
 3. Create issues for remaining/discovered work
-4. Run `bd sync` to ensure database is synced to git
+4. Normally, `bd sync` runs automatically via Lefthook git hooks on commit/push.
+   Only run `bd sync` manually if you have disabled hooks or are working in an environment where they are unavailable.
 5. Commit and push all changes
 
 ### Legacy Kanban Reference
@@ -356,7 +357,7 @@ Refs: <beads-issue-id>
 
 **Scopes:** `timer`, `orchestration`, `execution`, `api`, `ports`, `platform`, `design`, `adr`
 
-**Issue references:** Use beads issue IDs (e.g., `event-service-agent-kata-f86`) or legacy PL-# labels
+**Issue references:** For all new work, use beads issue IDs (e.g., `event-service-agent-kata-f86`). Only use legacy PL-# labels when referencing or updating historical work.
 
 ## When You Need Help
 
