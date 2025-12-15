@@ -86,7 +86,7 @@ const EventBusTestLayer: Layer.Layer<TestEventBusState | Ports.Platform.EventBus
  * - Encapsulates all test infrastructure as internal details
  *
  * @example
- * ```typescript
+ * ```typescript ignore
  * it.scoped('should do something', () =>
  *   Effect.gen(function* () {
  *     const { Time, Timers, Main, Expect } = yield* TestHarness
