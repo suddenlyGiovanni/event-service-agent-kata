@@ -1,15 +1,30 @@
 # yaml-language-server: $schema=https://json.schemastore.org/lefthook.json
 
 pre-commit:
-  parallel: true
+  parallel: false
   commands:
     # Beads: Flush pending changes before commit (bypasses debounce)
+    # MUST run unconditionally (not just when files are staged)
     beads-sync:
+      priority: 1
+      files: git ls-files -m
       run: |
-        if command -v bd &> /dev/null && [ -d ".beads" ]; then
-          bd --no-daemon export 2>/dev/null || true
+        if ! command -v bd &> /dev/null; then
+          exit 0
         fi
-      stage_fixed: true
+        if [ ! -d ".beads" ]; then
+          exit 0
+        fi
+
+        # Flush pending changes to JSONL
+        bd sync --flush-only || exit 0
+
+        # Stage JSONL files if they exist and are tracked
+        for file in .beads/beads.jsonl .beads/issues.jsonl .beads/deletions.jsonl; do
+          if [ -f "$file" ] && git ls-files --error-unmatch "$file" &>/dev/null; then
+            git add "$file" 2>/dev/null || true
+          fi
+        done
     
     format:
       glob: "*.{ts,tsx,json,md}"
@@ -46,27 +61,81 @@ post-merge:
     # Beads: Import updated JSONL after pull/merge
     beads-import:
       run: |
-        if command -v bd &> /dev/null && [ -d ".beads" ]; then
-          bd --no-daemon import -i .beads/issues.jsonl 2>/dev/null || true
+        # Exit early if rebase in progress
+        if [ -d ".git/rebase-merge" ] || [ -d ".git/rebase-apply" ]; then
+          exit 0
         fi
+
+        if ! command -v bd &> /dev/null; then
+          exit 0
+        fi
+        if [ ! -d ".beads" ]; then
+          exit 0
+        fi
+
+        # Import changes from updated JSONL (more robust than direct import)
+        bd sync --import-only --no-git-history 2>/dev/null || {
+          echo "Warning: bd sync failed after merge. Run 'bd doctor --fix' if issues persist." >&2
+        }
+
+        # Run health check silently
+        bd doctor --check-health &>/dev/null || true
+        exit 0
 
 post-checkout:
   commands:
     # Beads: Import updated JSONL after branch switch
     beads-import:
       run: |
-        if command -v bd &> /dev/null && [ -d ".beads" ]; then
-          bd --no-daemon import -i .beads/issues.jsonl 2>/dev/null || true
+        if ! command -v bd &> /dev/null; then
+          exit 0
         fi
+        if [ ! -d ".beads" ]; then
+          exit 0
+        fi
+
+        # Import changes from updated JSONL
+        bd sync --import-only --no-git-history 2>/dev/null || {
+          echo "Warning: bd sync failed after checkout. Run 'bd doctor --fix' if issues persist." >&2
+        }
+        exit 0
 
 pre-push:
   commands:
-    # Beads: Export database to JSONL before push (critical for multi-workspace sync)
+    # Beads: Export database and check for uncommitted changes before push
     beads-export:
       run: |
-        if command -v bd &> /dev/null && [ -d ".beads" ]; then
-          bd --no-daemon export 2>/dev/null || true
+        if [ ! -d ".beads" ]; then
+          exit 0
         fi
+
+        # Flush pending changes if bd is available
+        if command -v bd &> /dev/null; then
+          bd sync --flush-only 2>/dev/null || true
+        fi
+
+        # Find tracked JSONL files
+        JSONL_FILES=""
+        for file in .beads/beads.jsonl .beads/issues.jsonl .beads/deletions.jsonl; do
+          if [ -f "$file" ] || git ls-files --error-unmatch "$file" &>/dev/null 2>&1; then
+            JSONL_FILES="$JSONL_FILES $file"
+          fi
+        done
+
+        if [ -z "$JSONL_FILES" ]; then
+          exit 0
+        fi
+
+        # Check for uncommitted changes (staged, unstaged, untracked, deleted, renamed, or conflicts)
+        if git status --porcelain -- $JSONL_FILES 2>/dev/null | grep -q '^[MADRCU?]'; then
+          echo "Error: .beads JSONL files have uncommitted changes. Commit them before pushing:" >&2
+          git status --short -- $JSONL_FILES >&2
+          echo "" >&2
+          echo "Run: git add .beads/*.jsonl && git commit -m 'chore: sync beads database'" >&2
+          exit 1
+        fi
+
+        exit 0
     
     test:
       run: |
@@ -77,5 +146,5 @@ commit-msg:
   commands:
     conventional:
       run: |
-        grep -qE '^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?!?: .{1,88}' "$1" || \
+        grep -qE '^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?!?: .{1,88}' "{1}" || \
         (echo "❌ Commit message must follow Conventional Commits" && exit 1)
