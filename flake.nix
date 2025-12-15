@@ -15,7 +15,15 @@
         f:
         nixpkgs.lib.genAttrs systems (system:
           let
-            pkgs = import nixpkgs { inherit system overlays; };
+            pkgs = import nixpkgs {
+                inherit system overlays;
+
+                # Allow only this specific unfree package needed for the dev shell.
+                config.allowUnfreePredicate = pkg:
+                  builtins.elem (nixpkgs.lib.getName pkg) [
+                    "claude-code"
+                  ];
+              };
           in
           f pkgs
         );
@@ -27,6 +35,7 @@
             bun
             biome
             deno
+            claude-code
           ];
 
           # Show bun version each time direnv enters the shell
