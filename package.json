@@ -79,7 +79,7 @@
 		"lint": "biome lint --write .",
 		"prepare": "lefthook install",
 		"test": "bun --bun vitest",
-		"type-check": "bun --bun --workspaces type-check"
+		"type-check": "tsc --build"
 	},
 	"trustedDependencies": ["@beads/bd"],
 	"type": "module",
