@@ -15,15 +15,16 @@ This is an **event-driven, multi-tenant service-call agent** built with function
 
 ## Quick Start for New Tasks
 
-1. **Read the issue carefully** — Understand requirements and acceptance criteria
-2. **Check the Kanban** — Review `docs/plan/kanban.md` for current work context
+1. **Check ready work** — Run `bd ready` to see prioritized, unblocked issues
+2. **Pick an issue** — Start with the top item from `bd ready` or as assigned
 3. **Read module design** — Check `docs/design/modules/<module-name>.md` for the module you're working on
 4. **Review ADRs** — See `docs/decisions/` for architectural decisions (read the relevant ones)
-5. **Follow TDD** — RED → GREEN → REFACTOR with atomic commits
-6. **Run tests** — `bun run test` (watch) or `bun run test --run` (CI)
-7. **Format** — `bun run format` and `bun run check` before committing
-8. **Validate docs** — Run `bun run docs:check` and `bun run docs:type-check`
-9. **Update Kanban** — Mark tasks done in `docs/plan/kanban.md`
+5. **Update issue status** — Run `bd update <issue-id> --status in_progress`
+6. **Follow TDD** — RED → GREEN → REFACTOR with atomic commits
+7. **Run tests** — `bun run test` (watch) or `bun run test --run` (CI)
+8. **Format** — `bun run format` and `bun run check` before committing
+9. **Validate docs** — Run `bun run docs:check` and `bun run docs:type-check`
+10. **Close issue** — Run `bd close <issue-id> --reason "..."` when complete
 
 ## Non-Negotiable Principles
 
@@ -59,6 +60,92 @@ Every feature follows strict TDD:
 3. **🔵 REFACTOR:** Improve without changing behavior → Commit: `refactor(scope): extract <helper>`
 
 **Atomic commits:** One logical change per commit (RED, GREEN, or REFACTOR — not mixed).
+
+## Issue Tracking with Beads (`bd`)
+
+This project uses [Beads](https://github.com/steveyegge/beads) for issue tracking. Beads is a
+git-versioned, agent-friendly issue tracker that gives AI coding agents persistent memory across sessions.
+
+### Core Commands
+
+```bash
+# Find ready work (no blockers)
+bd ready
+
+# See all open issues
+bd list --status open
+
+# View issue details
+bd show <issue-id>
+
+# Create new issues during work
+bd create "Fix bug" -d "Description" -p 1 -t bug
+bd label add <issue-id> <label>
+
+# Update status when starting work
+bd update <issue-id> --status in_progress
+
+# Close completed work
+bd close <issue-id> --reason "Implemented per spec"
+
+# Link discovered work back to parent
+bd dep add <new-id> <parent-id> --type discovered-from
+
+# View dependency tree
+bd dep tree <issue-id>
+
+# Sync database (usually automatic via Lefthook)
+bd sync
+```
+
+### Git Hooks (Lefthook Integration)
+
+Beads is integrated with Lefthook for automatic database sync. These hooks match the official bd git hooks specification:
+
+- **pre-commit**: Flushes pending changes via `bd sync --flush-only` and stages all JSONL files
+- **post-merge**: Imports updates via `bd sync --import-only`, skips during rebase, runs health check
+- **post-checkout**: Imports updates via `bd sync --import-only` after branch switches
+- **pre-push**: ⚠️ **Critical safety check** - flushes pending changes then **blocks push** if JSONL files have uncommitted changes
+
+The pre-push hook prevents pushing stale beads data to remote, ensuring database consistency across team members and multiple workspaces. If blocked, commit the JSONL changes before pushing.
+
+### Issue Labels
+
+Use labels to preserve context and enable filtering:
+
+- **PL-#**: Legacy plan item ID (e.g., `PL-4.4`, `PL-23`)
+- **Module tags**: `Timer`, `Orchestration`, `Execution`, `Api`, `platform`, `schemas`
+- **Infrastructure**: `infra`, `architecture`
+- **ADR references**: `ADR-0002`, `ADR-0013`, etc.
+
+### Session Workflow
+
+**At session start:**
+
+1. Run `bd ready` to see prioritized, unblocked work
+2. Pick the top issue (or one assigned to you)
+3. Run `bd update <issue-id> --status in_progress`
+4. Read the issue description and related docs
+
+**During work:**
+
+- Create issues for discovered bugs/TODOs: `bd create "Found X" -t bug -p 1`
+- Link new issues to current work: `bd dep add <new-id> <current-id> --type discovered-from`
+- Add notes to issues as needed
+
+**At session end:**
+
+1. Close completed issues: `bd close <issue-id> --reason "..."`
+2. Update in-progress issues with notes if needed
+3. Create issues for remaining/discovered work
+4. Normally, `bd sync` runs automatically via Lefthook git hooks on commit/push.
+   Only run `bd sync` manually if you have disabled hooks or are working in an environment where they are unavailable.
+5. Commit and push all changes
+
+### Legacy Kanban Reference
+
+Historical context is preserved in `docs/plan/kanban.md`. The beads database
+is now the primary source of truth for issue tracking.
 
 ## Project Structure
 
@@ -262,13 +349,15 @@ const workflow: Effect.Effect<
 
 [Optional body explaining what and why]
 
-Refs: PL-#
+Refs: <beads-issue-id>
 [adr: ADR-####]
 ```
 
 **Common types:** `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 
 **Scopes:** `timer`, `orchestration`, `execution`, `api`, `ports`, `platform`, `design`, `adr`
+
+**Issue references:** For all new work, use beads issue IDs (e.g., `event-service-agent-kata-f86`). Only use legacy PL-# labels when referencing or updating historical work.
 
 ## When You Need Help
 
@@ -284,23 +373,23 @@ Create an ADR if the choice:
 **Process:**
 
 1. Create `docs/decisions/ADR-00XX-<topic>.md`
-2. Add to Kanban as blocker
+2. Create beads issue: `bd create "ADR: <topic>" -t task -p 1 -l ADR`
 3. Fill in Problem, Context, Options
 4. Update Decision section
-5. Mark as Accepted and continue
+5. Mark as Accepted and close issue
 
 ### Unclear Requirements
 
 - Prefer updating/adding small ADR or design note
-- Link changes in the plan (`docs/plan/kanban.md`)
-- Avoid scope creep: pick top item from Kanban (Doing → Ready)
+- Create a beads issue for follow-up work: `bd create "Clarify X" -t task`
+- Avoid scope creep: pick top item from `bd ready`
 
 ## Additional Resources
 
-For detailed Copilot-specific guidance, see `.github/copilot-instructions.md`.
-
-For Effect-TS documentation, use available documentation tools or visit [effect.website](https://effect.website).
+- **Issue tracking:** Run `bd help` for full command reference
+- **Copilot guidance:** See `.github/copilot-instructions.md`
+- **Effect-TS:** Use available documentation tools or visit [effect.website](https://effect.website)
 
 ---
 
-**Last Updated:** 2025-12-13
+**Last Updated:** 2025-12-15

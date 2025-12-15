@@ -42,3 +42,14 @@ bun.lockb
 /.direnv
 
 .github/prompts/
+
+# beads issue tracker (local-only files)
+.beads/*.db
+.beads/*.db-*
+.beads/bd.sock
+.beads/bd.pipe
+.beads/daemon.*
+.beads/.exclusive-lock
+
+# Claude Code local settings
+.claude/*.local.*

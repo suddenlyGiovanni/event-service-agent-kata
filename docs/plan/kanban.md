@@ -1,6 +1,26 @@
-# Kanban
+# Kanban (Legacy Archive)
 
 [← Back to Plan](README.md) | [← Documentation Home](../index.md)
+
+---
+
+> **⚠️ ARCHIVED**: This file is preserved for historical context. Issue tracking
+> has moved to [Beads (`bd`)](https://github.com/steveyegge/beads).
+>
+> **Install Beads** (if not already installed):
+>
+> ```bash
+> npm install -g @beads/bd  # or: brew tap steveyegge/beads && brew install bd
+> ```
+>
+> **Use these commands instead:**
+>
+> - `bd ready` — See prioritized, unblocked work
+> - `bd list --status open` — See all open issues
+> - `bd show <issue-id>` — View issue details
+>
+> Issues from this Kanban have been migrated to Beads with their original
+> PL-# IDs preserved as labels.
 
 ---
 
