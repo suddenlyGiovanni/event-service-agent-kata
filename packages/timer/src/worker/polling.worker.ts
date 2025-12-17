@@ -10,35 +10,37 @@ import * as Ref from 'effect/Ref'
 import { PollingWorkerRequests } from '../worker-protocol/polling.worker-requests.ts'
 import * as PollingWorker from '../workers/polling.worker.ts'
 
-const RunnerLive = Layer.effectDiscard(
-	Effect.gen(function* () {
-		const state = yield* Ref.make(Option.none<Fiber.Fiber<unknown, unknown>>())
+const RunnerLive = Effect.gen(function* () {
+	const state = yield* Ref.make(Option.none<Fiber.RuntimeFiber<unknown, unknown>>())
 
-		return Platform.WorkerRunner.layerSerialized(PollingWorkerRequests, {
-			StartPolling: Effect.fn(function* ({ pollInterval }) {
-				const current = yield* Ref.get(state)
-				if (Option.isSome(current)) {
-					return { didTransition: false, state: 'Running' } as const
-				}
+	return Platform.WorkerRunner.layerSerialized(PollingWorkerRequests, {
+		StartPolling: Effect.fn(function* ({ pollInterval }) {
+			const current = yield* Ref.get(state)
+			if (Option.isSome(current)) {
+				return { didTransition: false, state: 'Running' } as const
+			}
 
-				const fiber = yield* PollingWorker.run(pollInterval).pipe(Effect.fork)
+			const fiber = yield* Effect.fork(PollingWorker.run(pollInterval))
 
-				yield* Ref.set(state, Option.some(fiber))
-				return { didTransition: true, state: 'Running' } as const
-			}),
-			StopPolling: Effect.fn(function* () {
-				const current = yield* Ref.get(state)
+			yield* Ref.set(state, Option.some(fiber))
+			return { didTransition: true, state: 'Running' } as const
+		}),
+		StopPolling: Effect.fn(function* () {
+			const current = yield* Ref.get(state)
 
-				if (Option.isNone(current)) {
-					return { didTransition: false, state: 'Stopped' } as const
-				}
+			if (Option.isNone(current)) {
+				return { didTransition: false, state: 'Stopped' } as const
+			}
 
-				yield* Fiber.interrupt(current.value)
-				yield* Ref.set(state, Option.none())
-				return { didTransition: true, state: 'Stopped' } as const
-			}),
-		})
-	}),
+			yield* Fiber.interrupt(current.value)
+			yield* Ref.set(state, Option.none())
+			return { didTransition: true, state: 'Stopped' } as const
+		}),
+	})
+}).pipe(
+	(_) => _,
+	Layer.effectDiscard,
+	(_) => _,
 )
 
 pipe(
