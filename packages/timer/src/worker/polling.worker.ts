@@ -8,20 +8,20 @@ import * as Option from 'effect/Option'
 import * as Ref from 'effect/Ref'
 
 import { PollingWorkerRequests } from '../worker-protocol/polling.worker-requests.ts'
+import * as PollingWorker from '../workers/polling.worker.ts'
 
 const RunnerLive = Layer.effectDiscard(
 	Effect.gen(function* () {
-		const state = yield* Ref.make(Option.none<Fiber.Fiber<never, never>>())
+		const state = yield* Ref.make(Option.none<Fiber.Fiber<unknown, unknown>>())
 
 		return Platform.WorkerRunner.layerSerialized(PollingWorkerRequests, {
-			StartPolling: Effect.fn(function* ({ pollInterval: _pollInterval }) {
+			StartPolling: Effect.fn(function* ({ pollInterval }) {
 				const current = yield* Ref.get(state)
 				if (Option.isSome(current)) {
 					return { didTransition: false, state: 'Running' } as const
 				}
 
-				// TODO: build the polling loop (repeat pollDueTimersWorkflow, catch/log, sleep interval)
-				const fiber = yield* Effect.fork(Effect.never)
+				const fiber = yield* PollingWorker.run(pollInterval).pipe(Effect.fork)
 
 				yield* Ref.set(state, Option.some(fiber))
 				return { didTransition: true, state: 'Running' } as const
