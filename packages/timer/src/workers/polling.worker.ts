@@ -2,7 +2,6 @@ import * as Duration from 'effect/Duration'
 import * as Effect from 'effect/Effect'
 import * as Schedule from 'effect/Schedule'
 
-import type * as Ports from '../ports/index.ts'
 import * as Workflows from '../workflows/index.ts'
 
 /**
@@ -32,7 +31,7 @@ import * as Workflows from '../workflows/index.ts'
  * @see {@link Workflows.pollDueTimersWorkflow} — Core polling logic
  * @see ADR-0003 — Polling interval rationale
  */
-export const run: Effect.Effect<number, never, Ports.TimerPersistencePort | Ports.ClockPort | Ports.TimerEventBusPort> =
+export const run = Effect.fn((interval: Duration.DurationInput = Duration.seconds(5)) =>
 	Workflows.pollDueTimersWorkflow().pipe(
 		Effect.catchTags({
 			BatchProcessingError: (err) =>
@@ -46,6 +45,7 @@ export const run: Effect.Effect<number, never, Ports.TimerPersistencePort | Port
 					operation: err.operation,
 				}),
 		}),
-		Effect.repeat(Schedule.fixed(Duration.seconds(5))),
+		Effect.repeat(Schedule.fixed(interval)),
 		Effect.withSpan('Timer.PollingWorker.run'),
-	)
+	),
+)

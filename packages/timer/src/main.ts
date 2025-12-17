@@ -71,7 +71,7 @@ export class Timer extends Context.Tag('@event-service-agent/timer/Timer')<Timer
 			/**
 			 * Fork polling worker in local scope — interrupted when scope closes
 			 */
-			yield* PollingWorker.run.pipe(Effect.forkScoped)
+			yield* PollingWorker.run(Duration.decode('5 seconds')).pipe(Effect.forkScoped)
 
 			/**
 			 * Run command subscription in main fiber (blocks until broker closes)
