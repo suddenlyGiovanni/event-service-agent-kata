@@ -60,9 +60,18 @@ export const run = Effect.flatMap(PollingInterval, ({ interval }) =>
 	),
 ) // TODO: probably we want to return Effect.never?
 
-export class PollingWorker extends Context.Tag('@event-service-agent/timer/workers/polling.worker/PollingWorker')<
-	PollingWorker,
-	never
->() {
-	static readonly Default = Layer.effect(this, run)
-}
+export class PollingWorker extends Effect.Service<PollingWorker>()(
+	'@event-service-agent/timer/workers/polling.worker/PollingWorker',
+	{
+		effect: Effect.succeed({
+			/**
+			 * Long-running polling loop.
+			 *
+			 * NOTE: Do not snapshot / freeze the environment here. We want this `run`
+			 * effect to use whatever environment is provided at runtime (tests can
+			 * override ports/config; main can provide Live adapters).
+			 */
+			run,
+		}),
+	},
+) {}

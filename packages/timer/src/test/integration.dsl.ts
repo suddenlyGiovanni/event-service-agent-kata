@@ -23,7 +23,7 @@ import * as Adapters from '../adapters/index.ts'
 import { TimerDomain } from '../domain/index.ts'
 import { Timer } from '../main.ts'
 import * as Ports from '../ports/index.ts'
-import { PollingInterval } from '../workers/polling.worker.ts'
+import { PollingInterval, PollingWorker } from '../workers/polling.worker.ts'
 import { ServiceCallFixture } from './service-call.fixture.ts'
 
 type EventBusSubscribeHandler<
@@ -119,6 +119,7 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 						Adapters.Clock.Test,
 						EventBusTestLayer,
 						PollingInterval.Default,
+						PollingWorker.Default,
 					),
 				),
 			),
@@ -143,6 +144,7 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 				| Ports.ClockPort
 				| Adapters.Platform.UUID7
 				| PollingInterval
+				| PollingWorker
 			>()
 
 			const timeElapsedRef = yield* Ref.make(Duration.zero)

@@ -70,8 +70,13 @@ export class Timer extends Context.Tag('@event-service-agent/timer/Timer')<Timer
 
 			/**
 			 * Fork polling worker in local scope — interrupted when scope closes
+			 *
+			 * IMPORTANT: depend on the `PollingWorker` service (capability),
+			 * not its concrete implementation layer, so we can later swap the
+			 * implementation to an `@effect/platform` Worker with minimal changes.
 			 */
-			yield* PollingWorker.Default.pipe(Layer.launch, Effect.forkScoped)
+			const pollingWorker = yield* PollingWorker
+			yield* pollingWorker.run.pipe(Effect.forkScoped)
 
 			/**
 			 * Run command subscription in main fiber (blocks until broker closes)
@@ -120,6 +125,7 @@ export class Timer extends Context.Tag('@event-service-agent/timer/Timer')<Timer
 		Layer.provide(Adapters.TimerPersistence.Live),
 		Layer.provide(Adapters.Platform.UUID7.Default),
 		Layer.provide(PollingInterval.Default),
+		Layer.provide(PollingWorker.Default),
 	)
 
 	/**
@@ -157,5 +163,6 @@ export class Timer extends Context.Tag('@event-service-agent/timer/Timer')<Timer
 		Layer.provide(Adapters.Platform.UUID7.Sequence()),
 		Layer.provide(Adapters.TimerPersistence.Test),
 		Layer.provide(PollingInterval.Default),
+		Layer.provide(PollingWorker.Default),
 	)
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@effect/vitest'
 import * as Effect from 'effect/Effect'
 import * as Fiber from 'effect/Fiber'
+import { pipe } from 'effect/Function'
 import * as Layer from 'effect/Layer'
 import * as Ref from 'effect/Ref'
 import * as TestClock from 'effect/TestClock'
@@ -24,6 +25,7 @@ const BaseTestLayers = Layer.mergeAll(
 	Adapters.TimerPersistence.Test,
 	SQL.Test,
 	PollingInterval.Default,
+	PollingWorker.Default,
 )
 
 /**
@@ -72,12 +74,12 @@ describe('PollingWorker', () => {
 					}),
 				)
 
-				// Fork the worker
-				const fiber = yield* Effect.fork(
-					PollingWorker.Default.pipe(
-						Layer.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest())),
-						Layer.launch,
-					),
+				// Fork the worker (via service, not via implementation layer)
+				const fiber = yield* pipe(
+					PollingWorker,
+					Effect.andThen((_) => _.run),
+					Effect.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest())),
+					Effect.fork,
 				)
 
 				// Advance clock by 15 seconds
@@ -141,12 +143,12 @@ describe('PollingWorker', () => {
 					}),
 				)
 
-				// Fork the worker
-				const fiber = yield* Effect.fork(
-					PollingWorker.Default.pipe(
-						Layer.provide(Layer.merge(CountingPersistence, FailingTimerEventBus)),
-						Layer.launch,
-					),
+				// Fork the worker (via service, not via implementation layer)
+				const fiber = yield* pipe(
+					PollingWorker,
+					Effect.andThen((_) => _.run),
+					Effect.provide(Layer.merge(CountingPersistence, FailingTimerEventBus)),
+					Effect.fork,
 				)
 
 				// Advance clock by 10 seconds (past first failure + one successful poll)
@@ -196,12 +198,12 @@ describe('PollingWorker', () => {
 					}),
 				)
 
-				// Fork the worker
-				const fiber = yield* Effect.fork(
-					PollingWorker.Default.pipe(
-						Layer.provide(Layer.merge(FailingPersistence, makeTimerEventBusTest())),
-						Layer.launch,
-					),
+				// Fork the worker (via service, not via implementation layer)
+				const fiber = yield* pipe(
+					PollingWorker,
+					Effect.andThen((_) => _.run),
+					Effect.provide(Layer.merge(FailingPersistence, makeTimerEventBusTest())),
+					Effect.fork,
 				)
 
 				// Advance clock by 10 seconds
@@ -245,12 +247,12 @@ describe('PollingWorker', () => {
 					}),
 				)
 
-				// Fork the worker
-				const fiber = yield* Effect.fork(
-					PollingWorker.Default.pipe(
-						Layer.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest())),
-						Layer.launch,
-					),
+				// Fork the worker (via service, not via implementation layer)
+				const fiber = yield* pipe(
+					PollingWorker,
+					Effect.andThen((_) => _.run),
+					Effect.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest())),
+					Effect.fork,
 				)
 
 				// Advance clock by 25 seconds
