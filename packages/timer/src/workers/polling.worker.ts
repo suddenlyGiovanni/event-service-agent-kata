@@ -31,7 +31,7 @@ import * as Workflows from '../workflows/index.ts'
  * @see {@link Workflows.pollDueTimersWorkflow} — Core polling logic
  * @see ADR-0003 — Polling interval rationale
  */
-export const run = Effect.fn((interval: Duration.DurationInput = Duration.seconds(5)) =>
+export const run = Effect.fn(() =>
 	Workflows.pollDueTimersWorkflow().pipe(
 		Effect.catchTags({
 			BatchProcessingError: (err) =>
@@ -45,7 +45,7 @@ export const run = Effect.fn((interval: Duration.DurationInput = Duration.second
 					operation: err.operation,
 				}),
 		}),
-		Effect.repeat(Schedule.fixed(interval)),
+		Effect.repeat(Schedule.fixed(Duration.seconds(5))),
 		Effect.withSpan('Timer.PollingWorker.run'),
 	),
 )
