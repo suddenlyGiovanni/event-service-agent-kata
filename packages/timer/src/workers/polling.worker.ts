@@ -64,5 +64,5 @@ export class PollingWorker extends Context.Tag('@event-service-agent/timer/worke
 	PollingWorker,
 	never
 >() {
-	static readonly Live = Layer.effect(this, run)
+	static readonly Default = Layer.effect(this, run)
 }

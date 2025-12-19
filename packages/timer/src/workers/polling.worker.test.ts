@@ -74,7 +74,7 @@ describe('PollingWorker', () => {
 
 				// Fork the worker
 				const fiber = yield* Effect.fork(
-					PollingWorker.Live.pipe(
+					PollingWorker.Default.pipe(
 						Layer.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest())),
 						Layer.launch,
 					),
@@ -143,7 +143,10 @@ describe('PollingWorker', () => {
 
 				// Fork the worker
 				const fiber = yield* Effect.fork(
-					PollingWorker.Live.pipe(Layer.provide(Layer.merge(CountingPersistence, FailingTimerEventBus)), Layer.launch),
+					PollingWorker.Default.pipe(
+						Layer.provide(Layer.merge(CountingPersistence, FailingTimerEventBus)),
+						Layer.launch,
+					),
 				)
 
 				// Advance clock by 10 seconds (past first failure + one successful poll)
@@ -195,7 +198,7 @@ describe('PollingWorker', () => {
 
 				// Fork the worker
 				const fiber = yield* Effect.fork(
-					PollingWorker.Live.pipe(
+					PollingWorker.Default.pipe(
 						Layer.provide(Layer.merge(FailingPersistence, makeTimerEventBusTest())),
 						Layer.launch,
 					),
@@ -244,7 +247,7 @@ describe('PollingWorker', () => {
 
 				// Fork the worker
 				const fiber = yield* Effect.fork(
-					PollingWorker.Live.pipe(
+					PollingWorker.Default.pipe(
 						Layer.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest())),
 						Layer.launch,
 					),

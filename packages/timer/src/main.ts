@@ -11,8 +11,7 @@ import { MessageMetadata } from '@event-service-agent/platform/context'
 
 import * as Adapters from './adapters/index.ts'
 import * as Ports from './ports/index.ts'
-import { PollingWorker } from './workers/index.ts'
-import { PollingInterval } from './workers/polling.worker.ts'
+import { PollingInterval, PollingWorker } from './workers/polling.worker.ts'
 import * as Workflows from './workflows/index.ts'
 
 /**
@@ -72,7 +71,7 @@ export class Timer extends Context.Tag('@event-service-agent/timer/Timer')<Timer
 			/**
 			 * Fork polling worker in local scope — interrupted when scope closes
 			 */
-			yield* PollingWorker.run.pipe(Effect.forkScoped)
+			yield* PollingWorker.Default.pipe(Layer.launch, Effect.forkScoped)
 
 			/**
 			 * Run command subscription in main fiber (blocks until broker closes)
