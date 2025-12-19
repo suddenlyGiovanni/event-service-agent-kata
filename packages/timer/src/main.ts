@@ -12,6 +12,7 @@ import { MessageMetadata } from '@event-service-agent/platform/context'
 import * as Adapters from './adapters/index.ts'
 import * as Ports from './ports/index.ts'
 import { PollingWorker } from './workers/index.ts'
+import { Interval } from './workers/polling.worker.ts'
 import * as Workflows from './workflows/index.ts'
 
 /**
@@ -119,6 +120,7 @@ export class Timer extends Context.Tag('@event-service-agent/timer/Timer')<Timer
 		Layer.provide(Adapters.Clock.Live),
 		Layer.provide(Adapters.TimerPersistence.Live),
 		Layer.provide(Adapters.Platform.UUID7.Default),
+		Layer.provide(Interval.Default),
 	)
 
 	/**
@@ -155,5 +157,6 @@ export class Timer extends Context.Tag('@event-service-agent/timer/Timer')<Timer
 		Layer.provide(Adapters.Clock.Test),
 		Layer.provide(Adapters.Platform.UUID7.Sequence()),
 		Layer.provide(Adapters.TimerPersistence.Test),
+		Layer.provide(Interval.Default),
 	)
 }

@@ -11,6 +11,7 @@ import { SQL } from '@event-service-agent/platform/database'
 import * as Adapters from '../adapters/index.ts'
 import * as Ports from '../ports/index.ts'
 import { PollingWorker } from './index.ts'
+import { Interval } from './polling.worker.ts'
 
 /**
  * Base test layers for PollingWorker tests
@@ -18,7 +19,13 @@ import { PollingWorker } from './index.ts'
  * Uses TestClock to control time advancement for testing scheduled repetition.
  * Uses TimerEventBus.Live composed over mocked Platform.EventBusPort.
  */
-const BaseTestLayers = Layer.mergeAll(Adapters.Clock.Test, UUID7.Default, Adapters.TimerPersistence.Test, SQL.Test)
+const BaseTestLayers = Layer.mergeAll(
+	Adapters.Clock.Test,
+	UUID7.Default,
+	Adapters.TimerPersistence.Test,
+	SQL.Test,
+	Interval.Default,
+)
 
 /**
  * Creates a mock Platform.EventBusPort and composes TimerEventBus.Live on top
@@ -174,12 +181,10 @@ describe('PollingWorker', () => {
 								const currentCount = yield* Ref.getAndUpdate(pollCount, (n) => n + 1)
 								// Fail on first call only
 								if (currentCount === 0) {
-									return yield* Effect.fail(
-										new Ports.PersistenceError({
-											cause: 'Simulated DB failure',
-											operation: 'findDue',
-										}),
-									)
+									return yield* new Ports.PersistenceError({
+										cause: 'Simulated DB failure',
+										operation: 'findDue',
+									})
 								}
 								return yield* basePersistence.findDue(now)
 							}),
