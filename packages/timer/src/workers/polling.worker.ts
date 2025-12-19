@@ -64,7 +64,7 @@ export class PollingWorker extends Effect.Service<PollingWorker>()(
 				Effect.andThen(Effect.never),
 			)
 
-			return yield* Effect.succeed({ run } as const)
+			return { run } as const
 		}),
 	},
 ) {}
