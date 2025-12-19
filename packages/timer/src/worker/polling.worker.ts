@@ -14,13 +14,13 @@ const RunnerLive = Effect.gen(function* () {
 	const state = yield* Ref.make(Option.none<Fiber.RuntimeFiber<unknown, unknown>>())
 
 	return Platform.WorkerRunner.layerSerialized(PollingWorkerRequests, {
-		StartPolling: Effect.fn(function* ({ pollInterval }) {
+		StartPolling: Effect.fn(function* () {
 			const current = yield* Ref.get(state)
 			if (Option.isSome(current)) {
 				return { didTransition: false, state: 'Running' } as const
 			}
 
-			const fiber = yield* Effect.fork(PollingWorker.run(pollInterval))
+			const fiber = yield* Effect.fork(PollingWorker.run)
 
 			yield* Ref.set(state, Option.some(fiber))
 			return { didTransition: true, state: 'Running' } as const

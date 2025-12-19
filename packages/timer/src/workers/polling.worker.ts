@@ -31,21 +31,19 @@ import * as Workflows from '../workflows/index.ts'
  * @see {@link Workflows.pollDueTimersWorkflow} — Core polling logic
  * @see ADR-0003 — Polling interval rationale
  */
-export const run = Effect.fn(() =>
-	Workflows.pollDueTimersWorkflow().pipe(
-		Effect.catchTags({
-			BatchProcessingError: (err) =>
-				Effect.logDebug('Recovered from BatchProcessingError, continuing polling', {
-					failedCount: err.failedCount,
-					totalCount: err.totalCount,
-				}),
-			PersistenceError: (err) =>
-				Effect.logDebug('Recovered from PersistenceError, continuing polling', {
-					message: err.message,
-					operation: err.operation,
-				}),
-		}),
-		Effect.repeat(Schedule.fixed(Duration.seconds(5))),
-		Effect.withSpan('Timer.PollingWorker.run'),
-	),
+export const run = Workflows.pollDueTimersWorkflow().pipe(
+	Effect.catchTags({
+		BatchProcessingError: (err) =>
+			Effect.logDebug('Recovered from BatchProcessingError, continuing polling', {
+				failedCount: err.failedCount,
+				totalCount: err.totalCount,
+			}),
+		PersistenceError: (err) =>
+			Effect.logDebug('Recovered from PersistenceError, continuing polling', {
+				message: err.message,
+				operation: err.operation,
+			}),
+	}),
+	Effect.repeat(Schedule.fixed(Duration.seconds(5))),
+	Effect.withSpan('Timer.PollingWorker.run'),
 )
