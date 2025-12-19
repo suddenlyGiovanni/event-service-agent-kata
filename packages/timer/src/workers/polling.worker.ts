@@ -43,32 +43,28 @@ export class PollingInterval extends Context.Tag('@event-service-agent/timer/wor
 export class PollingWorker extends Effect.Service<PollingWorker>()(
 	'@event-service-agent/timer/workers/polling.worker/PollingWorker',
 	{
-		effect: Effect.succeed({
-			/**
-			 * Long-running polling loop.
-			 *
-			 * NOTE: Do not snapshot / freeze the environment here. We want this `run`
-			 * effect to use whatever environment is provided at runtime (tests can
-			 * override ports/config; main can provide Live adapters).
-			 */
-			run: Effect.flatMap(PollingInterval, ({ interval }) =>
-				Workflows.pollDueTimersWorkflow().pipe(
-					Effect.catchTags({
-						BatchProcessingError: (err) =>
-							Effect.logDebug('Recovered from BatchProcessingError, continuing polling', {
-								failedCount: err.failedCount,
-								totalCount: err.totalCount,
-							}),
-						PersistenceError: (err) =>
-							Effect.logDebug('Recovered from PersistenceError, continuing polling', {
-								message: err.message,
-								operation: err.operation,
-							}),
-					}),
-					Effect.repeat(Schedule.fixed(interval)),
-					Effect.andThen(Effect.never),
-				),
-			),
+		dependencies: [PollingInterval.Default],
+		effect: Effect.gen(function* () {
+			const { interval } = yield* PollingInterval
+
+			const run = Workflows.pollDueTimersWorkflow().pipe(
+				Effect.catchTags({
+					BatchProcessingError: (err) =>
+						Effect.logDebug('Recovered from BatchProcessingError, continuing polling', {
+							failedCount: err.failedCount,
+							totalCount: err.totalCount,
+						}),
+					PersistenceError: (err) =>
+						Effect.logDebug('Recovered from PersistenceError, continuing polling', {
+							message: err.message,
+							operation: err.operation,
+						}),
+				}),
+				Effect.repeat(Schedule.fixed(interval)),
+				Effect.andThen(Effect.never),
+			)
+
+			return yield* Effect.succeed({ run } as const)
 		}),
 	},
 ) {}
