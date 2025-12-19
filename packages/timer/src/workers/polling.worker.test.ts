@@ -10,7 +10,7 @@ import { SQL } from '@event-service-agent/platform/database'
 
 import * as Adapters from '../adapters/index.ts'
 import * as Ports from '../ports/index.ts'
-import { Interval, PollingWorker, run } from './polling.worker.ts'
+import { PollingInterval, PollingWorker } from './polling.worker.ts'
 
 /**
  * Base test layers for PollingWorker tests
@@ -23,7 +23,7 @@ const BaseTestLayers = Layer.mergeAll(
 	UUID7.Default,
 	Adapters.TimerPersistence.Test,
 	SQL.Test,
-	Interval.Default,
+	PollingInterval.Default,
 )
 
 /**
@@ -74,7 +74,10 @@ describe('PollingWorker', () => {
 
 				// Fork the worker
 				const fiber = yield* Effect.fork(
-					run.pipe(Effect.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest()))),
+					PollingWorker.Live.pipe(
+						Layer.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest())),
+						Layer.launch,
+					),
 				)
 
 				// Advance clock by 15 seconds
@@ -140,7 +143,7 @@ describe('PollingWorker', () => {
 
 				// Fork the worker
 				const fiber = yield* Effect.fork(
-					run.pipe(Effect.provide(Layer.merge(CountingPersistence, FailingTimerEventBus))),
+					PollingWorker.Live.pipe(Layer.provide(Layer.merge(CountingPersistence, FailingTimerEventBus)), Layer.launch),
 				)
 
 				// Advance clock by 10 seconds (past first failure + one successful poll)
@@ -192,7 +195,10 @@ describe('PollingWorker', () => {
 
 				// Fork the worker
 				const fiber = yield* Effect.fork(
-					run.pipe(Effect.provide(Layer.merge(FailingPersistence, makeTimerEventBusTest()))),
+					PollingWorker.Live.pipe(
+						Layer.provide(Layer.merge(FailingPersistence, makeTimerEventBusTest())),
+						Layer.launch,
+					),
 				)
 
 				// Advance clock by 10 seconds
@@ -238,7 +244,10 @@ describe('PollingWorker', () => {
 
 				// Fork the worker
 				const fiber = yield* Effect.fork(
-					run.pipe(Effect.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest()))),
+					PollingWorker.Live.pipe(
+						Layer.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest())),
+						Layer.launch,
+					),
 				)
 
 				// Advance clock by 25 seconds

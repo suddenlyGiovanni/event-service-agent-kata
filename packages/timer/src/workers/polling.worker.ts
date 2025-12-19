@@ -6,11 +6,11 @@ import * as Schedule from 'effect/Schedule'
 
 import * as Workflows from '../workflows/index.ts'
 
-export class Interval extends Context.Tag('@event-service-agent/timer/workers/polling.worker/Interval')<
-	Interval,
-	Duration.DurationInput
+export class PollingInterval extends Context.Tag('@event-service-agent/timer/workers/polling.worker/PollingInterval')<
+	PollingInterval,
+	{ readonly interval: Duration.DurationInput }
 >() {
-	static readonly Default = Layer.succeed(this, Duration.seconds(5))
+	static readonly Default = Layer.succeed(this, { interval: Duration.seconds(5) })
 }
 
 /**
@@ -40,7 +40,7 @@ export class Interval extends Context.Tag('@event-service-agent/timer/workers/po
  * @see {@link Workflows.pollDueTimersWorkflow} — Core polling logic
  * @see ADR-0003 — Polling interval rationale
  */
-export const run = Effect.flatMap(Interval, (interval) =>
+export const run = Effect.flatMap(PollingInterval, ({ interval }) =>
 	Workflows.pollDueTimersWorkflow().pipe(
 		Effect.catchTags({
 			BatchProcessingError: (err) =>

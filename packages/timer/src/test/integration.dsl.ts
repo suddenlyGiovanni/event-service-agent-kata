@@ -23,7 +23,7 @@ import * as Adapters from '../adapters/index.ts'
 import { TimerDomain } from '../domain/index.ts'
 import { Timer } from '../main.ts'
 import * as Ports from '../ports/index.ts'
-import { Interval } from '../workers/polling.worker.ts'
+import { PollingInterval } from '../workers/polling.worker.ts'
 import { ServiceCallFixture } from './service-call.fixture.ts'
 
 type EventBusSubscribeHandler<
@@ -114,7 +114,12 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 				Layer.merge(Adapters.TimerPersistence.Test, ServiceCallFixture.Default),
 				Layer.provideMerge(
 					Adapters.TimerEventBus.Live,
-					Layer.mergeAll(Adapters.Platform.UUID7.Sequence(), Adapters.Clock.Test, EventBusTestLayer, Interval.Default),
+					Layer.mergeAll(
+						Adapters.Platform.UUID7.Sequence(),
+						Adapters.Clock.Test,
+						EventBusTestLayer,
+						PollingInterval.Default,
+					),
 				),
 			),
 		],
@@ -133,7 +138,11 @@ export class TestHarness extends Effect.Service<TestHarness>()(
 			 * Then, provide Timer's internal wiring via `DefaultWithoutDependencies`.
 			 */
 			const outerContext = yield* Effect.context<
-				Ports.TimerEventBusPort | Ports.TimerPersistencePort | Ports.ClockPort | Adapters.Platform.UUID7 | Interval
+				| Ports.TimerEventBusPort
+				| Ports.TimerPersistencePort
+				| Ports.ClockPort
+				| Adapters.Platform.UUID7
+				| PollingInterval
 			>()
 
 			const timeElapsedRef = yield* Ref.make(Duration.zero)
