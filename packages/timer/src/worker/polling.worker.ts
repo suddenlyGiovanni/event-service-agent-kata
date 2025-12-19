@@ -8,7 +8,7 @@ import * as Option from 'effect/Option'
 import * as Ref from 'effect/Ref'
 
 import { PollingWorkerRequests } from '../worker-protocol/polling.worker-requests.ts'
-import * as PollingWorker from '../workers/polling.worker.ts'
+import { PollingWorker } from '../workers/polling.worker.ts'
 
 const RunnerLive = Effect.gen(function* () {
 	const state = yield* Ref.make(Option.none<Fiber.RuntimeFiber<unknown, unknown>>())
@@ -20,7 +20,11 @@ const RunnerLive = Effect.gen(function* () {
 				return { didTransition: false, state: 'Running' } as const
 			}
 
-			const fiber = yield* Effect.fork(PollingWorker.run)
+			const fiber = yield* pipe(
+				PollingWorker,
+				Effect.andThen((_) => _.run),
+				Effect.fork,
+			)
 
 			yield* Ref.set(state, Option.some(fiber))
 			return { didTransition: true, state: 'Running' } as const

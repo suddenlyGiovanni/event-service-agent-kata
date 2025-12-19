@@ -1,3 +1,1 @@
-import { run } from './polling.worker.ts'
-
-export const PollingWorker = { run } as const
+export { PollingInterval, PollingWorker } from './polling.worker.ts'
