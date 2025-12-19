@@ -56,5 +56,13 @@ export const run = Effect.flatMap(Interval, (interval) =>
 		}),
 		Effect.repeat(Schedule.fixed(interval)),
 		Effect.withSpan('Timer.PollingWorker.run'),
+		Effect.andThen(Effect.never),
 	),
-)
+) // TODO: probably we want to return Effect.never?
+
+export class PollingWorker extends Context.Tag('@event-service-agent/timer/workers/polling.worker/PollingWorker')<
+	PollingWorker,
+	never
+>() {
+	static readonly Live = Layer.effect(this, run)
+}

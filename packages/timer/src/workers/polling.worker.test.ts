@@ -10,8 +10,7 @@ import { SQL } from '@event-service-agent/platform/database'
 
 import * as Adapters from '../adapters/index.ts'
 import * as Ports from '../ports/index.ts'
-import { PollingWorker } from './index.ts'
-import { Interval } from './polling.worker.ts'
+import { Interval, PollingWorker, run } from './polling.worker.ts'
 
 /**
  * Base test layers for PollingWorker tests
@@ -75,7 +74,7 @@ describe('PollingWorker', () => {
 
 				// Fork the worker
 				const fiber = yield* Effect.fork(
-					PollingWorker.run.pipe(Effect.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest()))),
+					run.pipe(Effect.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest()))),
 				)
 
 				// Advance clock by 15 seconds
@@ -141,7 +140,7 @@ describe('PollingWorker', () => {
 
 				// Fork the worker
 				const fiber = yield* Effect.fork(
-					PollingWorker.run.pipe(Effect.provide(Layer.merge(CountingPersistence, FailingTimerEventBus))),
+					run.pipe(Effect.provide(Layer.merge(CountingPersistence, FailingTimerEventBus))),
 				)
 
 				// Advance clock by 10 seconds (past first failure + one successful poll)
@@ -193,7 +192,7 @@ describe('PollingWorker', () => {
 
 				// Fork the worker
 				const fiber = yield* Effect.fork(
-					PollingWorker.run.pipe(Effect.provide(Layer.merge(FailingPersistence, makeTimerEventBusTest()))),
+					run.pipe(Effect.provide(Layer.merge(FailingPersistence, makeTimerEventBusTest()))),
 				)
 
 				// Advance clock by 10 seconds
@@ -239,7 +238,7 @@ describe('PollingWorker', () => {
 
 				// Fork the worker
 				const fiber = yield* Effect.fork(
-					PollingWorker.run.pipe(Effect.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest()))),
+					run.pipe(Effect.provide(Layer.merge(CountingPersistence, makeTimerEventBusTest()))),
 				)
 
 				// Advance clock by 25 seconds
