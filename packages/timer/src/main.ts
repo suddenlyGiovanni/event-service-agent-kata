@@ -75,8 +75,10 @@ export class Timer extends Context.Tag('@event-service-agent/timer/Timer')<Timer
 			 * not its concrete implementation layer, so we can later swap the
 			 * implementation to an `@effect/platform` Worker with minimal changes.
 			 */
+
+			const context = yield* Effect.context<Ports.TimerEventBusPort | Ports.TimerPersistencePort | Ports.ClockPort>()
 			const pollingWorker = yield* PollingWorker
-			yield* pollingWorker.run.pipe(Effect.forkScoped)
+			yield* pollingWorker.run.pipe(Effect.provide(context), Effect.forkScoped)
 
 			/**
 			 * Run command subscription in main fiber (blocks until broker closes)
