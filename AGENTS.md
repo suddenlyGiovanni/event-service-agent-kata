@@ -240,6 +240,28 @@ bun run db:migrate
 bun run db:reset
 ```
 
+<!-- effect-solutions:start -->
+
+## Effect Best Practices
+
+**Before implementing Effect features**, run `bunx effect-solutions list` and read the relevant guide:
+
+```bash
+# List all available topics
+bunx effect-solutions list
+
+# Show a specific guide
+bunx effect-solutions show <topic>
+```
+
+Topics include: services and layers, data modeling, error handling, configuration, testing, CLI development, and project structure.
+
+**Effect Source Reference:** `~/repos/forks/effect`
+
+Search here for real implementations when docs aren't enough. This is a local clone of the Effect monorepo with all packages (`effect`, `@effect/platform`, `@effect/sql`, etc.).
+
+<!-- effect-solutions:end -->
+
 ## Effect-TS Quick Reference
 
 This project uses Effect-TS as its standard library. Key patterns:
