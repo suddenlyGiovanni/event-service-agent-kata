@@ -1,6 +1,5 @@
-final: prev:
-let
-  version = "2.3.8"; # bump when needed
+final: prev: let
+  version = "2.3.10"; # bump when needed
   system = prev.stdenv.hostPlatform.system;
 
   # Binary name mapping for each platform
@@ -14,7 +13,7 @@ let
   # SRI hashes for each platform (from GitHub release asset digests)
   # After first attempt with fakeHash, paste the real sha256-... here
   hashes = {
-    aarch64-darwin = "sha256-p9AF4yYzIv6uPsXRqkHBTf4EelN7QuBqs9G+IxS5HII=";
+    aarch64-darwin = "sha256-rcERVbVFV7qrlJg3ZHLnNxrFynmKFccTQhLR7RxKEQI=";
     # x86_64-darwin = "sha256-...";  # Add when needed
     # x86_64-linux = "sha256-...";   # Add when needed
     # aarch64-linux = "sha256-...";  # Add when needed
@@ -48,7 +47,7 @@ in {
       license = prev.lib.licenses.mit;
       mainProgram = "biome";
       # Only claim support for the current host to avoid needing hashes for all platforms.
-      platforms = [ system ];
+      platforms = [system];
     };
   };
 }
