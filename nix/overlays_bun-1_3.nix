@@ -1,6 +1,5 @@
-final: prev:
-let
-  version = "1.3.4"; # bump when needed
+final: prev: let
+  version = "1.3.5"; # bump when needed
   system = prev.stdenv.hostPlatform.system;
 
   urls = {
@@ -11,7 +10,7 @@ let
 
   # Fill the SRI hash (sha256-...) for your system after the first attempt.
   hashes = {
-    aarch64-darwin = "sha256-iAN3TkxsVcilF0ZMUI8Cgh5ttX+Uyhu1zCo59NIyalE=";
+    aarch64-darwin = "sha256-2xdYikrqiASFaCXUvq0/BeHzcnbKYG8342m09y810/s=";
     # add other systems here as needed
   };
 in {
@@ -22,10 +21,12 @@ in {
       # Use fakeHash (SRI) so Nix tells you the real "sha256-..." to paste into `hashes` above.
       hash = hashes.${system} or prev.lib.fakeHash;
     };
-    meta = old.meta // {
-      changelog = "https://bun.sh/blog/bun-v${version}";
-      # Only claim support for the current host to avoid needing hashes for all platforms.
-      platforms = [ system ];
-    };
+    meta =
+      old.meta
+      // {
+        changelog = "https://bun.sh/blog/bun-v${version}";
+        # Only claim support for the current host to avoid needing hashes for all platforms.
+        platforms = [system];
+      };
   });
 }
