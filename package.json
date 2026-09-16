@@ -35,7 +35,7 @@
 		"@beads/bd": "0.30.0",
 		"@biomejs/biome": "catalog:lint",
 		"@effect/vitest": "catalog:test",
-		"effect-solutions": "0.4.13",
+		"effect-solutions": "0.5.3",
 		"lefthook": "^2.0.12",
 		"vitest": "catalog:test"
 	},
